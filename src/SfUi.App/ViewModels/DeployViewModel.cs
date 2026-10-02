@@ -25,7 +25,7 @@ public partial class DeployViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CommandPreview))]
-    private string _operation = "デプロイ (start)";
+    private DeployOperationOption _operation = null!;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CommandPreview))]
@@ -59,7 +59,7 @@ public partial class DeployViewModel : ObservableObject
     private bool _isRunning;
 
     [ObservableProperty]
-    private string _statusText = "準備完了";
+    private string _statusText = UiText.T("Common_Ready");
 
     [ObservableProperty]
     private string? _outputText;
@@ -73,14 +73,11 @@ public partial class DeployViewModel : ObservableObject
     /// <summary>現在の SF 実行フォルダ（MainViewModel から設定される）。</summary>
     public string? CurrentFolder { get; set; }
 
-    public ObservableCollection<string> Operations { get; } = new()
-    {
-        "デプロイ (start)",
-        "検証 (validate)",
-        "クイックデプロイ (quick)",
-        "レポート (report)",
-        "メタデータ取得 (retrieve)",
-    };
+    /// <summary>デプロイ操作の選択肢（コード + 表示ラベル）。</summary>
+    public sealed record DeployOperationOption(string Code, string Label);
+
+    /// <summary>操作コンボの選択肢（言語切替で再構築される）。</summary>
+    public ObservableCollection<DeployOperationOption> Operations { get; } = new();
 
     public ObservableCollection<string> TestLevels { get; } = new()
     {
@@ -102,7 +99,35 @@ public partial class DeployViewModel : ObservableObject
         _favorites = favorites;
         _settings = settings;
         _log = log;
+        UiText.LanguageChanged += OnLanguageChanged;
+        BuildOperations();
         RefreshHistory();
+    }
+
+    private void OnLanguageChanged()
+    {
+        var dispatcher = Application.Current?.Dispatcher;
+        if (dispatcher is null || dispatcher.CheckAccess())
+        {
+            BuildOperations(Operation.Code);
+        }
+        else
+        {
+            dispatcher.Invoke(() => BuildOperations(Operation.Code));
+        }
+    }
+
+    /// <summary>操作コンボを現在の言語で再構築する（選択はコードで維持）。</summary>
+    private void BuildOperations(string? selectedCode = null)
+    {
+        Operations.Clear();
+        Operations.Add(new DeployOperationOption(DeployOperations.Deploy, UiText.T("Op_Deploy")));
+        Operations.Add(new DeployOperationOption(DeployOperations.Validate, UiText.T("Op_Validate")));
+        Operations.Add(new DeployOperationOption(DeployOperations.Quick, UiText.T("Op_Quick")));
+        Operations.Add(new DeployOperationOption(DeployOperations.Report, UiText.T("Op_Report")));
+        Operations.Add(new DeployOperationOption(DeployOperations.Retrieve, UiText.T("Op_Retrieve")));
+
+        Operation = Operations.FirstOrDefault(o => o.Code == selectedCode) ?? Operations[0];
     }
 
     [RelayCommand]
@@ -133,7 +158,7 @@ public partial class DeployViewModel : ObservableObject
 
         if (string.IsNullOrWhiteSpace(CurrentOrg))
         {
-            StatusText = "上部バーで組織を選択してください";
+            StatusText = UiText.T("Msg_SelectOrg");
             return;
         }
 
@@ -143,19 +168,19 @@ public partial class DeployViewModel : ObservableObject
         if (ConfirmPolicies.ShouldConfirm(_settings.Current.ConfirmPolicy, isDangerous: true))
         {
             var answer = MessageBox.Show(
-                $"デプロイ操作を実行します。よろしいですか？{Environment.NewLine}{Environment.NewLine}{command}",
+                UiText.T("Deploy_ConfirmFmt", Environment.NewLine, command),
                 "SfUi",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
             if (answer != MessageBoxResult.Yes)
             {
-                StatusText = "キャンセルしました";
+                StatusText = UiText.T("Common_Canceled");
                 return;
             }
         }
 
         IsRunning = true;
-        StatusText = "実行中…（完了まで出力は表示されません。「キャンセル」で中断できます）";
+        StatusText = UiText.T("Deploy_Running");
         OutputText = null;
         _cts = new CancellationTokenSource();
         try
@@ -163,18 +188,18 @@ public partial class DeployViewModel : ObservableObject
             var raw = await _service.ExecuteAsync(args, CurrentFolder, ExecuteTimeout, _cts.Token);
             OutputText = JsonPretty.Prettify(raw.StdOut);
             var summary = TrySummarize(raw.StdOut);
-            StatusText = $"終了コード: {raw.ExitCode} / {raw.Duration.TotalMinutes:F1} 分" + (summary is null ? string.Empty : $" / {summary}");
+            StatusText = UiText.T("Deploy_ExitFmt", raw.ExitCode, raw.Duration.TotalMinutes) + (summary is null ? string.Empty : $" / {summary}");
             AppendHistory(command, raw.Success ? "success" : "error", (int)raw.Duration.TotalMilliseconds, BuildResultText(raw));
             _log.Info($"デプロイ操作: {command} → 終了コード {raw.ExitCode}");
         }
         catch (OperationCanceledException)
         {
-            StatusText = "キャンセルしました";
+            StatusText = UiText.T("Common_Canceled");
             AppendHistory(command, "canceled", 0, null);
         }
         catch (Exception ex)
         {
-            StatusText = $"失敗: {ex.Message}";
+            StatusText = UiText.T("Common_FailedFmt", ex.Message);
             OutputText = ex.Message;
             AppendHistory(command, "error", 0, ex.Message);
             _log.Error("デプロイ操作に失敗", ex);
@@ -199,13 +224,13 @@ public partial class DeployViewModel : ObservableObject
     {
         var command = CommandPreview;
         _favorites.Add(HistoryTypes.Deploy, Summarize(command), command);
-        StatusText = $"お気に入りに追加: {Summarize(command)}";
+        StatusText = UiText.T("Common_FavoriteAddedFmt", Summarize(command));
     }
 
     [RelayCommand]
     private void BrowseSourceDir()
     {
-        var dialog = new OpenFolderDialog { Title = "ソースディレクトリを選択" };
+        var dialog = new OpenFolderDialog { Title = UiText.T("Deploy_BrowseSourceTitle") };
         if (!string.IsNullOrWhiteSpace(CurrentFolder) && Directory.Exists(CurrentFolder))
         {
             dialog.InitialDirectory = CurrentFolder;
@@ -222,8 +247,8 @@ public partial class DeployViewModel : ObservableObject
     {
         var dialog = new OpenFileDialog
         {
-            Title = "package.xml（マニフェスト）を選択",
-            Filter = "マニフェスト (*.xml)|*.xml|すべてのファイル (*.*)|*.*",
+            Title = UiText.T("Deploy_BrowseManifestTitle"),
+            Filter = UiText.T("Deploy_ManifestFilter"),
         };
         if (!string.IsNullOrWhiteSpace(CurrentFolder) && Directory.Exists(CurrentFolder))
         {
@@ -265,7 +290,7 @@ public partial class DeployViewModel : ObservableObject
     }
 
     private DeployRequest BuildRequest() => new(
-        Operation: MapOperation(Operation),
+        Operation: Operation.Code,
         TargetOrg: CurrentOrg,
         SourceDir: SourceDir,
         Manifest: Manifest,
@@ -275,26 +300,20 @@ public partial class DeployViewModel : ObservableObject
         JobId: JobId,
         UseMostRecent: UseMostRecent);
 
-    private static string MapOperation(string display) =>
-        display.StartsWith("検証", StringComparison.Ordinal) ? DeployOperations.Validate
-        : display.StartsWith("クイック", StringComparison.Ordinal) ? DeployOperations.Quick
-        : display.StartsWith("レポート", StringComparison.Ordinal) ? DeployOperations.Report
-        : display.StartsWith("メタデータ", StringComparison.Ordinal) ? DeployOperations.Retrieve
-        : DeployOperations.Deploy;
-
     private void ApplyCommandLine(string commandLine)
     {
         var args = CommandLineParser.SplitSfArguments(commandLine);
         if (args.Count >= 3 && args[0].Equals("project", StringComparison.OrdinalIgnoreCase))
         {
-            Operation = args[1] switch
+            var code = args[1] switch
             {
-                "retrieve" => "メタデータ取得 (retrieve)",
-                _ when args[2] == "validate" => "検証 (validate)",
-                _ when args[2] == "quick" => "クイックデプロイ (quick)",
-                _ when args[2] == "report" => "レポート (report)",
-                _ => "デプロイ (start)",
+                "retrieve" => DeployOperations.Retrieve,
+                _ when args[2] == "validate" => DeployOperations.Validate,
+                _ when args[2] == "quick" => DeployOperations.Quick,
+                _ when args[2] == "report" => DeployOperations.Report,
+                _ => DeployOperations.Deploy,
             };
+            Operation = Operations.FirstOrDefault(o => o.Code == code) ?? Operations[0];
         }
 
         var i = 3;
@@ -368,7 +387,7 @@ public partial class DeployViewModel : ObservableObject
                 var total = result.TryGetProperty("numberComponentsTotal", out var totalElement) && totalElement.ValueKind == JsonValueKind.Number
                     ? totalElement.GetInt32()
                     : (int?)null;
-                components = total is null ? $"{deployed.GetInt32()} コンポーネント" : $"{deployed.GetInt32()}/{total} コンポーネント";
+                components = total is null ? UiText.T("Common_ComponentsFmt", deployed.GetInt32()) : UiText.T("Common_ComponentsOfFmt", deployed.GetInt32(), total);
             }
 
             var parts = new[] { status, components }.Where(p => !string.IsNullOrEmpty(p)).ToArray();

@@ -47,7 +47,7 @@ public class SfCommandResultTests
         var result = SfCommandResult.From(Raw(string.Empty, exitCode: -1, timedOut: true));
 
         Assert.False(result.IsSuccess);
-        Assert.Contains("タイムアウト", result.ErrorMessage);
+        Assert.Equal(UiText.T("Core_Timeout"), result.ErrorMessage);
     }
 
     [Fact]

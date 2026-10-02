@@ -3,6 +3,8 @@ using Xunit;
 
 namespace SfUi.Tests;
 
+/// <summary>ラベル検証はグローバル言語に依存するため直列実行する。</summary>
+[Collection("Localization")]
 public class ConfirmPoliciesTests
 {
     [Theory]
@@ -31,8 +33,16 @@ public class ConfirmPoliciesTests
     [InlineData(ConfirmPolicies.Never, "確認しない")]
     public void ToLabel_And_FromLabel_RoundTrip(string policy, string label)
     {
-        Assert.Equal(label, ConfirmPolicies.ToLabel(policy));
-        Assert.Equal(policy, ConfirmPolicies.FromLabel(label));
+        try
+        {
+            UiText.SetLanguage(UiText.Japanese);
+            Assert.Equal(label, ConfirmPolicies.ToLabel(policy));
+            Assert.Equal(policy, ConfirmPolicies.FromLabel(label));
+        }
+        finally
+        {
+            UiText.SetLanguage(UiText.English);
+        }
     }
 
     [Fact]

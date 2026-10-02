@@ -32,7 +32,7 @@ public partial class SoqlViewModel : ObservableObject
     private bool _isRunning;
 
     [ObservableProperty]
-    private string _statusText = "準備完了";
+    private string _statusText = UiText.T("Common_Ready");
 
     [ObservableProperty]
     private DataView? _resultView;
@@ -86,24 +86,24 @@ public partial class SoqlViewModel : ObservableObject
         var soql = SoqlText.Trim();
         if (string.IsNullOrWhiteSpace(CurrentOrg))
         {
-            StatusText = "上部バーで組織を選択してください";
+            StatusText = UiText.T("Msg_SelectOrg");
             return;
         }
 
         if (string.IsNullOrEmpty(soql))
         {
-            StatusText = "SOQL を入力してください";
+            StatusText = UiText.T("Soql_EnterQuery");
             return;
         }
 
         IsRunning = true;
-        StatusText = "実行中…";
+        StatusText = UiText.T("Common_Running");
         var stopwatch = Stopwatch.StartNew();
         try
         {
             var execution = await _service.ExecuteSoqlAsync(CurrentOrg, soql, UseToolingApi, PreferRest, CurrentFolder);
             ResultView = execution.Result.Table.DefaultView;
-            StatusText = $"{execution.Engine} / {execution.Result.TotalSize} 件 / {execution.Duration.TotalMilliseconds:F0} ms";
+            StatusText = UiText.T("Soql_ResultFmt", execution.Engine, execution.Result.TotalSize, execution.Duration.TotalMilliseconds);
 
             _history.Append(
                 new HistoryEntry
@@ -123,7 +123,7 @@ public partial class SoqlViewModel : ObservableObject
         catch (Exception ex)
         {
             ResultView = null;
-            StatusText = $"失敗: {ex.Message}";
+            StatusText = UiText.T("Common_FailedFmt", ex.Message);
             _history.Append(
                 new HistoryEntry
                 {
@@ -151,15 +151,15 @@ public partial class SoqlViewModel : ObservableObject
         var table = ResultView?.Table;
         if (table is null || table.Rows.Count == 0)
         {
-            StatusText = "出力できる結果がありません";
+            StatusText = UiText.T("Soql_NoResultsToExport");
             return;
         }
 
         var dialog = new SaveFileDialog
         {
-            Title = "SOQL 結果を CSV 保存",
+            Title = UiText.T("Soql_CsvSaveTitle"),
             FileName = $"soql-{DateTime.Now:yyyyMMdd-HHmmss}.csv",
-            Filter = "CSV ファイル (*.csv)|*.csv|すべてのファイル (*.*)|*.*",
+            Filter = UiText.T("Soql_CsvFilter"),
         };
         if (!string.IsNullOrWhiteSpace(CurrentFolder) && Directory.Exists(CurrentFolder))
         {
@@ -174,11 +174,11 @@ public partial class SoqlViewModel : ObservableObject
         try
         {
             File.WriteAllText(dialog.FileName, CsvExporter.ToCsv(table), new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
-            StatusText = $"CSV 出力: {dialog.FileName}";
+            StatusText = UiText.T("Soql_CsvSavedFmt", dialog.FileName);
         }
         catch (Exception ex)
         {
-            StatusText = $"CSV 出力に失敗: {ex.Message}";
+            StatusText = UiText.T("Soql_CsvFailedFmt", ex.Message);
             _log.Error("CSV 出力に失敗", ex);
         }
     }
@@ -189,7 +189,7 @@ public partial class SoqlViewModel : ObservableObject
         var table = ResultView?.Table;
         if (table is null || table.Rows.Count == 0)
         {
-            StatusText = "コピーできる結果がありません";
+            StatusText = UiText.T("Soql_NoResultsToCopy");
             return;
         }
 
@@ -203,11 +203,11 @@ public partial class SoqlViewModel : ObservableObject
         try
         {
             Clipboard.SetText(builder.ToString());
-            StatusText = "結果をクリップボードにコピーしました（TSV）";
+            StatusText = UiText.T("Soql_Copied");
         }
         catch (Exception ex)
         {
-            StatusText = $"コピーに失敗: {ex.Message}";
+            StatusText = UiText.T("Msg_CopyFailedFmt", ex.Message);
         }
     }
 
@@ -217,13 +217,13 @@ public partial class SoqlViewModel : ObservableObject
         var soql = SoqlText.Trim();
         if (string.IsNullOrEmpty(soql))
         {
-            StatusText = "お気に入りに追加する SOQL がありません";
+            StatusText = UiText.T("Soql_NoQueryFavorite");
             return;
         }
 
         var label = Summarize(soql);
         _favorites.Add(HistoryTypes.Soql, label, soql);
-        StatusText = $"お気に入りに追加: {label}";
+        StatusText = UiText.T("Common_FavoriteAddedFmt", label);
     }
 
     /// <summary>履歴から読み込む（autoRun=true ならそのまま実行）。</summary>

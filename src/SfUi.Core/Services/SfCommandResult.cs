@@ -115,7 +115,7 @@ public sealed class SfCommandResult
     {
         if (raw.TimedOut)
         {
-            return "コマンドがタイムアウトしました。";
+            return UiText.T("Core_Timeout");
         }
 
         var text = !string.IsNullOrWhiteSpace(raw.StdErr) ? raw.StdErr.Trim() : raw.StdOut.Trim();
@@ -124,6 +124,6 @@ public sealed class SfCommandResult
             return text.Length > 500 ? text[..500] + "…" : text;
         }
 
-        return $"コマンドが失敗しました (ExitCode={raw.ExitCode})。";
+        return UiText.T("Core_FailedExitCodeFmt", raw.ExitCode);
     }
 }

@@ -24,7 +24,7 @@ public partial class MainViewModel : ObservableObject
     private bool _isBusy;
 
     [ObservableProperty]
-    private string _statusMessage = "準備完了";
+    private string _statusMessage = UiText.T("Common_Ready");
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(StatusDetail))]
@@ -41,8 +41,15 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private bool _isQuickPanelVisible = true;
 
+    /// <summary>言語コンボの選択値（English / 日本語）。</summary>
+    [ObservableProperty]
+    private string _languageLabel = "English";
+
+    /// <summary>言語コンボの選択肢。</summary>
+    public IReadOnlyList<string> LanguageLabels { get; } = new[] { "English", "日本語" };
+
     /// <summary>ステータスバー表示用（組織・フォルダ）。</summary>
-    public string StatusDetail => $"組織: {SelectedOrg?.DisplayName ?? "未選択"} ／ フォルダ: {SelectedFolder ?? "（既定）"}";
+    public string StatusDetail => UiText.T("Main_StatusDetailFmt", SelectedOrg?.DisplayName ?? UiText.T("Main_NotSelected"), SelectedFolder ?? UiText.T("Main_DefaultFolder"));
 
     /// <summary>認証済み組織（既定組織が先頭）。</summary>
     public ObservableCollection<OrgInfo> Orgs { get; } = new();
@@ -116,6 +123,24 @@ public partial class MainViewModel : ObservableObject
         QuickPanel = quickPanel;
         History.ReplayRequested += OnReplayRequested;
         QuickPanel.ExecuteRequested += ExecuteFavorite;
+
+        // 保存済みの言語をコンボへ反映（起動時の UiText 適用は App 側で実施済み）
+        _languageLabel = string.Equals(_settings.Current.Language, UiText.Japanese, StringComparison.OrdinalIgnoreCase) ? "日本語" : "English";
+        OnPropertyChanged(nameof(LanguageLabel));
+    }
+
+    partial void OnLanguageLabelChanged(string value)
+    {
+        var code = string.Equals(value, "日本語", StringComparison.Ordinal) ? UiText.Japanese : UiText.English;
+        if (code == UiText.Language)
+        {
+            return;
+        }
+
+        UiText.SetLanguage(code);
+        _settings.Current.Language = code;
+        _settings.Save();
+        StatusMessage = UiText.T("Msg_LanguageFmt", value);
     }
 
     /// <summary>起動時の初期化（前回状態の復元 → 組織一覧の取得）。</summary>
@@ -142,7 +167,7 @@ public partial class MainViewModel : ObservableObject
         }
 
         IsBusy = true;
-        StatusMessage = "組織一覧を取得中…";
+        StatusMessage = UiText.T("Msg_LoadingOrgs");
         try
         {
             var orgs = await _orgService.ListOrgsAsync();
@@ -160,12 +185,12 @@ public partial class MainViewModel : ObservableObject
                           ?? Orgs.FirstOrDefault(o => o.IsDefault)
                           ?? Orgs.FirstOrDefault();
 
-            StatusMessage = $"組織 {Orgs.Count} 件を取得しました";
+            StatusMessage = UiText.T("Msg_OrgCountFmt", Orgs.Count);
             _log.Info($"組織一覧を取得: {Orgs.Count} 件");
         }
         catch (Exception ex)
         {
-            StatusMessage = $"組織一覧の取得に失敗: {ex.Message}";
+            StatusMessage = UiText.T("Msg_OrgLoadFailedFmt", ex.Message);
             _log.Error("組織一覧の取得に失敗", ex);
         }
         finally
@@ -209,35 +234,35 @@ public partial class MainViewModel : ObservableObject
             case HistoryTypes.Soql:
                 Soql.LoadFromHistory(entry, autoRun: true);
                 SelectedTabIndex = 0;
-                StatusMessage = "履歴から SOQL を再実行します";
+                StatusMessage = UiText.T("Msg_ReplaySoql");
                 break;
 
             case HistoryTypes.Apex:
                 Apex.LoadFromHistory(entry, autoRun: false);
                 SelectedTabIndex = 1;
-                StatusMessage = "履歴から匿名Apex を読み込みました（Ctrl+Enter で実行）";
+                StatusMessage = UiText.T("Msg_ReplayApex");
                 break;
 
             case HistoryTypes.Command:
                 Command.LoadFromHistory(entry, autoRun: false);
                 SelectedTabIndex = 5;
-                StatusMessage = "履歴からコマンドを読み込みました（実行ボタンで再実行）";
+                StatusMessage = UiText.T("Msg_ReplayCommand");
                 break;
 
             case HistoryTypes.Api:
                 Api.LoadFromHistory(entry, autoRun: false);
                 SelectedTabIndex = 6;
-                StatusMessage = "履歴から REST リクエストを読み込みました（送信ボタンで再実行）";
+                StatusMessage = UiText.T("Msg_ReplayApi");
                 break;
 
             case HistoryTypes.Deploy:
                 Deploy.LoadFromHistory(entry, autoRun: false);
                 SelectedTabIndex = 4;
-                StatusMessage = "履歴からデプロイ設定を読み込みました（実行ボタンで再実行）";
+                StatusMessage = UiText.T("Msg_ReplayDeploy");
                 break;
 
             default:
-                StatusMessage = $"「{entry.TypeLabel}」の再実行には対応していません";
+                StatusMessage = UiText.T("Msg_ReplayUnsupportedFmt", entry.TypeLabel);
                 break;
         }
     }
@@ -250,31 +275,31 @@ public partial class MainViewModel : ObservableObject
             case HistoryTypes.Soql:
                 Soql.LoadFavorite(favorite, autoRun: true);
                 SelectedTabIndex = 0;
-                StatusMessage = $"お気に入りを実行: {favorite.Label}";
+                StatusMessage = UiText.T("Msg_FavoriteRunFmt", favorite.Label);
                 break;
 
             case HistoryTypes.Apex:
                 Apex.LoadFavorite(favorite, autoRun: false);
                 SelectedTabIndex = 1;
-                StatusMessage = $"お気に入りを読み込みました（Ctrl+Enter で実行）: {favorite.Label}";
+                StatusMessage = UiText.T("Msg_FavoriteLoadedApexFmt", favorite.Label);
                 break;
 
             case HistoryTypes.Command:
                 Command.LoadFavorite(favorite, autoRun: false);
                 SelectedTabIndex = 5;
-                StatusMessage = $"お気に入りを読み込みました（実行ボタンで再実行）: {favorite.Label}";
+                StatusMessage = UiText.T("Msg_FavoriteLoadedCommandFmt", favorite.Label);
                 break;
 
             case HistoryTypes.Api:
                 Api.LoadFavorite(favorite, autoRun: false);
                 SelectedTabIndex = 6;
-                StatusMessage = $"お気に入りを読み込みました（送信ボタンで再実行）: {favorite.Label}";
+                StatusMessage = UiText.T("Msg_FavoriteLoadedApiFmt", favorite.Label);
                 break;
 
             case HistoryTypes.Deploy:
                 Deploy.LoadFavorite(favorite, autoRun: false);
                 SelectedTabIndex = 4;
-                StatusMessage = $"お気に入りを読み込みました（実行ボタンで再実行）: {favorite.Label}";
+                StatusMessage = UiText.T("Msg_FavoriteLoadedDeployFmt", favorite.Label);
                 break;
 
             case "url":
@@ -286,7 +311,7 @@ public partial class MainViewModel : ObservableObject
                 break;
 
             default:
-                StatusMessage = $"「{favorite.Type}」のお気に入りには対応していません";
+                StatusMessage = UiText.T("Msg_FavoriteUnsupportedFmt", favorite.Type);
                 break;
         }
     }
@@ -297,7 +322,7 @@ public partial class MainViewModel : ObservableObject
         var favorite = QuickPanel.GetSlot(number);
         if (favorite is null)
         {
-            StatusMessage = $"お気に入り {number} は未登録です";
+            StatusMessage = UiText.T("Msg_QuickSlotEmptyFmt", number);
             return;
         }
 
@@ -310,7 +335,7 @@ public partial class MainViewModel : ObservableObject
         var last = _history.Query().FirstOrDefault();
         if (last is null)
         {
-            StatusMessage = "再実行できる履歴がありません";
+            StatusMessage = UiText.T("Msg_NoHistory");
             return;
         }
 
@@ -320,7 +345,7 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void BrowseFolder()
     {
-        var dialog = new OpenFolderDialog { Title = "SF 実行フォルダを選択" };
+        var dialog = new OpenFolderDialog { Title = UiText.T("Dlg_BrowseFolderTitle") };
         if (!string.IsNullOrWhiteSpace(SelectedFolder) && Directory.Exists(SelectedFolder))
         {
             dialog.InitialDirectory = SelectedFolder;
@@ -343,7 +368,7 @@ public partial class MainViewModel : ObservableObject
         path = path.Trim();
         if (!Directory.Exists(path))
         {
-            StatusMessage = $"フォルダが存在しません: {path}";
+            StatusMessage = UiText.T("Msg_FolderNotExistFmt", path);
             return;
         }
 
@@ -352,7 +377,7 @@ public partial class MainViewModel : ObservableObject
         _settings.Current.LastFolder = path;
         _settings.Save();
         ReloadRecentFolders();
-        StatusMessage = $"SFフォルダ: {path}";
+        StatusMessage = UiText.T("Msg_FolderSetFmt", path);
     }
 
     // ---- ツールランチャー ----
@@ -363,7 +388,7 @@ public partial class MainViewModel : ObservableObject
     {
         var folder = ResolveLaunchFolder();
         var result = _toolLauncher.LaunchTerminal(folder, kind ?? "wt");
-        StatusMessage = result.Success ? $"ターミナル: {folder}" : result.Message;
+        StatusMessage = result.Success ? UiText.T("Msg_TerminalFmt", folder) : result.Message;
 
         if (result.Success)
         {
@@ -384,11 +409,11 @@ public partial class MainViewModel : ObservableObject
             try
             {
                 Clipboard.SetText(ResolveLaunchFolder());
-                StatusMessage = "フォルダパスをコピーしました";
+                StatusMessage = UiText.T("Msg_Copied");
             }
             catch (Exception ex)
             {
-                StatusMessage = $"コピーに失敗: {ex.Message}";
+                StatusMessage = UiText.T("Msg_CopyFailedFmt", ex.Message);
             }
 
             return;
@@ -396,7 +421,7 @@ public partial class MainViewModel : ObservableObject
 
         var folder = ResolveLaunchFolder();
         var result = _toolLauncher.LaunchExplorer(folder);
-        StatusMessage = result.Success ? $"エクスプローラー: {folder}" : result.Message;
+        StatusMessage = result.Success ? UiText.T("Msg_ExplorerFmt", folder) : result.Message;
     }
 
     /// <summary>VS Code で開く（mode: new / reuse）。</summary>
@@ -405,7 +430,7 @@ public partial class MainViewModel : ObservableObject
     {
         var folder = ResolveLaunchFolder();
         var result = _toolLauncher.LaunchVsCode(folder, mode ?? "new");
-        StatusMessage = result.Success ? $"VS Code: {folder}" : result.Message;
+        StatusMessage = result.Success ? UiText.T("Msg_VsCodeFmt", folder) : result.Message;
     }
 
     /// <summary>ブラウザで開く（target: org-home / org-setup / login / input / url:...）。</summary>
@@ -419,8 +444,8 @@ public partial class MainViewModel : ObservableObject
             {
                 case "input":
                     var input = InputBox.Show(
-                        "URL を入力",
-                        "開く URL を入力してください（例: https://hks3.my.salesforce.com/lightning/o/Account/list）");
+                        UiText.T("Msg_InputUrlTitle"),
+                        UiText.T("Msg_InputUrlPrompt"));
                     if (!string.IsNullOrWhiteSpace(input))
                     {
                         LaunchUrl(input.Trim());
@@ -437,15 +462,15 @@ public partial class MainViewModel : ObservableObject
                     var org = Soql.CurrentOrg;
                     if (string.IsNullOrWhiteSpace(org))
                     {
-                        StatusMessage = "上部バーで組織を選択してください";
+                        StatusMessage = UiText.T("Msg_SelectOrg");
                         return;
                     }
 
-                    StatusMessage = "組織の URL を取得中…";
+                    StatusMessage = UiText.T("Msg_GetOrgUrl");
                     var auth = await _orgService.GetAuthAsync(org);
                     if (string.IsNullOrWhiteSpace(auth.InstanceUrl))
                     {
-                        StatusMessage = "組織の instanceUrl を取得できませんでした";
+                        StatusMessage = UiText.T("Msg_NoInstanceUrl");
                         return;
                     }
 
@@ -464,7 +489,7 @@ public partial class MainViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            StatusMessage = $"ブラウザ起動に失敗: {ex.Message}";
+            StatusMessage = UiText.T("Msg_BrowserFailedFmt", ex.Message);
             _log.Error("ブラウザ起動に失敗", ex);
         }
     }
@@ -486,7 +511,7 @@ public partial class MainViewModel : ObservableObject
         {
             _recentUrls.Touch(url);
             ReloadRecentUrls();
-            StatusMessage = $"ブラウザ: {url}";
+            StatusMessage = UiText.T("Msg_BrowserFmt", url);
         }
         else
         {

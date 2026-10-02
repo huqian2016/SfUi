@@ -170,7 +170,7 @@ public sealed class SalesforceRestClient
 
         if (string.IsNullOrWhiteSpace(instanceUrl))
         {
-            throw new SalesforceApiException("組織の instanceUrl を取得できませんでした。");
+            throw new SalesforceApiException(UiText.T("Core_InstanceUrlMissing"));
         }
 
         var baseUrl = instanceUrl.TrimEnd('/');

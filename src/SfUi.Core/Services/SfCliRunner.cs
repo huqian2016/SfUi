@@ -104,8 +104,7 @@ public sealed class SfCliRunner
     {
         if (_sfExecutablePath is null)
         {
-            throw new InvalidOperationException(
-                "sf コマンドが見つかりません。Salesforce CLI をインストールするか、環境変数 SFUI_SF_PATH で sf.cmd の場所を指定してください。");
+            throw new InvalidOperationException(UiText.T("Core_SfNotFound"));
         }
 
         var commandLine = BuildCommandLine(_sfExecutablePath, arguments);
@@ -137,7 +136,7 @@ public sealed class SfCliRunner
         }
         catch (Win32Exception ex)
         {
-            throw new InvalidOperationException($"sf コマンドの起動に失敗しました: {ex.Message}", ex);
+            throw new InvalidOperationException(UiText.T("Core_SfStartFailedFmt", ex.Message), ex);
         }
 
         var stdOutTask = process.StandardOutput.ReadToEndAsync();
@@ -180,7 +179,7 @@ public sealed class SfCliRunner
 
         if (timedOut && string.IsNullOrEmpty(stdErr))
         {
-            stdErr = "コマンドがタイムアウトしました。";
+            stdErr = UiText.T("Core_Timeout");
         }
 
         return new SfCliResult(arguments.ToArray(), SafeGetExitCode(process), stdOut.TrimEnd(), stdErr.TrimEnd(), timedOut, stopwatch.Elapsed);

@@ -169,12 +169,12 @@ public sealed class SoqlService
     {
         if (string.IsNullOrWhiteSpace(targetOrg))
         {
-            throw new ArgumentException("対象組織が指定されていません。", nameof(targetOrg));
+            throw new ArgumentException(UiText.T("Core_OrgSelectRequired"), nameof(targetOrg));
         }
 
         if (string.IsNullOrWhiteSpace(soql))
         {
-            throw new ArgumentException("SOQL が入力されていません。", nameof(soql));
+            throw new ArgumentException(UiText.T("Core_SoqlRequired"), nameof(soql));
         }
 
         var stopwatch = Stopwatch.StartNew();
@@ -250,7 +250,7 @@ public sealed class SoqlService
         var command = SfCommandResult.From(raw);
         if (!command.IsSuccess || command.Result is not { } result || result.ValueKind != JsonValueKind.Object)
         {
-            throw new SfCliException($"SOQL 実行に失敗しました: {command.ErrorMessage}", raw);
+            throw new SfCliException(UiText.T("Core_SoqlFailedFmt", command.ErrorMessage), raw);
         }
 
         var records = new List<JsonElement>();

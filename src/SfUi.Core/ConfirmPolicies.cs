@@ -12,21 +12,29 @@ public static class ConfirmPolicies
     /// <summary>確認しない。</summary>
     public const string Never = "never";
 
-    /// <summary>ポリシーを日本語ラベルへ。</summary>
+    /// <summary>ポリシーの表示ラベル（現在の言語）。</summary>
     public static string ToLabel(string? policy) => policy switch
     {
-        Always => "常に確認",
-        Never => "確認しない",
-        _ => "危険操作のみ確認",
+        Always => UiText.T("Policy_Always"),
+        Never => UiText.T("Policy_Never"),
+        _ => UiText.T("Policy_Dangerous"),
     };
 
-    /// <summary>日本語ラベルからポリシーへ。</summary>
-    public static string FromLabel(string? label) => label switch
+    /// <summary>表示ラベルからポリシーへ（不一致は既定の dangerous）。</summary>
+    public static string FromLabel(string? label)
     {
-        "常に確認" => Always,
-        "確認しない" => Never,
-        _ => Dangerous,
-    };
+        if (label == UiText.T("Policy_Always"))
+        {
+            return Always;
+        }
+
+        if (label == UiText.T("Policy_Never"))
+        {
+            return Never;
+        }
+
+        return Dangerous;
+    }
 
     /// <summary>この操作の実行前に確認を表示すべきか。</summary>
     public static bool ShouldConfirm(string? policy, bool isDangerous) => policy switch

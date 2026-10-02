@@ -31,7 +31,7 @@ public static class InputBox
             HorizontalAlignment = HorizontalAlignment.Right,
         };
         var okButton = new Button { Content = "OK", IsDefault = true, Width = 80, Margin = new Thickness(0, 0, 8, 0) };
-        var cancelButton = new Button { Content = "キャンセル", IsCancel = true, Width = 90 };
+        var cancelButton = new Button { Content = SfUi.Core.UiText.T("Common_Cancel"), IsCancel = true, Width = 90 };
         buttons.Children.Add(okButton);
         buttons.Children.Add(cancelButton);
         DockPanel.SetDock(buttons, Dock.Bottom);

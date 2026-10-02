@@ -78,7 +78,7 @@ public sealed class ApexService
     {
         if (string.IsNullOrWhiteSpace(targetOrg))
         {
-            throw new ArgumentException("対象組織が指定されていません。", nameof(targetOrg));
+            throw new ArgumentException(UiText.T("Core_OrgSelectRequired"), nameof(targetOrg));
         }
 
         Directory.CreateDirectory(_paths.TempDirectory);
@@ -115,7 +115,7 @@ public sealed class ApexService
         {
             return new ApexExecutionResult
             {
-                ErrorMessage = command.ErrorMessage ?? "実行に失敗しました。",
+                ErrorMessage = command.ErrorMessage ?? UiText.T("Core_ApexRunFailed"),
                 RawJson = raw.StdOut,
                 Duration = raw.Duration,
             };
@@ -147,7 +147,7 @@ public sealed class ApexService
         var command = SfCommandResult.From(raw);
         if (!command.IsSuccess || command.Result is not { } result || result.ValueKind != JsonValueKind.Array)
         {
-            throw new SfCliException($"ログ一覧の取得に失敗しました: {command.ErrorMessage}", raw);
+            throw new SfCliException(UiText.T("Core_LogListFailedFmt", command.ErrorMessage), raw);
         }
 
         return ParseLogList(result);
@@ -204,7 +204,7 @@ public sealed class ApexService
         var command = SfCommandResult.From(raw);
         if (!command.IsSuccess || command.Result is not { } result)
         {
-            throw new SfCliException($"ログの取得に失敗しました: {command.ErrorMessage}", raw);
+            throw new SfCliException(UiText.T("Core_LogFetchFailedFmt", command.ErrorMessage), raw);
         }
 
         return ExtractLogText(result);

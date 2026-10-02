@@ -19,7 +19,7 @@ public partial class MainWindow : Window
         _log = log;
         DataContext = viewModel;
 
-        DataPathText.Text = $"データ: {paths.DataRoot}";
+        DataPathText.Text = UiText.T("Main_DataPathFmt", paths.DataRoot);
         VersionText.Text = $"v{typeof(MainWindow).Assembly.GetName().Version?.ToString(3) ?? "0.0.0"}";
 
         Loaded += OnWindowLoaded;

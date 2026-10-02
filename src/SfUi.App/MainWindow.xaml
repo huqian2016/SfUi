@@ -2,8 +2,9 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="clr-namespace:SfUi.App.Views"
-        Title="SfUi — Salesforce CLI ランチャー"
-        Height="720" Width="1100"
+        xmlns:loc="clr-namespace:SfUi.App"
+        Title="{loc:Tr App_Title}"
+        Height="720" Width="1320" MinWidth="960" MinHeight="540"
         WindowStartupLocation="CenterScreen"
         FontSize="13">
     <Window.Resources>
@@ -14,17 +15,17 @@
         <!-- 上部バー: 組織/フォルダ切替とツール起動（Phase 1 / Phase 4 で機能実装） -->
         <Border DockPanel.Dock="Top" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
             <StackPanel Orientation="Horizontal">
-                <TextBlock Text="組織:" VerticalAlignment="Center" Margin="0,0,4,0" />
+                <TextBlock Text="{loc:Tr Main_OrgLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
                 <ComboBox x:Name="OrgComboBox" Width="240" Margin="0,0,6,0"
                           ItemsSource="{Binding Orgs}"
                           SelectedItem="{Binding SelectedOrg, Mode=TwoWay}"
                           DisplayMemberPath="DisplayName"
-                          ToolTip="認証済み組織（コマンドの --target-org に使用）" />
+                          ToolTip="{loc:Tr Main_OrgTooltip}" />
                 <Button Content="⟳" Padding="8,2" Margin="0,0,12,0"
                         Command="{Binding RefreshOrgsCommand}"
-                        ToolTip="組織一覧を更新" />
+                        ToolTip="{loc:Tr Main_RefreshOrgsTip}" />
 
-                <TextBlock Text="SFフォルダ:" VerticalAlignment="Center" Margin="0,0,4,0" />
+                <TextBlock Text="{loc:Tr Main_FolderLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
                 <ComboBox x:Name="FolderComboBox" Width="300" IsEditable="True" Margin="0,0,4,0"
                           ItemsSource="{Binding RecentFolders}"
                           DisplayMemberPath="Path"
@@ -32,58 +33,58 @@
                           SelectionChanged="FolderComboBox_SelectionChanged"
                           KeyDown="FolderComboBox_KeyDown"
                           LostKeyboardFocus="FolderComboBox_LostFocus"
-                          ToolTip="sf コマンドを実行するフォルダ（最近使用したフォルダから選択 or 入力）" />
-                <Button Content="参照…" Padding="10,2" Margin="0,0,12,0"
+                          ToolTip="{loc:Tr Main_FolderTooltip}" />
+                <Button Content="{loc:Tr Main_Browse}" Padding="10,2" Margin="0,0,12,0"
                         Command="{Binding BrowseFolderCommand}" />
 
                 <Border Width="1" Background="#CCCCCC" Margin="0,2,12,2" />
 
-                <Button Content="ターミナル" Padding="10,2" Margin="0,0,6,0"
+                <Button Content="{loc:Tr Main_Terminal}" Padding="10,2" Margin="0,0,6,0"
                         Command="{Binding OpenTerminalCommand}"
-                        ToolTip="クリック: 現在のフォルダでターミナルを開く / 右クリック: 種類を選択">
+                        ToolTip="{loc:Tr Main_TerminalTip}">
                     <Button.ContextMenu>
                         <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
-                            <MenuItem Header="Windows Terminal（既定）" Command="{Binding OpenTerminalCommand}" />
-                            <MenuItem Header="PowerShell" Command="{Binding OpenTerminalCommand}" CommandParameter="powershell" />
-                            <MenuItem Header="コマンド プロンプト" Command="{Binding OpenTerminalCommand}" CommandParameter="cmd" />
-                            <MenuItem Header="WSL" Command="{Binding OpenTerminalCommand}" CommandParameter="wsl" />
+                            <MenuItem Header="{loc:Tr Main_TermWt}" Command="{Binding OpenTerminalCommand}" />
+                            <MenuItem Header="{loc:Tr Main_TermPs}" Command="{Binding OpenTerminalCommand}" CommandParameter="powershell" />
+                            <MenuItem Header="{loc:Tr Main_TermCmd}" Command="{Binding OpenTerminalCommand}" CommandParameter="cmd" />
+                            <MenuItem Header="{loc:Tr Main_TermWsl}" Command="{Binding OpenTerminalCommand}" CommandParameter="wsl" />
                         </ContextMenu>
                     </Button.ContextMenu>
                 </Button>
 
-                <Button Content="エクスプローラー" Padding="10,2" Margin="0,0,6,0"
+                <Button Content="{loc:Tr Main_Explorer}" Padding="10,2" Margin="0,0,6,0"
                         Command="{Binding OpenExplorerCommand}"
-                        ToolTip="クリック: 現在のフォルダを開く / 右クリック: オプション">
+                        ToolTip="{loc:Tr Main_ExplorerTip}">
                     <Button.ContextMenu>
                         <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
-                            <MenuItem Header="このフォルダを開く（既定）" Command="{Binding OpenExplorerCommand}" />
-                            <MenuItem Header="フォルダパスをコピー" Command="{Binding OpenExplorerCommand}" CommandParameter="copy-path" />
+                            <MenuItem Header="{loc:Tr Main_OpenFolder}" Command="{Binding OpenExplorerCommand}" />
+                            <MenuItem Header="{loc:Tr Main_CopyPath}" Command="{Binding OpenExplorerCommand}" CommandParameter="copy-path" />
                         </ContextMenu>
                     </Button.ContextMenu>
                 </Button>
 
-                <Button Content="VS Code" Padding="10,2" Margin="0,0,6,0"
+                <Button Content="{loc:Tr Main_VsCode}" Padding="10,2" Margin="0,0,6,0"
                         Command="{Binding OpenVsCodeCommand}"
-                        ToolTip="クリック: 現在のフォルダを新規ウィンドウで開く / 右クリック: オプション">
+                        ToolTip="{loc:Tr Main_VsCodeTip}">
                     <Button.ContextMenu>
                         <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
-                            <MenuItem Header="新規ウィンドウで開く（既定）" Command="{Binding OpenVsCodeCommand}" />
-                            <MenuItem Header="現在のウィンドウで開く" Command="{Binding OpenVsCodeCommand}" CommandParameter="reuse" />
+                            <MenuItem Header="{loc:Tr Main_VsCodeNew}" Command="{Binding OpenVsCodeCommand}" />
+                            <MenuItem Header="{loc:Tr Main_VsCodeReuse}" Command="{Binding OpenVsCodeCommand}" CommandParameter="reuse" />
                         </ContextMenu>
                     </Button.ContextMenu>
                 </Button>
 
-                <Button Content="ブラウザ" Padding="10,2"
+                <Button Content="{loc:Tr Main_Browser}" Padding="10,2"
                         Command="{Binding OpenBrowserCommand}"
-                        ToolTip="クリック: 現在の組織のホームを開く / 右クリック: URL を選択">
+                        ToolTip="{loc:Tr Main_BrowserTip}">
                     <Button.ContextMenu>
                         <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
-                            <MenuItem Header="組織ホーム（既定）" Command="{Binding OpenBrowserCommand}" />
-                            <MenuItem Header="組織の設定（Setup）" Command="{Binding OpenBrowserCommand}" CommandParameter="org-setup" />
-                            <MenuItem Header="Salesforce ログイン" Command="{Binding OpenBrowserCommand}" CommandParameter="login" />
+                            <MenuItem Header="{loc:Tr Main_BrowserHome}" Command="{Binding OpenBrowserCommand}" />
+                            <MenuItem Header="{loc:Tr Main_BrowserSetup}" Command="{Binding OpenBrowserCommand}" CommandParameter="org-setup" />
+                            <MenuItem Header="{loc:Tr Main_BrowserLogin}" Command="{Binding OpenBrowserCommand}" CommandParameter="login" />
                             <Separator />
-                            <MenuItem Header="URL を入力…" Command="{Binding OpenBrowserCommand}" CommandParameter="input" />
-                            <MenuItem Header="最近の URL" ItemsSource="{Binding RecentUrls}">
+                            <MenuItem Header="{loc:Tr Main_BrowserInput}" Command="{Binding OpenBrowserCommand}" CommandParameter="input" />
+                            <MenuItem Header="{loc:Tr Main_BrowserRecent}" ItemsSource="{Binding RecentUrls}">
                                 <MenuItem.ItemContainerStyle>
                                     <Style TargetType="MenuItem">
                                         <Setter Property="Header" Value="{Binding DisplayText}" />
@@ -98,9 +99,14 @@
 
                 <Border Width="1" Background="#CCCCCC" Margin="12,2,12,2" />
 
-                <ToggleButton Content="クイック" Padding="10,2"
+                <ToggleButton Content="{loc:Tr Main_QuickToggle}" Padding="10,2"
                               IsChecked="{Binding IsQuickPanelVisible, Mode=TwoWay}"
-                              ToolTip="お気に入りパネルの表示/非表示（Ctrl+1..9 で実行）" />
+                              ToolTip="{loc:Tr Main_QuickToggleTip}" />
+
+                <ComboBox Width="96" Margin="6,0,0,0" VerticalContentAlignment="Center"
+                          ItemsSource="{Binding LanguageLabels}"
+                          SelectedItem="{Binding LanguageLabel, Mode=TwoWay}"
+                          ToolTip="{loc:Tr Main_LanguageTip}" />
             </StackPanel>
         </Border>
 
@@ -130,28 +136,28 @@
 
         <!-- メイン: 機能タブ（各 Phase で実装） -->
         <TabControl Margin="8" SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}">
-            <TabItem Header="SOQL">
+            <TabItem Header="{loc:Tr Tab_Soql}">
                 <views:SoqlView DataContext="{Binding Soql}" />
             </TabItem>
-            <TabItem Header="匿名Apex">
+            <TabItem Header="{loc:Tr Tab_Apex}">
                 <views:ApexView DataContext="{Binding Apex}" />
             </TabItem>
-            <TabItem Header="デバッグログ">
+            <TabItem Header="{loc:Tr Tab_Log}">
                 <views:LogView DataContext="{Binding Logs}" />
             </TabItem>
-            <TabItem Header="履歴">
+            <TabItem Header="{loc:Tr Tab_History}">
                 <views:HistoryView DataContext="{Binding History}" />
             </TabItem>
-            <TabItem Header="デプロイ">
+            <TabItem Header="{loc:Tr Tab_Deploy}">
                 <views:DeployView DataContext="{Binding Deploy}" />
             </TabItem>
-            <TabItem Header="コマンド">
+            <TabItem Header="{loc:Tr Tab_Command}">
                 <views:CommandView DataContext="{Binding Command}" />
             </TabItem>
-            <TabItem Header="REST API">
+            <TabItem Header="{loc:Tr Tab_Api}">
                 <views:ApiConsoleView DataContext="{Binding Api}" />
             </TabItem>
-            <TabItem Header="設定">
+            <TabItem Header="{loc:Tr Tab_Settings}">
                 <views:SettingsView DataContext="{Binding Settings}" />
             </TabItem>
         </TabControl>

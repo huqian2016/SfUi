@@ -26,6 +26,9 @@ public sealed class AppSettings
     /// <summary>VS Code CLI (code.cmd) のパス（null / 空 = 自動検出）。</summary>
     public string? VsCodePath { get; set; }
 
+    /// <summary>UI 言語（"en" = 英語／既定、"ja" = 日本語）。</summary>
+    public string Language { get; set; } = UiText.English;
+
     /// <summary>実行前確認ポリシー（ConfirmPolicies の値）。</summary>
     public string ConfirmPolicy { get; set; } = ConfirmPolicies.Dangerous;
 }

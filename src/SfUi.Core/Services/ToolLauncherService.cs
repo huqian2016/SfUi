@@ -24,7 +24,7 @@ public sealed class ToolLauncherService
     {
         if (!Directory.Exists(folder))
         {
-            return new LaunchResult(false, $"フォルダが存在しません: {folder}");
+            return new LaunchResult(false, UiText.T("Msg_FolderNotExistFmt", folder));
         }
 
         try
@@ -39,7 +39,7 @@ public sealed class ToolLauncherService
                         UseShellExecute = true,
                         WorkingDirectory = folder,
                     });
-                    return new LaunchResult(true, $"PowerShell を起動: {folder}");
+                    return new LaunchResult(true, UiText.T("Launch_PsFmt", folder));
 
                 case "cmd":
                     Process.Start(new ProcessStartInfo
@@ -49,7 +49,7 @@ public sealed class ToolLauncherService
                         UseShellExecute = true,
                         WorkingDirectory = folder,
                     });
-                    return new LaunchResult(true, $"コマンド プロンプトを起動: {folder}");
+                    return new LaunchResult(true, UiText.T("Launch_CmdFmt", folder));
 
                 case "wsl":
                     Process.Start(new ProcessStartInfo
@@ -59,7 +59,7 @@ public sealed class ToolLauncherService
                         UseShellExecute = true,
                         WorkingDirectory = folder,
                     });
-                    return new LaunchResult(true, $"WSL を起動: {folder}");
+                    return new LaunchResult(true, UiText.T("Launch_WslFmt", folder));
 
                 default:
                     var wtPath = ResolveConfiguredPath(_settings?.Current.WindowsTerminalPath) ?? ResolveWindowsTerminalPath();
@@ -72,7 +72,7 @@ public sealed class ToolLauncherService
                             UseShellExecute = false,
                             WorkingDirectory = folder,
                         });
-                        return new LaunchResult(true, $"Windows Terminal を起動: {folder}");
+                        return new LaunchResult(true, UiText.T("Launch_WtFmt", folder));
                     }
 
                     Process.Start(new ProcessStartInfo
@@ -82,13 +82,13 @@ public sealed class ToolLauncherService
                         UseShellExecute = true,
                         WorkingDirectory = folder,
                     });
-                    return new LaunchResult(true, $"コマンド プロンプトを起動（Windows Terminal 未検出）: {folder}");
+                    return new LaunchResult(true, UiText.T("Launch_CmdFallbackFmt", folder));
             }
         }
         catch (Exception ex)
         {
             _log.Error("ターミナルの起動に失敗", ex);
-            return new LaunchResult(false, $"ターミナルの起動に失敗: {ex.Message}");
+            return new LaunchResult(false, UiText.T("Launch_TerminalFailedFmt", ex.Message));
         }
     }
 
@@ -104,12 +104,12 @@ public sealed class ToolLauncherService
                 Arguments = arguments,
                 UseShellExecute = true,
             });
-            return new LaunchResult(true, $"エクスプローラー: {path}");
+            return new LaunchResult(true, UiText.T("Launch_ExplorerFmt", path));
         }
         catch (Exception ex)
         {
             _log.Error("エクスプローラーの起動に失敗", ex);
-            return new LaunchResult(false, $"エクスプローラーの起動に失敗: {ex.Message}");
+            return new LaunchResult(false, UiText.T("Launch_ExplorerFailedFmt", ex.Message));
         }
     }
 
@@ -119,7 +119,7 @@ public sealed class ToolLauncherService
         var codePath = ResolveConfiguredPath(_settings?.Current.VsCodePath) ?? ResolveVsCodeCliPath();
         if (codePath is null)
         {
-            return new LaunchResult(false, "VS Code (code.cmd) が見つかりません。");
+            return new LaunchResult(false, UiText.T("Launch_VsCodeNotFound"));
         }
 
         try
@@ -147,12 +147,12 @@ public sealed class ToolLauncherService
                 CreateNoWindow = true,
                 WorkingDirectory = Directory.Exists(path) ? path : Environment.CurrentDirectory,
             });
-            return new LaunchResult(true, $"VS Code を起動: {path}");
+            return new LaunchResult(true, UiText.T("Launch_VsCodeFmt", path));
         }
         catch (Exception ex)
         {
             _log.Error("VS Code の起動に失敗", ex);
-            return new LaunchResult(false, $"VS Code の起動に失敗: {ex.Message}");
+            return new LaunchResult(false, UiText.T("Launch_VsCodeFailedFmt", ex.Message));
         }
     }
 
@@ -162,12 +162,12 @@ public sealed class ToolLauncherService
         try
         {
             Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true });
-            return new LaunchResult(true, $"ブラウザ: {url}");
+            return new LaunchResult(true, UiText.T("Launch_BrowserFmt", url));
         }
         catch (Exception ex)
         {
             _log.Error("ブラウザの起動に失敗", ex);
-            return new LaunchResult(false, $"ブラウザの起動に失敗: {ex.Message}");
+            return new LaunchResult(false, UiText.T("Launch_BrowserFailedFmt", ex.Message));
         }
     }
 

@@ -33,7 +33,7 @@ public partial class ApiConsoleViewModel : ObservableObject
     private bool _isRunning;
 
     [ObservableProperty]
-    private string _statusText = "準備完了";
+    private string _statusText = UiText.T("Common_Ready");
 
     [ObservableProperty]
     private string? _responseText;
@@ -86,14 +86,14 @@ public partial class ApiConsoleViewModel : ObservableObject
 
         if (string.IsNullOrWhiteSpace(CurrentOrg))
         {
-            StatusText = "上部バーで組織を選択してください";
+            StatusText = UiText.T("Msg_SelectOrg");
             return;
         }
 
         var path = Path.Trim();
         if (string.IsNullOrEmpty(path))
         {
-            StatusText = "パスを入力してください（例: /services/data/v67.0/limits）";
+            StatusText = UiText.T("Api_EnterPath");
             return;
         }
 
@@ -103,19 +103,19 @@ public partial class ApiConsoleViewModel : ObservableObject
         if (method != "GET" && ConfirmPolicies.ShouldConfirm(_settings.Current.ConfirmPolicy, isDangerous: true))
         {
             var answer = MessageBox.Show(
-                $"{method} リクエストを送信します。実行しますか？{Environment.NewLine}{Environment.NewLine}{method} {path}",
+                UiText.T("Api_SendConfirmFmt", method, Environment.NewLine, path),
                 "SfUi",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
             if (answer != MessageBoxResult.Yes)
             {
-                StatusText = "キャンセルしました";
+                StatusText = UiText.T("Common_Canceled");
                 return;
             }
         }
 
         IsRunning = true;
-        StatusText = "送信中…";
+        StatusText = UiText.T("Api_Sending");
         ResponseText = null;
         var stopwatch = Stopwatch.StartNew();
         try
@@ -130,7 +130,7 @@ public partial class ApiConsoleViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            StatusText = $"失敗: {ex.Message}";
+            StatusText = UiText.T("Common_FailedFmt", ex.Message);
             ResponseText = ex.Message;
             AppendHistory(method, path, body, "error", (int)stopwatch.Elapsed.TotalMilliseconds, ex.Message);
             _log.Error("REST リクエストに失敗", ex);
@@ -148,13 +148,13 @@ public partial class ApiConsoleViewModel : ObservableObject
         var path = Path.Trim();
         if (string.IsNullOrEmpty(path))
         {
-            StatusText = "お気に入りに追加するパスがありません";
+            StatusText = UiText.T("Api_NoPathFavorite");
             return;
         }
 
         var label = Summarize($"{Method.Trim().ToUpperInvariant()} {path}");
         _favorites.Add(HistoryTypes.Api, label, FormatParams(Method.Trim().ToUpperInvariant(), path, string.IsNullOrWhiteSpace(RequestBody) ? null : RequestBody));
-        StatusText = $"お気に入りに追加: {label}";
+        StatusText = UiText.T("Common_FavoriteAddedFmt", label);
     }
 
     /// <summary>履歴から読み込む（autoRun=true ならそのまま送信）。</summary>

@@ -1,6 +1,6 @@
 # SfUi — Salesforce CLI 統合デスクトップツール 実装計画
 
-最終更新: 2026-10-02 / ステータス: Phase 6 完了 = 全フェーズ完了（クイックパネル・設定画面・単一 EXE 配布。テスト 120 件 / スモーク・別フォルダ起動検証済み）
+最終更新: 2026-10-02 / ステータス: Phase 7 完了（多言語対応: 英語（既定）/日本語 + 即時切替。テスト 133 件 / スモーク検証済み。Phase 0-6 も全完了）
 
 ## 1. 概要
 
@@ -167,6 +167,14 @@ data/
 - REST 汎用コンソール（GET/POST/PATCH/DELETE、パス / JSON ボディ、整形表示、履歴保存。401 時はトークン再取得で 1 回リトライ）✅
 - デプロイ（start / validate / quick / report / retrieve。ソースディレクトリ / manifest / テストレベル / 待機時間、確認ダイアログ、60 分タイムアウト、進捗 / キャンセル、結果サマリーから job-id 自動補完）✅
 
+### Phase 7: 多言語対応（英語・日本語） ✅
+
+- `UiText`（Core）: en / ja の文字列辞書 + `SetLanguage` + `LanguageChanged`。未定義キーはキーを返す
+- XAML: `{loc:Tr Key}` マークアップ拡張（バインド経由で言語切替時に一斉更新、再起動不要）
+- 言語切替: 上部バーの言語コンボ（English / 日本語）+ settings.json の `language`（既定 en）で永続化し、起動時に適用
+- 言語追従: 履歴の種別フィルタ / デプロイ操作コンボ / 確認ポリシーのラベルは切替時に自動再構築
+- 対象範囲: 全 View XAML・全 ViewModel のメッセージ / ダイアログ・Core のユーザー向けメッセージ / ラベル・サンプル履歴の要約（アプリログと開発コメントは対象外）
+
 ### Phase 6: 仕上げ・配布 ✅
 
 - クイックパネル（左サイド、お気に入り一覧 + `Ctrl+1..9` 即実行、ダブルクリック / Enter 実行、右クリック削除、上部バーの「クイック」で表示切替）✅
@@ -192,6 +200,7 @@ data/
 ## 12. 開発メモ
 
 - VS Code タスク: build / test / run / run (smoke) / run (smoke org) / publish (single exe)
+- UI 文字列: コードは `UiText.T("Key")`、XAML は `{loc:Tr Key}`。辞書は `src/SfUi.Core/Localization/UiText.En.cs` / `UiText.Ja.cs`（キーは両ファイルで同一 — テストで検証）
 - スモーク起動: `dotnet run --project src/SfUi.App -- --smoke`（sf CLI で組織一覧取得を検証して自動終了、`data/logs` に記録）
 - sf のフラグは実装時に `sf <command> --help` で確定する（バージョン差吸収）
 
@@ -256,3 +265,9 @@ data/
   - 起動オプション `--seed-samples`（UI を出さず投入して終了）、設定画面の「サンプル履歴を投入」ボタン、VS Code タスク `seed samples`
   - `dotnet test`: 123 件成功（+3: 追加 / 重複スキップ / 既存保持）
   - 実データ投入確認: 追加 29 件 / スキップ 1 件（既存と同内容が 1 件）→ 再実行で追加 0 件 / スキップ 30 件
+
+- ✅ **Phase 7（2026-10-02 完了）**: 多言語対応（英語 / 日本語）
+  - 言語切替: 上部バーのコンボで**即時切替**（再起動不要）、settings.json に保存（既定は英語）
+  - `dotnet test`: 133 件成功（+10: UiText の辞書整合性 / 切替動作 / XAML・C# の使用キー存在検証）
+  - スモーク E2E: `全タブのレイアウトOK (例外 0 件)` + **`言語切替OK (ja→en, 例外 0 件)`** + 従来の E2E すべて成功
+  - 備考: アプリログ（data/logs）と XML ドキュメントコメントは開発者向けのため日本語のまま

@@ -27,7 +27,7 @@ public sealed class OrgService
         var command = SfCommandResult.From(raw);
         if (!command.IsSuccess)
         {
-            throw new SfCliException($"組織一覧の取得に失敗しました: {command.ErrorMessage}", raw);
+            throw new SfCliException(UiText.T("Core_OrgListFailedFmt", command.ErrorMessage), raw);
         }
 
         return ParseOrgList(command.Result);
@@ -91,7 +91,7 @@ public sealed class OrgService
     {
         if (string.IsNullOrWhiteSpace(targetOrg))
         {
-            throw new ArgumentException("対象組織が指定されていません。", nameof(targetOrg));
+            throw new ArgumentException(UiText.T("Core_OrgSelectRequired"), nameof(targetOrg));
         }
 
         if (!forceRefresh && _authCache.TryGetValue(targetOrg, out var cached) && cached.IsFresh(TokenCacheDuration))
@@ -107,7 +107,7 @@ public sealed class OrgService
         var accessToken = command.GetResultString("accessToken");
         if (!command.IsSuccess || string.IsNullOrWhiteSpace(accessToken))
         {
-            throw new SfCliException($"アクセストークンの取得に失敗しました ({targetOrg}): {command.ErrorMessage}", raw);
+            throw new SfCliException(UiText.T("Core_TokenFailedFmt", targetOrg, command.ErrorMessage), raw);
         }
 
         var auth = new OrgAuthInfo(

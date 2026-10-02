@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -33,7 +34,7 @@ public partial class SettingsViewModel : ObservableObject
     private string _thresholdKbText = "64";
 
     [ObservableProperty]
-    private string _confirmPolicyLabel = "危険操作のみ確認";
+    private string _confirmPolicyLabel = UiText.T("Policy_Dangerous");
 
     [ObservableProperty]
     private string _statusText = string.Empty;
@@ -41,14 +42,11 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private string _detectedSummary = string.Empty;
 
-    /// <summary>確認ポリシーの選択肢（日本語ラベル）。</summary>
-    public IReadOnlyList<string> ConfirmPolicyLabels { get; } = new[]
-    {
-        "危険操作のみ確認", "常に確認", "確認しない",
-    };
+    /// <summary>確認ポリシーの選択肢（言語切替で再構築される）。</summary>
+    public ObservableCollection<string> ConfirmPolicyLabels { get; } = new();
 
     /// <summary>データフォルダの表示用。</summary>
-    public string DataRootText => $"データフォルダ: {_paths.DataRoot}";
+    public string DataRootText => UiText.T("Settings_DataRootFmt", _paths.DataRoot);
 
     public SettingsViewModel(
         AppSettingsStore settings,
@@ -64,7 +62,42 @@ public partial class SettingsViewModel : ObservableObject
         _history = history;
         _paths = paths;
         _log = log;
+        UiText.LanguageChanged += OnLanguageChanged;
+        BuildPolicyLabels();
         Load();
+    }
+
+    private void OnLanguageChanged()
+    {
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
+        void Apply()
+        {
+            var policy = ConfirmPolicies.FromLabel(ConfirmPolicyLabel);
+            BuildPolicyLabels();
+            ConfirmPolicyLabel = ConfirmPolicies.ToLabel(policy);
+            RefreshDetectedSummary();
+            OnPropertyChanged(nameof(DataRootText));
+            StatusText = UiText.T("Settings_Loaded");
+        }
+
+        if (dispatcher is null || dispatcher.CheckAccess())
+        {
+            Apply();
+        }
+        else
+        {
+            dispatcher.Invoke(Apply);
+        }
+    }
+
+    private void BuildPolicyLabels()
+    {
+        var current = ConfirmPolicies.FromLabel(ConfirmPolicyLabel);
+        ConfirmPolicyLabels.Clear();
+        ConfirmPolicyLabels.Add(ConfirmPolicies.ToLabel(ConfirmPolicies.Dangerous));
+        ConfirmPolicyLabels.Add(ConfirmPolicies.ToLabel(ConfirmPolicies.Always));
+        ConfirmPolicyLabels.Add(ConfirmPolicies.ToLabel(ConfirmPolicies.Never));
+        ConfirmPolicyLabel = ConfirmPolicies.ToLabel(current);
     }
 
     /// <summary>現在の設定値をフォームへ読み込む。</summary>
@@ -78,12 +111,14 @@ public partial class SettingsViewModel : ObservableObject
         ThresholdKbText = Math.Max(0, s.ResultInlineThresholdBytes / 1024).ToString(CultureInfo.InvariantCulture);
         ConfirmPolicyLabel = ConfirmPolicies.ToLabel(s.ConfirmPolicy);
         RefreshDetectedSummary();
-        StatusText = "現在の設定を読み込みました";
+        StatusText = UiText.T("Settings_Loaded");
     }
 
     private void RefreshDetectedSummary()
-        => DetectedSummary =
-            $"自動検出: sf={SfCliRunner.ResolveSfPath() ?? "未検出"} / wt={ToolLauncherService.ResolveWindowsTerminalPath() ?? "未検出"} / code={ToolLauncherService.ResolveVsCodeCliPath() ?? "未検出"}";
+        => DetectedSummary = UiText.T("Settings_DetectedFmt",
+            SfCliRunner.ResolveSfPath() ?? UiText.T("Common_NotFound"),
+            ToolLauncherService.ResolveWindowsTerminalPath() ?? UiText.T("Common_NotFound"),
+            ToolLauncherService.ResolveVsCodeCliPath() ?? UiText.T("Common_NotFound"));
 
     [RelayCommand]
     private void Reload() => Load();
@@ -93,8 +128,8 @@ public partial class SettingsViewModel : ObservableObject
     {
         var dialog = new OpenFileDialog
         {
-            Title = "sf 実行ファイルを選択（sf.cmd）",
-            Filter = "sf コマンド (*.cmd;*.exe;*.bat)|*.cmd;*.exe;*.bat|すべてのファイル (*.*)|*.*",
+            Title = UiText.T("Settings_BrowseSfTitle"),
+            Filter = UiText.T("Settings_SfFilter"),
         };
         if (dialog.ShowDialog() == true)
         {
@@ -107,8 +142,8 @@ public partial class SettingsViewModel : ObservableObject
     {
         var dialog = new OpenFileDialog
         {
-            Title = "Windows Terminal (wt.exe) を選択",
-            Filter = "実行ファイル (*.exe)|*.exe|すべてのファイル (*.*)|*.*",
+            Title = UiText.T("Settings_BrowseTerminalTitle"),
+            Filter = UiText.T("Settings_ExeFilter"),
         };
         if (dialog.ShowDialog() == true)
         {
@@ -121,8 +156,8 @@ public partial class SettingsViewModel : ObservableObject
     {
         var dialog = new OpenFileDialog
         {
-            Title = "VS Code CLI (code.cmd) を選択",
-            Filter = "code (*.cmd;*.exe;*.bat)|*.cmd;*.exe;*.bat|すべてのファイル (*.*)|*.*",
+            Title = UiText.T("Settings_BrowseVsCodeTitle"),
+            Filter = UiText.T("Settings_CodeFilter"),
         };
         if (dialog.ShowDialog() == true)
         {
@@ -138,8 +173,7 @@ public partial class SettingsViewModel : ObservableObject
     private void SeedSamples()
     {
         var answer = MessageBox.Show(
-            "代表的なサンプル（SOQL / 匿名Apex / コマンド / REST API）を履歴に追加しますか？" + Environment.NewLine
-            + "同じ内容が既にある場合はスキップされます。",
+            UiText.T("Settings_SeedConfirmFmt", Environment.NewLine),
             "SfUi",
             MessageBoxButton.YesNo,
             MessageBoxImage.Question);
@@ -149,7 +183,7 @@ public partial class SettingsViewModel : ObservableObject
         }
 
         var result = SampleHistorySeeder.Seed(_history, _log);
-        StatusText = $"サンプル履歴: 追加 {result.Added} 件 / スキップ {result.Skipped} 件";
+        StatusText = UiText.T("Settings_SeedDoneFmt", result.Added, result.Skipped);
     }
 
     [RelayCommand]
@@ -160,13 +194,13 @@ public partial class SettingsViewModel : ObservableObject
     {
         if (!int.TryParse(HistoryLimitText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var limit) || limit < 1)
         {
-            StatusText = "履歴上限は 1 以上の整数で入力してください";
+            StatusText = UiText.T("Settings_InvalidHistoryLimit");
             return;
         }
 
         if (!long.TryParse(ThresholdKbText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var thresholdKb) || thresholdKb < 0)
         {
-            StatusText = "結果保存閾値は 0 以上の整数（KB）で入力してください";
+            StatusText = UiText.T("Settings_InvalidThreshold");
             return;
         }
 
@@ -183,8 +217,8 @@ public partial class SettingsViewModel : ObservableObject
         RefreshDetectedSummary();
 
         StatusText = resolved is null
-            ? "保存しました（sf が見つかりません。パスを確認してください）"
-            : $"保存しました / sf: {resolved}";
+            ? UiText.T("Settings_SavedSfMissing")
+            : UiText.T("Settings_SavedSfFmt", resolved);
         _log.Info($"設定を保存: 履歴上限={limit} 件 / 閾値={thresholdKb} KB / 確認ポリシー={s.ConfirmPolicy}");
     }
 

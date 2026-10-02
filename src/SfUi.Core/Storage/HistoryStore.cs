@@ -12,28 +12,16 @@ public static class HistoryTypes
     public const string Deploy = "deploy";
     public const string Org = "org";
 
-    /// <summary>種別の日本語ラベル。</summary>
+    /// <summary>種別の表示ラベル（現在の言語）。</summary>
     public static string ToLabel(string type) => type.ToLowerInvariant() switch
     {
-        Soql => "SOQL",
-        Apex => "匿名Apex",
-        Command => "コマンド",
-        Api => "API",
-        Deploy => "デプロイ",
-        Org => "組織",
+        Soql => UiText.T("Type_Soql"),
+        Apex => UiText.T("Type_Apex"),
+        Command => UiText.T("Type_Command"),
+        Api => UiText.T("Type_Api"),
+        Deploy => UiText.T("Type_Deploy"),
+        Org => UiText.T("Type_Org"),
         _ => type,
-    };
-
-    /// <summary>日本語ラベルから種別へ（「すべて」等は null）。</summary>
-    public static string? FromLabel(string label) => label switch
-    {
-        "SOQL" => Soql,
-        "匿名Apex" => Apex,
-        "コマンド" => Command,
-        "API" => Api,
-        "デプロイ" => Deploy,
-        "組織" => Org,
-        _ => null,
     };
 }
 
@@ -73,9 +61,9 @@ public sealed class HistoryEntry
 
     public string StatusLabel => Status switch
     {
-        "success" => "成功",
-        "error" => "失敗",
-        "canceled" => "取消",
+        "success" => UiText.T("Status_Success"),
+        "error" => UiText.T("Status_Error"),
+        "canceled" => UiText.T("Status_Canceled"),
         _ => Status,
     };
 }

@@ -37,8 +37,8 @@ public sealed class QuickPanelItem
     /// <summary>種別の表示ラベル（url / folder を含む）。</summary>
     public static string TypeLabelOf(string type) => type.ToLowerInvariant() switch
     {
-        "url" => "URL",
-        "folder" => "フォルダ",
+        "url" => UiText.T("Quick_TypeUrl"),
+        "folder" => UiText.T("Quick_TypeFolder"),
         var t => HistoryTypes.ToLabel(t),
     };
 
@@ -109,7 +109,7 @@ public partial class QuickPanelViewModel : ObservableObject
     public void Remove(FavoriteItem favorite)
     {
         var answer = MessageBox.Show(
-            $"お気に入りから削除しますか？{Environment.NewLine}[{QuickPanelItem.TypeLabelOf(favorite.Type)}] {favorite.Label}",
+            UiText.T("Quick_ConfirmRemoveFmt", Environment.NewLine, QuickPanelItem.TypeLabelOf(favorite.Type), favorite.Label),
             "SfUi",
             MessageBoxButton.YesNo,
             MessageBoxImage.Question);

@@ -18,7 +18,7 @@ public partial class LogViewModel : ObservableObject
     private bool _isBusy;
 
     [ObservableProperty]
-    private string _statusText = "「⟳ 一覧更新」でログ一覧を取得します";
+    private string _statusText = UiText.T("Log_Initial");
 
     [ObservableProperty]
     private ApexLogInfo? _selectedLog;
@@ -47,12 +47,12 @@ public partial class LogViewModel : ObservableObject
 
         if (string.IsNullOrWhiteSpace(CurrentOrg))
         {
-            StatusText = "上部バーで組織を選択してください";
+            StatusText = UiText.T("Msg_SelectOrg");
             return;
         }
 
         IsBusy = true;
-        StatusText = "ログ一覧を取得中…";
+        StatusText = UiText.T("Log_LoadingList");
         try
         {
             var logs = await _service.ListLogsAsync(CurrentOrg);
@@ -65,13 +65,13 @@ public partial class LogViewModel : ObservableObject
 
             SelectedLog = Logs.FirstOrDefault();
             StatusText = Logs.Count == 0
-                ? "org に保存されたデバッグログがありません（Setup の Debug Logs / sf apex tail log で作成できます）"
-                : $"ログ {Logs.Count} 件";
+                ? UiText.T("Apex_NoOrgLogs")
+                : UiText.T("Log_CountFmt", Logs.Count);
             _log.Info($"ログ一覧を取得: {Logs.Count} 件");
         }
         catch (Exception ex)
         {
-            StatusText = $"ログ一覧の取得に失敗: {ex.Message}";
+            StatusText = UiText.T("Log_ListFailedFmt", ex.Message);
             _log.Error("ログ一覧の取得に失敗", ex);
         }
         finally
@@ -85,27 +85,27 @@ public partial class LogViewModel : ObservableObject
     {
         if (SelectedLog is not { } selected)
         {
-            StatusText = "取得するログを選択してください";
+            StatusText = UiText.T("Log_SelectToFetch");
             return;
         }
 
         if (string.IsNullOrWhiteSpace(CurrentOrg))
         {
-            StatusText = "上部バーで組織を選択してください";
+            StatusText = UiText.T("Msg_SelectOrg");
             return;
         }
 
         IsBusy = true;
-        StatusText = $"ログ {selected.Id} を取得中…";
+        StatusText = UiText.T("Log_FetchingFmt", selected.Id);
         try
         {
             var text = await _service.GetLogAsync(CurrentOrg, selected.Id);
-            LogContent = text ?? "(内容を取得できませんでした)";
-            StatusText = $"取得完了（{LogContent.Length:N0} 文字）";
+            LogContent = text ?? UiText.T("Log_Unavailable");
+            StatusText = UiText.T("Log_FetchedFmt", LogContent.Length);
         }
         catch (Exception ex)
         {
-            StatusText = $"ログの取得に失敗: {ex.Message}";
+            StatusText = UiText.T("Log_FetchFailedFmt", ex.Message);
             _log.Error("ログの取得に失敗", ex);
         }
         finally
@@ -119,15 +119,15 @@ public partial class LogViewModel : ObservableObject
     {
         if (string.IsNullOrEmpty(LogContent))
         {
-            StatusText = "保存するログがありません";
+            StatusText = UiText.T("Log_NoLogToSave");
             return;
         }
 
         var dialog = new SaveFileDialog
         {
-            Title = "デバッグログを保存",
+            Title = UiText.T("Log_SaveTitle"),
             FileName = $"{SelectedLog?.Id ?? "apex"}-{DateTime.Now:yyyyMMdd-HHmmss}.log",
-            Filter = "ログ ファイル (*.log)|*.log|テキスト (*.txt)|*.txt|すべてのファイル (*.*)|*.*",
+            Filter = UiText.T("Log_SaveFilter"),
         };
 
         if (dialog.ShowDialog() != true)
@@ -138,11 +138,11 @@ public partial class LogViewModel : ObservableObject
         try
         {
             File.WriteAllText(dialog.FileName, LogContent, new UTF8Encoding(false));
-            StatusText = $"保存: {dialog.FileName}";
+            StatusText = UiText.T("Common_SavedFmt", dialog.FileName);
         }
         catch (Exception ex)
         {
-            StatusText = $"保存に失敗: {ex.Message}";
+            StatusText = UiText.T("Common_SaveFailedFmt", ex.Message);
         }
     }
 }

@@ -70,51 +70,51 @@ public static class SampleHistorySeeder
     private static List<Sample> BuildSamples() => new()
     {
         // ---- SOQL ----
-        new(HistoryTypes.Soql, "取引先の基本一覧（10 件）",
+        new(HistoryTypes.Soql, UiText.T("Sample_Soql_Basic"),
             "SELECT Id, Name FROM Account LIMIT 10"),
-        new(HistoryTypes.Soql, "取引先（業種・売上つき、更新が新しい順 20 件）",
+        new(HistoryTypes.Soql, UiText.T("Sample_Soql_Industry"),
             "SELECT Id, Name, Industry, AnnualRevenue FROM Account ORDER BY LastModifiedDate DESC LIMIT 20"),
-        new(HistoryTypes.Soql, "取引先の件数",
+        new(HistoryTypes.Soql, UiText.T("Sample_Soql_Count"),
             "SELECT COUNT() FROM Account"),
-        new(HistoryTypes.Soql, "直近 7 日で作成された取引先",
+        new(HistoryTypes.Soql, UiText.T("Sample_Soql_Recent"),
             "SELECT Id, Name, CreatedDate FROM Account WHERE CreatedDate = LAST_N_DAYS:7 ORDER BY CreatedDate DESC LIMIT 50"),
-        new(HistoryTypes.Soql, "担当者（メールつき、更新が新しい順 20 件）",
+        new(HistoryTypes.Soql, UiText.T("Sample_Soql_Contacts"),
             "SELECT Id, FirstName, LastName, Email FROM Contact ORDER BY LastModifiedDate DESC LIMIT 20"),
-        new(HistoryTypes.Soql, "担当者と取引先名（リレーション）",
+        new(HistoryTypes.Soql, UiText.T("Sample_Soql_Rel"),
             "SELECT Id, Name, Account.Name FROM Contact WHERE AccountId != null LIMIT 30"),
-        new(HistoryTypes.Soql, "進行中の商談（クローズ日順 50 件）",
+        new(HistoryTypes.Soql, UiText.T("Sample_Soql_Opps"),
             "SELECT Id, Name, StageName, Amount, CloseDate FROM Opportunity WHERE IsClosed = false ORDER BY CloseDate LIMIT 50"),
-        new(HistoryTypes.Soql, "未完了の ToDo（期日順 50 件）",
+        new(HistoryTypes.Soql, UiText.T("Sample_Soql_Tasks"),
             "SELECT Id, Subject, Status, Priority, ActivityDate FROM Task WHERE IsClosed = false ORDER BY ActivityDate LIMIT 50"),
-        new(HistoryTypes.Soql, "アクティブユーザー（50 件）",
+        new(HistoryTypes.Soql, UiText.T("Sample_Soql_Users"),
             "SELECT Id, Name FROM User WHERE IsActive = true ORDER BY Name LIMIT 50"),
 
         // ---- 匿名Apex ----
-        new(HistoryTypes.Apex, "ユーザーと組織の情報を表示",
-            "System.debug('ユーザー: ' + UserInfo.getUserName());\n"
-            + "System.debug('組織 ID: ' + UserInfo.getOrganizationId());\n"
-            + "System.debug('組織名: ' + UserInfo.getOrganizationName());"),
-        new(HistoryTypes.Apex, "取引先を 5 件取得してログ出力",
+        new(HistoryTypes.Apex, UiText.T("Sample_Apex_UserInfo"),
+            "System.debug('User: ' + UserInfo.getUserName());\n"
+            + "System.debug('Org ID: ' + UserInfo.getOrganizationId());\n"
+            + "System.debug('Org name: ' + UserInfo.getOrganizationName());"),
+        new(HistoryTypes.Apex, UiText.T("Sample_Apex_Query"),
             "for (Account a : [SELECT Id, Name FROM Account LIMIT 5]) {\n"
             + "    System.debug(a.Name + ' / ' + a.Id);\n"
             + "}"),
-        new(HistoryTypes.Apex, "セーブポイントでロールバック（安全な DML サンプル）",
+        new(HistoryTypes.Apex, UiText.T("Sample_Apex_Savepoint"),
             "Savepoint sp = Database.setSavepoint();\n"
-            + "Account a = new Account(Name = 'SfUi サンプル取引先');\n"
+            + "Account a = new Account(Name = 'SfUi Sample Account');\n"
             + "insert a;\n"
-            + "System.debug('作成 ID: ' + a.Id);\n"
+            + "System.debug('Created ID: ' + a.Id);\n"
             + "Database.rollback(sp);\n"
-            + "System.debug('ロールバックしました');"),
-        new(HistoryTypes.Apex, "ガバナ制限（Limits）の確認",
-            "System.debug('SOQL 発行数: ' + Limits.getQueries() + ' / ' + Limits.getLimitQueries());\n"
-            + "System.debug('DML 発行数: ' + Limits.getDmlStatements() + ' / ' + Limits.getLimitDmlStatements());"),
-        new(HistoryTypes.Apex, "DmlException のハンドリング例",
+            + "System.debug('Rolled back');"),
+        new(HistoryTypes.Apex, UiText.T("Sample_Apex_Limits"),
+            "System.debug('SOQL queries: ' + Limits.getQueries() + ' / ' + Limits.getLimitQueries());\n"
+            + "System.debug('DML statements: ' + Limits.getDmlStatements() + ' / ' + Limits.getLimitDmlStatements());"),
+        new(HistoryTypes.Apex, UiText.T("Sample_Apex_DmlCatch"),
             "try {\n"
-            + "    insert new Account(); // Name 未設定 → DmlException\n"
+            + "    insert new Account(); // No Name -> DmlException\n"
             + "} catch (DmlException ex) {\n"
-            + "    System.debug('想定どおりのエラー: ' + ex.getDmlMessage(0));\n"
+            + "    System.debug('Expected error: ' + ex.getDmlMessage(0));\n"
             + "}"),
-        new(HistoryTypes.Apex, "Map の JSON シリアライズ例",
+        new(HistoryTypes.Apex, UiText.T("Sample_Apex_Json"),
             "Map<String, Object> data = new Map<String, Object>{\n"
             + "    'name' => 'SfUi',\n"
             + "    'version' => 1\n"
@@ -122,37 +122,37 @@ public static class SampleHistorySeeder
             + "System.debug(JSON.serializePretty(data));"),
 
         // ---- コマンド ----
-        new(HistoryTypes.Command, "認証済み組織の一覧",
+        new(HistoryTypes.Command, UiText.T("Sample_Command_OrgList"),
             "org list"),
-        new(HistoryTypes.Command, "選択中の組織の情報（URL / API バージョン等）",
+        new(HistoryTypes.Command, UiText.T("Sample_Command_OrgDisplay"),
             "org display"),
-        new(HistoryTypes.Command, "組織のホームをブラウザで開く",
+        new(HistoryTypes.Command, UiText.T("Sample_Command_OrgOpen"),
             "org open --path /lightning/page/home"),
-        new(HistoryTypes.Command, "CLI 経由の SOQL（REST のフォールバック確認用）",
+        new(HistoryTypes.Command, UiText.T("Sample_Command_DataQuery"),
             "data query --query \"SELECT Id, Name FROM Account LIMIT 10\""),
-        new(HistoryTypes.Command, "デバッグログの一覧（直近分）",
+        new(HistoryTypes.Command, UiText.T("Sample_Command_LogList"),
             "apex list log"),
-        new(HistoryTypes.Command, "最新のデバッグログを取得",
+        new(HistoryTypes.Command, UiText.T("Sample_Command_LogGet"),
             "apex get log -n 1"),
-        new(HistoryTypes.Command, "直前のデプロイ結果を確認",
+        new(HistoryTypes.Command, UiText.T("Sample_Command_DeployReport"),
             "project deploy report --use-most-recent"),
-        new(HistoryTypes.Command, "エイリアス（組織の別名）一覧",
+        new(HistoryTypes.Command, UiText.T("Sample_Command_AliasList"),
             "alias list"),
 
         // ---- REST API ----
-        new(HistoryTypes.Api, "API 利用状況（制限値と現在の消費量）",
+        new(HistoryTypes.Api, UiText.T("Sample_Api_Limits"),
             "GET /services/data/v67.0/limits"),
-        new(HistoryTypes.Api, "オブジェクト一覧（メタデータ）",
+        new(HistoryTypes.Api, UiText.T("Sample_Api_Sobjects"),
             "GET /services/data/v67.0/sobjects"),
-        new(HistoryTypes.Api, "取引先（Account）の項目定義",
+        new(HistoryTypes.Api, UiText.T("Sample_Api_Describe"),
             "GET /services/data/v67.0/sobjects/Account/describe"),
-        new(HistoryTypes.Api, "REST 経由の SOQL（アカウント 5 件）",
+        new(HistoryTypes.Api, UiText.T("Sample_Api_Query"),
             "GET /services/data/v67.0/query?q=SELECT+Id,Name+FROM+Account+LIMIT+5"),
-        new(HistoryTypes.Api, "Tooling API: Apex クラス一覧（10 件）",
+        new(HistoryTypes.Api, UiText.T("Sample_Api_Tooling"),
             "GET /services/data/v67.0/tooling/query?q=SELECT+Id,Name+FROM+ApexClass+LIMIT+10"),
-        new(HistoryTypes.Api, "最近参照したレコード",
+        new(HistoryTypes.Api, UiText.T("Sample_Api_Recent"),
             "GET /services/data/v67.0/recent"),
-        new(HistoryTypes.Api, "取引先の件数（COUNT クエリ）",
+        new(HistoryTypes.Api, UiText.T("Sample_Api_Count"),
             "GET /services/data/v67.0/query?q=SELECT+COUNT()+FROM+Account"),
     };
 }

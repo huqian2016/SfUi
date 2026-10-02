@@ -13,7 +13,7 @@ public partial class HistoryViewModel : ObservableObject
     private readonly AppLog _log;
 
     [ObservableProperty]
-    private string _typeFilter = "すべて";
+    private TypeFilterOption? _typeFilter;
 
     [ObservableProperty]
     private string? _searchText;
@@ -23,10 +23,11 @@ public partial class HistoryViewModel : ObservableObject
 
     public ObservableCollection<HistoryEntry> Entries { get; } = new();
 
-    public ObservableCollection<string> TypeFilters { get; } = new()
-    {
-        "すべて", "SOQL", "匿名Apex", "コマンド", "API", "デプロイ", "組織",
-    };
+    /// <summary>種別フィルタの選択肢（言語切替で再構築される）。</summary>
+    public ObservableCollection<TypeFilterOption> TypeFilters { get; } = new();
+
+    /// <summary>種別フィルタ 1 件分（Type=null は「すべて」）。</summary>
+    public sealed record TypeFilterOption(string? Type, string Label);
 
     /// <summary>ダブルクリック等で再実行が要求されたときに発火する。</summary>
     public event Action<HistoryEntry>? ReplayRequested;
@@ -39,6 +40,8 @@ public partial class HistoryViewModel : ObservableObject
         _history = history;
         _log = log;
         _history.Changed += OnHistoryChanged;
+        UiText.LanguageChanged += OnLanguageChanged;
+        BuildTypeFilters();
         Refresh();
     }
 
@@ -55,10 +58,43 @@ public partial class HistoryViewModel : ObservableObject
         }
     }
 
+    private void OnLanguageChanged()
+    {
+        var dispatcher = Application.Current?.Dispatcher;
+        if (dispatcher is null || dispatcher.CheckAccess())
+        {
+            RebuildForLanguage();
+        }
+        else
+        {
+            dispatcher.Invoke(RebuildForLanguage);
+        }
+    }
+
+    private void RebuildForLanguage()
+    {
+        BuildTypeFilters(TypeFilter?.Type);
+        Refresh();
+    }
+
+    private void BuildTypeFilters(string? selectedType = null)
+    {
+        TypeFilters.Clear();
+        TypeFilters.Add(new TypeFilterOption(null, UiText.T("Common_All")));
+        TypeFilters.Add(new TypeFilterOption(HistoryTypes.Soql, UiText.T("Type_Soql")));
+        TypeFilters.Add(new TypeFilterOption(HistoryTypes.Apex, UiText.T("Type_Apex")));
+        TypeFilters.Add(new TypeFilterOption(HistoryTypes.Command, UiText.T("Type_Command")));
+        TypeFilters.Add(new TypeFilterOption(HistoryTypes.Api, UiText.T("Type_Api")));
+        TypeFilters.Add(new TypeFilterOption(HistoryTypes.Deploy, UiText.T("Type_Deploy")));
+        TypeFilters.Add(new TypeFilterOption(HistoryTypes.Org, UiText.T("Type_Org")));
+
+        TypeFilter = TypeFilters.FirstOrDefault(o => o.Type == selectedType) ?? TypeFilters[0];
+    }
+
     [RelayCommand]
     private void Refresh()
     {
-        var type = TypeFilter == "すべて" ? null : HistoryTypes.FromLabel(TypeFilter);
+        var type = TypeFilter?.Type;
         var entries = _history.Query(new HistoryQuery(type, SearchText));
 
         Entries.Clear();
@@ -68,7 +104,7 @@ public partial class HistoryViewModel : ObservableObject
         }
     }
 
-    partial void OnTypeFilterChanged(string value) => Refresh();
+    partial void OnTypeFilterChanged(TypeFilterOption? value) => Refresh();
 
     partial void OnSearchTextChanged(string? value) => Refresh();
 
@@ -81,7 +117,7 @@ public partial class HistoryViewModel : ObservableObject
         }
 
         var answer = MessageBox.Show(
-            $"この履歴を削除しますか？{Environment.NewLine}{entry.TimestampLocal} [{entry.TypeLabel}] {entry.Summary}",
+            UiText.T("History_DeleteConfirmFmt", Environment.NewLine, entry.TimestampLocal, entry.TypeLabel, entry.Summary),
             "SfUi",
             MessageBoxButton.YesNo,
             MessageBoxImage.Question);
@@ -120,7 +156,7 @@ public partial class HistoryViewModel : ObservableObject
         }
 
         var answer = MessageBox.Show(
-            "すべての履歴を削除しますか？（結果ファイルも削除されます）",
+            UiText.T("History_ClearConfirm"),
             "SfUi",
             MessageBoxButton.YesNo,
             MessageBoxImage.Warning);

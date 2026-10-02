@@ -47,6 +47,11 @@ public partial class App : Application
         _log.Info($"SfUi v{version} 起動 (DataRoot={paths.DataRoot}, Smoke={_smokeTest})");
         _log.Info($"sf CLI パス: {Services.GetRequiredService<SfCliRunner>().SfExecutablePath ?? "(未検出)"}");
 
+        // UI 言語を適用（既定は英語）
+        var languageSettings = Services.GetRequiredService<AppSettingsStore>();
+        UiText.SetLanguage(languageSettings.Current.Language);
+        _log.Info($"UI 言語: {UiText.Language}");
+
         // --seed-samples: 代表的なサンプルを履歴へ投入して終了（UI は表示しない）
         if (e.Args.Any(a => string.Equals(a, "--seed-samples", StringComparison.OrdinalIgnoreCase)))
         {
@@ -120,6 +125,15 @@ public partial class App : Application
             mainViewModel.SelectedTabIndex = 0;
             _log.Info($"--smoke: 全タブのレイアウトOK (例外 {_dispatcherExceptionCount} 件)");
 
+            // 言語切替（バインド再評価）の検証
+            UiText.SetLanguage(UiText.Japanese);
+            await Dispatcher.Yield(DispatcherPriority.Background);
+            await Task.Delay(150);
+            UiText.SetLanguage(UiText.English);
+            await Dispatcher.Yield(DispatcherPriority.Background);
+            await Task.Delay(150);
+            _log.Info($"--smoke: 言語切替OK (ja→en, 例外 {_dispatcherExceptionCount} 件)");
+
             if (!string.IsNullOrWhiteSpace(_smokeOrg))
             {
                 var soqlService = Services.GetRequiredService<SoqlService>();
@@ -182,7 +196,7 @@ public partial class App : Application
         if (!_smokeTest)
         {
             MessageBox.Show(
-                $"予期しないエラーが発生しました:{Environment.NewLine}{e.Exception.Message}",
+                UiText.T("Common_UnexpectedErrorFmt", Environment.NewLine, e.Exception.Message),
                 "SfUi",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);

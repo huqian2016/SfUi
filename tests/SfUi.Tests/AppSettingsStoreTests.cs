@@ -39,6 +39,7 @@ public class AppSettingsStoreTests : IDisposable
         Assert.Equal(2000, store.Current.MaxHistoryPerType);
         Assert.Equal(64 * 1024, store.Current.ResultInlineThresholdBytes);
         Assert.Equal(ConfirmPolicies.Dangerous, store.Current.ConfirmPolicy);
+        Assert.Equal(UiText.English, store.Current.Language);
         Assert.Null(store.Current.SfExecutablePath);
         Assert.Null(store.Current.LastFolder);
         Assert.Null(store.Current.LastOrgUsername);

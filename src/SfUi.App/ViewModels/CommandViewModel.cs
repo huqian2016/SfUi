@@ -25,7 +25,7 @@ public partial class CommandViewModel : ObservableObject
     private bool _isRunning;
 
     [ObservableProperty]
-    private string _statusText = "準備完了";
+    private string _statusText = UiText.T("Common_Ready");
 
     [ObservableProperty]
     private string? _stdOut;
@@ -83,14 +83,14 @@ public partial class CommandViewModel : ObservableObject
         var input = CommandText.Trim();
         if (string.IsNullOrEmpty(input))
         {
-            StatusText = "コマンドを入力してください";
+            StatusText = UiText.T("Command_Enter");
             return;
         }
 
         var arguments = CommandLineParser.SplitSfArguments(input);
         if (arguments.Count == 0)
         {
-            StatusText = "sf の引数を入力してください（例: org list）";
+            StatusText = UiText.T("Command_EnterArgs");
             return;
         }
 
@@ -98,19 +98,19 @@ public partial class CommandViewModel : ObservableObject
             && ConfirmPolicies.ShouldConfirm(_settings.Current.ConfirmPolicy, isDangerous: true))
         {
             var answer = MessageBox.Show(
-                $"「{token}」を含む操作です。実行しますか？{Environment.NewLine}{Environment.NewLine}sf {string.Join(' ', arguments)}",
+                UiText.T("Command_DangerConfirmFmt", token, Environment.NewLine, string.Join(' ', arguments)),
                 "SfUi",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
             if (answer != MessageBoxResult.Yes)
             {
-                StatusText = "キャンセルしました";
+                StatusText = UiText.T("Common_Canceled");
                 return;
             }
         }
 
         IsRunning = true;
-        StatusText = "実行中…";
+        StatusText = UiText.T("Common_Running");
         StdOut = null;
         StdErr = null;
         _cts = new CancellationTokenSource();
@@ -119,18 +119,18 @@ public partial class CommandViewModel : ObservableObject
             var raw = await _runner.RunAsync(arguments, CurrentFolder, cancellationToken: _cts.Token);
             StdOut = raw.StdOut;
             StdErr = raw.StdErr;
-            StatusText = $"終了コード: {raw.ExitCode} / {raw.Duration.TotalMilliseconds:F0} ms" + (raw.TimedOut ? "（タイムアウト）" : string.Empty);
+            StatusText = UiText.T("Common_ExitCodeFmt", raw.ExitCode, raw.Duration.TotalMilliseconds) + (raw.TimedOut ? UiText.T("Common_TimeoutSuffix") : string.Empty);
             AppendHistory(input, raw.Success ? "success" : "error", (int)raw.Duration.TotalMilliseconds, BuildResultText(raw));
             _log.Info($"コマンド実行: sf {string.Join(' ', arguments)} → 終了コード {raw.ExitCode}");
         }
         catch (OperationCanceledException)
         {
-            StatusText = "キャンセルしました";
+            StatusText = UiText.T("Common_Canceled");
             AppendHistory(input, "canceled", 0, null);
         }
         catch (Exception ex)
         {
-            StatusText = $"失敗: {ex.Message}";
+            StatusText = UiText.T("Common_FailedFmt", ex.Message);
             AppendHistory(input, "error", 0, ex.Message);
             _log.Error("コマンド実行に失敗", ex);
         }
@@ -155,12 +155,12 @@ public partial class CommandViewModel : ObservableObject
         var input = CommandText.Trim();
         if (string.IsNullOrEmpty(input))
         {
-            StatusText = "お気に入りに追加するコマンドがありません";
+            StatusText = UiText.T("Command_NoCommandFavorite");
             return;
         }
 
         _favorites.Add(HistoryTypes.Command, Summarize(input), input);
-        StatusText = $"お気に入りに追加: {Summarize(input)}";
+        StatusText = UiText.T("Common_FavoriteAddedFmt", Summarize(input));
     }
 
     /// <summary>履歴から読み込む（autoRun=true ならそのまま実行）。</summary>
