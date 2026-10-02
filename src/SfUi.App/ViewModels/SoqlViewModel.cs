@@ -240,6 +240,15 @@ public partial class SoqlViewModel : ObservableObject
         }
     }
 
+    /// <summary>外部（AI チャット等）から本文を読み込む。</summary>
+    public void LoadText(string text)
+    {
+        if (!string.IsNullOrWhiteSpace(text))
+        {
+            SoqlText = text;
+        }
+    }
+
     /// <summary>お気に入りから読み込む（autoRun=true ならそのまま実行）。</summary>
     public void LoadFavorite(FavoriteItem item, bool autoRun)
     {

@@ -14,6 +14,7 @@ public partial class App : Application
 
     private AppLog _log = null!;
     private bool _smokeTest;
+    private bool _smokeAi;
     private string? _smokeOrg;
     private int _dispatcherExceptionCount;
 
@@ -22,6 +23,7 @@ public partial class App : Application
         base.OnStartup(e);
 
         _smokeTest = e.Args.Any(a => string.Equals(a, "--smoke", StringComparison.OrdinalIgnoreCase));
+        _smokeAi = _smokeTest && e.Args.Any(a => string.Equals(a, "--smoke-ai", StringComparison.OrdinalIgnoreCase));
         _smokeOrg = _smokeTest ? ReadOption(e.Args, "--smoke-org") : null;
         var dataDir = ReadOption(e.Args, "--data-dir") ?? Environment.GetEnvironmentVariable("SFUI_DATA_DIR");
 
@@ -37,6 +39,7 @@ public partial class App : Application
         services.AddSingleton<CommandViewModel>();
         services.AddSingleton<ApiConsoleViewModel>();
         services.AddSingleton<DeployViewModel>();
+        services.AddSingleton<AiChatViewModel>();
         services.AddSingleton<SettingsViewModel>();
         services.AddSingleton<QuickPanelViewModel>();
         services.AddSingleton<MainWindow>();
@@ -115,7 +118,7 @@ public partial class App : Application
 
             // 全タブを順に選択してレイアウト（各ビューのバインディング例外を検出）
             var mainViewModel = Services.GetRequiredService<MainViewModel>();
-            for (var tabIndex = 0; tabIndex < 8; tabIndex++)
+            for (var tabIndex = 0; tabIndex < 9; tabIndex++)
             {
                 mainViewModel.SelectedTabIndex = tabIndex;
                 await Dispatcher.Yield(DispatcherPriority.Background);
@@ -155,6 +158,22 @@ public partial class App : Application
                 var console = await Services.GetRequiredService<SalesforceRestClient>()
                     .SendConsoleAsync(_smokeOrg, HttpMethod.Get, "/services/data/v67.0/limits");
                 _log.Info($"--smoke: RESTコンソール GET /limits: HTTP {(int)console.StatusCode} ({console.Body.Length:N0} 文字)");
+            }
+
+            if (_smokeAi)
+            {
+                var aiClient = Services.GetRequiredService<DeepSeekClient>();
+                _log.Info($"--smoke-ai: model={aiClient.Model} / apiKey={(aiClient.ApiKey is null ? "(未設定)" : "(設定済み)")}");
+                var aiResult = await aiClient.ChatAsync(new[] { new DeepSeekClient.ChatMessage("user", "Reply with the single word: OK") });
+                if (aiResult.Success)
+                {
+                    _log.Info($"--smoke-ai: OK（{Truncate(aiResult.Content?.Trim() ?? "", 80)} / {aiResult.Duration.TotalSeconds:F1} 秒 / tokens {aiResult.PromptTokens}+{aiResult.CompletionTokens}）");
+                }
+                else
+                {
+                    exitCode = 1;
+                    _log.Error($"--smoke-ai: 失敗: {aiResult.Error}");
+                }
             }
         }
         catch (Exception ex)

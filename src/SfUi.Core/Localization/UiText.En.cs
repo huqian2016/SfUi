@@ -70,6 +70,36 @@ public static partial class UiText
         ["Tab_Command"] = "Command",
         ["Tab_Api"] = "REST API",
         ["Tab_Settings"] = "Settings",
+        ["Tab_Ai"] = "AI",
+
+        // ---- AI チャット ----
+        ["Ai_Send"] = "Send (Ctrl+Enter)",
+        ["Ai_Clear"] = "New chat",
+        ["Ai_Cleared"] = "Conversation cleared",
+        ["Ai_InputTip"] = "Ask to generate SOQL / Apex / sf commands, or to analyze a result (Ctrl+Enter to send)",
+        ["Ai_ContextLabel"] = "Context:",
+        ["Ai_ContextTip"] = "History entry whose result is attached to the next message",
+        ["Ai_AttachContext"] = "Attach to next send",
+        ["Ai_AnalyzeLast"] = "Analyze last result",
+        ["Ai_AnalyzePrompt"] = "Please analyze this result. Point out anything notable and suggest next actions.",
+        ["Ai_AttachedHintFmt"] = "Attached: [{0}] {1} — edit if needed, then Send",
+        ["Ai_NoResult"] = "No history entry with a result yet",
+        ["Ai_You"] = "You",
+        ["Ai_Assistant"] = "AI",
+        ["Ai_EmptyInput"] = "Enter a message",
+        ["Ai_Thinking"] = "Thinking…",
+        ["Ai_DoneFmt"] = "Done / {0:F1}s / tokens {1}+{2}",
+        ["Ai_NoApiKey"] = "DeepSeek API key is not set (Settings → AI, or the DEEPSEEK_API_KEY environment variable)",
+        ["Ai_RequestFailedFmt"] = "AI request failed: {0}",
+        ["Ai_ServerErrorFmt"] = "DeepSeek API error: {0}",
+        ["Ai_Timeout"] = "The AI request timed out",
+        ["Ai_ApplySoql"] = "Open in SOQL",
+        ["Ai_ApplyApex"] = "Open in Apex",
+        ["Ai_ApplyCommand"] = "Open in Command",
+        ["Ai_AppliedSoql"] = "Loaded into the SOQL tab (Ctrl+Enter to run)",
+        ["Ai_AppliedApex"] = "Loaded into the Apex tab (Ctrl+Enter to run)",
+        ["Ai_AppliedCommand"] = "Loaded into the Command tab (Enter to run)",
+        ["Ai_AttachHeaderFmt"] = "Analysis target: [{0}] {1}",
 
         // ---- MainViewModel メッセージ ----
         ["Msg_SelectOrg"] = "Select an org in the top bar",
@@ -309,6 +339,15 @@ public static partial class UiText
         ["Policy_Dangerous"] = "Dangerous only",
         ["Policy_Always"] = "Always",
         ["Policy_Never"] = "Never",
+
+        // ---- 設定: AI ----
+        ["Settings_AiGroup"] = "AI (DeepSeek)",
+        ["Settings_ApiKey"] = "API key:",
+        ["Settings_ApiKeyTip"] = "Stored locally in settings.json (never committed). The DEEPSEEK_API_KEY environment variable is used as a fallback.",
+        ["Settings_Model"] = "Model:",
+        ["Settings_Test"] = "Test connection",
+        ["Settings_TestOkFmt"] = "AI connection OK ({0})",
+        ["Settings_TestFailedFmt"] = "AI connection failed: {0}",
 
         // ---- Core（エラーメッセージ等）----
         ["Core_OrgSelectRequired"] = "No target org specified.",

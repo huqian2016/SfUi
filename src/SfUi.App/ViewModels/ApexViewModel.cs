@@ -267,6 +267,15 @@ public partial class ApexViewModel : ObservableObject
         }
     }
 
+    /// <summary>外部（AI チャット等）からコードを読み込む。</summary>
+    public void LoadText(string text)
+    {
+        if (!string.IsNullOrWhiteSpace(text))
+        {
+            ApexCode = text;
+        }
+    }
+
     /// <summary>お気に入りから読み込む（autoRun=true ならそのまま実行）。</summary>
     public void LoadFavorite(FavoriteItem item, bool autoRun)
     {

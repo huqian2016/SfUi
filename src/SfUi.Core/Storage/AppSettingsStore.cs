@@ -29,6 +29,12 @@ public sealed class AppSettings
     /// <summary>UI 言語（"en" = 英語／既定、"ja" = 日本語）。</summary>
     public string Language { get; set; } = UiText.English;
 
+    /// <summary>DeepSeek API キー（null / 空 = 環境変数 DEEPSEEK_API_KEY を使用）。</summary>
+    public string? DeepSeekApiKey { get; set; }
+
+    /// <summary>DeepSeek のモデル名（既定: deepseek-chat）。</summary>
+    public string DeepSeekModel { get; set; } = DeepSeekClient.DefaultModel;
+
     /// <summary>実行前確認ポリシー（ConfirmPolicies の値）。</summary>
     public string ConfirmPolicy { get; set; } = ConfirmPolicies.Dangerous;
 }

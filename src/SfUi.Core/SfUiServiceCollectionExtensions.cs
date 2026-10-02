@@ -14,6 +14,7 @@ public static class SfUiServiceCollectionExtensions
         services.AddSingleton(sp => new SfCliRunner(sp.GetRequiredService<AppSettingsStore>().Current.SfExecutablePath));
         services.AddSingleton<OrgService>();
         services.AddSingleton<SalesforceRestClient>();
+        services.AddSingleton<DeepSeekClient>();
         services.AddSingleton<SoqlService>();
         services.AddSingleton<ApexService>();
         services.AddSingleton<ToolLauncherService>();

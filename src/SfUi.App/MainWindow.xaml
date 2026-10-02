@@ -142,6 +142,9 @@
             <TabItem Header="{loc:Tr Tab_Apex}">
                 <views:ApexView DataContext="{Binding Apex}" />
             </TabItem>
+            <TabItem Header="{loc:Tr Tab_Ai}">
+                <views:AiChatView DataContext="{Binding Ai}" />
+            </TabItem>
             <TabItem Header="{loc:Tr Tab_Log}">
                 <views:LogView DataContext="{Binding Logs}" />
             </TabItem>

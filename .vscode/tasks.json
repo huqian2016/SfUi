@@ -105,6 +105,20 @@
 				"--seed-samples"
 			],
 			"problemMatcher": []
+		},
+		{
+			"label": "run (smoke ai)",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"run",
+				"--project",
+				"src/SfUi.App/SfUi.App.csproj",
+				"--",
+				"--smoke",
+				"--smoke-ai"
+			],
+			"problemMatcher": []
 		}
 	]
 }

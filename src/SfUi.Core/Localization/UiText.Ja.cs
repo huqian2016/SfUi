@@ -70,6 +70,36 @@ public static partial class UiText
         ["Tab_Command"] = "コマンド",
         ["Tab_Api"] = "REST API",
         ["Tab_Settings"] = "設定",
+        ["Tab_Ai"] = "AI",
+
+        // ---- AI チャット ----
+        ["Ai_Send"] = "送信 (Ctrl+Enter)",
+        ["Ai_Clear"] = "新しい会話",
+        ["Ai_Cleared"] = "会話をクリアしました",
+        ["Ai_InputTip"] = "SOQL / Apex / sf コマンドの生成依頼や、結果の分析を入力（Ctrl+Enter で送信）",
+        ["Ai_ContextLabel"] = "コンテキスト:",
+        ["Ai_ContextTip"] = "次のメッセージに結果を添付する履歴",
+        ["Ai_AttachContext"] = "次の送信に添付",
+        ["Ai_AnalyzeLast"] = "直前の結果を分析",
+        ["Ai_AnalyzePrompt"] = "この結果を分析してください。気づいた点と推奨アクションを教えてください。",
+        ["Ai_AttachedHintFmt"] = "添付: [{0}] {1}（必要なら編集して送信）",
+        ["Ai_NoResult"] = "結果付きの履歴がありません",
+        ["Ai_You"] = "あなた",
+        ["Ai_Assistant"] = "AI",
+        ["Ai_EmptyInput"] = "メッセージを入力してください",
+        ["Ai_Thinking"] = "生成中…",
+        ["Ai_DoneFmt"] = "完了 / {0:F1} 秒 / トークン {1}+{2}",
+        ["Ai_NoApiKey"] = "DeepSeek API キーが未設定です（設定 → AI、または環境変数 DEEPSEEK_API_KEY）",
+        ["Ai_RequestFailedFmt"] = "AI リクエストに失敗: {0}",
+        ["Ai_ServerErrorFmt"] = "DeepSeek API エラー: {0}",
+        ["Ai_Timeout"] = "AI リクエストがタイムアウトしました",
+        ["Ai_ApplySoql"] = "SOQL タブへ",
+        ["Ai_ApplyApex"] = "匿名Apex タブへ",
+        ["Ai_ApplyCommand"] = "コマンドタブへ",
+        ["Ai_AppliedSoql"] = "SOQL タブに読み込みました（Ctrl+Enter で実行）",
+        ["Ai_AppliedApex"] = "匿名Apex タブに読み込みました（Ctrl+Enter で実行）",
+        ["Ai_AppliedCommand"] = "コマンドタブに読み込みました（Enter で実行）",
+        ["Ai_AttachHeaderFmt"] = "分析対象: [{0}] {1}",
 
         // ---- MainViewModel メッセージ ----
         ["Msg_SelectOrg"] = "上部バーで組織を選択してください",
@@ -309,6 +339,15 @@ public static partial class UiText
         ["Policy_Dangerous"] = "危険操作のみ確認",
         ["Policy_Always"] = "常に確認",
         ["Policy_Never"] = "確認しない",
+
+        // ---- 設定: AI ----
+        ["Settings_AiGroup"] = "AI (DeepSeek)",
+        ["Settings_ApiKey"] = "API キー:",
+        ["Settings_ApiKeyTip"] = "settings.json にローカル保存されます（リポジトリには含まれません）。環境変数 DEEPSEEK_API_KEY でも指定可。",
+        ["Settings_Model"] = "モデル:",
+        ["Settings_Test"] = "接続テスト",
+        ["Settings_TestOkFmt"] = "AI 接続OK（{0}）",
+        ["Settings_TestFailedFmt"] = "AI 接続に失敗: {0}",
 
         // ---- Core（エラーメッセージ等）----
         ["Core_OrgSelectRequired"] = "対象組織が指定されていません。",

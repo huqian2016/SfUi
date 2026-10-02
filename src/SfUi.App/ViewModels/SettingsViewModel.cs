@@ -15,6 +15,7 @@ public partial class SettingsViewModel : ObservableObject
     private readonly SfCliRunner _sfRunner;
     private readonly ToolLauncherService _toolLauncher;
     private readonly HistoryStore _history;
+    private readonly DeepSeekClient _deepSeek;
     private readonly AppPaths _paths;
     private readonly AppLog _log;
 
@@ -42,6 +43,15 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private string _detectedSummary = string.Empty;
 
+    [ObservableProperty]
+    private string? _apiKey;
+
+    [ObservableProperty]
+    private string _aiModel = DeepSeekClient.DefaultModel;
+
+    /// <summary>DeepSeek モデルの選択肢。</summary>
+    public IReadOnlyList<string> AiModels { get; } = new[] { "deepseek-chat", "deepseek-reasoner" };
+
     /// <summary>確認ポリシーの選択肢（言語切替で再構築される）。</summary>
     public ObservableCollection<string> ConfirmPolicyLabels { get; } = new();
 
@@ -53,6 +63,7 @@ public partial class SettingsViewModel : ObservableObject
         SfCliRunner sfRunner,
         ToolLauncherService toolLauncher,
         HistoryStore history,
+        DeepSeekClient deepSeek,
         AppPaths paths,
         AppLog log)
     {
@@ -60,6 +71,7 @@ public partial class SettingsViewModel : ObservableObject
         _sfRunner = sfRunner;
         _toolLauncher = toolLauncher;
         _history = history;
+        _deepSeek = deepSeek;
         _paths = paths;
         _log = log;
         UiText.LanguageChanged += OnLanguageChanged;
@@ -110,6 +122,8 @@ public partial class SettingsViewModel : ObservableObject
         HistoryLimitText = s.MaxHistoryPerType.ToString(CultureInfo.InvariantCulture);
         ThresholdKbText = Math.Max(0, s.ResultInlineThresholdBytes / 1024).ToString(CultureInfo.InvariantCulture);
         ConfirmPolicyLabel = ConfirmPolicies.ToLabel(s.ConfirmPolicy);
+        ApiKey = s.DeepSeekApiKey;
+        AiModel = string.IsNullOrWhiteSpace(s.DeepSeekModel) ? DeepSeekClient.DefaultModel : s.DeepSeekModel;
         RefreshDetectedSummary();
         StatusText = UiText.T("Settings_Loaded");
     }
@@ -186,6 +200,19 @@ public partial class SettingsViewModel : ObservableObject
         StatusText = UiText.T("Settings_SeedDoneFmt", result.Added, result.Skipped);
     }
 
+    /// <summary>DeepSeek API への接続をテストする（入力中の値を一時的に適用）。</summary>
+    [RelayCommand]
+    private async Task TestConnectionAsync()
+    {
+        _settings.Current.DeepSeekApiKey = NullIfEmpty(ApiKey);
+        _settings.Current.DeepSeekModel = string.IsNullOrWhiteSpace(AiModel) ? DeepSeekClient.DefaultModel : AiModel.Trim();
+        StatusText = UiText.T("Ai_Thinking");
+        var result = await _deepSeek.ChatAsync(new[] { new DeepSeekClient.ChatMessage("user", "Reply with the single word: OK") });
+        StatusText = result.Success
+            ? UiText.T("Settings_TestOkFmt", result.Content?.Trim() ?? "OK")
+            : UiText.T("Settings_TestFailedFmt", result.Error);
+    }
+
     [RelayCommand]
     private void OpenDataFolder() => _toolLauncher.LaunchExplorer(_paths.DataRoot);
 
@@ -211,6 +238,8 @@ public partial class SettingsViewModel : ObservableObject
         s.MaxHistoryPerType = limit;
         s.ResultInlineThresholdBytes = thresholdKb * 1024;
         s.ConfirmPolicy = ConfirmPolicies.FromLabel(ConfirmPolicyLabel);
+        s.DeepSeekApiKey = NullIfEmpty(ApiKey);
+        s.DeepSeekModel = string.IsNullOrWhiteSpace(AiModel) ? DeepSeekClient.DefaultModel : AiModel.Trim();
         _settings.Save();
 
         var resolved = _sfRunner.SetExecutablePath(s.SfExecutablePath);

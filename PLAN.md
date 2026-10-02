@@ -1,6 +1,6 @@
 # SfUi — Salesforce CLI 統合デスクトップツール 実装計画
 
-最終更新: 2026-10-02 / ステータス: Phase 7 完了（多言語対応: 英語（既定）/日本語 + 即時切替。テスト 133 件 / スモーク検証済み。Phase 0-6 も全完了）
+最終更新: 2026-10-02 / ステータス: Phase 8 完了（AI チャット: DeepSeek で SOQL / Apex / コマンド生成・結果分析。テスト 142 件 / 実 API スモーク検証済み。Phase 0-7 も全完了）
 
 ## 1. 概要
 
@@ -175,6 +175,16 @@ data/
 - 言語追従: 履歴の種別フィルタ / デプロイ操作コンボ / 確認ポリシーのラベルは切替時に自動再構築
 - 対象範囲: 全 View XAML・全 ViewModel のメッセージ / ダイアログ・Core のユーザー向けメッセージ / ラベル・サンプル履歴の要約（アプリログと開発コメントは対象外）
 
+### Phase 8: AI チャット（DeepSeek） ✅
+
+- `DeepSeekClient`（Core）: OpenAI 互換 `POST https://api.deepseek.com/chat/completions`。モデル既定 `deepseek-chat`（設定で `deepseek-reasoner` も選択可）。タイムアウト 3 分・キャンセル対応
+- API キー: settings.json（`deepSeekApiKey`）→ 環境変数 `DEEPSEEK_API_KEY` の順で解決。リポジトリ / Release には含めない
+- AI タブ: 会話 UI（ユーザー / AI メッセージ・自動スクロール・新しい会話）、`Ctrl+Enter` 送信、キャンセル。タブ順は SOQL / 匿名Apex / **AI** / デバッグログ / 履歴 / デプロイ / コマンド / REST API / 設定（9 タブ）
+- 生成支援: システムプロンプトでコードブロック出力を指示（`soql` / `apex` / `bash`）。応答内のコードを「SOQL タブへ / 匿名Apex タブへ / コマンドタブへ」ボタンで適用
+- 結果分析: 結果付き履歴をコンテキストとして添付（12,000 文字で切詰め）して送信。「直前の結果を分析」をワンクリックで準備
+- 設定画面: API キー / モデル / 接続テスト
+- スモーク: `--smoke-ai`（実 API に ping し tokens / 秒数をログ）
+
 ### Phase 6: 仕上げ・配布 ✅
 
 - クイックパネル（左サイド、お気に入り一覧 + `Ctrl+1..9` 即実行、ダブルクリック / Enter 実行、右クリック削除、上部バーの「クイック」で表示切替）✅
@@ -271,3 +281,9 @@ data/
   - `dotnet test`: 133 件成功（+10: UiText の辞書整合性 / 切替動作 / XAML・C# の使用キー存在検証）
   - スモーク E2E: `全タブのレイアウトOK (例外 0 件)` + **`言語切替OK (ja→en, 例外 0 件)`** + 従来の E2E すべて成功
   - 備考: アプリログ（data/logs）と XML ドキュメントコメントは開発者向けのため日本語のまま
+
+- ✅ **Phase 8（2026-10-02 完了）**: AI チャット（DeepSeek）
+  - タブ順: SOQL / 匿名Apex / **AI** / デバッグログ / 履歴 / デプロイ / コマンド / REST API / 設定
+  - `dotnet test`: 142 件成功（+9: DeepSeek 応答 / エラー / usage 解析、キー解決）
+  - 実 API 検証（`--smoke-ai`）: `OK（OK / 1.2 秒 / tokens 11+1）` + 全 9 タブ・言語切替例外 0 件
+  - セキュリティ: API キーは settings.json（gitignore 対象）または環境変数のみ。リポジトリ・Release には含めない

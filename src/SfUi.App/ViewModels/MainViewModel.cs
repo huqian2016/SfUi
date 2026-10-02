@@ -69,6 +69,9 @@ public partial class MainViewModel : ObservableObject
     /// <summary>匿名Apex タブの ViewModel。</summary>
     public ApexViewModel Apex { get; }
 
+    /// <summary>AI チャットタブの ViewModel。</summary>
+    public AiChatViewModel Ai { get; }
+
     /// <summary>デバッグログタブの ViewModel。</summary>
     public LogViewModel Logs { get; }
 
@@ -98,6 +101,7 @@ public partial class MainViewModel : ObservableObject
         HistoryViewModel history,
         SoqlViewModel soql,
         ApexViewModel apex,
+        AiChatViewModel ai,
         LogViewModel logs,
         CommandViewModel command,
         ApiConsoleViewModel api,
@@ -115,6 +119,7 @@ public partial class MainViewModel : ObservableObject
         History = history;
         Soql = soql;
         Apex = apex;
+        Ai = ai;
         Logs = logs;
         Command = command;
         Api = api;
@@ -123,6 +128,7 @@ public partial class MainViewModel : ObservableObject
         QuickPanel = quickPanel;
         History.ReplayRequested += OnReplayRequested;
         QuickPanel.ExecuteRequested += ExecuteFavorite;
+        Ai.ApplyRequested += ApplyAiSnippet;
 
         // 保存済みの言語をコンボへ反映（起動時の UiText 適用は App 側で実施済み）
         _languageLabel = string.Equals(_settings.Current.Language, UiText.Japanese, StringComparison.OrdinalIgnoreCase) ? "日本語" : "English";
@@ -205,6 +211,7 @@ public partial class MainViewModel : ObservableObject
         var target = value?.Alias ?? value?.Username;
         Soql.CurrentOrg = target;
         Apex.CurrentOrg = target;
+        Ai.CurrentOrg = target;
         Logs.CurrentOrg = target;
         Command.CurrentOrg = target;
         Api.CurrentOrg = target;
@@ -245,19 +252,19 @@ public partial class MainViewModel : ObservableObject
 
             case HistoryTypes.Command:
                 Command.LoadFromHistory(entry, autoRun: false);
-                SelectedTabIndex = 5;
+                SelectedTabIndex = 6;
                 StatusMessage = UiText.T("Msg_ReplayCommand");
                 break;
 
             case HistoryTypes.Api:
                 Api.LoadFromHistory(entry, autoRun: false);
-                SelectedTabIndex = 6;
+                SelectedTabIndex = 7;
                 StatusMessage = UiText.T("Msg_ReplayApi");
                 break;
 
             case HistoryTypes.Deploy:
                 Deploy.LoadFromHistory(entry, autoRun: false);
-                SelectedTabIndex = 4;
+                SelectedTabIndex = 5;
                 StatusMessage = UiText.T("Msg_ReplayDeploy");
                 break;
 
@@ -286,19 +293,19 @@ public partial class MainViewModel : ObservableObject
 
             case HistoryTypes.Command:
                 Command.LoadFavorite(favorite, autoRun: false);
-                SelectedTabIndex = 5;
+                SelectedTabIndex = 6;
                 StatusMessage = UiText.T("Msg_FavoriteLoadedCommandFmt", favorite.Label);
                 break;
 
             case HistoryTypes.Api:
                 Api.LoadFavorite(favorite, autoRun: false);
-                SelectedTabIndex = 6;
+                SelectedTabIndex = 7;
                 StatusMessage = UiText.T("Msg_FavoriteLoadedApiFmt", favorite.Label);
                 break;
 
             case HistoryTypes.Deploy:
                 Deploy.LoadFavorite(favorite, autoRun: false);
-                SelectedTabIndex = 4;
+                SelectedTabIndex = 5;
                 StatusMessage = UiText.T("Msg_FavoriteLoadedDeployFmt", favorite.Label);
                 break;
 
@@ -340,6 +347,31 @@ public partial class MainViewModel : ObservableObject
         }
 
         OnReplayRequested(last);
+    }
+
+    /// <summary>AI が生成したコード片を該当タブへ読み込む。</summary>
+    private void ApplyAiSnippet(AiSnippet snippet)
+    {
+        switch (snippet.Language)
+        {
+            case "soql":
+                Soql.LoadText(snippet.Code);
+                SelectedTabIndex = 0;
+                StatusMessage = UiText.T("Ai_AppliedSoql");
+                break;
+
+            case "apex":
+                Apex.LoadText(snippet.Code);
+                SelectedTabIndex = 1;
+                StatusMessage = UiText.T("Ai_AppliedApex");
+                break;
+
+            case "command":
+                Command.LoadText(snippet.Code);
+                SelectedTabIndex = 6;
+                StatusMessage = UiText.T("Ai_AppliedCommand");
+                break;
+        }
     }
 
     [RelayCommand]

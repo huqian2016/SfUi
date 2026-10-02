@@ -95,6 +95,30 @@
                     </StackPanel>
                 </GroupBox>
 
+                <GroupBox Header="{loc:Tr Settings_AiGroup}" Padding="8" Margin="0,10,0,0">
+                    <StackPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="110" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{loc:Tr Settings_ApiKey}" VerticalAlignment="Center" />
+                            <TextBox Grid.Column="1" Padding="4,2" FontFamily="Consolas"
+                                     Text="{Binding ApiKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     ToolTip="{loc:Tr Settings_ApiKeyTip}" />
+                            <Button Grid.Column="2" Content="{loc:Tr Settings_Test}" Padding="10,2" Margin="6,0,0,0"
+                                    Command="{Binding TestConnectionCommand}" />
+                        </Grid>
+                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                            <TextBlock Text="{loc:Tr Settings_Model}" Width="110" VerticalAlignment="Center" />
+                            <ComboBox Width="220" IsEditable="True" ItemsSource="{Binding AiModels}"
+                                      SelectedItem="{Binding AiModel, Mode=TwoWay}" />
+                        </StackPanel>
+                        <TextBlock Text="{loc:Tr Settings_ApiKeyTip}" Foreground="Gray" FontSize="11" Margin="0,6,0,0" TextWrapping="Wrap" />
+                    </StackPanel>
+                </GroupBox>
+
                 <StackPanel Orientation="Horizontal" Margin="0,14,0,8">
                     <Button Content="{loc:Tr Settings_Save}" Padding="18,4" FontWeight="Bold" Command="{Binding SaveCommand}" />
                 </StackPanel>
