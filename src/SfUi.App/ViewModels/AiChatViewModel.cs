@@ -225,7 +225,7 @@ public partial class AiChatViewModel : ObservableObject
 
     /// <summary>API キーとモデルの設定状況を文字列化する（スモークログ用）。</summary>
     public string DescribeConfiguration()
-        => $"apiKey={(_client.ApiKey is null ? "(未設定)" : "(設定済み)")} / model={_client.Model}";
+        => $"apiKey={_client.ApiKeySource} / model={_client.Model}";
 
     private List<DeepSeekClient.ChatMessage> BuildRequestMessages()
     {

@@ -54,8 +54,30 @@ public class DeepSeekClientTests
         => Assert.Equal("sk-test", DeepSeekClient.ResolveApiKey("  sk-test  "));
 
     [Fact]
-    public void ResolveApiKey_FallsBackToEnvironmentVariable()
-        => Assert.Equal(
-            Environment.GetEnvironmentVariable("DEEPSEEK_API_KEY"),
-            DeepSeekClient.ResolveApiKey(null));
+    public void ResolveApiKey_PrefersEnvironmentOverBuiltIn()
+        => Assert.Equal("env-key", DeepSeekClient.ResolveApiKey(null, "env-key", "builtin-key"));
+
+    [Fact]
+    public void ResolveApiKey_UsesBuiltIn_WhenNothingConfigured()
+        => Assert.Equal("builtin-key", DeepSeekClient.ResolveApiKey("  ", null, "builtin-key"));
+
+    [Fact]
+    public void ResolveApiKey_FallsBackToEnvironmentThenBuiltIn()
+    {
+        var expected = Environment.GetEnvironmentVariable("DEEPSEEK_API_KEY") is { Length: > 0 } env
+            ? env
+            : DefaultAiKey.Value;
+
+        Assert.Equal(expected, DeepSeekClient.ResolveApiKey(null));
+    }
+
+    [Fact]
+    public void DefaultAiKey_DecodesToApiKeyFormat()
+    {
+        var value = DefaultAiKey.Value;
+
+        Assert.NotNull(value);
+        Assert.StartsWith("sk-", value);
+        Assert.True(value!.Length >= 32);
+    }
 }

@@ -163,7 +163,7 @@ public partial class App : Application
             if (_smokeAi)
             {
                 var aiClient = Services.GetRequiredService<DeepSeekClient>();
-                _log.Info($"--smoke-ai: model={aiClient.Model} / apiKey={(aiClient.ApiKey is null ? "(未設定)" : "(設定済み)")}");
+                _log.Info($"--smoke-ai: model={aiClient.Model} / apiKey={aiClient.ApiKeySource}");
                 var aiResult = await aiClient.ChatAsync(new[] { new DeepSeekClient.ChatMessage("user", "Reply with the single word: OK") });
                 if (aiResult.Success)
                 {

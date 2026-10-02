@@ -17,7 +17,7 @@ with history/favorites, quick switching between orgs and project folders, and on
 - **REST console** — GET/POST/PATCH/DELETE against the org's instance URL using the access token (`sf org display`), with pretty-printed responses and 401 auto-refresh.
 - **History** — every operation is recorded per type (org, folder, params, result), searchable, re-runnable by double-click.
 - **Favorites & quick panel** — pin SOQL / Apex / commands / REST requests / URLs / folders; run the first nine with `Ctrl+1..9`.
-- **AI chat (DeepSeek)** — generate SOQL / Apex / sf commands from natural language and analyze execution results; apply generated code to the matching tab with one click. Shown in a right-side panel (toggle with the **AI** button in the top bar). Requires a DeepSeek API key (Settings → AI, or the `DEEPSEEK_API_KEY` environment variable).
+- **AI chat (DeepSeek)** — generate SOQL / Apex / sf commands from natural language and analyze execution results; apply generated code to the matching tab with one click. Shown in a right-side panel (toggle with the **AI** button in the top bar). Works out of the box — an evaluation API key is bundled; set your own key in Settings → AI (or via the `DEEPSEEK_API_KEY` environment variable) to use your own quota.
 - **Tool launcher** — open Terminal (wt / PowerShell / cmd / WSL), Explorer, VS Code, or the org in a browser (home / setup / login / recent URLs).
 - **Keyboard shortcuts** — `Ctrl+Enter` run (SOQL/Apex), `Enter` run (command), `Ctrl+1..9` favorites, `F5` re-run the last operation.
 - **Portable** — a `data/` folder (settings, history, logs, results) is created next to the exe; falls back to `%APPDATA%\SfUi` when not writable.
@@ -33,7 +33,7 @@ with history/favorites, quick switching between orgs and project folders, and on
 
 1. Download from the [Releases](../../releases) page:
    - **`SfUi.exe`** — the portable single executable, or
-   - **`SfUi-v0.1.0-portable.zip`** — the executable **plus a ready-to-use `data/` folder with 30 sample SOQL / Apex / commands / REST requests already in the history** (just extract and run).
+   - **`SfUi-v0.2.0-portable.zip`** — the executable **plus a ready-to-use `data/` folder with 30 sample SOQL / Apex / commands / REST requests already in the history** (just extract and run).
 2. Put it in any folder and double-click (no installer).
    - Windows SmartScreen may warn because the binary is unsigned — choose *More info* → *Run anyway*.
 3. On first run a `data/` folder is created next to the exe (portable mode).
@@ -75,7 +75,7 @@ SfUi.sln
 │  ├─ Storage       … atomic JSON stores (settings / history / favorites / recent)
 │  └─ Localization  … UiText dictionaries (en / ja)
 ├─ src/SfUi.App     … WPF app (MVVM, views, localization markup extension)
-└─ tests/SfUi.Tests … xUnit (142 tests: quoting, JSON parsing, stores, services, localization, …)
+└─ tests/SfUi.Tests … xUnit (145 tests: quoting, JSON parsing, stores, services, localization, …)
 ```
 
 Built with C# / .NET 9 / WPF, CommunityToolkit.Mvvm and AvalonEdit.
@@ -89,14 +89,14 @@ SOQL・匿名Apex・デバッグログ・デプロイ・自由コマンド・RES
 少ないクリックで実行できます。組織とフォルダの切替、外部ツールの起動もワンクリックです。
 
 - UI は **英語（既定）/ 日本語** に対応（上部バーのコンボで即時切替）
-- **AI チャット（DeepSeek）**: 自然言語から SOQL / 匿名Apex / sf コマンドを生成、実行結果の分析も可能（右サイドパネル表示・上部バーの「AI」で表示切替。API キーは設定 → AI で登録）
-- 2026-10-02 時点で Phase 0〜8 完了（テスト 142 件 / スモーク E2E 検証済み）
+- **AI チャット（DeepSeek）**: 自然言語から SOQL / 匿名Apex / sf コマンドを生成、実行結果の分析も可能（右サイドパネル表示・上部バーの「AI」で表示切替。すぐ試せるよう評価用キーを同梱。自分のキーを使う場合は 設定 → AI（または環境変数 `DEEPSEEK_API_KEY`）で登録）
+- 2026-10-02 時点で Phase 0〜8 完了（テスト 145 件 / スモーク E2E 検証済み）
 
 ## 使い方
 
 1. [Releases](../../releases) からダウンロード
    - **`SfUi.exe`** … 実行ファイル単体（サンプル履歴は設定画面から後で追加可）
-   - **`SfUi-v0.1.0-portable.zip`** … exe + サンプル履歴 30 件入りの `data/` フォルダ（解凍してそのまま実行）
+   - **`SfUi-v0.2.0-portable.zip`** … exe + サンプル履歴 30 件入りの `data/` フォルダ（解凍してそのまま実行）
 2. 任意のフォルダに置いてダブルクリック（インストーラー不要）
    - 署名なしのため SmartScreen の警告が出たら「詳細情報」→「実行」
 3. 初回起動時に exe 隣に `data/` フォルダ（設定・履歴・ログ）が作成されます（ポータブル動作）

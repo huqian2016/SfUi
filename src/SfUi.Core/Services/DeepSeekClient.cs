@@ -38,19 +38,52 @@ public sealed class DeepSeekClient
         int? CompletionTokens,
         TimeSpan Duration);
 
-    /// <summary>現在有効な API キー（未設定なら null）。</summary>
+    /// <summary>現在有効な API キー（設定 → 環境変数 → 内蔵キー）。</summary>
     public string? ApiKey => ResolveApiKey(_settings.Current.DeepSeekApiKey);
+
+    /// <summary>現在のキー取得元（settings / env / builtin / none）。</summary>
+    public string ApiKeySource
+    {
+        get
+        {
+            if (!string.IsNullOrWhiteSpace(_settings.Current.DeepSeekApiKey))
+            {
+                return "settings";
+            }
+
+            if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DEEPSEEK_API_KEY")))
+            {
+                return "env";
+            }
+
+            return string.IsNullOrWhiteSpace(DefaultAiKey.Value) ? "none" : "builtin";
+        }
+    }
 
     /// <summary>現在有効なモデル名。</summary>
     public string Model => string.IsNullOrWhiteSpace(_settings.Current.DeepSeekModel)
         ? DefaultModel
         : _settings.Current.DeepSeekModel.Trim();
 
-    /// <summary>設定値 → 環境変数の順で API キーを解決する。</summary>
+    /// <summary>設定値 → 環境変数 → 内蔵キーの順で API キーを解決する。</summary>
     public static string? ResolveApiKey(string? configured)
-        => !string.IsNullOrWhiteSpace(configured)
-            ? configured.Trim()
-            : Environment.GetEnvironmentVariable("DEEPSEEK_API_KEY");
+        => ResolveApiKey(configured, Environment.GetEnvironmentVariable("DEEPSEEK_API_KEY"), DefaultAiKey.Value);
+
+    /// <summary>優先順位を明示指定できる版（テスト用）。</summary>
+    public static string? ResolveApiKey(string? configured, string? environmentValue, string? builtIn)
+    {
+        if (!string.IsNullOrWhiteSpace(configured))
+        {
+            return configured.Trim();
+        }
+
+        if (!string.IsNullOrWhiteSpace(environmentValue))
+        {
+            return environmentValue.Trim();
+        }
+
+        return string.IsNullOrWhiteSpace(builtIn) ? null : builtIn.Trim();
+    }
 
     /// <summary>チャット補完を実行する（ストリーミングなし）。</summary>
     public async Task<ChatResult> ChatAsync(
