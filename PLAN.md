@@ -1,0 +1,258 @@
+# SfUi — Salesforce CLI 統合デスクトップツール 実装計画
+
+最終更新: 2026-10-02 / ステータス: Phase 6 完了 = 全フェーズ完了（クイックパネル・設定画面・単一 EXE 配布。テスト 120 件 / スモーク・別フォルダ起動検証済み）
+
+## 1. 概要
+
+Salesforce CLI (`sf` コマンド) の操作を Windows デスクトップ UI から行うためのツール。
+裏で `sf` を実行して結果を表示し、実行した内容（組織・フォルダ・SOQL・匿名Apex・結果など）を
+蓄積して再実行を容易にする。認証済み組織のアクセストークンを取得し REST API を直接呼び出すことで、
+高速な SOQL 実行や汎用 API 呼び出しも可能にする。
+
+- 対象: Windows 10/11、sf CLI v2（確認済み: v2.94.6 stable）
+- 技術: C# / WPF (.NET 9) / MVVM / ポータブル単一 EXE
+
+## 2. 要件マッピング
+
+| # | 要件 | 実装方針 |
+|---|------|----------|
+| 1 | sf CLI を利用する | `SfCliRunner` が `C:\Program Files\sf\bin\sf.cmd` を `--json` 付きで実行 |
+| 2 | C# UI から sf 機能を操作 | WPF シェル + 各機能ビュー（SOQL / 匿名Apex / ログ / デプロイ / コマンド） |
+| 3 | 操作内容を記憶 | JSON 履歴（種別・組織・フォルダ・パラメータ全文・結果）。ダブルクリックで再実行 |
+| 4 | トークン取得 → API 呼び出し | `sf org auth show-access-token` → `SalesforceRestClient`（REST / Tooling） |
+| 5 | クリック数を抑えた UI | 上部バーで組織/フォルダ切替、ショートカット、お気に入り Ctrl+1..9 |
+| 6 | 組織/フォルダの簡単切替 | 上部コンボ + 履歴 + ピン留め。起動時に前回状態を復元 |
+| 7 | よく使うツール起動 | ターミナル(wt) / エクスプローラー / VS Code / ブラウザ ボタン + 引数選択 |
+
+## 3. 確定事項（2026-10-02 ユーザー確定）
+
+- UI: **WPF (.NET 9)**
+- 配布: **ポータブル単一 EXE**（self-contained / single-file）
+- 保存: **JSON ファイル**（種別ごとに分割）
+- 実行方式: **REST API 優先 + CLI フォールバック**
+- 追加機能（すべて採用）: REST 汎用コンソール / sf 自由コマンド実行 / SOQL 結果 CSV 出力 / Apex デバッグログ / デプロイ・メタデータ操作
+- 実行前確認: **危険操作（deploy / delete / logout 等）のみ確認**
+- 履歴上限: **2000 件/種別**、結果保存閾値 **64KB**（設定画面で変更可）
+- 初期スコープ外: apex tail log、トレイ常駐 / グローバルホットキー（後続で追加）
+
+## 4. 環境前提（確認済み）
+
+- .NET SDK 9.0.301
+- sf CLI v2.94.6 stable（`C:\Program Files\sf\bin\sf.cmd`、設定は `~/.sf`、認証は `~/.sfdx`）
+- 認証済み組織（alias）: trailhead, acc, EduCloud, agent1, Edu4, hks3, hks3_sand3, NISSAY598, Hks2, hks4, hks4sand1, hks4sand2 ほか
+- Windows Terminal (`wt.exe`)、VS Code CLI (`code.cmd`)、Firefox
+- SF プロジェクトフォルダ例: `c:\huqian\vscode\{hks3, Hks3Sand3, EduCloud, NISSAY, ...}`
+
+## 5. アーキテクチャ
+
+### プロジェクト構成
+
+```
+SfUi.sln
+├─ src/SfUi.Core    … WPF 非依存のロジック（サービス / モデル / ストア）※単体テスト対象
+├─ src/SfUi.App     … WPF アプリ（Views / ViewModels / DI 構成）
+└─ tests/SfUi.Tests … xUnit
+```
+
+### 主要サービス（Phase 対応）
+
+| サービス | 役割 | Phase |
+|---|---|---|
+| `SfCliRunner` | sf 実行・JSON 解析・キャンセル・タイムアウト | 1 |
+| `SfCommandCatalog` | コマンド/引数の定義 | 1 |
+| `OrgService` | 組織一覧・トークン取得・キャッシュ | 1 |
+| `SalesforceRestClient` | REST / Tooling API | 3 |
+| `HistoryStore` / `FavoritesStore` / `RecentStore` / `AppSettingsStore` | JSON 永続化 | 2 |
+| `ToolLauncherService` | wt / explorer / code / browser 起動 | 4 |
+| `AppPaths` / `AppLog` | データフォルダ解決・ログ | 0 ✅ |
+
+### データフォルダ解決の優先順位（`AppPaths.Resolve`）
+
+1. `--data-dir` 引数 / `SFUI_DATA_DIR` 環境変数
+2. 開発時: ソリューションルート（上方向に `SfUi.sln` を探索）の `data/`
+3. ポータブル: 実行ファイル隣の `data/`（書込可の場合）
+4. `%APPDATA%\SfUi`
+
+## 6. UI 設計方針（クリック数・入力回数の最小化）
+
+- 常時表示の上部バー: [組織コンボ] [SFフォルダコンボ] [ターミナル] [エクスプローラー] [VS Code] [ブラウザ]
+- 履歴・お気に入り: ダブルクリックで再実行、`Ctrl+1..9` でお気に入り即実行
+- 実行: `Ctrl+Enter`、再実行: `F5`
+- 組織・フォルダは起動時に前回状態を自動復元
+- 引数（フォルダ / URL）は履歴・ピン留めから選択（手入力不要）
+
+## 7. sf コマンド対応表
+
+| 機能 | コマンド（v2.94.6 時点。フラグは実装時に `sf <cmd> --help` で最終確定） |
+|---|---|
+| 組織一覧 | `sf org list --json` |
+| アクセストークン | `sf org display --target-org <alias> --json`（v2.94.6 では `org auth show-access-token` 未搭載。将来搭載時は切替） |
+| ログイン / ログアウト | `sf org login web --alias <alias>` / `sf org logout` |
+| ブラウザ起動 | `sf org open --target-org <alias> [--path <path>]` / URL 直接起動 |
+| SOQL | REST `/services/data/vXX.X/query`（自動ページング）／代替 `sf data query --query <soql> --json` |
+| 匿名 Apex | `sf apex run --target-org <alias> --file <tmp.apex> --json` |
+| ログ一覧 / 取得 | `sf apex list log --json` / `sf apex get log --log-id <id> --json` |
+| デプロイ | `sf project deploy start / validate / quick / report --json` |
+| 取得 | `sf project retrieve start --json` |
+| 自由コマンド | ユーザー入力引数をそのまま実行（`sf` は自動付与） |
+
+## 8. データ保存設計（JSON）
+
+```
+data/
+├─ settings.json          … アプリ設定
+├─ favorites.json         … お気に入り（SOQL / 匿名Apex / コマンド / URL / フォルダ）
+├─ recent-folders.json    … 最近の SF 実行フォルダ
+├─ recent-urls.json       … 最近の URL
+├─ history/
+│  ├─ soql.json / apex.json / command.json / api.json / deploy.json / org.json
+│  └─ 上限 2000 件/種別。超過分は古い順に削除
+├─ results/<id>.json      … 大きい実行結果（64KB 超）の本文
+├─ logs/app-YYYYMMDD.log  … アプリログ（日次）
+└─ tmp/                   … 匿名Apex一時ファイル等
+```
+
+- 原子書き込み（temp → File.Replace）、破損時は `.bak` から復旧
+- 結果本文 64KB 以下は履歴 JSON 内に保存、超過分は `results/` へ分離
+
+## 9. フェーズ計画
+
+### Phase 0: プロジェクト基盤（本フェーズ）✅
+
+- ソリューション / 3 プロジェクト作成、`.gitignore`、git init
+- `AppPaths`（データフォルダ解決）、`AppLog`（日次ログ）、DI 登録（`AddSfUiCore`）
+- MainWindow シェル（上部バー仮置き + タブ + ステータスバー）
+- `--smoke` 起動モード（3 秒で自動終了、起動確認用）
+- ビルド / 単体テスト / スモーク起動で動作確認
+
+### Phase 1: sf CLI 実行基盤＋組織管理 ✅
+
+- `SfCliRunner`（cmd.exe /d /s /c 経由、UTF-8、タイムアウト・キャンセル、テレメトリ/自動更新抑制の環境変数）
+- `SfCommandResult`（--json 解析。エラー名/メッセージ抽出、result の Clone 保持）
+- `OrgService`（組織一覧は username で重複排除、トークンは `sf org display`、30 分メモリキャッシュ）
+- 上部バー: 組織コンボ（既定★先頭）+ 更新ボタン、SFフォルダ（編集可 + 参照ダイアログ）
+- 注: インストール済み sf v2.94.6 には `org auth show-access-token` が無いため `org display` を使用（将来搭載時は切替候補）
+
+### Phase 2: JSON 永続化 ✅
+
+- `AtomicJsonFile`（一時ファイル → File.Replace の原子的書き込み、.bak 復旧、破損時 .bad-* 退避）
+- `AppSettingsStore`（前回組織 / 前回フォルダ / 履歴上限 2000 件・結果閾値 64KB / 危険操作確認）
+- `RecentItemsStore<T>`（フォルダ / URL。ピン留め対応、上限 30 件で古い順に削除）
+- `FavoritesStore`（SOQL / 匿名Apex / コマンド / API / URL / フォルダ）
+- `HistoryStore`（種別ごとの JSON、上限ローリング、64KB 超の結果は results/ へ分離保存）
+- 履歴ビュー（種別フィルタ / 全文検索 / パラメータコピー / 削除、右クリックメニュー）
+- 上部バー: 最近フォルダのコンボ選択・前回組織 / 前回フォルダの起動時復元
+- ダブルクリック再実行は Phase 3 以降の機能ビューと同時に有効化予定
+
+### Phase 3: SOQL・匿名Apex・ログ（中核）✅
+
+- `SalesforceRestClient`（Bearer トークン、401 時トークン再取得、自動ページング、Tooling、limits、describe、汎用送信）
+- `SoqlService`（REST 優先 → 失敗時 `sf data query` フォールバック。構文エラーの場合は再実行しない）
+- `SoqlResultFactory`（records を DataTable へ平坦化: ネストは `Account.Name`、配列は JSON 文字列）
+- SOQL ビュー（AvalonEdit + SQL ハイライト、Ctrl+Enter、結果 DataGrid、CSV/TSV 出力、履歴・お気に入り連携）
+- 匿名 Apex ビュー（一時ファイル [BOM なし UTF-8] → `sf apex run --json`、成功/コンパイルエラー/例外/ログ表示、ファイル読込・保存）
+- ログビュー（`apex list log` → `apex get log`。`--log-id` / `--number` 対応）
+- 履歴ダブルクリック: SOQL は再実行、匿名Apex は読み込み（安全のため自動実行なし）
+
+### Phase 4: ツールランチャー ✅
+
+- `ToolLauncherService`: ターミナル（Windows Terminal → cmd フォールバック、PowerShell / cmd / WSL 選択可・WSL パス変換付き）、エクスプローラー（/select 対応）、VS Code（新規 / 現在ウィンドウ、code.cmd 自動検出）、ブラウザ（既定ブラウザ）
+- 上部バー: 各ツールをワンクリック起動（クリック = 既定 / 右クリック = バリアント選択）
+- ブラウザメニュー: 組織ホーム / 組織の設定 / Salesforce ログイン / URL 入力ダイアログ / 最近の URL（自動記録）
+- 引数の既定: 現在の SF 実行フォルダ（未選択時はユーザープロファイル）
+
+### Phase 5: 自由コマンド・REST コンソール・デプロイ ✅
+
+- 自由コマンドビュー（`sf` は自動付与、Enter 実行、危険操作は実行前確認、stdout/stderr 表示、履歴 / お気に入り）✅
+- REST 汎用コンソール（GET/POST/PATCH/DELETE、パス / JSON ボディ、整形表示、履歴保存。401 時はトークン再取得で 1 回リトライ）✅
+- デプロイ（start / validate / quick / report / retrieve。ソースディレクトリ / manifest / テストレベル / 待機時間、確認ダイアログ、60 分タイムアウト、進捗 / キャンセル、結果サマリーから job-id 自動補完）✅
+
+### Phase 6: 仕上げ・配布 ✅
+
+- クイックパネル（左サイド、お気に入り一覧 + `Ctrl+1..9` 即実行、ダブルクリック / Enter 実行、右クリック削除、上部バーの「クイック」で表示切替）✅
+- 設定画面（sf パス / Windows Terminal パス / VS Code パス / 履歴上限 / 結果閾値 / 確認ポリシー。保存で即時反映）✅
+- ショートカット整備（`Ctrl+1..9` クイック実行、`F5` 直前の操作を再実行、`Ctrl+Enter` 実行は各ビュー）✅
+- ステータスバーに組織 / フォルダ表示 ✅
+- 単一 EXE publish（`dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true` → `dist/SfUi.exe`）✅
+
+## 10. 検証計画
+
+1. `dotnet build` / `dotnet test`（引数クォート・JSON 解析・ストア round-trip・CSV）
+2. `sf org list --json` と UI 組織コンボの一致、1 クリック切替
+3. 同一 SOQL の REST 実行と `sf data query` の結果一致、CSV 出力
+4. 匿名 Apex 成功 / コンパイルエラー / 例外 + 直後ログ
+5. 再起動時の履歴・お気に入り・前回組織 / フォルダ復元
+6. フォルダ切替 → ターミナル cwd・VS Code・エクスプローラー・ブラウザ
+7. 単一 EXE を別パスにコピー → 起動 → `data/` 生成 → 組織一覧
+
+## 11. スコープ外（初期）
+
+- sfdx v1、Apex テスト実行 / トレース、Bulk API、SOSL、ソース追跡系、複数ウィンドウ、tail log、トレイ常駐 / グローバルホットキー
+
+## 12. 開発メモ
+
+- VS Code タスク: build / test / run / run (smoke) / run (smoke org) / publish (single exe)
+- スモーク起動: `dotnet run --project src/SfUi.App -- --smoke`（sf CLI で組織一覧取得を検証して自動終了、`data/logs` に記録）
+- sf のフラグは実装時に `sf <command> --help` で確定する（バージョン差吸収）
+
+## 13. 実装進捗
+
+- ✅ **Phase 0（2026-10-02 完了）**: プロジェクト基盤
+  - `dotnet build`: 3 プロジェクト成功（SfUi.Core / SfUi.App / SfUi.Tests）
+  - `dotnet test`: 5 件成功（AppPaths 解決 3 件 / AppLog 1 件 / DI 登録 1 件）
+  - スモーク起動: `--smoke` で起動 → MainWindow 表示 → 3 秒後に正常終了（ExitCode=0、`data/logs/app-20261002.log` に記録）
+  - データフォルダ自動解決: 開発時 `c:\huqian\vscode\SfUi\data\`（logs / history / results / tmp 生成確認）
+  - VS Code タスク: build / test / run / run (smoke)
+
+- ✅ **Phase 1（2026-10-02 完了）**: sf CLI 実行基盤＋組織管理
+  - `SfCliRunner`: cmd.exe /d /s /c 経由実行、UTF-8、タイムアウト（既定 120 秒）・キャンセル、引用符処理を単体テストで検証
+  - `OrgService`: `sf org list --json` のカテゴリ重複（other / sandboxes / nonScratchOrgs）を username で排除して 12 組織を取得。トークンは `sf org display` + 30 分キャッシュ
+  - 上部バー: 組織コンボ + 更新ボタン、SFフォルダ（編集 + `OpenFolderDialog`）
+  - `dotnet test`: 25 件成功（引用符・コマンドライン 10 / JSON 解析 6 / 組織一覧 4 / 基盤 5）
+  - スモーク起動: 実機で sf CLI を呼び出し「組織一覧取得成功: 12 件」を確認（ExitCode=0）
+
+- ✅ **Phase 2（2026-10-02 完了）**: JSON 永続化＋履歴ビュー
+  - `AtomicJsonFile`: 原子的書き込み（File.Replace + .bak）、破損時フォールバックをテストで検証
+  - `AppSettingsStore` / `RecentItemsStore<T>`（フォルダ・URL）/ `FavoritesStore` / `HistoryStore`（結果の閾値分離保存）
+  - 履歴ビュー: 種別フィルタ・検索・パラメータコピー・削除・右クリックメニュー
+  - 上部バー: 最近フォルダ選択（ピン留め対応）、前回組織 / 前回フォルダの復元
+  - `dotnet test`: 47 件成功（+22 件: 設定 4 / 最近項目 7 / お気に入り 4 / 履歴 7）
+  - スモーク起動: `--smoke: ストアOK (履歴 0 件 / 最近フォルダ 0 件 / お気に入り 0 件, 履歴上限 2000 件 / 結果閾値 65536 B)` + `settings.json` 生成を実機確認
+
+- ✅ **Phase 3（2026-10-02 完了）**: SOQL・匿名Apex・デバッグログ＋履歴連携
+  - 実機検証: `sf data query` / `sf apex run` / `sf apex list log` / `sf apex get log` の出力形状を確認（get log は -i/-n 必須、run の logs に実行ログ全文）
+  - `dotnet test`: 69 件成功（+22 件: CSV 8 / DataTable 平坦化 4 / ApexService パース 10）
+  - スモーク E2E（`--smoke --smoke-org hks4sand1`）: `SOQL(REST) OK: 1 件 / 3170 ms`、`匿名Apex 実行: success=True, compiled=True, logs=1209 文字`、`ログ一覧: 0 件`
+  - 知見: 匿名Apex 一時ファイルは **BOM なし UTF-8** で保存（BOM 付きだと compiled=false で失敗）
+
+- ✅ **Phase 4（2026-10-02 完了）**: ツールランチャー
+  - `ToolLauncherService`（wt / PowerShell / cmd / WSL、explorer、VS Code、ブラウザ）+ WSL パス変換の単体テスト
+  - 上部バーの 4 ボタンを有効化（クリック = 既定起動、右クリック = バリアント）
+  - ブラウザメニュー（組織ホーム / Setup / ログイン / URL 入力 / 最近の URL）
+  - `dotnet test`: 76 件成功（+7 件: WSL パス変換 6 / ツール検出 1）
+  - スモーク: `--smoke: ツール検出: wt=...\WindowsApps\wt.exe, code=...\Microsoft VS Code\bin\code.cmd` を確認
+
+- ✅ **Phase 5（2026-10-02 完了）**: 自由コマンド・REST コンソール・デプロイ
+  - `DeployService`（操作 5 種の引数構築を単体テストで検証。deploy/validate は -d/-x、quick/report は --job-id / --use-most-recent、retrieve は -d/-x）
+  - 自由コマンドビュー（Enter 実行・危険操作確認・stdout/stderr・履歴 / お気に入り）
+  - REST コンソール（`SalesforceRestClient.SendConsoleAsync` が HTTP ステータス + 本文を例外なしで返却）
+  - `dotnet test`: 103 件成功（+27 件: DeployService 10 / CommandLineParser 10 / SfCommandSafety 4 / JsonPretty 3）
+  - スモーク E2E（`--smoke --smoke-org hks4sand1`）: `RESTコンソール GET /limits: HTTP 200 (4,617 文字)`。SOQL / 匿名Apex / ログも再確認
+  - 知見: TextBox の Text は既定 TwoWay のため、読み取り専用プロパティ（実行コマンド プレビュー等）へのバインドには `Mode=OneWay` が必須（レイアウト時に InvalidOperationException）
+  - 補足: 実デプロイは副作用があるためスモークには含めず、引数構築の単体テスト + 手動確認とする
+
+- ✅ **Phase 6（2026-10-02 完了）**: 仕上げ・配布（全フェーズ完了）
+  - 設定モデル拡張: `SfExecutablePath` / `WindowsTerminalPath` / `VsCodePath` / `ConfirmPolicy`（dangerous / always / never、旧 `ConfirmDangerousCommands` から移行）
+  - 設定画面: sf / ツールパスの参照・クリア・自動検出表示、履歴上限・閾値のバリデーション、データフォルダを開く
+  - クイックパネル: お気に入りを数字スロット付きで表示、`Ctrl+1..9` / ダブルクリック / Enter で実行（SOQL は即実行、他は安全に読み込み）、右クリックで削除
+  - ショートカット: `F5` = 直前の操作を再実行（SOQL のみ自動実行）
+  - スモーク強化: 全 8 タブを順に選択してレイアウト検証（バインディング例外をカウント、0 以外は失敗扱い）
+  - `dotnet test`: 120 件成功（+17 件: 確認ポリシー 13 / sf パス解決 4）
+  - スモーク E2E: `全タブのレイアウトOK (例外 0 件)` + 従来の SOQL / 匿名Apex / ログ / REST コンソール
+  - 単一 EXE 検証: `dist/SfUi.exe`（約 164 MB、自己完結）を `C:\huqian\sfui-publish-test` へコピー → 起動で `data/` 自動生成 → 組織 12 件 → 全タブ検証 → ExitCode=0
+
+- ✅ **追加（2026-10-02）**: サンプル履歴の投入
+  - `SampleHistorySeeder`（SOQL 9 / 匿名Apex 6 / コマンド 8 / REST 7 = 合計 30 件。種別 + パラメータで重複スキップ）
+  - 起動オプション `--seed-samples`（UI を出さず投入して終了）、設定画面の「サンプル履歴を投入」ボタン、VS Code タスク `seed samples`
+  - `dotnet test`: 123 件成功（+3: 追加 / 重複スキップ / 既存保持）
+  - 実データ投入確認: 追加 29 件 / スキップ 1 件（既存と同内容が 1 件）→ 再実行で追加 0 件 / スキップ 30 件

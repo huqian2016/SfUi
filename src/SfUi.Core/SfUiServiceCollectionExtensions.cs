@@ -1,0 +1,28 @@
+using Microsoft.Extensions.DependencyInjection;
+
+namespace SfUi.Core;
+
+/// <summary>
+/// SfUi のコアサービスを DI コンテナへ登録する。後続フェーズでサービスを追加していく。
+/// </summary>
+public static class SfUiServiceCollectionExtensions
+{
+    public static IServiceCollection AddSfUiCore(this IServiceCollection services, AppPaths paths)
+    {
+        services.AddSingleton(paths);
+        services.AddSingleton<AppLog>();
+        services.AddSingleton(sp => new SfCliRunner(sp.GetRequiredService<AppSettingsStore>().Current.SfExecutablePath));
+        services.AddSingleton<OrgService>();
+        services.AddSingleton<SalesforceRestClient>();
+        services.AddSingleton<SoqlService>();
+        services.AddSingleton<ApexService>();
+        services.AddSingleton<ToolLauncherService>();
+        services.AddSingleton<DeployService>();
+        services.AddSingleton<AppSettingsStore>();
+        services.AddSingleton<RecentFoldersStore>();
+        services.AddSingleton<RecentUrlsStore>();
+        services.AddSingleton<FavoritesStore>();
+        services.AddSingleton<HistoryStore>();
+        return services;
+    }
+}

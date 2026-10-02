@@ -1,0 +1,22 @@
+# Build results
+bin/
+obj/
+dist/
+publish/
+
+# IDE
+.vs/
+.idea/
+*.user
+*.suo
+
+# Runtime data (portable data folder: history, results, logs, settings)
+data/
+
+# Test results
+TestResults/
+*.trx
+
+# OS
+Thumbs.db
+Desktop.ini

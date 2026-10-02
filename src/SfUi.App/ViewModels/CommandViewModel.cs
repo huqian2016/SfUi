@@ -1,0 +1,225 @@
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Windows;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using SfUi.Core;
+
+namespace SfUi.App.ViewModels;
+
+/// <summary>sf 自由コマンドタブの ViewModel。</summary>
+public partial class CommandViewModel : ObservableObject
+{
+    private readonly SfCliRunner _runner;
+    private readonly HistoryStore _history;
+    private readonly FavoritesStore _favorites;
+    private readonly AppSettingsStore _settings;
+    private readonly AppLog _log;
+
+    private CancellationTokenSource? _cts;
+
+    [ObservableProperty]
+    private string _commandText = "org list";
+
+    [ObservableProperty]
+    private bool _isRunning;
+
+    [ObservableProperty]
+    private string _statusText = "準備完了";
+
+    [ObservableProperty]
+    private string? _stdOut;
+
+    [ObservableProperty]
+    private string? _stdErr;
+
+    [ObservableProperty]
+    private HistoryEntry? _selectedHistoryItem;
+
+    /// <summary>現在の対象組織（MainViewModel から設定される）。</summary>
+    public string? CurrentOrg { get; set; }
+
+    /// <summary>現在の SF 実行フォルダ（MainViewModel から設定される）。</summary>
+    public string? CurrentFolder { get; set; }
+
+    public ObservableCollection<HistoryEntry> HistoryItems { get; } = new();
+
+    public CommandViewModel(SfCliRunner runner, HistoryStore history, FavoritesStore favorites, AppSettingsStore settings, AppLog log)
+    {
+        _runner = runner;
+        _history = history;
+        _favorites = favorites;
+        _settings = settings;
+        _log = log;
+        RefreshHistory();
+    }
+
+    [RelayCommand]
+    private void RefreshHistory()
+    {
+        HistoryItems.Clear();
+        foreach (var entry in _history.Query(new HistoryQuery(Type: HistoryTypes.Command)).Take(30))
+        {
+            HistoryItems.Add(entry);
+        }
+    }
+
+    partial void OnSelectedHistoryItemChanged(HistoryEntry? value)
+    {
+        if (value?.Params is { Length: > 0 } text)
+        {
+            CommandText = text;
+        }
+    }
+
+    [RelayCommand]
+    private async Task ExecuteAsync()
+    {
+        if (IsRunning)
+        {
+            return;
+        }
+
+        var input = CommandText.Trim();
+        if (string.IsNullOrEmpty(input))
+        {
+            StatusText = "コマンドを入力してください";
+            return;
+        }
+
+        var arguments = CommandLineParser.SplitSfArguments(input);
+        if (arguments.Count == 0)
+        {
+            StatusText = "sf の引数を入力してください（例: org list）";
+            return;
+        }
+
+        if (SfCommandSafety.IsDangerous(arguments, out var token)
+            && ConfirmPolicies.ShouldConfirm(_settings.Current.ConfirmPolicy, isDangerous: true))
+        {
+            var answer = MessageBox.Show(
+                $"「{token}」を含む操作です。実行しますか？{Environment.NewLine}{Environment.NewLine}sf {string.Join(' ', arguments)}",
+                "SfUi",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+            if (answer != MessageBoxResult.Yes)
+            {
+                StatusText = "キャンセルしました";
+                return;
+            }
+        }
+
+        IsRunning = true;
+        StatusText = "実行中…";
+        StdOut = null;
+        StdErr = null;
+        _cts = new CancellationTokenSource();
+        try
+        {
+            var raw = await _runner.RunAsync(arguments, CurrentFolder, cancellationToken: _cts.Token);
+            StdOut = raw.StdOut;
+            StdErr = raw.StdErr;
+            StatusText = $"終了コード: {raw.ExitCode} / {raw.Duration.TotalMilliseconds:F0} ms" + (raw.TimedOut ? "（タイムアウト）" : string.Empty);
+            AppendHistory(input, raw.Success ? "success" : "error", (int)raw.Duration.TotalMilliseconds, BuildResultText(raw));
+            _log.Info($"コマンド実行: sf {string.Join(' ', arguments)} → 終了コード {raw.ExitCode}");
+        }
+        catch (OperationCanceledException)
+        {
+            StatusText = "キャンセルしました";
+            AppendHistory(input, "canceled", 0, null);
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"失敗: {ex.Message}";
+            AppendHistory(input, "error", 0, ex.Message);
+            _log.Error("コマンド実行に失敗", ex);
+        }
+        finally
+        {
+            IsRunning = false;
+            _cts?.Dispose();
+            _cts = null;
+            RefreshHistory();
+        }
+    }
+
+    [RelayCommand]
+    private void Cancel()
+    {
+        _cts?.Cancel();
+    }
+
+    [RelayCommand]
+    private void AddFavorite()
+    {
+        var input = CommandText.Trim();
+        if (string.IsNullOrEmpty(input))
+        {
+            StatusText = "お気に入りに追加するコマンドがありません";
+            return;
+        }
+
+        _favorites.Add(HistoryTypes.Command, Summarize(input), input);
+        StatusText = $"お気に入りに追加: {Summarize(input)}";
+    }
+
+    /// <summary>履歴から読み込む（autoRun=true ならそのまま実行）。</summary>
+    public void LoadFromHistory(HistoryEntry entry, bool autoRun)
+    {
+        if (entry.Params is { Length: > 0 } text)
+        {
+            CommandText = text;
+        }
+
+        if (autoRun)
+        {
+            _ = ExecuteAsync();
+        }
+    }
+
+    /// <summary>お気に入りから読み込む（autoRun=true ならそのまま実行）。</summary>
+    public void LoadFavorite(FavoriteItem item, bool autoRun)
+    {
+        if (item.Payload is { Length: > 0 } text)
+        {
+            CommandText = text;
+        }
+
+        if (autoRun)
+        {
+            _ = ExecuteAsync();
+        }
+    }
+
+    private void AppendHistory(string input, string status, int durationMs, string? result)
+    {
+        _history.Append(
+            new HistoryEntry
+            {
+                Type = HistoryTypes.Command,
+                Org = CurrentOrg,
+                Folder = CurrentFolder,
+                Params = input,
+                Summary = Summarize(input),
+                Status = status,
+                DurationMs = durationMs,
+            },
+            result: result);
+    }
+
+    private static string BuildResultText(SfCliResult raw)
+    {
+        if (string.IsNullOrEmpty(raw.StdErr))
+        {
+            return raw.StdOut;
+        }
+
+        return raw.StdOut + Environment.NewLine + "--- stderr ---" + Environment.NewLine + raw.StdErr;
+    }
+
+    private static string Summarize(string text)
+    {
+        var single = text.Replace('\r', ' ').Replace('\n', ' ').Trim();
+        return single.Length <= 80 ? single : single[..80] + "…";
+    }
+}

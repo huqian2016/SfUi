@@ -1,0 +1,110 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "build",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"SfUi.sln",
+				"-c",
+				"Debug"
+			],
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": "build"
+		},
+		{
+			"label": "test",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"test",
+				"SfUi.sln",
+				"-c",
+				"Debug"
+			],
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": "test"
+		},
+		{
+			"label": "run (smoke)",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"run",
+				"--project",
+				"src/SfUi.App/SfUi.App.csproj",
+				"--",
+				"--smoke"
+			],
+			"problemMatcher": []
+		},
+		{
+			"label": "run",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"run",
+				"--project",
+				"src/SfUi.App/SfUi.App.csproj"
+			],
+			"problemMatcher": [],
+			"isBackground": true
+		},
+		{
+			"label": "run (smoke org)",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"run",
+				"--project",
+				"src/SfUi.App/SfUi.App.csproj",
+				"--",
+				"--smoke",
+				"--smoke-org",
+				"hks4sand1"
+			],
+			"problemMatcher": []
+		},
+		{
+			"label": "publish (single exe)",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"publish",
+				"src/SfUi.App/SfUi.App.csproj",
+				"-c",
+				"Release",
+				"-r",
+				"win-x64",
+				"--self-contained",
+				"true",
+				"-p:PublishSingleFile=true",
+				"-p:IncludeNativeLibrariesForSelfExtract=true",
+				"-o",
+				"dist"
+			],
+			"problemMatcher": [
+				"$msCompile"
+			]
+		},
+		{
+			"label": "seed samples",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"run",
+				"--project",
+				"src/SfUi.App/SfUi.App.csproj",
+				"--",
+				"--seed-samples"
+			],
+			"problemMatcher": []
+		}
+	]
+}
