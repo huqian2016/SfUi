@@ -118,7 +118,7 @@ public partial class App : Application
 
             // 全タブを順に選択してレイアウト（各ビューのバインディング例外を検出）
             var mainViewModel = Services.GetRequiredService<MainViewModel>();
-            for (var tabIndex = 0; tabIndex < 9; tabIndex++)
+            for (var tabIndex = 0; tabIndex < 8; tabIndex++)
             {
                 mainViewModel.SelectedTabIndex = tabIndex;
                 await Dispatcher.Yield(DispatcherPriority.Background);

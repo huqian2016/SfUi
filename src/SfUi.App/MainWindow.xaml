@@ -4,7 +4,7 @@
         xmlns:views="clr-namespace:SfUi.App.Views"
         xmlns:loc="clr-namespace:SfUi.App"
         Title="{loc:Tr App_Title}"
-        Height="720" Width="1320" MinWidth="960" MinHeight="540"
+        Height="720" Width="1440" MinWidth="1000" MinHeight="540"
         WindowStartupLocation="CenterScreen"
         FontSize="13">
     <Window.Resources>
@@ -103,6 +103,10 @@
                               IsChecked="{Binding IsQuickPanelVisible, Mode=TwoWay}"
                               ToolTip="{loc:Tr Main_QuickToggleTip}" />
 
+                <ToggleButton Content="AI" Padding="10,2" Margin="6,0,0,0"
+                              IsChecked="{Binding IsAiPanelVisible, Mode=TwoWay}"
+                              ToolTip="{loc:Tr Main_AiToggleTip}" />
+
                 <ComboBox Width="96" Margin="6,0,0,0" VerticalContentAlignment="Center"
                           ItemsSource="{Binding LanguageLabels}"
                           SelectedItem="{Binding LanguageLabel, Mode=TwoWay}"
@@ -134,6 +138,12 @@
             <views:QuickPanelView DataContext="{Binding QuickPanel}" />
         </Border>
 
+        <!-- AI パネル（DeepSeek）: 右サイド -->
+        <Border DockPanel.Dock="Right" Width="400" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="1,0,0,0"
+                Visibility="{Binding IsAiPanelVisible, Converter={StaticResource BoolToVis}}">
+            <views:AiChatView DataContext="{Binding Ai}" />
+        </Border>
+
         <!-- メイン: 機能タブ（各 Phase で実装） -->
         <TabControl Margin="8" SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}">
             <TabItem Header="{loc:Tr Tab_Soql}">
@@ -141,9 +151,6 @@
             </TabItem>
             <TabItem Header="{loc:Tr Tab_Apex}">
                 <views:ApexView DataContext="{Binding Apex}" />
-            </TabItem>
-            <TabItem Header="{loc:Tr Tab_Ai}">
-                <views:AiChatView DataContext="{Binding Ai}" />
             </TabItem>
             <TabItem Header="{loc:Tr Tab_Log}">
                 <views:LogView DataContext="{Binding Logs}" />

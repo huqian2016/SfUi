@@ -41,6 +41,10 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private bool _isQuickPanelVisible = true;
 
+    /// <summary>AI パネル（右サイド）の表示状態。</summary>
+    [ObservableProperty]
+    private bool _isAiPanelVisible = true;
+
     /// <summary>言語コンボの選択値（English / 日本語）。</summary>
     [ObservableProperty]
     private string _languageLabel = "English";
@@ -133,6 +137,17 @@ public partial class MainViewModel : ObservableObject
         // 保存済みの言語をコンボへ反映（起動時の UiText 適用は App 側で実施済み）
         _languageLabel = string.Equals(_settings.Current.Language, UiText.Japanese, StringComparison.OrdinalIgnoreCase) ? "日本語" : "English";
         OnPropertyChanged(nameof(LanguageLabel));
+        _isAiPanelVisible = _settings.Current.AiPanelVisible;
+        OnPropertyChanged(nameof(IsAiPanelVisible));
+    }
+
+    partial void OnIsAiPanelVisibleChanged(bool value)
+    {
+        if (_settings.Current.AiPanelVisible != value)
+        {
+            _settings.Current.AiPanelVisible = value;
+            _settings.Save();
+        }
     }
 
     partial void OnLanguageLabelChanged(string value)
@@ -252,19 +267,19 @@ public partial class MainViewModel : ObservableObject
 
             case HistoryTypes.Command:
                 Command.LoadFromHistory(entry, autoRun: false);
-                SelectedTabIndex = 6;
+                SelectedTabIndex = 5;
                 StatusMessage = UiText.T("Msg_ReplayCommand");
                 break;
 
             case HistoryTypes.Api:
                 Api.LoadFromHistory(entry, autoRun: false);
-                SelectedTabIndex = 7;
+                SelectedTabIndex = 6;
                 StatusMessage = UiText.T("Msg_ReplayApi");
                 break;
 
             case HistoryTypes.Deploy:
                 Deploy.LoadFromHistory(entry, autoRun: false);
-                SelectedTabIndex = 5;
+                SelectedTabIndex = 4;
                 StatusMessage = UiText.T("Msg_ReplayDeploy");
                 break;
 
@@ -293,19 +308,19 @@ public partial class MainViewModel : ObservableObject
 
             case HistoryTypes.Command:
                 Command.LoadFavorite(favorite, autoRun: false);
-                SelectedTabIndex = 6;
+                SelectedTabIndex = 5;
                 StatusMessage = UiText.T("Msg_FavoriteLoadedCommandFmt", favorite.Label);
                 break;
 
             case HistoryTypes.Api:
                 Api.LoadFavorite(favorite, autoRun: false);
-                SelectedTabIndex = 7;
+                SelectedTabIndex = 6;
                 StatusMessage = UiText.T("Msg_FavoriteLoadedApiFmt", favorite.Label);
                 break;
 
             case HistoryTypes.Deploy:
                 Deploy.LoadFavorite(favorite, autoRun: false);
-                SelectedTabIndex = 5;
+                SelectedTabIndex = 4;
                 StatusMessage = UiText.T("Msg_FavoriteLoadedDeployFmt", favorite.Label);
                 break;
 
@@ -368,7 +383,7 @@ public partial class MainViewModel : ObservableObject
 
             case "command":
                 Command.LoadText(snippet.Code);
-                SelectedTabIndex = 6;
+                SelectedTabIndex = 5;
                 StatusMessage = UiText.T("Ai_AppliedCommand");
                 break;
         }

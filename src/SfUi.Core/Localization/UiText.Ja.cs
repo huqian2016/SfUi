@@ -61,6 +61,7 @@ public static partial class UiText
         ["Main_BrowserRecent"] = "最近の URL",
         ["Main_QuickToggle"] = "クイック",
         ["Main_QuickToggleTip"] = "お気に入りパネルの表示/非表示（Ctrl+1..9 で実行）",
+        ["Main_AiToggleTip"] = "AI チャットパネル（DeepSeek）の表示/非表示",
         ["Main_LanguageTip"] = "UI の言語",
         ["Tab_Soql"] = "SOQL",
         ["Tab_Apex"] = "匿名Apex",

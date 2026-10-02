@@ -17,7 +17,7 @@ with history/favorites, quick switching between orgs and project folders, and on
 - **REST console** — GET/POST/PATCH/DELETE against the org's instance URL using the access token (`sf org display`), with pretty-printed responses and 401 auto-refresh.
 - **History** — every operation is recorded per type (org, folder, params, result), searchable, re-runnable by double-click.
 - **Favorites & quick panel** — pin SOQL / Apex / commands / REST requests / URLs / folders; run the first nine with `Ctrl+1..9`.
-- **AI chat (DeepSeek)** — generate SOQL / Apex / sf commands from natural language and analyze execution results; apply generated code to the matching tab with one click. Requires a DeepSeek API key (Settings → AI, or the `DEEPSEEK_API_KEY` environment variable).
+- **AI chat (DeepSeek)** — generate SOQL / Apex / sf commands from natural language and analyze execution results; apply generated code to the matching tab with one click. Shown in a right-side panel (toggle with the **AI** button in the top bar). Requires a DeepSeek API key (Settings → AI, or the `DEEPSEEK_API_KEY` environment variable).
 - **Tool launcher** — open Terminal (wt / PowerShell / cmd / WSL), Explorer, VS Code, or the org in a browser (home / setup / login / recent URLs).
 - **Keyboard shortcuts** — `Ctrl+Enter` run (SOQL/Apex), `Enter` run (command), `Ctrl+1..9` favorites, `F5` re-run the last operation.
 - **Portable** — a `data/` folder (settings, history, logs, results) is created next to the exe; falls back to `%APPDATA%\SfUi` when not writable.
@@ -89,7 +89,7 @@ SOQL・匿名Apex・デバッグログ・デプロイ・自由コマンド・RES
 少ないクリックで実行できます。組織とフォルダの切替、外部ツールの起動もワンクリックです。
 
 - UI は **英語（既定）/ 日本語** に対応（上部バーのコンボで即時切替）
-- **AI チャット（DeepSeek）**: 自然言語から SOQL / 匿名Apex / sf コマンドを生成、実行結果の分析も可能（設定 → AI で API キーを登録）
+- **AI チャット（DeepSeek）**: 自然言語から SOQL / 匿名Apex / sf コマンドを生成、実行結果の分析も可能（右サイドパネル表示・上部バーの「AI」で表示切替。API キーは設定 → AI で登録）
 - 2026-10-02 時点で Phase 0〜8 完了（テスト 142 件 / スモーク E2E 検証済み）
 
 ## 使い方

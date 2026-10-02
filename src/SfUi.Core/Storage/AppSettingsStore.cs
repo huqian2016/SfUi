@@ -29,6 +29,9 @@ public sealed class AppSettings
     /// <summary>UI 言語（"en" = 英語／既定、"ja" = 日本語）。</summary>
     public string Language { get; set; } = UiText.English;
 
+    /// <summary>AI パネル（右サイド）の表示状態。</summary>
+    public bool AiPanelVisible { get; set; } = true;
+
     /// <summary>DeepSeek API キー（null / 空 = 環境変数 DEEPSEEK_API_KEY を使用）。</summary>
     public string? DeepSeekApiKey { get; set; }
 

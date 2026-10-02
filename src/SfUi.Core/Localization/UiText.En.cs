@@ -61,6 +61,7 @@ public static partial class UiText
         ["Main_BrowserRecent"] = "Recent URLs",
         ["Main_QuickToggle"] = "Quick",
         ["Main_QuickToggleTip"] = "Show/hide the favorites panel (Ctrl+1..9 to run)",
+        ["Main_AiToggleTip"] = "Show/hide the AI chat panel (DeepSeek)",
         ["Main_LanguageTip"] = "UI language",
         ["Tab_Soql"] = "SOQL",
         ["Tab_Apex"] = "Apex",

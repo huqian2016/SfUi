@@ -9,16 +9,22 @@
 
         <!-- ツールバー（コンテキスト選択と操作） -->
         <Border DockPanel.Dock="Top" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
-            <StackPanel Orientation="Horizontal">
-                <Button Content="{loc:Tr Ai_Clear}" Padding="10,2" Margin="0,0,12,0" Command="{Binding ClearChatCommand}" />
-                <Border Width="1" Background="#CCCCCC" Margin="0,2,12,2" />
-                <TextBlock Text="{loc:Tr Ai_ContextLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
-                <ComboBox Width="320" ItemsSource="{Binding ContextEntries}" SelectedItem="{Binding SelectedContextEntry, Mode=TwoWay}"
-                          DisplayMemberPath="Summary" ToolTip="{loc:Tr Ai_ContextTip}" />
-                <CheckBox Content="{loc:Tr Ai_AttachContext}" IsChecked="{Binding AttachContext, Mode=TwoWay}"
-                          VerticalAlignment="Center" Margin="8,0,12,0" />
-                <Button Content="{loc:Tr Ai_AnalyzeLast}" Padding="10,2" Margin="0,0,6,0" Command="{Binding AnalyzeLastCommand}" />
-                <Button Content="⟳" Padding="8,2" Command="{Binding RefreshContextCommand}" ToolTip="{loc:Tr Common_RefreshTip}" />
+            <StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="{loc:Tr Ai_Clear}" Padding="10,2" Margin="0,0,6,0" Command="{Binding ClearChatCommand}" />
+                    <Button Content="{loc:Tr Ai_AnalyzeLast}" Padding="10,2" Margin="0,0,6,0" Command="{Binding AnalyzeLastCommand}" />
+                    <Button Content="⟳" Padding="8,2" Command="{Binding RefreshContextCommand}" ToolTip="{loc:Tr Common_RefreshTip}" />
+                </StackPanel>
+                <Grid Margin="0,6,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="{loc:Tr Ai_ContextLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                    <ComboBox Grid.Column="1" ItemsSource="{Binding ContextEntries}" SelectedItem="{Binding SelectedContextEntry, Mode=TwoWay}"
+                              DisplayMemberPath="Summary" ToolTip="{loc:Tr Ai_ContextTip}" />
+                </Grid>
+                <CheckBox Content="{loc:Tr Ai_AttachContext}" IsChecked="{Binding AttachContext, Mode=TwoWay}" Margin="0,6,0,0" />
             </StackPanel>
         </Border>
 
@@ -34,13 +40,13 @@
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <TextBox Grid.Column="0" x:Name="InputBox" Height="70" AcceptsReturn="True" TextWrapping="Wrap"
+            <TextBox Grid.Column="0" x:Name="InputBox" Height="64" AcceptsReturn="True" TextWrapping="Wrap"
                      VerticalScrollBarVisibility="Auto" Padding="6,4"
                      Text="{Binding InputText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                      ToolTip="{loc:Tr Ai_InputTip}" />
-            <Button Grid.Column="1" Content="{loc:Tr Ai_Send}" Width="120" Margin="6,0,0,0" VerticalAlignment="Stretch"
+            <Button Grid.Column="1" Content="{loc:Tr Ai_Send}" Width="96" Margin="6,0,0,0" VerticalAlignment="Stretch"
                     Command="{Binding SendCommand}" />
-            <Button Grid.Column="2" Content="{loc:Tr Common_Cancel}" Width="90" Margin="6,0,0,0" VerticalAlignment="Stretch"
+            <Button Grid.Column="2" Content="{loc:Tr Common_Cancel}" Width="72" Margin="6,0,0,0" VerticalAlignment="Stretch"
                     Command="{Binding CancelCommand}" />
         </Grid>
 

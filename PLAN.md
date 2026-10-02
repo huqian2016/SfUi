@@ -179,7 +179,7 @@ data/
 
 - `DeepSeekClient`（Core）: OpenAI 互換 `POST https://api.deepseek.com/chat/completions`。モデル既定 `deepseek-chat`（設定で `deepseek-reasoner` も選択可）。タイムアウト 3 分・キャンセル対応
 - API キー: settings.json（`deepSeekApiKey`）→ 環境変数 `DEEPSEEK_API_KEY` の順で解決。リポジトリ / Release には含めない
-- AI タブ: 会話 UI（ユーザー / AI メッセージ・自動スクロール・新しい会話）、`Ctrl+Enter` 送信、キャンセル。タブ順は SOQL / 匿名Apex / **AI** / デバッグログ / 履歴 / デプロイ / コマンド / REST API / 設定（9 タブ）
+- AI パネル（右サイド）: 会話 UI（ユーザー / AI メッセージ・自動スクロール・新しい会話）、`Ctrl+Enter` 送信、キャンセル。上部バーの「AI」トグルで表示/非表示（状態は settings.json に保存）。タブは従来どおり 8 タブ
 - 生成支援: システムプロンプトでコードブロック出力を指示（`soql` / `apex` / `bash`）。応答内のコードを「SOQL タブへ / 匿名Apex タブへ / コマンドタブへ」ボタンで適用
 - 結果分析: 結果付き履歴をコンテキストとして添付（12,000 文字で切詰め）して送信。「直前の結果を分析」をワンクリックで準備
 - 設定画面: API キー / モデル / 接続テスト
@@ -283,7 +283,7 @@ data/
   - 備考: アプリログ（data/logs）と XML ドキュメントコメントは開発者向けのため日本語のまま
 
 - ✅ **Phase 8（2026-10-02 完了）**: AI チャット（DeepSeek）
-  - タブ順: SOQL / 匿名Apex / **AI** / デバッグログ / 履歴 / デプロイ / コマンド / REST API / 設定
+  - AI は**右サイドパネル**（上部バーの「AI」トグルで表示/非表示、状態は settings.json に保存）
   - `dotnet test`: 142 件成功（+9: DeepSeek 応答 / エラー / usage 解析、キー解決）
-  - 実 API 検証（`--smoke-ai`）: `OK（OK / 1.2 秒 / tokens 11+1）` + 全 9 タブ・言語切替例外 0 件
+  - 実 API 検証（`--smoke-ai`）: `OK（OK / 1.2 秒 / tokens 11+1）` + 全 8 タブ・両パネル・言語切替例外 0 件
   - セキュリティ: API キーは settings.json（gitignore 対象）または環境変数のみ。リポジトリ・Release には含めない
