@@ -8,6 +8,8 @@ namespace SfUi.App.ViewModels;
 public partial class CompareCategoryViewModel : ObservableObject
 {
     private readonly (string Label, string Key)[] _displayColumns;
+    private List<CompareRowViewModel> _materialized = new();
+    private bool _diffOnly;
 
     public CompareCategoryViewModel(OrgCompareCategory category)
     {
@@ -41,6 +43,14 @@ public partial class CompareCategoryViewModel : ObservableObject
     [ObservableProperty]
     private string? _emptyMessage;
 
+    /// <summary>タブ内検索テキスト（AND・スペース区切り、大文字小文字は無視）。</summary>
+    [ObservableProperty]
+    private string? _filterText;
+
+    /// <summary>検索適用中の件数表示（未適用は null）。</summary>
+    [ObservableProperty]
+    private string? _filteredCountText;
+
     /// <summary>現在の比較表（未取得は null）。CSV 出力でも使用する。</summary>
     public OrgCompareTable? Table { get; private set; }
 
@@ -53,6 +63,7 @@ public partial class CompareCategoryViewModel : ObservableObject
     public void Apply(OrgCompareTable table, bool diffOnly)
     {
         Table = table;
+        _materialized = Materialize(table);
         ApplyFilter(diffOnly);
         ColumnsChanged?.Invoke();
     }
@@ -60,31 +71,20 @@ public partial class CompareCategoryViewModel : ObservableObject
     /// <summary>差分のみフィルタを適用して表示行を再構築する（列は変化しない）。</summary>
     public void ApplyFilter(bool diffOnly)
     {
-        Rows.Clear();
-        if (Table is null)
-        {
-            SummaryText = null;
-            EmptyMessage = null;
-            return;
-        }
-
-        foreach (var row in Table.Rows.Where(r => !diffOnly || r.IsDiff))
-        {
-            Rows.Add(new CompareRowViewModel(row, _displayColumns));
-        }
-
-        SummaryText = UiText.T("Compare_SummaryFmt", Table.DiffCount, Table.Rows.Count);
-        EmptyMessage = Rows.Count == 0 ? UiText.T("Compare_Empty") : null;
+        _diffOnly = diffOnly;
+        RebuildRows();
     }
 
     /// <summary>組織未選択などで表示を空にする。</summary>
     public void Clear()
     {
         Table = null;
+        _materialized = new List<CompareRowViewModel>();
         IsLoaded = false;
         Rows.Clear();
         SummaryText = null;
         EmptyMessage = null;
+        FilteredCountText = null;
         ColumnsChanged?.Invoke();
     }
 
@@ -92,8 +92,59 @@ public partial class CompareCategoryViewModel : ObservableObject
     public void Relocalize(bool diffOnly)
     {
         Title = UiText.T(Category.TitleKey);
+        if (Table is not null)
+        {
+            _materialized = Materialize(Table);
+        }
+
         ApplyFilter(diffOnly);
     }
+
+    partial void OnFilterTextChanged(string? value) => RebuildRows();
+
+    private List<CompareRowViewModel> Materialize(OrgCompareTable table) =>
+        table.Rows.Select(row => new CompareRowViewModel(row, _displayColumns)).ToList();
+
+    private void RebuildRows()
+    {
+        Rows.Clear();
+        if (Table is null)
+        {
+            SummaryText = null;
+            EmptyMessage = null;
+            FilteredCountText = null;
+            return;
+        }
+
+        var terms = ParseTerms(FilterText);
+        foreach (var row in _materialized)
+        {
+            if (_diffOnly && !row.IsDiff)
+            {
+                continue;
+            }
+
+            if (terms.Count > 0 && !terms.All(t => row.SearchText.Contains(t, StringComparison.Ordinal)))
+            {
+                continue;
+            }
+
+            Rows.Add(row);
+        }
+
+        SummaryText = UiText.T("Compare_SummaryFmt", Table.DiffCount, _materialized.Count);
+        FilteredCountText = terms.Count == 0 ? null : UiText.T("Compare_FilteredFmt", Rows.Count, _materialized.Count);
+        EmptyMessage = Rows.Count == 0
+            ? (_materialized.Count == 0 ? UiText.T("Compare_Empty") : UiText.T("Compare_NoMatch"))
+            : null;
+    }
+
+    private static IReadOnlyList<string> ParseTerms(string? filter) =>
+        string.IsNullOrWhiteSpace(filter)
+            ? Array.Empty<string>()
+            : filter.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(t => t.ToLowerInvariant())
+                .ToArray();
 
     /// <summary>UIA のタブ名表示用（既定の ToString だと VM 型名になるため）。</summary>
     public override string ToString() => Title;
@@ -108,6 +159,7 @@ public sealed class CompareRowViewModel
         Label = row.Label;
         IsDiff = row.IsDiff;
         Cells = row.Cells.Select(cell => new CompareCellViewModel(cell, displayColumns)).ToList();
+        SearchText = string.Join(" ", new[] { row.Label, row.Key }.Concat(Cells.Select(c => c.Text))).ToLowerInvariant();
     }
 
     public string Key { get; }
@@ -117,6 +169,9 @@ public sealed class CompareRowViewModel
     public bool IsDiff { get; }
 
     public IReadOnlyList<CompareCellViewModel> Cells { get; }
+
+    /// <summary>タブ内検索用の小文字化済みテキスト（ラベル + キー + 全セル表示）。</summary>
+    public string SearchText { get; }
 }
 
 /// <summary>比較グリッドのセル表示（テキスト・ツールチップ・状態フラグ）。</summary>

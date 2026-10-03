@@ -667,5 +667,9 @@ public static partial class UiText
         ["Compare_FetchFailed"] = "Fetch failed",
         ["Compare_KeyHeader"] = "Item / API name",
         ["Compare_DiffColumn"] = "Diff",
+        ["Compare_SearchLabel"] = "Search:",
+        ["Compare_SearchTip"] = "Filter rows (AND, space separated)",
+        ["Compare_FilteredFmt"] = "Showing {0} of {1}",
+        ["Compare_NoMatch"] = "No rows match the current filter",
     };
 }

@@ -5,7 +5,7 @@
         xmlns:loc="clr-namespace:SfUi.App"
         Title="{loc:Tr App_Title}"
         Icon="pack://application:,,,/SfUi.ico"
-        Height="720" Width="1440" MinWidth="1000" MinHeight="540"
+        Height="720" Width="1520" MinWidth="1000" MinHeight="540"
         WindowStartupLocation="CenterScreen"
         FontSize="13">
     <Window.Resources>

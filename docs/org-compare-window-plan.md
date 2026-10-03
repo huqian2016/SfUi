@@ -1,6 +1,6 @@
 # 組織比較ウィンドウ（Org Compare Window）設計書
 
-最終更新: 2026-10-03 / ステータス: **全ステップ完了（テスト 277 件 / スモーク・E2E 検証済み）**
+最終更新: 2026-10-03 / ステータス: **全ステップ完了 + 改修（v0.5.1）（テスト 277 件 / スモーク・E2E 検証済み）**
 
 対象リポジトリ: `c:\huqian\vscode\SfUi`（WPF / .NET 9 / SfUi.Core + SfUi.App）
 
@@ -71,6 +71,9 @@
 ```
 
 - 組織チェックボックスのラベル = `OrgInfo.DisplayName`（Alias (Username)）。選択状態は永続化
+- 組織リストは **最大 3 列**（`UniformGrid Columns=3`）。多くて収まらない場合は縦スクロール（高さは約 4 行まで）
+- 各カテゴリタブに **検索ボックス**（行の内容で AND 絞り込み・スペース区切り、大文字小文字無視）。検索中は「表示: n 件 / 全 m 件」を表示
+- 差分行のハイライトは **黄色（#FFF59D）のみ**（交互行の背景色は使わない）
 - 2 組織未満のときは表を構築せず「2 つ以上選択してください」をステータス表示
 - タブ = 比較カテゴリ（§4）。タブ切替時にキャッシュ読み → 不足分を自動取得 → 表再構築
 - セルの状態表示: 値あり / **—**（その組織に存在しない）/ **未取得** / **取得失敗**
@@ -198,3 +201,12 @@ OrgCompareState
 - [x] Step 3: 検証・仕上げ（スモーク・E2E・README/PLAN）— 2026-10-03 完了
   - `--smoke --smoke-compare hks4sand1,acc`: 全 13 カテゴリの行数/差分件数をログ出力（settings 20/0・owds 787/652・stats 7/7・users 31/31・profiles 62/46・permissionSets 290/250・roles 21/21・objects 779/650・apexClasses 558/558・apexTriggers 16/16・flows 356/288・recordTypes 58/58。ExitCode=0）。VS Code タスク `run (smoke compare)` 追加
   - README（EN/JA）・PLAN.md（Phase 12）更新。バージョン: **0.5.0** 化（`SfUi.App.csproj` / `AppxManifest.xml` = 0.5.0.0 / MSIX = `dist\SfUi_0.5.0.0_x64.msix` 再ビルド）
+
+### 改修（2026-10-03）
+
+- 組織チェックを **最大 3 列 + 縦スクロール** に変更（組織が多い場合の見切れ対応）
+- 各カテゴリタブに **検索ボックス**（AND 絞り込み・「表示: n 件 / 全 m 件」・一致なしメッセージ）を追加
+- 行背景を **差分行のみ黄色（#FFF59D）** に変更（交互行のゼブラ背景を廃止）
+- MainWindow 幅を 1440 → **1520** に拡張（言語プルダウンが切れるため。UIA 実測で clipped=False を確認）
+- E2E 更新: `検索: 290 → 35 行（'Admin'）` を確認（スクリプト `C:\huqian\sfui-compare-verify.ps1`）
+- バージョン: **0.5.1** 化（MSIX = `dist\SfUi_0.5.1.0_x64.msix` 再ビルド）

@@ -1,6 +1,6 @@
 # SfUi — Salesforce CLI 統合デスクトップツール 実装計画
 
-最終更新: 2026-10-03 / ステータス: Phase 0-10 完了 + AI 接続先の汎用化 + 組織比較 + Microsoft Store（MSIX）提出準備完了（v0.5.0 / テスト 277 件 / 実 API スモーク検証済み。v0.2.0 は GitHub Release で公開中、Microsoft Store は審査準備中）
+最終更新: 2026-10-03 / ステータス: Phase 0-10 完了 + AI 接続先の汎用化 + 組織比較 + Microsoft Store（MSIX）提出準備完了（v0.5.1 / テスト 277 件 / 実 API スモーク検証済み。v0.2.0 は GitHub Release で公開中、Microsoft Store は審査準備中）
 
 ## 1. 概要
 
@@ -242,7 +242,7 @@ data/
 - UI: 組織チェックボックス（最大 4・選択とカテゴリは `data/orginfo/compare.json` に永続化）、カテゴリタブ（動的列グリッド）、CSV 出力（フィルタ適用後・組織列 + 差分列）
 - スモーク: `--smoke --smoke-compare <org1,org2[,...]>`（全カテゴリの行数/差分件数をログ）。E2E: 実組織 acc / hks4sand1 で権限セット 290 行・差分 250 行・CSV 290 行を確認
 - テスト: 277 件（+25: 突合キー / 差分判定 / 統計 / DataTable / 状態ストア）
-- バージョン: **0.5.0**（組織比較の追加でマイナーアップ。`SfUi.App.csproj` = 0.5.0 / `AppxManifest.xml` = 0.5.0.0 / MSIX = `dist\SfUi_0.5.0.0_x64.msix`）
+- バージョン: **0.5.1**（組織比較の追加と UI 改修。`SfUi.App.csproj` = 0.5.1 / `AppxManifest.xml` = 0.5.1.0 / MSIX = `dist\SfUi_0.5.1.0_x64.msix`）
 
 ## 10. 検証計画
 
@@ -361,4 +361,5 @@ data/
   - `dotnet test`: 277 件成功（+25）
   - スモーク: `--smoke --smoke-compare hks4sand1,acc` で全 13 カテゴリを構築（settings 20/0・owds 787/652・users 31/31・permissionSets 290/250・objects 779/650・apexClasses 558/558・flows 356/288 行〔行数/差分〕）。VS Code タスク `run (smoke compare)` 追加
   - E2E（`C:\huqian\sfui-compare-verify.ps1`）: 12 組織 / 13 タブ / 差分のみフィルタ / CSV 290 行 OK。知見: Windows 11 最新式 SaveFileDialog は UIA ValuePattern 不可（Pane）→ 自動化はキーボード操作で保存
-  - バージョン: **0.5.0** 化（`SfUi.App.csproj` / `AppxManifest.xml` / `dist\SfUi_0.5.0.0_x64.msix` 再ビルド）
+  - バージョン: **0.5.1** 化（`SfUi.App.csproj` / `AppxManifest.xml` / `dist\SfUi_0.5.1.0_x64.msix` 再ビルド）
+  - 2026-10-03 改修（v0.5.1）: 組織チェックを最大 3 列 + スクロール / 各タブ検索（AND・「表示: n 件 / 全 m 件」）/ 差分行のみ黄色ハイライト（交互色を廃止）/ MainWindow 幅 1440 → 1520（言語プルダウンの見切れ対応）

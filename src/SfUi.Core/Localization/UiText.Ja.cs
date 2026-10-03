@@ -667,5 +667,9 @@ public static partial class UiText
         ["Compare_FetchFailed"] = "取得失敗",
         ["Compare_KeyHeader"] = "項目 / API 名",
         ["Compare_DiffColumn"] = "差分",
+        ["Compare_SearchLabel"] = "検索:",
+        ["Compare_SearchTip"] = "行の内容で絞り込み（AND・スペース区切り）",
+        ["Compare_FilteredFmt"] = "表示: {0} 件 / 全 {1} 件",
+        ["Compare_NoMatch"] = "条件に一致する行がありません",
     };
 }

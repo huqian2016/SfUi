@@ -13,23 +13,28 @@
         <!-- 上部: 組織選択 + 操作 -->
         <Border DockPanel.Dock="Top" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
             <StackPanel>
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="{loc:Tr Compare_SelectOrgs}" VerticalAlignment="Center" Margin="0,0,6,0" />
-                    <ItemsControl ItemsSource="{Binding Orgs}" VerticalAlignment="Center">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <StackPanel Orientation="Horizontal" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <CheckBox Content="{Binding DisplayName}" Margin="0,0,14,0" VerticalAlignment="Center"
-                                          IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                          ToolTip="{Binding Username}" />
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Left" Text="{loc:Tr Compare_SelectOrgs}" VerticalAlignment="Top" Margin="0,4,6,0" />
+                    <!-- 組織は最大 3 列。多くて収まらない場合は縦スクロール（高さは約 4 行まで） -->
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="104">
+                        <ItemsControl ItemsSource="{Binding Orgs}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="3" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <CheckBox Margin="0,1,10,1" VerticalAlignment="Center"
+                                              IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                              ToolTip="{Binding Username}">
+                                        <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" />
+                                    </CheckBox>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
                 <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
                     <Button Content="{loc:Tr Compare_Refetch}" Padding="10,2"
                             Command="{Binding RefreshCurrentCommand}" IsEnabled="{Binding CanInteract}" />
