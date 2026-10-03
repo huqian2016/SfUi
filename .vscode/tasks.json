@@ -72,6 +72,21 @@
 			"problemMatcher": []
 		},
 		{
+			"label": "run (smoke orginfo)",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"run",
+				"--project",
+				"src/SfUi.App/SfUi.App.csproj",
+				"--",
+				"--smoke",
+				"--smoke-orginfo",
+				"hks4sand1"
+			],
+			"problemMatcher": []
+		},
+		{
 			"label": "publish (single exe)",
 			"type": "shell",
 			"command": "dotnet",

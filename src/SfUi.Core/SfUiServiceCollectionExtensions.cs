@@ -24,6 +24,10 @@ public static class SfUiServiceCollectionExtensions
         services.AddSingleton<RecentUrlsStore>();
         services.AddSingleton<FavoritesStore>();
         services.AddSingleton<HistoryStore>();
+        services.AddSingleton<OrgInfoCacheStore>();
+        services.AddSingleton<OrgInfoPreferencesStore>();
+        services.AddSingleton<OrgInfoService>();
+        services.AddSingleton<OrgInfoSearchService>();
         return services;
     }
 }

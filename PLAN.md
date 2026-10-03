@@ -1,6 +1,6 @@
 # SfUi — Salesforce CLI 統合デスクトップツール 実装計画
 
-最終更新: 2026-10-03 / ステータス: Phase 0-8 完了 + Microsoft Store（MSIX）提出準備完了（テスト 145 件 / 実 API スモーク検証済み。v0.2.0 は GitHub Release で公開中、Microsoft Store は審査準備中）
+最終更新: 2026-10-03 / ステータス: Phase 0-10 完了 + Microsoft Store（MSIX）提出準備完了（v0.3.0 / テスト 242 件 / 実 API スモーク検証済み。v0.2.0 は GitHub Release で公開中、Microsoft Store は審査準備中）
 
 ## 1. 概要
 
@@ -205,6 +205,22 @@ data/
 - 検証: `dist/SfUi_0.2.0.0_x64.msix`（MinVersion 10.0.17763.0 / Identity 0.2.0.0 / 自己署名一時キー）を unpack・アイコン色検証・スモークで確認
 - Partner Center: 登録情報（日英説明）、`runFullTrust` の用途申請、プライバシー ポリシー（テキスト提供）を進行中。認定後は Microsoft が再署名（SmartScreen 警告なし・証明書不要）
 
+### Phase 10: 組織情報ウィンドウ ✅
+
+管理者向けの閲覧ツール。メインウィンドウの「組織情報」ボタンから、選択中組織の設定・メタデータ・アクセス制御を
+**非モーダルの独立ウィンドウ**（複数同時可・同じ組織は毎回新規）で一覧・検索・再取得する。
+
+- 設計ドキュメント: `docs/org-info-window-plan.md`（Step 1〜5）
+- タブ: 概要 / 設定 / ユーザ / プロファイル / 権限セット / ロール / オブジェクト / OWD / Apex クラス / Apex トリガ / フロー / スケジュール済みジョブ / 接続アプリ / インストール済みパッケージ / ログイン履歴 / 設定変更履歴 / レコードタイプ / 通貨 / オブジェクト項目（遅延取得）/ マイ設定（カスタムタブ）/ マイ設定管理
+- キャッシュ: `data/orginfo/<orgKey>.json`（**初回のみ自動取得**・以降は手動再取得。再オープンでは取得しない）。マイ設定は `data/orginfo/preferences.json`（組織別・複数ウィンドウで同期）
+- 検索: タブ内（列名 + 値、200ms デバウンス）+ 全タブ横断（上限 1,000 件、結果から該当タブ・行へジャンプ）
+- マイ設定: カタログ 55 項目（概要 / 設定 / OWD / 統計）から選択。複数タブ・名前変更・並べ替え・組織別保存。再取得は参照元セクションのみ
+- AI: ウィンドウ単位の独立会話。右サイドパネル（AI トグル）で「表示中タブのデータを添付」（TSV・12,000 文字）とクイックプロンプト 4 種。システムプロンプトに組織コンテキストを自動付与
+- リンク: セクションの Setup ボタン / 行の ↗（ユーザー・プロファイル・オブジェクト詳細）/ 設定の「リンクのみ」行
+- スモーク: `--smoke --smoke-orginfo <org>`（初回取得 → 2 回目は API を呼ばない → `--smoke-orginfo-refresh` で fetchedAt 更新）
+- テスト: 242 件（+97: Core クエリ/パース/キャッシュ/検索/URL/カタログ/設定ストア/添付 + UI 表示）
+- E2E（実アプリ + UI Automation、`C:\huqian\sfui-orginfo-*.ps1`）: 初回 8 セクション自動取得 → 再オープンで再取得なし / 項目 63 取得 / 全タブ検索 + ジャンプ / マイ設定の作成〜保存〜復元 / AI タブデータ添付 / 多通貨無効の通貨タブ専用メッセージ / 日本語表示確認
+
 ## 10. 検証計画
 
 1. `dotnet build` / `dotnet test`（引数クォート・JSON 解析・ストア round-trip・CSV）
@@ -224,6 +240,7 @@ data/
 - VS Code タスク: build / test / run / run (smoke) / run (smoke org) / publish (single exe)
 - UI 文字列: コードは `UiText.T("Key")`、XAML は `{loc:Tr Key}`。辞書は `src/SfUi.Core/Localization/UiText.En.cs` / `UiText.Ja.cs`（キーは両ファイルで同一 — テストで検証）
 - スモーク起動: `dotnet run --project src/SfUi.App -- --smoke`（sf CLI で組織一覧取得を検証して自動終了、`data/logs` に記録）
+- スモーク起動（組織情報）: `dotnet run --project src/SfUi.App -- --smoke --smoke-orginfo <alias>`（初回は概要・ユーザーを取得、2 回目以降は API を呼ばずキャッシュを使用。`--smoke-orginfo-refresh` を付けると手動再取得で fetchedAt の更新を検証）
 - sf のフラグは実装時に `sf <command> --help` で確定する（バージョン差吸収）
 
 ## 13. 実装進捗
@@ -301,3 +318,11 @@ data/
   - セキュリティ: API キーは settings.json（gitignore 対象）→ 環境変数 → 内蔵（評価用）の順で解決。評価用キーは XOR+Base64 難読化で同梱するためダウンロード直後でも AI を試せる（難読化のみで暗号学的保護ではない。README / MD にはキー値を記載しない）
 
 - ✅ **Microsoft Store 配布準備（2026-10-03）**: `packaging/` 一式（AppxManifest / Make-Msix.ps1 / New-Icon.ps1 / Assets / README）と EXE・ウィンドウ アイコンを追加。`dist/SfUi_0.2.0.0_x64.msix`（MinVersion 10.0.17763.0）を生成・一時キー署名・検証済み。Partner Center 提出のための登録情報・`runFullTrust` 用途申請・プライバシー ポリシーを準備（審査準備中）。知見: Identity の Version 更新は XML で行う（文字列 regex だと `MinVersion` の末尾に誤マッチして破壊する）
+
+- ✅ **Phase 10（2026-10-03 完了）**: 組織情報ウィンドウ（設計: `docs/org-info-window-plan.md`）
+  - Step 1（Core 基盤: モデル/キャッシュ/クエリ/URL/概要・ユーザ・プロファイル・権限セット・ロール・オブジェクト・OWD）/ Step 2（ウィンドウ UI: 複数ウィンドウ・タブ・初回のみ自動取得・再取得・タブ内検索）/ Step 3（オブジェクト項目の遅延取得・全タブ検索・Setup リンク・権限エラー）/ Step 4（主な設定・追加候補 10 タブ・マイ設定のカスタムタブ・AI 連携）を実装
+  - `dotnet test`: 242 件成功（+97 件: Step 1 = 42 / Step 3 = 16 / Step 4 = 39）
+  - E2E（実アプリ + UI Automation）: 初回 8 セクション取得 → 再オープンで再取得なし（キャッシュ）/ オブジェクト項目 63 件 / 全タブ検索 3 件 + タブジャンプ / カスタムタブ作成→保存→再オープン復元 / AI のタブデータ添付 (197 文字) + クイックプロンプト / 多通貨無効組織の通貨タブ専用メッセージ / 日本語表示（新規キー約 200 件）を実機確認
+  - スモーク E2E（`--smoke --smoke-orginfo acc`）: 初回「overview / users を取得」→ 2 回目「API 呼び出し = 0 セクション（キャッシュのみ）」→ `--smoke-orginfo-refresh` で「fetchedAt 更新 (updated=True)」をログで確認
+  - バージョン: **0.3.0**（AppxManifest は 0.3.0.0。MinVersion 10.0.17763.0 は据え置き）
+  - 知見: 設定値は `Organization` の `Preferences*` 等（describe で存在確認）/ `CurrencyType` は多通貨無効組織では sObject 自体が未サポート / Tooling `SubscriberPackageVersion` は `Id = '...'` の単一形式のみ / `SetupAuditTrail.CreatedBy` は null になり得る / UIA の ListBox 項目名はデータ型の ToString になるため record に ToString を実装

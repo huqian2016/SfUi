@@ -10,6 +10,26 @@
         <!-- ツールバー（コンテキスト選択と操作） -->
         <Border DockPanel.Dock="Top" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
             <StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,6"
+                            Visibility="{Binding ShowTabDataButton, Converter={StaticResource BoolToVis}}">
+                    <Button x:Name="AttachTabDataButton" Content="{loc:Tr OrgInfo_Ai_AttachTab}" Padding="10,2"
+                            Command="{Binding AttachTabDataCommand}" />
+                </StackPanel>
+                <ItemsControl ItemsSource="{Binding QuickPrompts}" Margin="0,0,0,4"
+                              Visibility="{Binding HasQuickPrompts, Converter={StaticResource BoolToVis}}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Content="{Binding}" Padding="8,2" Margin="0,0,6,4" FontSize="12"
+                                    Command="{Binding DataContext.UseQuickPromptCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding}" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
                 <StackPanel Orientation="Horizontal">
                     <Button Content="{loc:Tr Ai_Clear}" Padding="10,2" Margin="0,0,6,0" Command="{Binding ClearChatCommand}" />
                     <Button Content="{loc:Tr Ai_AnalyzeLast}" Padding="10,2" Margin="0,0,6,0" Command="{Binding AnalyzeLastCommand}" />
@@ -30,7 +50,7 @@
 
         <!-- ステータス -->
         <Border DockPanel.Dock="Bottom" Background="#F7F7F7" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="8,4">
-            <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" />
+            <TextBlock x:Name="AiStatusText" Text="{Binding StatusText}" TextWrapping="Wrap" />
         </Border>
 
         <!-- 入力 -->

@@ -60,6 +60,8 @@ public partial class AiChatViewModel : ObservableObject
     private readonly AppLog _log;
 
     private CancellationTokenSource? _cts;
+    private string? _tabAttachment;
+    private string? _tabAttachmentName;
 
     [ObservableProperty]
     private string _inputText = string.Empty;
@@ -78,6 +80,21 @@ public partial class AiChatViewModel : ObservableObject
 
     /// <summary>現在の対象組織（MainViewModel から設定される）。</summary>
     public string? CurrentOrg { get; set; }
+
+    /// <summary>表示中タブのデータ添付（組織情報ウィンドウ用）: 呼ぶと (タブ名, テキスト) を返す。</summary>
+    public Func<(string Name, string Text)?>? TabDataProvider { get; set; }
+
+    /// <summary>システムプロンプトへ追記する追加コンテキスト（組織情報ウィンドウ用）。</summary>
+    public Func<string?>? ExtraSystemContextProvider { get; set; }
+
+    /// <summary>クイックプロンプト（組織情報ウィンドウ用。空なら表示しない）。</summary>
+    public ObservableCollection<string> QuickPrompts { get; } = new();
+
+    [ObservableProperty]
+    private bool _showTabDataButton;
+
+    [ObservableProperty]
+    private bool _hasQuickPrompts;
 
     public ObservableCollection<AiChatMessage> Messages { get; } = new();
 
@@ -149,7 +166,15 @@ public partial class AiChatViewModel : ObservableObject
         }
 
         var userContent = text;
-        if (AttachContext && SelectedContextEntry is { } context)
+        if (_tabAttachment is { } tabData)
+        {
+            // 組織情報ウィンドウの「表示中タブのデータを添付」分を優先して含める
+            userContent = UiText.T("OrgInfo_Ai_AttachHeaderFmt", _tabAttachmentName ?? string.Empty)
+                          + "\n```\n" + tabData + "\n```\n\n" + text;
+            _tabAttachment = null;
+            _tabAttachmentName = null;
+        }
+        else if (AttachContext && SelectedContextEntry is { } context)
         {
             var result = _history.ReadResult(context);
             if (!string.IsNullOrEmpty(result))
@@ -206,6 +231,35 @@ public partial class AiChatViewModel : ObservableObject
     [RelayCommand]
     private void Cancel() => _cts?.Cancel();
 
+    /// <summary>表示中タブのデータを次の送信に添付する（組織情報ウィンドウ用）。</summary>
+    [RelayCommand]
+    private void AttachTabData()
+    {
+        var data = TabDataProvider?.Invoke();
+        if (data is null || data.Value.Text.Length == 0)
+        {
+            _tabAttachment = null;
+            _tabAttachmentName = null;
+            StatusText = UiText.T("OrgInfo_Ai_NoTabData");
+            return;
+        }
+
+        var (name, text) = data.Value;
+        _tabAttachment = text;
+        _tabAttachmentName = name;
+        StatusText = UiText.T("OrgInfo_Ai_AttachDoneFmt", name, text.Length);
+    }
+
+    /// <summary>クイックプロンプトを入力欄へ入れる。</summary>
+    [RelayCommand]
+    private void UseQuickPrompt(string? prompt)
+    {
+        if (!string.IsNullOrEmpty(prompt))
+        {
+            InputText = prompt;
+        }
+    }
+
     [RelayCommand]
     private void ClearChat()
     {
@@ -249,7 +303,7 @@ public partial class AiChatViewModel : ObservableObject
             ? (japanese ? "（未選択）" : "(none)")
             : CurrentOrg;
 
-        return japanese
+        var prompt = japanese
             ? "あなたは Salesforce のエキスパートアシスタントです。ユーザーは Windows のデスクトップツール SfUi から Salesforce CLI (sf) を操作しています。"
               + $"現在の対象組織: {org}。\n"
               + "・SOQL は ```soql、匿名Apex は ```apex、sf コマンドは ```bash（先頭に sf を付ける）のコードブロックで出力してください。\n"
@@ -258,6 +312,9 @@ public partial class AiChatViewModel : ObservableObject
               + $"Current target org: {org}.\n"
               + "- Output SOQL in ```soql, anonymous Apex in ```apex, and sf commands in ```bash (prefix with sf).\n"
               + "- Be concise.";
+
+        var extra = ExtraSystemContextProvider?.Invoke();
+        return string.IsNullOrWhiteSpace(extra) ? prompt : prompt + "\n" + extra;
     }
 
     /// <summary>応答からコードブロックを抽出して適用候補にする。</summary>

@@ -1,0 +1,126 @@
+<Window x:Class="SfUi.App.Views.OrgInfoWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:SfUi.App.Views"
+        xmlns:vm="clr-namespace:SfUi.App.ViewModels"
+        xmlns:loc="clr-namespace:SfUi.App"
+        Title="{Binding Title}"
+        Icon="pack://application:,,,/SfUi.ico"
+        Height="760" Width="1280" MinWidth="960" MinHeight="540"
+        WindowStartupLocation="CenterOwner"
+        FontSize="13">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+    </Window.Resources>
+    <DockPanel>
+
+        <!-- 上部: すべて再取得 / キャンセル / 最終取得時刻 -->
+        <Border DockPanel.Dock="Top" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
+            <DockPanel>
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                    <Button Content="{loc:Tr OrgInfo_RefreshAll}" Padding="10,2"
+                            Command="{Binding RefreshAllCommand}" IsEnabled="{Binding CanRefresh}"
+                            ToolTip="{loc:Tr OrgInfo_RefreshAllTip}" />
+                    <Button Content="{loc:Tr Common_Cancel}" Padding="10,2" Margin="6,0,0,0"
+                            Command="{Binding CancelCommand}" IsEnabled="{Binding IsBusy}" />
+                    <Border Width="1" Background="#CCCCCC" Margin="12,2,12,2" />
+                    <TextBlock Text="{loc:Tr OrgInfo_Search_Global}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                    <TextBox x:Name="GlobalSearchBox" Width="240" VerticalContentAlignment="Center"
+                             Text="{Binding GlobalSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             ToolTip="{loc:Tr OrgInfo_Search_GlobalTip}"
+                             KeyDown="GlobalSearchBox_KeyDown" />
+                    <Button Content="✕" Padding="6,2" Margin="4,0,0,0" Command="{Binding ClearSearchCommand}"
+                            ToolTip="{loc:Tr OrgInfo_Search_ClearTip}" />
+                    <TextBlock Text="{Binding SearchStatusText}" Margin="10,0,0,0" VerticalAlignment="Center" Foreground="#555555" />
+                    <TextBlock Text="{Binding LastFetchedText}" Margin="14,0,0,0" VerticalAlignment="Center" Foreground="#555555" />
+                    <ToggleButton x:Name="AiToggleButton" Content="AI" Margin="14,0,0,0" Padding="10,2"
+                                  IsChecked="{Binding IsAiPanelOpen, Mode=TwoWay}"
+                                  ToolTip="{loc:Tr OrgInfo_Ai_ToggleTip}" />
+                </StackPanel>
+                <TextBlock Text="{Binding StatusMessage}" HorizontalAlignment="Right" VerticalAlignment="Center"
+                           Foreground="#333333" TextTrimming="CharacterEllipsis" />
+            </DockPanel>
+        </Border>
+
+        <!-- 検索結果（全タブ横断。ダブルクリック / Enter で該当タブへ移動） -->
+        <Border DockPanel.Dock="Top" Background="#FFFFFF" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,4"
+                Visibility="{Binding IsSearchPanelOpen, Converter={StaticResource BoolToVis}}">
+            <DataGrid x:Name="GlobalSearchResultsGrid" ItemsSource="{Binding SearchResults}" MaxHeight="180"
+                      AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
+                      HeadersVisibility="Column" RowHeaderWidth="0" GridLinesVisibility="Horizontal"
+                      AlternatingRowBackground="#F7F9FB"
+                      MouseDoubleClick="GlobalSearchResults_MouseDoubleClick"
+                      KeyDown="GlobalSearchResults_KeyDown">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="{loc:Tr OrgInfo_Search_ColSection}" Binding="{Binding SectionTitle}" Width="160" />
+                    <DataGridTextColumn Header="{loc:Tr OrgInfo_Search_ColRecord}" Binding="{Binding RowSummary}" Width="220" />
+                    <DataGridTextColumn Header="{loc:Tr OrgInfo_Search_ColField}" Binding="{Binding FieldLabel}" Width="140" />
+                    <DataGridTextColumn Header="{loc:Tr OrgInfo_Col_Value}" Binding="{Binding Value}" Width="*" />
+                    <DataGridTemplateColumn Width="34">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Button Content="↗" Padding="6,0" FontSize="11"
+                                        Command="{Binding DataContext.GoToHitCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="{Binding}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+        <!-- 下部: ステータスバー -->
+        <Border DockPanel.Dock="Bottom" Background="#007ACC" Padding="8,4">
+            <DockPanel>
+                <TextBlock x:Name="VersionText" DockPanel.Dock="Right" Foreground="White" />
+                <TextBlock Text="{Binding OrgDetail}" Foreground="White" TextTrimming="CharacterEllipsis" />
+            </DockPanel>
+        </Border>
+
+        <!-- セクション（タブ） + AI パネル -->
+        <Grid Margin="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <TabControl Grid.Column="0" x:Name="SectionTabs" ItemsSource="{Binding Sections}" SelectedItem="{Binding SelectedSection, Mode=TwoWay}">
+                <TabControl.Resources>
+                    <DataTemplate DataType="{x:Type vm:OrgInfoSectionViewModel}">
+                        <views:OrgInfoSectionView />
+                    </DataTemplate>
+                    <DataTemplate DataType="{x:Type vm:OrgInfoFieldsViewModel}">
+                        <views:OrgInfoFieldsView />
+                    </DataTemplate>
+                    <DataTemplate DataType="{x:Type vm:OrgInfoCustomTabViewModel}">
+                        <views:OrgInfoCustomTabView />
+                    </DataTemplate>
+                    <DataTemplate DataType="{x:Type vm:OrgInfoMySettingsViewModel}">
+                        <views:OrgInfoMySettingsView />
+                    </DataTemplate>
+                </TabControl.Resources>
+                <TabControl.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Title}" />
+                    </DataTemplate>
+                </TabControl.ItemTemplate>
+            </TabControl>
+
+            <Border Grid.Column="1" x:Name="AiPanel" Width="420" Margin="8,0,0,0"
+                    BorderBrush="#DDDDDD" BorderThickness="1"
+                    Visibility="{Binding IsAiPanelOpen, Converter={StaticResource BoolToVis}}">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,4">
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Content="✕" Padding="6,0"
+                                    Command="{Binding ToggleAiPanelCommand}"
+                                    ToolTip="{loc:Tr OrgInfo_Ai_ToggleTip}" />
+                            <TextBlock Text="{loc:Tr OrgInfo_Ai_Title}" FontWeight="Bold" VerticalAlignment="Center" />
+                        </DockPanel>
+                    </Border>
+                    <views:AiChatView DataContext="{Binding Ai}" />
+                </DockPanel>
+            </Border>
+        </Grid>
+    </DockPanel>
+</Window>

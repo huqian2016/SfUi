@@ -39,6 +39,7 @@ public partial class SoqlView : UserControl
             if (_subscribed is not null)
             {
                 _subscribed.PropertyChanged += OnViewModelPropertyChanged;
+                SoqlEditor.Text = _subscribed.SoqlText;
             }
         };
 

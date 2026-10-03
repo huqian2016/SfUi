@@ -26,6 +26,11 @@
                         Command="{Binding RefreshOrgsCommand}"
                         ToolTip="{loc:Tr Main_RefreshOrgsTip}" />
 
+                <Button Content="{loc:Tr Main_OrgInfo}" Padding="10,2" Margin="0,0,12,0"
+                        Command="{Binding OpenOrgInfoCommand}"
+                        IsEnabled="{Binding HasSelectedOrg}"
+                        ToolTip="{loc:Tr Main_OrgInfoTip}" />
+
                 <TextBlock Text="{loc:Tr Main_FolderLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
                 <ComboBox x:Name="FolderComboBox" Width="300" IsEditable="True" Margin="0,0,4,0"
                           ItemsSource="{Binding RecentFolders}"

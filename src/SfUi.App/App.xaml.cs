@@ -2,7 +2,9 @@ using System.Net.Http;
 using System.Windows;
 using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
+using SfUi.App.Services;
 using SfUi.App.ViewModels;
+using SfUi.App.Views;
 using SfUi.Core;
 
 namespace SfUi.App;
@@ -16,6 +18,8 @@ public partial class App : Application
     private bool _smokeTest;
     private bool _smokeAi;
     private string? _smokeOrg;
+    private string? _smokeOrgInfo;
+    private bool _smokeOrgInfoRefresh;
     private int _dispatcherExceptionCount;
 
     protected override void OnStartup(StartupEventArgs e)
@@ -25,6 +29,8 @@ public partial class App : Application
         _smokeTest = e.Args.Any(a => string.Equals(a, "--smoke", StringComparison.OrdinalIgnoreCase));
         _smokeAi = _smokeTest && e.Args.Any(a => string.Equals(a, "--smoke-ai", StringComparison.OrdinalIgnoreCase));
         _smokeOrg = _smokeTest ? ReadOption(e.Args, "--smoke-org") : null;
+        _smokeOrgInfo = _smokeTest ? ReadOption(e.Args, "--smoke-orginfo") : null;
+        _smokeOrgInfoRefresh = _smokeTest && e.Args.Any(a => string.Equals(a, "--smoke-orginfo-refresh", StringComparison.OrdinalIgnoreCase));
         var dataDir = ReadOption(e.Args, "--data-dir") ?? Environment.GetEnvironmentVariable("SFUI_DATA_DIR");
 
         var paths = AppPaths.Resolve(dataDir);
@@ -39,9 +45,12 @@ public partial class App : Application
         services.AddSingleton<CommandViewModel>();
         services.AddSingleton<ApiConsoleViewModel>();
         services.AddSingleton<DeployViewModel>();
-        services.AddSingleton<AiChatViewModel>();
+        services.AddTransient<AiChatViewModel>();
         services.AddSingleton<SettingsViewModel>();
         services.AddSingleton<QuickPanelViewModel>();
+        services.AddSingleton<OrgInfoWindowFactory>();
+        services.AddTransient<OrgInfoViewModel>();
+        services.AddTransient<OrgInfoWindow>();
         services.AddSingleton<MainWindow>();
         Services = services.BuildServiceProvider();
 
@@ -175,6 +184,11 @@ public partial class App : Application
                     _log.Error($"--smoke-ai: 失敗: {aiResult.Error}");
                 }
             }
+
+            if (!string.IsNullOrWhiteSpace(_smokeOrgInfo) && !await RunOrgInfoSmokeAsync(_smokeOrgInfo))
+            {
+                exitCode = 1;
+            }
         }
         catch (Exception ex)
         {
@@ -200,6 +214,73 @@ public partial class App : Application
         }
 
         Shutdown(exitCode);
+    }
+
+    /// <summary>
+    /// --smoke-orginfo: 組織情報の「初回のみ取得・2 回目以降は API を呼ばない・手動再取得で fetchedAt 更新」を
+    /// ログで検証できる形で実行する（概要 + ユーザーの 2 セクション。--smoke-orginfo-refresh で再取得も実行）。
+    /// </summary>
+    private async Task<bool> RunOrgInfoSmokeAsync(string target)
+    {
+        try
+        {
+            var orgs = await Services.GetRequiredService<OrgService>().ListOrgsAsync();
+            var org = orgs.FirstOrDefault(o =>
+                string.Equals(o.Alias, target, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(o.Username, target, StringComparison.OrdinalIgnoreCase));
+            if (org is null)
+            {
+                _log.Error($"--smoke-orginfo: 組織が見つかりません: {target}");
+                return false;
+            }
+
+            var cache = Services.GetRequiredService<OrgInfoCacheStore>();
+            var service = Services.GetRequiredService<OrgInfoService>();
+            var orgKey = OrgInfoCacheStore.GetOrgKey(org);
+            _log.Info($"--smoke-orginfo: 対象={org.DisplayName} / orgKey={orgKey}");
+
+            var fetched = new List<string>();
+            var cached = new List<string>();
+            foreach (var sectionId in new[] { OrgInfoSections.Overview, OrgInfoSections.Users })
+            {
+                var existing = cache.GetSection(orgKey, sectionId);
+                if (existing is not null)
+                {
+                    cached.Add(sectionId);
+                    _log.Info($"--smoke-orginfo: {sectionId} はキャッシュを使用 (fetchedAt={existing.FetchedAt:yyyy-MM-dd HH:mm:ss}) → API 呼び出しなし");
+                    continue;
+                }
+
+                var section = await service.FetchSectionAsync(org, sectionId);
+                cache.UpsertSection(orgKey, section);
+                fetched.Add(sectionId);
+                _log.Info($"--smoke-orginfo: {sectionId} を取得 ({section.Rows.Count} 行 / fetchedAt={section.FetchedAt:yyyy-MM-dd HH:mm:ss})");
+            }
+
+            var fetchedText = fetched.Count == 0 ? "（キャッシュのみ）" : " (" + string.Join(", ", fetched) + ")";
+            _log.Info($"--smoke-orginfo: API 呼び出し = {fetched.Count} セクション{fetchedText} / キャッシュ利用 = {cached.Count} セクション");
+
+            if (_smokeOrgInfoRefresh)
+            {
+                var before = cache.GetSection(orgKey, OrgInfoSections.Overview)?.FetchedAt;
+                var refreshed = await service.FetchSectionAsync(org, OrgInfoSections.Overview);
+                cache.UpsertSection(orgKey, refreshed);
+                var updated = before is null || refreshed.FetchedAt > before;
+                _log.Info($"--smoke-orginfo: 手動再取得 overview: fetchedAt {before:yyyy-MM-dd HH:mm:ss} → {refreshed.FetchedAt:yyyy-MM-dd HH:mm:ss} (updated={updated})");
+                if (!updated)
+                {
+                    _log.Error("--smoke-orginfo: 再取得後も fetchedAt が更新されていません");
+                    return false;
+                }
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _log.Error("--smoke-orginfo: 失敗", ex);
+            return false;
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)

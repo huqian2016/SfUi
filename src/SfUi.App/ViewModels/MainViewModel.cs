@@ -4,6 +4,7 @@ using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
+using SfUi.App.Services;
 using SfUi.App.Views;
 using SfUi.Core;
 
@@ -19,6 +20,7 @@ public partial class MainViewModel : ObservableObject
     private readonly RecentUrlsStore _recentUrls;
     private readonly ToolLauncherService _toolLauncher;
     private readonly HistoryStore _history;
+    private readonly OrgInfoWindowFactory _orgInfoWindowFactory;
 
     [ObservableProperty]
     private bool _isBusy;
@@ -28,6 +30,7 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(StatusDetail))]
+    [NotifyPropertyChangedFor(nameof(HasSelectedOrg))]
     private OrgInfo? _selectedOrg;
 
     [ObservableProperty]
@@ -54,6 +57,9 @@ public partial class MainViewModel : ObservableObject
 
     /// <summary>ステータスバー表示用（組織・フォルダ）。</summary>
     public string StatusDetail => UiText.T("Main_StatusDetailFmt", SelectedOrg?.DisplayName ?? UiText.T("Main_NotSelected"), SelectedFolder ?? UiText.T("Main_DefaultFolder"));
+
+    /// <summary>組織が選択されているか（組織情報ボタンの有効化）。</summary>
+    public bool HasSelectedOrg => SelectedOrg is not null;
 
     /// <summary>認証済み組織（既定組織が先頭）。</summary>
     public ObservableCollection<OrgInfo> Orgs { get; } = new();
@@ -111,7 +117,8 @@ public partial class MainViewModel : ObservableObject
         ApiConsoleViewModel api,
         DeployViewModel deploy,
         SettingsViewModel settingsViewModel,
-        QuickPanelViewModel quickPanel)
+        QuickPanelViewModel quickPanel,
+        OrgInfoWindowFactory orgInfoWindowFactory)
     {
         _orgService = orgService;
         _log = log;
@@ -120,6 +127,7 @@ public partial class MainViewModel : ObservableObject
         _recentUrls = recentUrls;
         _toolLauncher = toolLauncher;
         _history = historyStore;
+        _orgInfoWindowFactory = orgInfoWindowFactory;
         History = history;
         Soql = soql;
         Apex = apex;
@@ -386,6 +394,28 @@ public partial class MainViewModel : ObservableObject
                 SelectedTabIndex = 5;
                 StatusMessage = UiText.T("Ai_AppliedCommand");
                 break;
+        }
+    }
+
+    /// <summary>選択中組織の組織情報ウィンドウを新しいウィンドウで開く。</summary>
+    [RelayCommand]
+    private void OpenOrgInfo()
+    {
+        if (SelectedOrg is null)
+        {
+            StatusMessage = UiText.T("Msg_SelectOrg");
+            return;
+        }
+
+        try
+        {
+            _orgInfoWindowFactory.Open(SelectedOrg, Application.Current?.MainWindow);
+            StatusMessage = UiText.T("Msg_OrgInfoOpenedFmt", SelectedOrg.DisplayName);
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = UiText.T("Common_FailedFmt", ex.Message);
+            _log.Error("組織情報ウィンドウを開けませんでした", ex);
         }
     }
 
