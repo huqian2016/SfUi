@@ -6,6 +6,17 @@ with history/favorites, quick switching between orgs and project folders, and on
 
 > UI languages: **English (default) / 日本語** — switch instantly from the top bar.
 
+## Screenshots
+
+![SfUi main window](docs/screenshots/main-en.png)
+*SOQL workspace — Quick Panel on the left, AI chat panel on the right, org & folder switching in the top bar*
+
+![Execution history](docs/screenshots/history-en.png)
+*Every operation is saved in History and can be replayed with a double-click*
+
+![REST console](docs/screenshots/rest-en.png)
+*Generic REST console with pretty-printed responses*
+
 ## Features
 
 - **Org & folder switching in one click** — the org combo and SF folder combo are always in the top bar; the last selection is restored on startup.
@@ -91,6 +102,17 @@ SOQL・匿名Apex・デバッグログ・デプロイ・自由コマンド・RES
 - UI は **英語（既定）/ 日本語** に対応（上部バーのコンボで即時切替）
 - **AI チャット（DeepSeek）**: 自然言語から SOQL / 匿名Apex / sf コマンドを生成、実行結果の分析も可能（右サイドパネル表示・上部バーの「AI」で表示切替。すぐ試せるよう評価用キーを同梱。自分のキーを使う場合は 設定 → AI（または環境変数 `DEEPSEEK_API_KEY`）で登録）
 - 2026-10-02 時点で Phase 0〜8 完了（テスト 145 件 / スモーク E2E 検証済み）
+
+## スクリーンショット
+
+![SfUi メイン画面](docs/screenshots/main-ja.png)
+*SOQL ワークスペース — 左: クイックパネル / 右: AI チャット / 上部: 組織・フォルダ切替*
+
+![実行履歴](docs/screenshots/history-ja.png)
+*すべての操作を履歴に保存し、ダブルクリックで再実行*
+
+![REST コンソール](docs/screenshots/rest-ja.png)
+*汎用 REST コンソール（JSON 整形表示）*
 
 ## 使い方
 
