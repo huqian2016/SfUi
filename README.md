@@ -2,7 +2,8 @@
 
 A Windows desktop tool that wraps the Salesforce CLI (`sf`) with a fast, click-light UI.
 Run SOQL, anonymous Apex, debug logs, deploys, free-form `sf` commands and raw REST API calls —
-with history/favorites, quick switching between orgs and project folders, and one-click tool launcher.
+with history/favorites, quick switching between orgs and project folders, one-click tool launcher,
+an **Org Info** window for each org, and side-by-side comparison of 2–4 orgs.
 
 > UI languages: **English (default) / 日本語** — switch instantly from the top bar.
 
@@ -10,6 +11,12 @@ with history/favorites, quick switching between orgs and project folders, and on
 
 ![SfUi main window](docs/screenshots/main-en.png)
 *SOQL workspace — Quick Panel on the left, AI chat panel on the right, org & folder switching in the top bar*
+
+![Org Info window](docs/screenshots/orginfo-en.png)
+*Org Info — a separate window per org with 20+ tabs, cross-tab search, Setup links and its own AI panel*
+
+![Compare Orgs window](docs/screenshots/compare-en.png)
+*Compare Orgs — 2–4 orgs side by side; rows that exist in only some orgs (or differ in value) are highlighted in yellow*
 
 ![Execution history](docs/screenshots/history-en.png)
 *Every operation is saved in History and can be replayed with a double-click*
@@ -46,7 +53,7 @@ with history/favorites, quick switching between orgs and project folders, and on
 
 1. Download from the [Releases](../../releases) page:
    - **`SfUi.exe`** — the portable single executable, or
-   - **`SfUi-v0.2.0-portable.zip`** — the executable **plus a ready-to-use `data/` folder with 30 sample SOQL / Apex / commands / REST requests already in the history** (just extract and run).
+   - **`SfUi-v0.5.1-portable.zip`** — the executable **plus a ready-to-use `data/` folder with 30 sample SOQL / Apex / commands / REST requests already in the history** (just extract and run).
 2. Put it in any folder and double-click (no installer).
    - Windows SmartScreen may warn because the binary is unsigned — choose *More info* → *Run anyway*.
 3. On first run a `data/` folder is created next to the exe (portable mode).
@@ -68,6 +75,8 @@ with history/favorites, quick switching between orgs and project folders, and on
 The left **Quick Panel** shows favorites with number slots; the top bar hosts org/folder selection, the four tool launcher buttons and the language switch.
 
 The **Org Info** button (next to the org combo) opens a separate non-modal window for the selected org — multiple windows and multiple orgs at once. It contains 20+ tabs (org settings, users, permission sets, objects, OWD, Apex / flows / jobs, login history, …), cross-tab search with jump-to-row, per-tab refresh, lazy-loaded object fields, custom **My Settings** tabs, Setup links, and its own AI panel with *Attach current tab data*.
+
+The **Compare Orgs** button (enabled when 2 or more orgs are available) opens the side-by-side comparison window — 13 categories matched **by API name**, with diff highlighting, a *Diff only* filter, per-tab search and CSV export.
 
 ## Build from source
 
@@ -101,18 +110,25 @@ Built with C# / .NET 9 / WPF, CommunityToolkit.Mvvm and AvalonEdit.
 
 Salesforce CLI（`sf`）の操作を Windows デスクトップ UI から行えるツールです。
 SOQL・匿名Apex・デバッグログ・デプロイ・自由コマンド・REST API 呼び出しを、履歴とお気に入り付きで
-少ないクリックで実行できます。組織とフォルダの切替、外部ツールの起動もワンクリックです。
+少ないクリックで実行できます。組織とフォルダの切替、外部ツールの起動もワンクリック。
+組織情報の閲覧（別ウィンドウ）と複数組織の一括比較にも対応しています。
 
 - UI は **英語（既定）/ 日本語** に対応（上部バーのコンボで即時切替）
 - **AI チャット（複数プロバイダー対応）**: 自然言語から SOQL / 匿名Apex / sf コマンドを生成、実行結果の分析も可能（右サイドパネル表示・上部バーの「AI」で表示切替。既定の DeepSeek 接続先はすぐ試せるよう評価用キーを同梱。設定 → AI のプリセットから OpenAI / Anthropic（Claude）/ ローカル LLM（Ollama 等、キー不要）など **OpenAI 互換 API** に接続可。自分のキーは 設定 → AI（または環境変数 `SFUI_AI_API_KEY`）で登録）
 - **組織情報ウィンドウ**: 選択中組織の設定・ユーザー・権限・項目などを 20 以上のタブで一覧・検索（非モーダルの別ウィンドウ・複数同時可・「組織情報」ボタンから起動）。初回のみ自動取得してローカルにキャッシュし、以降は手動再取得。オブジェクト項目は遅延取得、Setup ページへのリンク、マイ設定（カタログ 55 項目から作るカスタムタブ）、ウィンドウ単位の AI パネル（表示中タブのデータ添付）付き
 - **組織比較**: 上部バーの「組織比較」から 2〜4 組織を横並び比較（組織設定・OWD・統計・ユーザー・プロファイル・権限セット・ロール・オブジェクト・Apex クラス/トリガ・フロー・レコードタイプを **API 名で突合**。「片方にのみ存在」「値が異なる」行をハイライトし、差分のみ表示フィルタ・組織情報と共有のキャッシュ優先取得（未取得分は自動取得）・CSV 出力付き）
-- 2026-10-03 時点で Phase 0〜10 完了 + AI 接続先の汎用化 + 組織比較（v0.5.1 / テスト 277 件 / スモーク E2E 検証済み）
+- 2026-10-03 時点で Phase 0〜12 完了（v0.5.1 / テスト 277 件 / スモーク E2E 検証済み。AI 接続先の汎用化・組織比較を含む）
 
 ## スクリーンショット
 
 ![SfUi メイン画面](docs/screenshots/main-ja.png)
 *SOQL ワークスペース — 左: クイックパネル / 右: AI チャット / 上部: 組織・フォルダ切替*
+
+![組織情報ウィンドウ](docs/screenshots/orginfo-ja.png)
+*組織情報 — 組織ごとの別ウィンドウ。20 以上のタブ・全タブ横断検索・Setup リンク・専用 AI パネル*
+
+![組織比較ウィンドウ](docs/screenshots/compare-ja.png)
+*組織比較 — 2〜4 組織を横並び比較。「片方にのみ存在」「値が異なる」行を黄色でハイライト*
 
 ![実行履歴](docs/screenshots/history-ja.png)
 *すべての操作を履歴に保存し、ダブルクリックで再実行*
@@ -124,7 +140,7 @@ SOQL・匿名Apex・デバッグログ・デプロイ・自由コマンド・RES
 
 1. [Releases](../../releases) からダウンロード
    - **`SfUi.exe`** … 実行ファイル単体（サンプル履歴は設定画面から後で追加可）
-   - **`SfUi-v0.2.0-portable.zip`** … exe + サンプル履歴 30 件入りの `data/` フォルダ（解凍してそのまま実行）
+   - **`SfUi-v0.5.1-portable.zip`** … exe + サンプル履歴 30 件入りの `data/` フォルダ（解凍してそのまま実行）
 2. 任意のフォルダに置いてダブルクリック（インストーラー不要）
    - 署名なしのため SmartScreen の警告が出たら「詳細情報」→「実行」
 3. 初回起動時に exe 隣に `data/` フォルダ（設定・履歴・ログ）が作成されます（ポータブル動作）
