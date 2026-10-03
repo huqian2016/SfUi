@@ -20,3 +20,9 @@ TestResults/
 # OS
 Thumbs.db
 Desktop.ini
+
+# MSIX packaging scratch (generated layout / local tools)
+packaging/layout/
+packaging/tools/
+packaging/priconfig.xml
+packaging/sign/

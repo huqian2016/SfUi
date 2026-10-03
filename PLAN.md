@@ -1,6 +1,6 @@
 # SfUi — Salesforce CLI 統合デスクトップツール 実装計画
 
-最終更新: 2026-10-02 / ステータス: Phase 8 完了（AI チャット: DeepSeek で SOQL / Apex / コマンド生成・結果分析。テスト 142 件 / 実 API スモーク検証済み。Phase 0-7 も全完了）
+最終更新: 2026-10-03 / ステータス: Phase 0-8 完了 + Microsoft Store（MSIX）提出準備完了（テスト 145 件 / 実 API スモーク検証済み。v0.2.0 は GitHub Release で公開中、Microsoft Store は審査準備中）
 
 ## 1. 概要
 
@@ -193,6 +193,18 @@ data/
 - ステータスバーに組織 / フォルダ表示 ✅
 - 単一 EXE publish（`dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true` → `dist/SfUi.exe`）✅
 
+### Phase 9: Microsoft Store 配布（MSIX） ✅（提出準備完了）
+
+- `packaging/` 一式を追加:
+  - `AppxManifest.xml` — Desktop Bridge（Windows.Desktop / `runFullTrust` / x64）。Partner Center 予約値（Name=`HKS.SfUi`、Publisher=`CN=F23B2630-…`、PublisherDisplayName=HKSテック株式会社）を反映
+  - `Make-Msix.ps1` — publish → layout → resources.pri → makeappx → 一時キー署名（`-SkipPublish` / `-Register` / `-Unregister` / `-Version`）
+  - `New-Icon.ps1` — PNG → 16〜256px マルチサイズ ICO 生成
+  - `Assets/`（仮ロゴ 5 種）と README
+- EXE / タスクバー / ウィンドウ アイコン（`src/SfUi.App/SfUi.ico`、csproj `<ApplicationIcon>` + WPF `Resource` + MainWindow `Icon=`）
+- VS Code タスク: `msix (build)` / `msix (register test)` / `msix (unregister)`
+- 検証: `dist/SfUi_0.2.0.0_x64.msix`（MinVersion 10.0.17763.0 / Identity 0.2.0.0 / 自己署名一時キー）を unpack・アイコン色検証・スモークで確認
+- Partner Center: 登録情報（日英説明）、`runFullTrust` の用途申請、プライバシー ポリシー（テキスト提供）を進行中。認定後は Microsoft が再署名（SmartScreen 警告なし・証明書不要）
+
 ## 10. 検証計画
 
 1. `dotnet build` / `dotnet test`（引数クォート・JSON 解析・ストア round-trip・CSV）
@@ -287,3 +299,5 @@ data/
   - `dotnet test`: 142 件成功（+9: DeepSeek 応答 / エラー / usage 解析、キー解決）
   - 実 API 検証（`--smoke-ai`）: `OK（OK / 1.2 秒 / tokens 11+1）` + 全 8 タブ・両パネル・言語切替例外 0 件
   - セキュリティ: API キーは settings.json（gitignore 対象）→ 環境変数 → 内蔵（評価用）の順で解決。評価用キーは XOR+Base64 難読化で同梱するためダウンロード直後でも AI を試せる（難読化のみで暗号学的保護ではない。README / MD にはキー値を記載しない）
+
+- ✅ **Microsoft Store 配布準備（2026-10-03）**: `packaging/` 一式（AppxManifest / Make-Msix.ps1 / New-Icon.ps1 / Assets / README）と EXE・ウィンドウ アイコンを追加。`dist/SfUi_0.2.0.0_x64.msix`（MinVersion 10.0.17763.0）を生成・一時キー署名・検証済み。Partner Center 提出のための登録情報・`runFullTrust` 用途申請・プライバシー ポリシーを準備（審査準備中）。知見: Identity の Version 更新は XML で行う（文字列 regex だと `MinVersion` の末尾に誤マッチして破壊する）

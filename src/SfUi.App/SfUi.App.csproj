@@ -9,7 +9,12 @@
     <AssemblyName>SfUi</AssemblyName>
     <RootNamespace>SfUi.App</RootNamespace>
     <Version>0.2.0</Version>
+    <ApplicationIcon>SfUi.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="SfUi.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\SfUi.Core\SfUi.Core.csproj" />

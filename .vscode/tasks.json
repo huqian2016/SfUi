@@ -119,6 +119,48 @@
 				"--smoke-ai"
 			],
 			"problemMatcher": []
+		},
+		{
+			"label": "msix (build)",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"packaging/Make-Msix.ps1"
+			],
+			"problemMatcher": []
+		},
+		{
+			"label": "msix (register test)",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"packaging/Make-Msix.ps1",
+				"-SkipPublish",
+				"-Register"
+			],
+			"problemMatcher": []
+		},
+		{
+			"label": "msix (unregister)",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"packaging/Make-Msix.ps1",
+				"-Unregister"
+			],
+			"problemMatcher": []
 		}
 	]
 }
