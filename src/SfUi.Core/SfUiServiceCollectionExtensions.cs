@@ -28,6 +28,8 @@ public static class SfUiServiceCollectionExtensions
         services.AddSingleton<OrgInfoPreferencesStore>();
         services.AddSingleton<OrgInfoService>();
         services.AddSingleton<OrgInfoSearchService>();
+        services.AddSingleton<OrgCompareService>();
+        services.AddSingleton<OrgCompareStateStore>();
         return services;
     }
 }

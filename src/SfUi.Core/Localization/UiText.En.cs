@@ -644,5 +644,28 @@ public static partial class UiText
         ["OrgInfo_Ai_Prompt_Risks"] = "Point out settings that need attention",
         ["OrgInfo_Ai_Prompt_UnusedPs"] = "Find potentially unused permission sets",
         ["OrgInfo_Ai_Prompt_Owd"] = "Explain the risks of this OWD setup",
+
+        // ---- 組織比較（Org Compare）----
+        ["Main_Compare"] = "Compare Orgs",
+        ["Main_CompareTip"] = "Compare multiple orgs side by side",
+        ["Msg_CompareOpenedFmt"] = "Opened the compare window",
+        ["Compare_Title"] = "Compare Orgs",
+        ["Compare_SelectOrgs"] = "Organizations:",
+        ["Compare_MaxOrgsFmt"] = "You can compare up to {0} orgs",
+        ["Compare_NeedTwoOrgs"] = "Select at least 2 orgs",
+        ["Compare_DiffOnly"] = "Diff only",
+        ["Compare_Refetch"] = "Refetch this tab",
+        ["Compare_ExportCsv"] = "Export CSV",
+        ["Compare_SummaryFmt"] = "{0} diffs / {1} rows",
+        ["Compare_Empty"] = "No data (opening a tab fetches automatically)",
+        ["Compare_Loading"] = "Loading…",
+        ["Compare_CsvTitle"] = "Save comparison",
+        ["Compare_CsvFilter"] = "CSV file (*.csv)|*.csv",
+        ["Compare_CsvSavedFmt"] = "CSV saved: {0}",
+        ["Compare_FetchingFmt"] = "{0}: fetching {1}…",
+        ["Compare_NotFetched"] = "Not fetched",
+        ["Compare_FetchFailed"] = "Fetch failed",
+        ["Compare_KeyHeader"] = "Item / API name",
+        ["Compare_DiffColumn"] = "Diff",
     };
 }

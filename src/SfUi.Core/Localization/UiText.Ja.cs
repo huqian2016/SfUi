@@ -644,5 +644,28 @@ public static partial class UiText
         ["OrgInfo_Ai_Prompt_Risks"] = "注意すべき設定を指摘して",
         ["OrgInfo_Ai_Prompt_UnusedPs"] = "未使用の権限セット候補を探す",
         ["OrgInfo_Ai_Prompt_Owd"] = "この OWD 設定のリスクを説明して",
+
+        // ---- 組織比較（Org Compare）----
+        ["Main_Compare"] = "組織比較",
+        ["Main_CompareTip"] = "複数の組織を一括比較します",
+        ["Msg_CompareOpenedFmt"] = "組織比較ウィンドウを開きました",
+        ["Compare_Title"] = "組織比較",
+        ["Compare_SelectOrgs"] = "比較する組織:",
+        ["Compare_MaxOrgsFmt"] = "比較できるのは最大 {0} 組織です",
+        ["Compare_NeedTwoOrgs"] = "組織を 2 つ以上選択してください",
+        ["Compare_DiffOnly"] = "差分のみ表示",
+        ["Compare_Refetch"] = "このタブを再取得",
+        ["Compare_ExportCsv"] = "CSV 出力",
+        ["Compare_SummaryFmt"] = "差分 {0} 件 / 全 {1} 件",
+        ["Compare_Empty"] = "データがありません（タブを開くと自動取得します）",
+        ["Compare_Loading"] = "読み込み中…",
+        ["Compare_CsvTitle"] = "比較結果の保存",
+        ["Compare_CsvFilter"] = "CSV ファイル (*.csv)|*.csv",
+        ["Compare_CsvSavedFmt"] = "CSV を保存しました: {0}",
+        ["Compare_FetchingFmt"] = "{0}: {1} を取得中…",
+        ["Compare_NotFetched"] = "未取得",
+        ["Compare_FetchFailed"] = "取得失敗",
+        ["Compare_KeyHeader"] = "項目 / API 名",
+        ["Compare_DiffColumn"] = "差分",
     };
 }

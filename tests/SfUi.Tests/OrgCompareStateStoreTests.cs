@@ -1,0 +1,109 @@
+using SfUi.Core;
+using Xunit;
+
+namespace SfUi.Tests;
+
+public class OrgCompareStateStoreTests : IDisposable
+{
+    private readonly string _sandbox;
+
+    public OrgCompareStateStoreTests()
+    {
+        _sandbox = Path.Combine(Path.GetTempPath(), "sfui-tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(_sandbox);
+    }
+
+    public void Dispose()
+    {
+        try
+        {
+            if (Directory.Exists(_sandbox))
+            {
+                Directory.Delete(_sandbox, recursive: true);
+            }
+        }
+        catch
+        {
+            // 後始末の失敗はテスト結果に影響させない
+        }
+    }
+
+    private AppPaths Paths => AppPaths.Resolve(dataRootOverride: _sandbox, baseDirectory: _sandbox, appDataDirectory: _sandbox);
+    private AppLog Log => new(Paths);
+    private OrgCompareStateStore Store => new(Paths, Log);
+
+    [Fact]
+    public void Load_MissingFile_ReturnsDefaults()
+    {
+        var state = Store.Load();
+
+        Assert.Equal(OrgCompareStateStore.CurrentSchemaVersion, state.SchemaVersion);
+        Assert.Empty(state.OrgUsernames);
+        Assert.Null(state.CategoryId);
+        Assert.False(state.DiffOnly);
+    }
+
+    [Fact]
+    public void SaveAndLoad_RoundTripsValues()
+    {
+        var store = Store;
+        store.Save(new OrgCompareState
+        {
+            OrgUsernames = new List<string> { "user1@example.com", "user2@example.com" },
+            CategoryId = OrgInfoSections.PermissionSets,
+            DiffOnly = true,
+        });
+
+        var reloaded = Store.Load();
+
+        Assert.Equal(new[] { "user1@example.com", "user2@example.com" }, reloaded.OrgUsernames);
+        Assert.Equal(OrgInfoSections.PermissionSets, reloaded.CategoryId);
+        Assert.True(reloaded.DiffOnly);
+    }
+
+    [Fact]
+    public void Save_ClampsToMaxOrgs_AndDeduplicates()
+    {
+        var store = Store;
+        store.Save(new OrgCompareState
+        {
+            OrgUsernames = new List<string> { "a@x.com", " b@x.com ", "a@X.com", "c@x.com", "d@x.com", "e@x.com" },
+        });
+
+        var reloaded = Store.Load();
+
+        Assert.Equal(OrgCompareStateStore.MaxOrgs, reloaded.OrgUsernames.Count);
+        Assert.Equal(new[] { "a@x.com", "b@x.com", "c@x.com", "d@x.com" }, reloaded.OrgUsernames);
+    }
+
+    [Fact]
+    public void Save_ResetsUnknownCategory()
+    {
+        var store = Store;
+        store.Save(new OrgCompareState { CategoryId = "nope" });
+
+        Assert.Null(Store.Load().CategoryId);
+    }
+
+    [Fact]
+    public void Load_SchemaMismatch_ResetsToDefaults()
+    {
+        var store = Store;
+        Directory.CreateDirectory(Path.GetDirectoryName(store.FilePath)!);
+        File.WriteAllText(store.FilePath, """
+            {
+              "schemaVersion": 0,
+              "orgUsernames": ["a@x.com"],
+              "categoryId": "users",
+              "diffOnly": true
+            }
+            """);
+
+        var loaded = store.Load();
+
+        Assert.Equal(OrgCompareStateStore.CurrentSchemaVersion, loaded.SchemaVersion);
+        Assert.Empty(loaded.OrgUsernames);
+        Assert.Null(loaded.CategoryId);
+        Assert.False(loaded.DiffOnly);
+    }
+}

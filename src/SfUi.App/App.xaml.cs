@@ -20,6 +20,7 @@ public partial class App : Application
     private string? _smokeOrg;
     private string? _smokeOrgInfo;
     private bool _smokeOrgInfoRefresh;
+    private string? _smokeCompare;
     private int _dispatcherExceptionCount;
 
     protected override void OnStartup(StartupEventArgs e)
@@ -31,6 +32,7 @@ public partial class App : Application
         _smokeOrg = _smokeTest ? ReadOption(e.Args, "--smoke-org") : null;
         _smokeOrgInfo = _smokeTest ? ReadOption(e.Args, "--smoke-orginfo") : null;
         _smokeOrgInfoRefresh = _smokeTest && e.Args.Any(a => string.Equals(a, "--smoke-orginfo-refresh", StringComparison.OrdinalIgnoreCase));
+        _smokeCompare = _smokeTest ? ReadOption(e.Args, "--smoke-compare") : null;
         var dataDir = ReadOption(e.Args, "--data-dir") ?? Environment.GetEnvironmentVariable("SFUI_DATA_DIR");
 
         var paths = AppPaths.Resolve(dataDir);
@@ -51,6 +53,9 @@ public partial class App : Application
         services.AddSingleton<OrgInfoWindowFactory>();
         services.AddTransient<OrgInfoViewModel>();
         services.AddTransient<OrgInfoWindow>();
+        services.AddSingleton<CompareOrgsWindowFactory>();
+        services.AddTransient<CompareOrgsViewModel>();
+        services.AddTransient<CompareOrgsWindow>();
         services.AddSingleton<MainWindow>();
         Services = services.BuildServiceProvider();
 
@@ -185,6 +190,11 @@ public partial class App : Application
                 }
             }
 
+            if (!string.IsNullOrWhiteSpace(_smokeCompare) && !await RunCompareSmokeAsync(_smokeCompare))
+            {
+                exitCode = 1;
+            }
+
             if (!string.IsNullOrWhiteSpace(_smokeOrgInfo) && !await RunOrgInfoSmokeAsync(_smokeOrgInfo))
             {
                 exitCode = 1;
@@ -217,6 +227,55 @@ public partial class App : Application
     }
 
     /// <summary>
+    /// <summary>
+    /// --smoke-compare: 指定組織（カンマ区切り・2 件以上）で全比較カテゴリを構築し、行数と差分件数をログ出力する。
+    /// キャッシュ優先・未取得分は自動取得（組織情報ウィンドウと同じキャッシュを共有）。
+    /// </summary>
+    private async Task<bool> RunCompareSmokeAsync(string targets)
+    {
+        try
+        {
+            var orgs = await Services.GetRequiredService<OrgService>().ListOrgsAsync();
+            var selected = new List<OrgInfo>();
+            foreach (var target in targets.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                var org = orgs.FirstOrDefault(o =>
+                    string.Equals(o.Alias, target, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(o.Username, target, StringComparison.OrdinalIgnoreCase));
+                if (org is null)
+                {
+                    _log.Error($"--smoke-compare: 組織が見つかりません: {target}");
+                    return false;
+                }
+
+                selected.Add(org);
+            }
+
+            if (selected.Count < 2)
+            {
+                _log.Error("--smoke-compare: 組織は 2 つ以上指定してください（例: --smoke-compare hks4sand1,acc）");
+                return false;
+            }
+
+            _log.Info($"--smoke-compare: 対象 = {string.Join(" / ", selected.Select(o => o.DisplayName))}");
+            var service = Services.GetRequiredService<OrgCompareService>();
+            var progress = new Progress<string>(message => _log.Info($"--smoke-compare: {message}"));
+
+            foreach (var category in OrgCompareCategories.All)
+            {
+                var table = await service.BuildAsync(selected, category, forceRefresh: false, fetchMissing: true, progress);
+                _log.Info($"--smoke-compare: {category.Id}: 全 {table.Rows.Count} 行 / 差分 {table.DiffCount} 行");
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _log.Error("--smoke-compare: 比較に失敗しました", ex);
+            return false;
+        }
+    }
+
     /// --smoke-orginfo: 組織情報の「初回のみ取得・2 回目以降は API を呼ばない・手動再取得で fetchedAt 更新」を
     /// ログで検証できる形で実行する（概要 + ユーザーの 2 セクション。--smoke-orginfo-refresh で再取得も実行）。
     /// </summary>

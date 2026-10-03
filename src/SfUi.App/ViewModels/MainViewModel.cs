@@ -21,6 +21,7 @@ public partial class MainViewModel : ObservableObject
     private readonly ToolLauncherService _toolLauncher;
     private readonly HistoryStore _history;
     private readonly OrgInfoWindowFactory _orgInfoWindowFactory;
+    private readonly CompareOrgsWindowFactory _compareOrgsWindowFactory;
 
     [ObservableProperty]
     private bool _isBusy;
@@ -60,6 +61,9 @@ public partial class MainViewModel : ObservableObject
 
     /// <summary>組織が選択されているか（組織情報ボタンの有効化）。</summary>
     public bool HasSelectedOrg => SelectedOrg is not null;
+
+    /// <summary>組織比較を開けるか（2 組織以上が必要）。</summary>
+    public bool CanCompareOrgs => Orgs.Count > 1;
 
     /// <summary>認証済み組織（既定組織が先頭）。</summary>
     public ObservableCollection<OrgInfo> Orgs { get; } = new();
@@ -118,7 +122,8 @@ public partial class MainViewModel : ObservableObject
         DeployViewModel deploy,
         SettingsViewModel settingsViewModel,
         QuickPanelViewModel quickPanel,
-        OrgInfoWindowFactory orgInfoWindowFactory)
+        OrgInfoWindowFactory orgInfoWindowFactory,
+        CompareOrgsWindowFactory compareOrgsWindowFactory)
     {
         _orgService = orgService;
         _log = log;
@@ -128,6 +133,8 @@ public partial class MainViewModel : ObservableObject
         _toolLauncher = toolLauncher;
         _history = historyStore;
         _orgInfoWindowFactory = orgInfoWindowFactory;
+        _compareOrgsWindowFactory = compareOrgsWindowFactory;
+        Orgs.CollectionChanged += (_, _) => OnPropertyChanged(nameof(CanCompareOrgs));
         History = history;
         Soql = soql;
         Apex = apex;
@@ -416,6 +423,28 @@ public partial class MainViewModel : ObservableObject
         {
             StatusMessage = UiText.T("Common_FailedFmt", ex.Message);
             _log.Error("組織情報ウィンドウを開けませんでした", ex);
+        }
+    }
+
+    /// <summary>複数組織の比較ウィンドウを新しいウィンドウで開く。</summary>
+    [RelayCommand]
+    private void OpenCompareOrgs()
+    {
+        if (Orgs.Count < 2)
+        {
+            StatusMessage = UiText.T("Compare_NeedTwoOrgs");
+            return;
+        }
+
+        try
+        {
+            _compareOrgsWindowFactory.Open(Orgs.ToList(), Application.Current?.MainWindow);
+            StatusMessage = UiText.T("Msg_CompareOpenedFmt");
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = UiText.T("Common_FailedFmt", ex.Message);
+            _log.Error("組織比較ウィンドウを開けませんでした", ex);
         }
     }
 
