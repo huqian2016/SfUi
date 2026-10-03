@@ -7,19 +7,29 @@ using System.Text.Json;
 namespace SfUi.Core;
 
 /// <summary>
-/// DeepSeek API（OpenAI 互換）のチャットクライアント。
-/// API キーは settings.json（DeepSeekApiKey）→ 環境変数 DEEPSEEK_API_KEY の順で解決する。
+/// OpenAI 互換チャット補完 API のクライアント。
+/// 既定は DeepSeek（内蔵の評価用キーでそのまま動作）。設定（AiEndpoint / AiApiKey / AiModel）で
+/// OpenAI 互換サービス（OpenAI・OpenRouter・Anthropic 互換レイヤー・社内ゲートウェイ等）や
+/// ローカル LLM（Ollama / LM Studio）へ切り替えられる。
+/// キーは 設定 → 環境変数 SFUI_AI_API_KEY → 旧環境変数 DEEPSEEK_API_KEY / 内蔵キー（後者 2 つは DeepSeek 既定接続先のみ）
+/// の順で解決する。カスタム接続先ではキー未設定でも送信する（ローカル LLM 用）。
 /// </summary>
-public sealed class DeepSeekClient
+public sealed class AiChatClient
 {
     public const string DefaultModel = "deepseek-chat";
-    public const string ApiEndpoint = "https://api.deepseek.com/chat/completions";
+    public const string DefaultEndpoint = "https://api.deepseek.com/chat/completions";
+
+    /// <summary>汎用の API キー環境変数（すべての接続先で使用可）。</summary>
+    public const string ApiKeyEnvironmentVariable = "SFUI_AI_API_KEY";
+
+    /// <summary>旧名の API キー環境変数（DeepSeek 既定接続先のときのみ使用）。</summary>
+    public const string LegacyApiKeyEnvironmentVariable = "DEEPSEEK_API_KEY";
 
     private readonly AppSettingsStore _settings;
     private readonly AppLog _log;
     private readonly HttpClient _http;
 
-    public DeepSeekClient(AppSettingsStore settings, AppLog log)
+    public AiChatClient(AppSettingsStore settings, AppLog log)
     {
         _settings = settings;
         _log = log;
@@ -38,51 +48,74 @@ public sealed class DeepSeekClient
         int? CompletionTokens,
         TimeSpan Duration);
 
-    /// <summary>現在有効な API キー（設定 → 環境変数 → 内蔵キー）。</summary>
-    public string? ApiKey => ResolveApiKey(_settings.Current.DeepSeekApiKey);
+    /// <summary>現在の接続先エンドポイント（設定 → DeepSeek 既定）。</summary>
+    public string Endpoint => ResolveEndpoint(_settings.Current.AiEndpoint);
 
-    /// <summary>現在のキー取得元（settings / env / builtin / none）。</summary>
-    public string ApiKeySource
-    {
-        get
-        {
-            if (!string.IsNullOrWhiteSpace(_settings.Current.DeepSeekApiKey))
-            {
-                return "settings";
-            }
+    /// <summary>接続先が DeepSeek 既定かどうか（旧環境変数・内蔵キーを使う条件）。</summary>
+    public bool IsDefaultEndpoint => string.Equals(Endpoint, DefaultEndpoint, StringComparison.OrdinalIgnoreCase);
 
-            if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DEEPSEEK_API_KEY")))
-            {
-                return "env";
-            }
+    /// <summary>現在有効な API キー（設定 → 汎用環境変数 → 旧環境変数/内蔵キー〔既定接続先のみ〕）。</summary>
+    public string? ApiKey => ResolveApiKey(
+        _settings.Current.AiApiKey,
+        Environment.GetEnvironmentVariable(ApiKeyEnvironmentVariable),
+        Environment.GetEnvironmentVariable(LegacyApiKeyEnvironmentVariable),
+        DefaultAiKey.Value,
+        IsDefaultEndpoint).Key;
 
-            return string.IsNullOrWhiteSpace(DefaultAiKey.Value) ? "none" : "builtin";
-        }
-    }
+    /// <summary>現在のキー取得元（settings / env / legacy-env / builtin / none）。</summary>
+    public string ApiKeySource => ResolveApiKey(
+        _settings.Current.AiApiKey,
+        Environment.GetEnvironmentVariable(ApiKeyEnvironmentVariable),
+        Environment.GetEnvironmentVariable(LegacyApiKeyEnvironmentVariable),
+        DefaultAiKey.Value,
+        IsDefaultEndpoint).Source;
 
     /// <summary>現在有効なモデル名。</summary>
-    public string Model => string.IsNullOrWhiteSpace(_settings.Current.DeepSeekModel)
-        ? DefaultModel
-        : _settings.Current.DeepSeekModel.Trim();
+    public string Model => ResolveModel(_settings.Current.AiModel);
 
-    /// <summary>設定値 → 環境変数 → 内蔵キーの順で API キーを解決する。</summary>
-    public static string? ResolveApiKey(string? configured)
-        => ResolveApiKey(configured, Environment.GetEnvironmentVariable("DEEPSEEK_API_KEY"), DefaultAiKey.Value);
+    /// <summary>接続先（null / 空 = DeepSeek 既定）。</summary>
+    public static string ResolveEndpoint(string? configured) =>
+        string.IsNullOrWhiteSpace(configured) ? DefaultEndpoint : configured.Trim();
 
-    /// <summary>優先順位を明示指定できる版（テスト用）。</summary>
-    public static string? ResolveApiKey(string? configured, string? environmentValue, string? builtIn)
+    /// <summary>モデル名（null / 空 = 既定: deepseek-chat）。</summary>
+    public static string ResolveModel(string? configured) =>
+        string.IsNullOrWhiteSpace(configured) ? DefaultModel : configured.Trim();
+
+    /// <summary>
+    /// API キーと取得元を解決する（単体テスト対象）。旧環境変数と内蔵キーは DeepSeek 既定接続先でのみ使用する
+    /// （カスタム接続先へ DeepSeek のキーを送らないため）。
+    /// </summary>
+    public static (string? Key, string Source) ResolveApiKey(
+        string? configured,
+        string? genericEnvironment,
+        string? legacyEnvironment,
+        string? builtIn,
+        bool isDefaultEndpoint)
     {
         if (!string.IsNullOrWhiteSpace(configured))
         {
-            return configured.Trim();
+            return (configured.Trim(), "settings");
         }
 
-        if (!string.IsNullOrWhiteSpace(environmentValue))
+        if (!string.IsNullOrWhiteSpace(genericEnvironment))
         {
-            return environmentValue.Trim();
+            return (genericEnvironment.Trim(), "env");
         }
 
-        return string.IsNullOrWhiteSpace(builtIn) ? null : builtIn.Trim();
+        if (isDefaultEndpoint)
+        {
+            if (!string.IsNullOrWhiteSpace(legacyEnvironment))
+            {
+                return (legacyEnvironment.Trim(), "legacy-env");
+            }
+
+            if (!string.IsNullOrWhiteSpace(builtIn))
+            {
+                return (builtIn.Trim(), "builtin");
+            }
+        }
+
+        return (null, "none");
     }
 
     /// <summary>チャット補完を実行する（ストリーミングなし）。</summary>
@@ -91,8 +124,9 @@ public sealed class DeepSeekClient
         CancellationToken cancellationToken = default)
     {
         var apiKey = ApiKey;
-        if (apiKey is null)
+        if (apiKey is null && IsDefaultEndpoint)
         {
+            // DeepSeek 既定接続先ではキー必須（内蔵キーが除去された場合のみここに来る）
             return new ChatResult(false, null, UiText.T("Ai_NoApiKey"), null, null, TimeSpan.Zero);
         }
 
@@ -108,8 +142,12 @@ public sealed class DeepSeekClient
         var stopwatch = Stopwatch.StartNew();
         try
         {
-            using var request = new HttpRequestMessage(HttpMethod.Post, ApiEndpoint);
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+            using var request = new HttpRequestMessage(HttpMethod.Post, Endpoint);
+            if (apiKey is not null)
+            {
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+            }
+
             request.Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
 
             using var response = await _http.SendAsync(request, cancellationToken).ConfigureAwait(false);
@@ -119,7 +157,7 @@ public sealed class DeepSeekClient
             if (!response.IsSuccessStatusCode)
             {
                 var error = ExtractError(body) ?? $"HTTP {(int)response.StatusCode}";
-                _log.Warn($"DeepSeek API エラー: HTTP {(int)response.StatusCode} / {error}");
+                _log.Warn($"AI API エラー: HTTP {(int)response.StatusCode} / {error}");
                 return new ChatResult(false, null, UiText.T("Ai_ServerErrorFmt", error), null, null, stopwatch.Elapsed);
             }
 
@@ -130,13 +168,13 @@ public sealed class DeepSeekClient
                 return new ChatResult(false, null, UiText.T("Ai_ServerErrorFmt", "unexpected response"), promptTokens, completionTokens, stopwatch.Elapsed);
             }
 
-            _log.Info($"DeepSeek 応答受信: {stopwatch.Elapsed.TotalSeconds:F1} 秒 / tokens {promptTokens}+{completionTokens}");
+            _log.Info($"AI 応答受信: {stopwatch.Elapsed.TotalSeconds:F1} 秒 / tokens {promptTokens}+{completionTokens}");
             return new ChatResult(true, content, null, promptTokens, completionTokens, stopwatch.Elapsed);
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
             stopwatch.Stop();
-            _log.Warn("DeepSeek リクエストがタイムアウトしました");
+            _log.Warn("AI リクエストがタイムアウトしました");
             return new ChatResult(false, null, UiText.T("Ai_Timeout"), null, null, stopwatch.Elapsed);
         }
         catch (OperationCanceledException)
@@ -147,7 +185,7 @@ public sealed class DeepSeekClient
         catch (Exception ex)
         {
             stopwatch.Stop();
-            _log.Error("DeepSeek リクエストに失敗", ex);
+            _log.Error("AI リクエストに失敗", ex);
             return new ChatResult(false, null, UiText.T("Ai_RequestFailedFmt", ex.Message), null, null, stopwatch.Elapsed);
         }
     }

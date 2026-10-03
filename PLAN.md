@@ -1,6 +1,6 @@
 # SfUi — Salesforce CLI 統合デスクトップツール 実装計画
 
-最終更新: 2026-10-03 / ステータス: Phase 0-10 完了 + Microsoft Store（MSIX）提出準備完了（v0.3.0 / テスト 242 件 / 実 API スモーク検証済み。v0.2.0 は GitHub Release で公開中、Microsoft Store は審査準備中）
+最終更新: 2026-10-03 / ステータス: Phase 0-10 完了 + AI 接続先の汎用化 + Microsoft Store（MSIX）提出準備完了（v0.4.0 / テスト 251 件 / 実 API スモーク検証済み。v0.2.0 は GitHub Release で公開中、Microsoft Store は審査準備中）
 
 ## 1. 概要
 
@@ -221,6 +221,18 @@ data/
 - テスト: 242 件（+97: Core クエリ/パース/キャッシュ/検索/URL/カタログ/設定ストア/添付 + UI 表示）
 - E2E（実アプリ + UI Automation、`C:\huqian\sfui-orginfo-*.ps1`）: 初回 8 セクション自動取得 → 再オープンで再取得なし / 項目 63 取得 / 全タブ検索 + ジャンプ / マイ設定の作成〜保存〜復元 / AI タブデータ添付 / 多通貨無効の通貨タブ専用メッセージ / 日本語表示確認
 
+### Phase 11: AI 接続先の汎用化（OpenAI 互換 / Anthropic / ローカル LLM） ✅
+
+環境によって DeepSeek に到達できないケースへの対応として、AI チャットの接続先を任意の **OpenAI 互換 API** に切り替え可能にした。
+
+- `DeepSeekClient` → **`AiChatClient`** に改名・汎用化: `POST {endpoint}` + `Authorization: Bearer`。既定は従来どおり DeepSeek（`https://api.deepseek.com/chat/completions` / `deepseek-chat`）。タイムアウト 3 分・キャンセル対応は不変
+- 設定（settings.json）: `aiEndpoint` / `aiApiKey` / `aiModel`（null = 既定）。旧 `deepSeekApiKey` / `deepSeekModel` は読み込み時に自動移行して空に戻す
+- API キーの解決順: settings.json → 環境変数 `SFUI_AI_API_KEY` → 旧 `DEEPSEEK_API_KEY` / 内蔵キー（**後者 2 つは DeepSeek 既定接続先のときのみ**。カスタム接続先へ DeepSeek のキーを送らない）。カスタム接続先では未設定でもキーなしで送信（ローカル LLM 対応）
+- 設定画面: AI グループに **プリセット 4 種**（DeepSeek（既定）/ OpenAI 互換 / Anthropic（Claude）/ ローカル LLM）+ エンドポイント欄 + モデル欄（自由入力 TextBox）+ 接続テスト。Anthropic は公式の OpenAI SDK 互換レイヤー（`https://api.anthropic.com/v1/chat/completions` / `claude-sonnet-4-6`）を使用
+- 検証: ローカルスタブ（TcpListener）で OpenAI 互換リクエスト / レスポンスと Authorization ヘッダー有無（キーあり = 送信・キーなし = 無送信）を確認。実 OpenAI API は認証成功（アカウント残高なしの 429。`GET /v1/models` でキー有効を確認）。DeepSeek 既定（内蔵キー）も `--smoke-ai` で OK
+- テスト: 251 件（+9: AiChatClient の解決順 / 抽出 + 設定移行 round-trip）
+- バージョン: **0.4.0**（機能追加のためマイナーアップ。`SfUi.App.csproj` = 0.4.0 / `AppxManifest.xml` = 0.4.0.0 / MSIX = `dist\SfUi_0.4.0.0_x64.msix`）
+
 ## 10. 検証計画
 
 1. `dotnet build` / `dotnet test`（引数クォート・JSON 解析・ストア round-trip・CSV）
@@ -326,3 +338,9 @@ data/
   - スモーク E2E（`--smoke --smoke-orginfo acc`）: 初回「overview / users を取得」→ 2 回目「API 呼び出し = 0 セクション（キャッシュのみ）」→ `--smoke-orginfo-refresh` で「fetchedAt 更新 (updated=True)」をログで確認
   - バージョン: **0.3.0**（AppxManifest は 0.3.0.0。MinVersion 10.0.17763.0 は据え置き）
   - 知見: 設定値は `Organization` の `Preferences*` 等（describe で存在確認）/ `CurrencyType` は多通貨無効組織では sObject 自体が未サポート / Tooling `SubscriberPackageVersion` は `Id = '...'` の単一形式のみ / `SetupAuditTrail.CreatedBy` は null になり得る / UIA の ListBox 項目名はデータ型の ToString になるため record に ToString を実装
+- ✅ **Phase 11（2026-10-03 完了）**: AI 接続先の汎用化（OpenAI 互換 / Anthropic / ローカル LLM）
+  - `AiChatClient`（Core）に改名・汎用化: `aiEndpoint` / `aiApiKey` / `aiModel`（旧 `deepSeek*` は自動移行）/ プリセット 4 種 / エンドポイント・モデル欄 / キーなしカスタム接続先は Authorization を送らない
+  - `dotnet test`: 251 件成功（+9: 解決順・抽出・設定移行）
+  - スモーク E2E: ローカルスタブ（キーあり → Authorization あり / カスタム + キーなし → ヘッダーなし、どちらも OK）/ 実 OpenAI（認証成功・残高なし 429）/ DeepSeek 既定 builtin キー OK
+  - 設定画面の AI グループ表示を UI Automation + スクリーンショットで確認
+  - バージョン: **0.4.0** 化（`SfUi.App.csproj` / `AppxManifest.xml` / `dist\SfUi_0.4.0.0_x64.msix` 再ビルド）

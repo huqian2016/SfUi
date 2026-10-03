@@ -32,11 +32,20 @@ public sealed class AppSettings
     /// <summary>AI パネル（右サイド）の表示状態。</summary>
     public bool AiPanelVisible { get; set; } = true;
 
-    /// <summary>DeepSeek API キー（null / 空 = 環境変数 DEEPSEEK_API_KEY を使用）。</summary>
+    /// <summary>AI チャットの接続先エンドポイント（null / 空 = DeepSeek 既定。OpenAI 互換 API を指定可能）。</summary>
+    public string? AiEndpoint { get; set; }
+
+    /// <summary>AI チャットの API キー（null / 空 = 環境変数 SFUI_AI_API_KEY → 内蔵キー〔DeepSeek 既定接続先のみ〕）。</summary>
+    public string? AiApiKey { get; set; }
+
+    /// <summary>AI チャットのモデル名（null / 空 = 既定: deepseek-chat）。</summary>
+    public string? AiModel { get; set; }
+
+    /// <summary>旧名の API キー（AiApiKey へ移行済み。読み取り互換用）。</summary>
     public string? DeepSeekApiKey { get; set; }
 
-    /// <summary>DeepSeek のモデル名（既定: deepseek-chat）。</summary>
-    public string DeepSeekModel { get; set; } = DeepSeekClient.DefaultModel;
+    /// <summary>旧名のモデル名（AiModel へ移行済み。読み取り互換用）。</summary>
+    public string? DeepSeekModel { get; set; }
 
     /// <summary>実行前確認ポリシー（ConfirmPolicies の値）。</summary>
     public string ConfirmPolicy { get; set; } = ConfirmPolicies.Dangerous;
@@ -57,6 +66,24 @@ public sealed class AppSettingsStore
         _filePath = paths.SettingsFile;
         _log = log;
         Current = AtomicJsonFile.Load<AppSettings>(_filePath, log);
+        MigrateLegacyAiSettings(Current);
+    }
+
+    /// <summary>旧フィールド（DeepSeekApiKey / DeepSeekModel）の値を汎用フィールド（AiApiKey / AiModel）へ引き継ぐ。</summary>
+    private static void MigrateLegacyAiSettings(AppSettings settings)
+    {
+        if (string.IsNullOrWhiteSpace(settings.AiApiKey) && !string.IsNullOrWhiteSpace(settings.DeepSeekApiKey))
+        {
+            settings.AiApiKey = settings.DeepSeekApiKey;
+        }
+
+        if (string.IsNullOrWhiteSpace(settings.AiModel) && !string.IsNullOrWhiteSpace(settings.DeepSeekModel))
+        {
+            settings.AiModel = settings.DeepSeekModel;
+        }
+
+        settings.DeepSeekApiKey = null;
+        settings.DeepSeekModel = null;
     }
 
     public void Save()

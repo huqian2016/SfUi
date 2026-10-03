@@ -144,7 +144,7 @@
             <views:QuickPanelView DataContext="{Binding QuickPanel}" />
         </Border>
 
-        <!-- AI パネル（DeepSeek）: 右サイド -->
+        <!-- AI パネル: 右サイド -->
         <Border DockPanel.Dock="Right" Width="400" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="1,0,0,0"
                 Visibility="{Binding IsAiPanelVisible, Converter={StaticResource BoolToVis}}">
             <views:AiChatView DataContext="{Binding Ai}" />

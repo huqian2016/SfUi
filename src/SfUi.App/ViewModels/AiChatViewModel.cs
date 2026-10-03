@@ -47,7 +47,7 @@ public sealed class AiChatMessage
     public string HeaderText => IsUser ? UiText.T("Ai_You") : UiText.T("Ai_Assistant");
 }
 
-/// <summary>AI チャットタブの ViewModel（DeepSeek API）。</summary>
+/// <summary>AI チャットタブの ViewModel（OpenAI 互換 API。既定は DeepSeek）。</summary>
 public partial class AiChatViewModel : ObservableObject
 {
     private const int MaxHistoryMessages = 12;
@@ -55,7 +55,7 @@ public partial class AiChatViewModel : ObservableObject
 
     private static readonly Regex FenceRegex = new(@"```([A-Za-z0-9_+-]*)\r?\n(.*?)```", RegexOptions.Singleline);
 
-    private readonly DeepSeekClient _client;
+    private readonly AiChatClient _client;
     private readonly HistoryStore _history;
     private readonly AppLog _log;
 
@@ -104,7 +104,7 @@ public partial class AiChatViewModel : ObservableObject
     /// <summary>コード片の適用が要求されたときに発火する（MainViewModel が処理）。</summary>
     public event Action<AiSnippet>? ApplyRequested;
 
-    public AiChatViewModel(DeepSeekClient client, HistoryStore history, AppLog log)
+    public AiChatViewModel(AiChatClient client, HistoryStore history, AppLog log)
     {
         _client = client;
         _history = history;
@@ -279,18 +279,18 @@ public partial class AiChatViewModel : ObservableObject
 
     /// <summary>API キーとモデルの設定状況を文字列化する（スモークログ用）。</summary>
     public string DescribeConfiguration()
-        => $"apiKey={_client.ApiKeySource} / model={_client.Model}";
+        => $"endpoint={_client.Endpoint} / model={_client.Model} / apiKey={_client.ApiKeySource}";
 
-    private List<DeepSeekClient.ChatMessage> BuildRequestMessages()
+    private List<AiChatClient.ChatMessage> BuildRequestMessages()
     {
-        var messages = new List<DeepSeekClient.ChatMessage>
+        var messages = new List<AiChatClient.ChatMessage>
         {
             new("system", BuildSystemPrompt()),
         };
 
         foreach (var message in Messages.TakeLast(MaxHistoryMessages))
         {
-            messages.Add(new DeepSeekClient.ChatMessage(message.Role, message.Content));
+            messages.Add(new AiChatClient.ChatMessage(message.Role, message.Content));
         }
 
         return messages;

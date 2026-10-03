@@ -97,24 +97,46 @@
 
                 <GroupBox Header="{loc:Tr Settings_AiGroup}" Padding="8" Margin="0,10,0,0">
                     <StackPanel>
-                        <Grid>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{loc:Tr Settings_AiPresets}" Width="110" VerticalAlignment="Center" />
+                            <Button x:Name="PresetDeepSeekButton" Content="{loc:Tr Settings_AiPresetDeepSeek}" Padding="8,2" Margin="0,0,6,0"
+                                    Command="{Binding UseDeepSeekPresetCommand}" />
+                            <Button x:Name="PresetOpenAiButton" Content="{loc:Tr Settings_AiPresetOpenAI}" Padding="8,2" Margin="0,0,6,0"
+                                    Command="{Binding UseOpenAiPresetCommand}" />
+                            <Button x:Name="PresetAnthropicButton" Content="{loc:Tr Settings_AiPresetAnthropic}" Padding="8,2" Margin="0,0,6,0"
+                                    Command="{Binding UseAnthropicPresetCommand}" />
+                            <Button x:Name="PresetLocalButton" Content="{loc:Tr Settings_AiPresetLocal}" Padding="8,2"
+                                    Command="{Binding UseLocalPresetCommand}" />
+                        </StackPanel>
+                        <Grid Margin="0,6,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="110" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{loc:Tr Settings_AiEndpoint}" VerticalAlignment="Center" />
+                            <TextBox x:Name="AiEndpointBox" Grid.Column="1" Padding="4,2" FontFamily="Consolas"
+                                     Text="{Binding ApiEndpoint, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     ToolTip="{loc:Tr Settings_AiEndpointTip}" />
+                        </Grid>
+                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                            <TextBlock Text="{loc:Tr Settings_Model}" Width="110" VerticalAlignment="Center" />
+                            <TextBox x:Name="AiModelBox" Width="260" Padding="4,2" FontFamily="Consolas"
+                                     Text="{Binding AiModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     ToolTip="{loc:Tr Settings_AiModelTip}" />
+                        </StackPanel>
+                        <Grid Margin="0,6,0,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="110" />
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="{loc:Tr Settings_ApiKey}" VerticalAlignment="Center" />
-                            <TextBox Grid.Column="1" Padding="4,2" FontFamily="Consolas"
+                            <TextBox x:Name="AiApiKeyBox" Grid.Column="1" Padding="4,2" FontFamily="Consolas"
                                      Text="{Binding ApiKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                      ToolTip="{loc:Tr Settings_ApiKeyTip}" />
                             <Button Grid.Column="2" Content="{loc:Tr Settings_Test}" Padding="10,2" Margin="6,0,0,0"
                                     Command="{Binding TestConnectionCommand}" />
                         </Grid>
-                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                            <TextBlock Text="{loc:Tr Settings_Model}" Width="110" VerticalAlignment="Center" />
-                            <ComboBox Width="220" IsEditable="True" ItemsSource="{Binding AiModels}"
-                                      SelectedItem="{Binding AiModel, Mode=TwoWay}" />
-                        </StackPanel>
                         <TextBlock Text="{loc:Tr Settings_ApiKeyTip}" Foreground="Gray" FontSize="11" Margin="0,6,0,0" TextWrapping="Wrap" />
                     </StackPanel>
                 </GroupBox>

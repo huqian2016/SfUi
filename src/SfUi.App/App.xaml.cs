@@ -171,9 +171,9 @@ public partial class App : Application
 
             if (_smokeAi)
             {
-                var aiClient = Services.GetRequiredService<DeepSeekClient>();
-                _log.Info($"--smoke-ai: model={aiClient.Model} / apiKey={aiClient.ApiKeySource}");
-                var aiResult = await aiClient.ChatAsync(new[] { new DeepSeekClient.ChatMessage("user", "Reply with the single word: OK") });
+                var aiClient = Services.GetRequiredService<AiChatClient>();
+                _log.Info($"--smoke-ai: endpoint={aiClient.Endpoint} / model={aiClient.Model} / apiKey={aiClient.ApiKeySource}");
+                var aiResult = await aiClient.ChatAsync(new[] { new AiChatClient.ChatMessage("user", "Reply with the single word: OK") });
                 if (aiResult.Success)
                 {
                     _log.Info($"--smoke-ai: OK（{Truncate(aiResult.Content?.Trim() ?? "", 80)} / {aiResult.Duration.TotalSeconds:F1} 秒 / tokens {aiResult.PromptTokens}+{aiResult.CompletionTokens}）");

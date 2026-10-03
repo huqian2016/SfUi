@@ -62,6 +62,61 @@ public class AppSettingsStoreTests : IDisposable
     }
 
     [Fact]
+    public void SaveAndReload_RoundTripsAiSettings()
+    {
+        var store = new AppSettingsStore(Paths, Log);
+        store.Current.AiEndpoint = "https://api.openai.com/v1/chat/completions";
+        store.Current.AiApiKey = "sk-test";
+        store.Current.AiModel = "gpt-4o-mini";
+        store.Save();
+
+        var reloaded = new AppSettingsStore(Paths, Log);
+
+        Assert.Equal("https://api.openai.com/v1/chat/completions", reloaded.Current.AiEndpoint);
+        Assert.Equal("sk-test", reloaded.Current.AiApiKey);
+        Assert.Equal("gpt-4o-mini", reloaded.Current.AiModel);
+    }
+
+    [Fact]
+    public void Load_MigratesLegacyDeepSeekFields_ToGenericAiFields()
+    {
+        File.WriteAllText(Paths.SettingsFile, """
+            {
+              "language": "ja",
+              "deepSeekApiKey": "sk-old",
+              "deepSeekModel": "deepseek-reasoner"
+            }
+            """);
+
+        var store = new AppSettingsStore(Paths, Log);
+
+        Assert.Equal("sk-old", store.Current.AiApiKey);
+        Assert.Equal("deepseek-reasoner", store.Current.AiModel);
+        Assert.Null(store.Current.DeepSeekApiKey);
+        Assert.Null(store.Current.DeepSeekModel);
+    }
+
+    [Fact]
+    public void Load_LegacyDeepSeekFields_DoNotOverrideNewAiFields()
+    {
+        File.WriteAllText(Paths.SettingsFile, """
+            {
+              "aiApiKey": "sk-new",
+              "aiModel": "gpt-4o-mini",
+              "deepSeekApiKey": "sk-old",
+              "deepSeekModel": "deepseek-reasoner"
+            }
+            """);
+
+        var store = new AppSettingsStore(Paths, Log);
+
+        Assert.Equal("sk-new", store.Current.AiApiKey);
+        Assert.Equal("gpt-4o-mini", store.Current.AiModel);
+        Assert.Null(store.Current.DeepSeekApiKey);
+        Assert.Null(store.Current.DeepSeekModel);
+    }
+
+    [Fact]
     public void Load_CorruptPrimary_FallsBackToBackup()
     {
         var store = new AppSettingsStore(Paths, Log);
