@@ -1,0 +1,111 @@
+<UserControl x:Class="SfUi.App.Views.DataExportView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:SfUi.App">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+    </UserControl.Resources>
+    <DockPanel>
+
+        <!-- 条件と実行 -->
+        <Border DockPanel.Dock="Top" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <RadioButton Content="{loc:Tr DataExport_ModeBuilder}" Margin="0,0,16,0"
+                                 IsChecked="{Binding BuilderMode, Mode=TwoWay}" />
+                    <RadioButton Content="{loc:Tr DataExport_ModeSoql}"
+                                 IsChecked="{Binding SoqlMode, Mode=TwoWay}" />
+                </StackPanel>
+
+                <Grid Margin="0,6,0,0" Visibility="{Binding BuilderMode, Converter={StaticResource BoolToVis}}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <DockPanel Grid.Column="0" Margin="0,0,16,0">
+                        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,4">
+                            <TextBlock Text="{loc:Tr DataExport_FieldsLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                            <TextBox Width="200" VerticalContentAlignment="Center"
+                                     Text="{Binding FieldFilter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <Button Content="{loc:Tr DataExport_SelectAll}" Padding="8,2" Margin="6,0,0,0"
+                                    Command="{Binding SelectAllFieldsCommand}" />
+                            <Button Content="{loc:Tr DataExport_Clear}" Padding="8,2" Margin="6,0,0,0"
+                                    Command="{Binding ClearFieldsCommand}" />
+                        </StackPanel>
+                        <ListBox x:Name="FieldsList" Height="150" ItemsSource="{Binding Fields}"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                 VirtualizingPanel.IsVirtualizing="True"
+                                 VirtualizingPanel.VirtualizationMode="Recycling">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <CheckBox Content="{Binding Display}" IsChecked="{Binding IsSelected, Mode=TwoWay}" />
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </DockPanel>
+
+                    <StackPanel Grid.Column="1" MinWidth="330">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                            <TextBlock Text="WHERE" Width="72" VerticalAlignment="Center" />
+                            <TextBox Width="260" VerticalContentAlignment="Center"
+                                     Text="{Binding WhereText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                            <TextBlock Text="ORDER BY" Width="72" VerticalAlignment="Center" />
+                            <TextBox Width="260" VerticalContentAlignment="Center"
+                                     Text="{Binding OrderByText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="LIMIT" Width="72" VerticalAlignment="Center" />
+                            <TextBox Width="260" VerticalContentAlignment="Center"
+                                     Text="{Binding LimitText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Grid>
+
+                <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                    <TextBlock Text="{loc:Tr DataExport_SoqlLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                    <TextBox x:Name="SoqlBox" Width="880" HorizontalAlignment="Left" FontFamily="Consolas"
+                             Text="{Binding SoqlText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                    <TextBlock Text="{loc:Tr DataIo_EngineLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                    <RadioButton Content="{loc:Tr DataIo_EngineRest}" Margin="0,0,12,0"
+                                 IsChecked="{Binding UseRest, Mode=TwoWay}" />
+                    <RadioButton Content="{loc:Tr DataIo_EngineBulk}"
+                                 IsChecked="{Binding UseBulk, Mode=TwoWay}" />
+                    <Button Content="{loc:Tr DataExport_Run}" Padding="12,2" Margin="18,0,0,0"
+                            Command="{Binding RunCommand}" IsEnabled="{Binding CanRun}" />
+                    <Button Content="{loc:Tr Common_Cancel}" Padding="10,2" Margin="6,0,0,0"
+                            Command="{Binding CancelCommand}" IsEnabled="{Binding IsRunning}" />
+                    <TextBlock Text="{Binding ProgressText}" Margin="12,0,0,0" VerticalAlignment="Center" Foreground="#555555" />
+                    <TextBlock Text="{Binding StatusMessage}" Margin="12,0,0,0" VerticalAlignment="Center"
+                               Foreground="#555555" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+
+                <TextBlock Text="{loc:Tr DataExport_BulkNote}" Foreground="#777777" Margin="0,4,0,0"
+                           Visibility="{Binding UseBulk, Converter={StaticResource BoolToVis}}" />
+            </StackPanel>
+        </Border>
+
+        <!-- 結果 -->
+        <DockPanel>
+            <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="8,6,8,0">
+                <TextBlock Text="{Binding SummaryText}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                <Button Content="{loc:Tr DataExport_SaveCsv}" Padding="10,2" Command="{Binding SaveCsvCommand}"
+                        IsEnabled="{Binding HasResult}" />
+                <Button Content="{loc:Tr DataExport_SaveJson}" Padding="10,2" Margin="6,0,0,0"
+                        Command="{Binding SaveJsonCommand}" IsEnabled="{Binding HasResult}" />
+                <Button Content="{loc:Tr DataExport_SaveTsv}" Padding="10,2" Margin="6,0,0,0"
+                        Command="{Binding SaveTsvCommand}" IsEnabled="{Binding HasResult}" />
+            </StackPanel>
+            <DataGrid x:Name="ResultGrid" ItemsSource="{Binding ResultView}" Margin="8,6,8,8"
+                      AutoGenerateColumns="True" IsReadOnly="True" CanUserAddRows="False"
+                      EnableRowVirtualization="True" EnableColumnVirtualization="True"
+                      ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                      AlternatingRowBackground="#F7F7F7" />
+        </DockPanel>
+    </DockPanel>
+</UserControl>

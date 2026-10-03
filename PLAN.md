@@ -1,6 +1,6 @@
 # SfUi — Salesforce CLI 統合デスクトップツール 実装計画
 
-最終更新: 2026-10-03 / ステータス: Phase 0-10 完了 + AI 接続先の汎用化 + 組織比較 + Microsoft Store（MSIX）提出準備完了（v0.5.1 / テスト 277 件 / 実 API スモーク検証済み。v0.2.0 は GitHub Release で公開中、Microsoft Store は審査準備中）
+最終更新: 2026-10-04 / ステータス: Phase 0-12 完了 + AI 接続先の汎用化 + 組織比較 + データ入出力 + Microsoft Store（MSIX）提出準備完了（v0.6.0 / テスト 341 件 / 実 API スモーク + UIA E2E 検証済み。v0.2.0 は GitHub Release で公開中、Microsoft Store は審査準備中）
 
 ## 1. 概要
 
@@ -244,6 +244,20 @@ data/
 - テスト: 277 件（+25: 突合キー / 差分判定 / 統計 / DataTable / 状態ストア）
 - バージョン: **0.5.1**（組織比較の追加と UI 改修。`SfUi.App.csproj` = 0.5.1 / `AppxManifest.xml` = 0.5.1.0 / MSIX = `dist\SfUi_0.5.1.0_x64.msix`）
 
+### Phase 13: データ入出力ウィンドウ（Data Export / Data Import 相当） ✅
+
+選択中組織に対する **データエクスポート / インポート** を行う独立ウィンドウ（非モーダル）。設計書: `docs/data-io-window-plan.md`。メイン上部バーの「データ入出力」と、組織情報ウィンドウのオブジェクトタブの「データ入出力」（選択中オブジェクトを引き継ぐ）から開く。
+
+- Core: `CsvParser`（RFC4180・エンコーディング自動判定 = BOM UTF-8/UTF-16 → UTF-8 → Shift-JIS → Latin-1）/ `CsvExporter.ToTsv` / `ImportValueCoercion`（describe に基づく型変換）/ `ImportFieldMatcher`（自動マッピング・検証）/ `ImportBatchPlanner`（200 件バッチ・composite ボディ・Bulk CSV）/ `ImportResultMapper` / `DataIoQueryBuilder`（オブジェクト・項目からの SOQL 生成）/ `SObjectDescribeService`（組織単位キャッシュ）/ `DataExportService` / `DataImportService`
+- エクスポート: SOQL 直接入力または項目選択ビルダー × REST / Bulk API。結果グリッド + CSV / JSON / TSV 保存
+- インポート: CSV 読込（エンコーディング・行数表示）→ 自動マッピング（変更・使用可否）→ 挿入 / 更新 / アップサート / 削除 × REST（composite/sobjects・200 件/バッチ・Upsert は逐次 PATCH）/ Bulk API。確認ダイアログ（危険操作ポリシー連動）→ 進捗 → 行別結果グリッド（失敗行 CSV 出力付き）
+- 履歴: type = `data` を追加しフィルタ / ダブルクリック再実行（SOQL はエクスポートタブで復元）
+- テスト: 341 件（+64: CSV パーサ / 型変換 / マッピング / バッチ計画 / 結果マッピング / SOQL ビルダ）
+- スモーク: `--smoke --smoke-dataio <org>`（一覧・Account describe・REST エクスポート・インポート計画ドライラン）
+- E2E（`C:\huqian\sfui-dataio-e2e.ps1`・UIA）: オブジェクトタブからの事前選択 → REST 挿入 2 行 → エクスポート（グリッド / CSV / JSON）→ 更新 → アップサート検証 → 削除 → Bulk エクスポート → Bulk 挿入 → Bulk 削除まで全 25 項目 PASS（グラウンドトゥルースは `sf data query`）
+- バージョン: **0.6.0**（`SfUi.App.csproj` = 0.6.0 / `AppxManifest.xml` = 0.6.0.0 / MSIX = `dist\SfUi_0.6.0.0_x64.msix`）
+- 知見: Composite API は各レコードの**先頭**に `attributes: {type: ...}` が必須（欠けると JSON_PARSER_ERROR）/ WPF の確認 MessageBox は UIA のボタン列挙が不安定なため Enter 送信で確定 / PowerShell の 1 要素配列スカラー展開（`@()` で回避）に注意
+
 ## 10. 検証計画
 
 1. `dotnet build` / `dotnet test`（引数クォート・JSON 解析・ストア round-trip・CSV）
@@ -363,3 +377,8 @@ data/
   - E2E（`C:\huqian\sfui-compare-verify.ps1`）: 12 組織 / 13 タブ / 差分のみフィルタ / CSV 290 行 OK。知見: Windows 11 最新式 SaveFileDialog は UIA ValuePattern 不可（Pane）→ 自動化はキーボード操作で保存
   - バージョン: **0.5.1** 化（`SfUi.App.csproj` / `AppxManifest.xml` / `dist\SfUi_0.5.1.0_x64.msix` 再ビルド）
   - 2026-10-03 改修（v0.5.1）: 組織チェックを最大 3 列 + スクロール / 各タブ検索（AND・「表示: n 件 / 全 m 件」）/ 差分行のみ黄色ハイライト（交互色を廃止）/ MainWindow 幅 1440 → 1520（言語プルダウンの見切れ対応）
+
+- ✅ **Phase 13（2026-10-04 完了）**: データ入出力ウィンドウ（設計: `docs/data-io-window-plan.md`）
+  - Core 9 ファイル（CSV パーサ / 型変換 / マッピング / バッチ計画 / 結果マッピング / SOQL ビルダ / describe キャッシュ / エクスポート / インポートサービス）+ テスト 64 件（合計 341 件成功）/ UI = DataIoWindow（エクスポート・インポートの 2 タブ + 共通の組織・オブジェクト選択と項目数表示）/ メイン「データ入出力」+ 組織情報オブジェクトタブ「データ入出力」（選択中オブジェクトを事前選択）
+  - E2E（`C:\huqian\sfui-dataio-e2e.ps1`）: REST 挿入 → エクスポート（CSV/JSON）→ 更新 → 削除 → Bulk エクスポート/挿入/削除まで 25 項目 PASS / `sf data query` と件数一致（挿入 2 → 更新 2 → 削除 0 → Bulk 挿入 1 → Bulk 削除 0）。知見: composite/sobjects は `attributes` を先頭に含める必要あり / 確認 MessageBox は UIA ボタン列挙が不安定で Enter 送信で確定 / PS の 1 要素配列スカラー展開に `@()` で対処
+  - バージョン: **0.6.0** 化（`SfUi.App.csproj` / `AppxManifest.xml` / `dist\SfUi_0.6.0.0_x64.msix` 再ビルド）

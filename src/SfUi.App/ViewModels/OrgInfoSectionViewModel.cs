@@ -97,6 +97,15 @@ public partial class OrgInfoSectionViewModel : ObservableObject, IOrgInfoTab, ID
     /// <summary>行リンク（ユーザー/プロファイル/オブジェクト詳細）を持つ可能性があるセクションか。</summary>
     public bool CanHaveLinks => Id is OrgInfoSections.Users or OrgInfoSections.Profiles or OrgInfoSections.Objects;
 
+    /// <summary>オブジェクトタブ限定: データ入出力ウィンドウを開くボタンを表示する。</summary>
+    public bool IsObjectsSection => Id == OrgInfoSections.Objects;
+
+    /// <summary>データ入出力ウィンドウの起動要求（選択中オブジェクトの API 名を渡す。未選択は null）。</summary>
+    public event Action<string?>? DataIoRequested;
+
+    [RelayCommand]
+    private void OpenDataIo() => DataIoRequested?.Invoke(SelectedRow?.Id);
+
     /// <summary>セクションに対応する Setup ページ URL（null はリンクなし）。</summary>
     public string? SetupUrl => _setupUrl;
 

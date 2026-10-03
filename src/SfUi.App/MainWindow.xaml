@@ -17,7 +17,7 @@
         <Border DockPanel.Dock="Top" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="{loc:Tr Main_OrgLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
-                <ComboBox x:Name="OrgComboBox" Width="240" Margin="0,0,6,0"
+                <ComboBox x:Name="OrgComboBox" Width="215" Margin="0,0,6,0"
                           ItemsSource="{Binding Orgs}"
                           SelectedItem="{Binding SelectedOrg, Mode=TwoWay}"
                           DisplayMemberPath="DisplayName"
@@ -26,18 +26,23 @@
                         Command="{Binding RefreshOrgsCommand}"
                         ToolTip="{loc:Tr Main_RefreshOrgsTip}" />
 
-                <Button Content="{loc:Tr Main_OrgInfo}" Padding="10,2" Margin="0,0,12,0"
+                <Button Content="{loc:Tr Main_OrgInfo}" Padding="10,2" Margin="0,0,8,0"
                         Command="{Binding OpenOrgInfoCommand}"
                         IsEnabled="{Binding HasSelectedOrg}"
                         ToolTip="{loc:Tr Main_OrgInfoTip}" />
 
-                <Button Content="{loc:Tr Main_Compare}" Padding="10,2" Margin="0,0,12,0"
+                <Button Content="{loc:Tr Main_Compare}" Padding="10,2" Margin="0,0,8,0"
                         Command="{Binding OpenCompareOrgsCommand}"
                         IsEnabled="{Binding CanCompareOrgs}"
                         ToolTip="{loc:Tr Main_CompareTip}" />
 
+                <Button Content="{loc:Tr Main_DataIo}" Padding="10,2" Margin="0,0,10,0"
+                        Command="{Binding OpenDataIoCommand}"
+                        IsEnabled="{Binding HasSelectedOrg}"
+                        ToolTip="{loc:Tr Main_DataIoTip}" />
+
                 <TextBlock Text="{loc:Tr Main_FolderLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
-                <ComboBox x:Name="FolderComboBox" Width="300" IsEditable="True" Margin="0,0,4,0"
+                <ComboBox x:Name="FolderComboBox" Width="230" IsEditable="True" Margin="0,0,4,0"
                           ItemsSource="{Binding RecentFolders}"
                           DisplayMemberPath="Path"
                           Text="{Binding SelectedFolder, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
@@ -45,10 +50,10 @@
                           KeyDown="FolderComboBox_KeyDown"
                           LostKeyboardFocus="FolderComboBox_LostFocus"
                           ToolTip="{loc:Tr Main_FolderTooltip}" />
-                <Button Content="{loc:Tr Main_Browse}" Padding="10,2" Margin="0,0,12,0"
+                <Button Content="{loc:Tr Main_Browse}" Padding="10,2" Margin="0,0,8,0"
                         Command="{Binding BrowseFolderCommand}" />
 
-                <Border Width="1" Background="#CCCCCC" Margin="0,2,12,2" />
+                <Border Width="1" Background="#CCCCCC" Margin="0,2,8,2" />
 
                 <Button Content="{loc:Tr Main_Terminal}" Padding="10,2" Margin="0,0,6,0"
                         Command="{Binding OpenTerminalCommand}"

@@ -12,6 +12,9 @@ public static class HistoryTypes
     public const string Deploy = "deploy";
     public const string Org = "org";
 
+    /// <summary>データ入出力（エクスポート / インポート）。</summary>
+    public const string Data = "data";
+
     /// <summary>種別の表示ラベル（現在の言語）。</summary>
     public static string ToLabel(string type) => type.ToLowerInvariant() switch
     {
@@ -21,6 +24,7 @@ public static class HistoryTypes
         Api => UiText.T("Type_Api"),
         Deploy => UiText.T("Type_Deploy"),
         Org => UiText.T("Type_Org"),
+        Data => UiText.T("Type_Data"),
         _ => type,
     };
 }

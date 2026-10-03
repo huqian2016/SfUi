@@ -22,6 +22,7 @@ public partial class MainViewModel : ObservableObject
     private readonly HistoryStore _history;
     private readonly OrgInfoWindowFactory _orgInfoWindowFactory;
     private readonly CompareOrgsWindowFactory _compareOrgsWindowFactory;
+    private readonly DataIoWindowFactory _dataIoWindowFactory;
 
     [ObservableProperty]
     private bool _isBusy;
@@ -123,7 +124,8 @@ public partial class MainViewModel : ObservableObject
         SettingsViewModel settingsViewModel,
         QuickPanelViewModel quickPanel,
         OrgInfoWindowFactory orgInfoWindowFactory,
-        CompareOrgsWindowFactory compareOrgsWindowFactory)
+        CompareOrgsWindowFactory compareOrgsWindowFactory,
+        DataIoWindowFactory dataIoWindowFactory)
     {
         _orgService = orgService;
         _log = log;
@@ -134,6 +136,7 @@ public partial class MainViewModel : ObservableObject
         _history = historyStore;
         _orgInfoWindowFactory = orgInfoWindowFactory;
         _compareOrgsWindowFactory = compareOrgsWindowFactory;
+        _dataIoWindowFactory = dataIoWindowFactory;
         Orgs.CollectionChanged += (_, _) => OnPropertyChanged(nameof(CanCompareOrgs));
         History = history;
         Soql = soql;
@@ -298,6 +301,25 @@ public partial class MainViewModel : ObservableObject
                 StatusMessage = UiText.T("Msg_ReplayDeploy");
                 break;
 
+            case HistoryTypes.Data:
+            {
+                var org = Orgs.FirstOrDefault(o =>
+                    string.Equals(o.Alias ?? o.Username, entry.Org, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(o.Username, entry.Org, StringComparison.OrdinalIgnoreCase));
+                if (org is null)
+                {
+                    StatusMessage = UiText.T("Msg_ReplayUnsupportedFmt", entry.TypeLabel);
+                    break;
+                }
+
+                SelectedOrg = org;
+                // エクスポートの SOQL のみ復元する（インポートの Params は "|" 区切り）
+                var soql = entry.Params is { Length: > 0 } p && !p.Contains('|') ? p : null;
+                _dataIoWindowFactory.Open(org, null, soql, Application.Current?.MainWindow);
+                StatusMessage = UiText.T("Msg_DataIoOpenedFmt", org.DisplayName);
+                break;
+            }
+
             default:
                 StatusMessage = UiText.T("Msg_ReplayUnsupportedFmt", entry.TypeLabel);
                 break;
@@ -445,6 +467,28 @@ public partial class MainViewModel : ObservableObject
         {
             StatusMessage = UiText.T("Common_FailedFmt", ex.Message);
             _log.Error("組織比較ウィンドウを開けませんでした", ex);
+        }
+    }
+
+    /// <summary>データ入出力ウィンドウを新しいウィンドウで開く。</summary>
+    [RelayCommand]
+    private void OpenDataIo()
+    {
+        if (SelectedOrg is null)
+        {
+            StatusMessage = UiText.T("Msg_SelectOrg");
+            return;
+        }
+
+        try
+        {
+            _dataIoWindowFactory.Open(SelectedOrg, null, null, Application.Current?.MainWindow);
+            StatusMessage = UiText.T("Msg_DataIoOpenedFmt", SelectedOrg.DisplayName);
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = UiText.T("Common_FailedFmt", ex.Message);
+            _log.Error("データ入出力ウィンドウを開けませんでした", ex);
         }
     }
 

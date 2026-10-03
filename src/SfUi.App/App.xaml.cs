@@ -21,6 +21,7 @@ public partial class App : Application
     private string? _smokeOrgInfo;
     private bool _smokeOrgInfoRefresh;
     private string? _smokeCompare;
+    private string? _smokeDataIo;
     private int _dispatcherExceptionCount;
 
     protected override void OnStartup(StartupEventArgs e)
@@ -33,6 +34,7 @@ public partial class App : Application
         _smokeOrgInfo = _smokeTest ? ReadOption(e.Args, "--smoke-orginfo") : null;
         _smokeOrgInfoRefresh = _smokeTest && e.Args.Any(a => string.Equals(a, "--smoke-orginfo-refresh", StringComparison.OrdinalIgnoreCase));
         _smokeCompare = _smokeTest ? ReadOption(e.Args, "--smoke-compare") : null;
+        _smokeDataIo = _smokeTest ? ReadOption(e.Args, "--smoke-dataio") : null;
         var dataDir = ReadOption(e.Args, "--data-dir") ?? Environment.GetEnvironmentVariable("SFUI_DATA_DIR");
 
         var paths = AppPaths.Resolve(dataDir);
@@ -56,6 +58,11 @@ public partial class App : Application
         services.AddSingleton<CompareOrgsWindowFactory>();
         services.AddTransient<CompareOrgsViewModel>();
         services.AddTransient<CompareOrgsWindow>();
+        services.AddSingleton<DataIoWindowFactory>();
+        services.AddTransient<DataIoViewModel>();
+        services.AddTransient<DataExportViewModel>();
+        services.AddTransient<DataImportViewModel>();
+        services.AddTransient<DataIoWindow>();
         services.AddSingleton<MainWindow>();
         Services = services.BuildServiceProvider();
 
@@ -199,6 +206,11 @@ public partial class App : Application
             {
                 exitCode = 1;
             }
+
+            if (!string.IsNullOrWhiteSpace(_smokeDataIo) && !await RunDataIoSmokeAsync(_smokeDataIo))
+            {
+                exitCode = 1;
+            }
         }
         catch (Exception ex)
         {
@@ -227,6 +239,60 @@ public partial class App : Application
     }
 
     /// <summary>
+    /// <summary>
+    /// --smoke-dataio: オブジェクト一覧（DescribeGlobal）・describe・REST エクスポート・
+    /// インポート計画のドライランを検証する（書き込みなし）。
+    /// </summary>
+    private async Task<bool> RunDataIoSmokeAsync(string target)
+    {
+        try
+        {
+            var orgs = await Services.GetRequiredService<OrgService>().ListOrgsAsync();
+            var org = orgs.FirstOrDefault(o =>
+                string.Equals(o.Alias, target, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(o.Username, target, StringComparison.OrdinalIgnoreCase));
+            if (org is null)
+            {
+                _log.Error($"--smoke-dataio: 組織が見つかりません: {target}");
+                return false;
+            }
+
+            var describeService = Services.GetRequiredService<SObjectDescribeService>();
+            var objects = await describeService.ListObjectsAsync(target);
+            _log.Info($"--smoke-dataio: オブジェクト一覧 {objects.Count} 件（queryable {objects.Count(o => o.Queryable)} / createable {objects.Count(o => o.Createable)}）");
+
+            var account = await describeService.DescribeAsync(target, "Account");
+            _log.Info($"--smoke-dataio: Account の項目 {account.Fields.Count} 件（createable {account.Fields.Count(f => f.Createable)} / 必須 {account.Fields.Count(f => f.RequiredForInsert)}）");
+
+            // REST エクスポート（少量）
+            var soql = DataIoQueryBuilder.Build("Account", new[] { "Id", "Name" }, null, null, 5);
+            var exportService = Services.GetRequiredService<DataExportService>();
+            var export = await exportService.RunRestAsync(target, soql);
+            _log.Info($"--smoke-dataio: REST エクスポート OK: {export.Result.RowCount} 行 / done={export.Result.Done} / {export.Duration.TotalMilliseconds:F0} ms");
+
+            // インポート計画のドライラン（送信しない）: 仮の CSV 2 行 → Account Insert の計画
+            var csv = CsvParser.Parse("Name,BillingCity\nSmoke Test 1,Tokyo\nSmoke Test 2,Osaka");
+            var mappings = ImportFieldMatcher.Suggest(csv.Headers, account, DataImportOperation.Insert, null);
+            var validation = ImportFieldMatcher.Validate(mappings, csv.RowCount, DataImportOperation.Insert, null);
+            if (validation is not null)
+            {
+                _log.Error($"--smoke-dataio: マッピング検証に失敗: {validation}");
+                return false;
+            }
+
+            var plan = ImportBatchPlanner.BuildPlan(csv.Rows, mappings, account, DataImportOperation.Insert, null, emptyAsNull: false);
+            var batches = ImportBatchPlanner.ChunkSendable(plan.Rows);
+            var body = ImportBatchPlanner.BuildCompositeBody(batches[0], account.Name, includeId: false);
+            _log.Info($"--smoke-dataio: インポート計画ドライラン OK: {plan.Rows.Count} 行 / バッチ {batches.Count} / ペイロード {body.Length} 文字 / エラー行 {plan.Rows.Count(r => r.Error is not null)}");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _log.Error("--smoke-dataio: 検証に失敗しました", ex);
+            return false;
+        }
+    }
+
     /// <summary>
     /// --smoke-compare: 指定組織（カンマ区切り・2 件以上）で全比較カテゴリを構築し、行数と差分件数をログ出力する。
     /// キャッシュ優先・未取得分は自動取得（組織情報ウィンドウと同じキャッシュを共有）。

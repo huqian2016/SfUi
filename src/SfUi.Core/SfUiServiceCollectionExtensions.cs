@@ -30,6 +30,9 @@ public static class SfUiServiceCollectionExtensions
         services.AddSingleton<OrgInfoSearchService>();
         services.AddSingleton<OrgCompareService>();
         services.AddSingleton<OrgCompareStateStore>();
+        services.AddSingleton<SObjectDescribeService>();
+        services.AddSingleton<DataExportService>();
+        services.AddSingleton<DataImportService>();
         return services;
     }
 }

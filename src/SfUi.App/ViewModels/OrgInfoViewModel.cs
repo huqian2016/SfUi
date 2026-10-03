@@ -1,7 +1,9 @@
 using System.Collections.ObjectModel;
+using System.Windows;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using SfUi.App.Services;
 using SfUi.Core;
 
 namespace SfUi.App.ViewModels;
@@ -20,6 +22,7 @@ public partial class OrgInfoViewModel : ObservableObject, IDisposable
     private readonly ToolLauncherService _toolLauncher;
     private readonly AiChatViewModel _ai;
     private readonly OrgInfoPreferencesStore _preferences;
+    private readonly DataIoWindowFactory _dataIoFactory;
     private readonly List<OrgInfoCustomTabViewModel> _customTabs = new();
 
     private string _orgKey = string.Empty;
@@ -79,7 +82,7 @@ public partial class OrgInfoViewModel : ObservableObject, IDisposable
 
     public bool CanRefresh => !IsBusy;
 
-    public OrgInfoViewModel(OrgInfoService service, OrgInfoCacheStore cache, OrgInfoSearchService search, ToolLauncherService toolLauncher, AiChatViewModel ai, OrgInfoPreferencesStore preferences, AppLog log)
+    public OrgInfoViewModel(OrgInfoService service, OrgInfoCacheStore cache, OrgInfoSearchService search, ToolLauncherService toolLauncher, AiChatViewModel ai, OrgInfoPreferencesStore preferences, DataIoWindowFactory dataIoFactory, AppLog log)
     {
         _service = service;
         _cache = cache;
@@ -87,6 +90,7 @@ public partial class OrgInfoViewModel : ObservableObject, IDisposable
         _toolLauncher = toolLauncher;
         _ai = ai;
         _preferences = preferences;
+        _dataIoFactory = dataIoFactory;
         _log = log;
         _searchTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
         _searchTimer.Tick += (_, _) =>
@@ -125,6 +129,11 @@ public partial class OrgInfoViewModel : ObservableObject, IDisposable
                 _toolLauncher,
                 OrgInfoUrlBuilder.ForSection(org.InstanceUrl, definition.Id));
             section.Fetched += OnSectionFetched;
+            if (definition.Id == OrgInfoSections.Objects)
+            {
+                section.DataIoRequested += OnDataIoRequested;
+            }
+
             Sections.Add(section);
         }
 
@@ -169,6 +178,26 @@ public partial class OrgInfoViewModel : ObservableObject, IDisposable
 
         _cache.SectionUpdated += OnSectionUpdated;
         UiText.LanguageChanged += OnLanguageChanged;
+    }
+
+    /// <summary>オブジェクトタブからデータ入出力ウィンドウを開く（選択中オブジェクトをプリセット）。</summary>
+    private void OnDataIoRequested(string? objectApiName)
+    {
+        if (Org is null)
+        {
+            return;
+        }
+
+        try
+        {
+            _dataIoFactory.Open(Org, objectApiName, null, Application.Current?.MainWindow);
+            StatusMessage = UiText.T("Msg_DataIoOpenedFmt", Org.DisplayName);
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = UiText.T("Common_FailedFmt", ex.Message);
+            _log.Error("データ入出力ウィンドウを開けませんでした", ex);
+        }
     }
 
     /// <summary>ウィンドウ表示時に呼ぶ。キャッシュが無い初回のみ自動取得する。</summary>

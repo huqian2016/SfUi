@@ -81,6 +81,20 @@ public sealed class SalesforceRestClient
         return JsonDocument.Parse(body);
     }
 
+    /// <summary>組織の全 sObject 一覧（DescribeGlobal）を取得する。</summary>
+    public async Task<JsonDocument> DescribeGlobalAsync(string targetOrg, CancellationToken cancellationToken = default)
+    {
+        var apiVersion = await GetApiVersionAsync(targetOrg, cancellationToken).ConfigureAwait(false);
+        var body = await SendForBodyAsync(
+            targetOrg,
+            HttpMethod.Get,
+            $"/services/data/v{apiVersion}/sobjects",
+            null,
+            cancellationToken,
+            retryOn401: true).ConfigureAwait(false);
+        return JsonDocument.Parse(body);
+    }
+
     /// <summary>任意のリクエストを実行してレスポンス本文を返す（失敗時は例外）。</summary>
     public async Task<string> SendRawAsync(string targetOrg, HttpMethod method, string pathOrUrl, string? jsonBody = null, CancellationToken cancellationToken = default)
     {
@@ -147,7 +161,8 @@ public sealed class SalesforceRestClient
         }
     }
 
-    private async Task<string> GetApiVersionAsync(string targetOrg, CancellationToken cancellationToken)
+    /// <summary>組織の API バージョンを解決する（auth → 既定値。エラー時は既定値 + 警告）。</summary>
+    public async Task<string> GetApiVersionAsync(string targetOrg, CancellationToken cancellationToken = default)
     {
         try
         {

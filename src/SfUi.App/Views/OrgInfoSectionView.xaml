@@ -17,6 +17,10 @@
                         Command="{Binding OpenSetupCommand}"
                         Visibility="{Binding HasSetupLink, Converter={StaticResource BoolToVis}}"
                         ToolTip="{loc:Tr OrgInfo_OpenSetupTip}" />
+                <Button Content="{loc:Tr Main_DataIo}" Padding="10,2" Margin="0,0,12,0"
+                        Command="{Binding OpenDataIoCommand}"
+                        Visibility="{Binding IsObjectsSection, Converter={StaticResource BoolToVis}}"
+                        ToolTip="{loc:Tr Main_DataIoTip}" />
                 <TextBlock Text="{loc:Tr OrgInfo_SearchLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
                 <TextBox Width="280" VerticalContentAlignment="Center"
                          Text="{Binding FilterText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
