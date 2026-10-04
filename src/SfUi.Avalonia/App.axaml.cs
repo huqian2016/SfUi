@@ -66,6 +66,9 @@ public partial class App : Application
             services.AddTransient<CompareTabViewModel>();
             services.AddTransient<BackupRecordsViewModel>();
             services.AddTransient<BackupCompareRecordsViewModel>();
+            services.AddTransient<OrgManageViewModel>();
+            services.AddTransient<OrgHealthViewModel>();
+            services.AddTransient<MigrationInventoryViewModel>();
             services.AddSingleton<MainWindow>();
             Services = services.BuildServiceProvider();
 
@@ -149,6 +152,11 @@ public partial class App : Application
                             Services.GetRequiredService<IAppWindowService>().OpenBackupCompareRecords(backupA.Id, backupB.Id, info.Name, displayName, compareOrg);
                             _log?.Info("--open comparerecords: 差分詳細ウィンドウを開きました");
                         }
+                    }
+                    else if (string.Equals(openTarget, "orgmanage", StringComparison.OrdinalIgnoreCase))
+                    {
+                        Services.GetRequiredService<IAppWindowService>().OpenOrgManage(mainViewModel.SelectedOrg);
+                        _log?.Info("--open orgmanage: 組織管理ウィンドウを開きました");
                     }
                 };
             }

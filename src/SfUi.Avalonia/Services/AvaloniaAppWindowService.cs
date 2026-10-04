@@ -67,7 +67,12 @@ public sealed class AvaloniaAppWindowService : IAppWindowService
         ShowOwned(new BackupWindow(viewModel));
     }
 
-    public void OpenOrgManage(OrgInfo? initial) => NotPortedYet("Org Management");
+    public void OpenOrgManage(OrgInfo? initial)
+    {
+        var viewModel = _services.GetRequiredService<OrgManageViewModel>();
+        viewModel.Initialize(initial);
+        ShowOwned(new OrgManageWindow(viewModel));
+    }
 
     public void OpenBackupRecords(string backupId, BackupObjectInfo info, string displayName, OrgInfo? currentOrg)
     {

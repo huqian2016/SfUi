@@ -543,4 +543,10 @@ data/
   - `XamlReader` によるリンクボタン テンプレートの残り 1 箇所を `FuncDataTemplate` へ置換（3 箇所すべて解消）
   - 検証: ビルド 0 警告 / スモーク OK / 両ウィンドウのキャプチャで 69 列の実データ表示と差分行ハイライト（added 1 / removed 1 / changed 15）を確認
   - 開発用オプション: `--open backuprecords` / `--open comparerecords`
-  - 残: 組織管理ウィンドウ（3 タブ）
+
+- ✅ **Phase E-3（2026-10-04 完了）**: Avalonia 版 組織管理ウィンドウ（3 タブ）— **全ウィンドウ移植完了**
+  - `OrgManageWindow`: 組織タブ（組織コンボ / 再読み込み / 既定に設定 / 開く / ログイン / ログアウト / 疎通テスト 2 種 + 進捗 / エイリアス / タグ・メモ / 検索 / 11 列グリッド）/ ヘルスタブ（使用量バー + 絞り込み）/ 移行棚卸しタブ（種別・有効のみ・検索・Setup を開く・CSV）
+  - 使用率バーは `ProgressBar` + `WarningBrushConverter`（80% 以上=赤）で WPF の DataTrigger を再現
+  - 検証: ビルド 0 警告 / スモーク OK / 実ウィンドウのキャプチャ（12 組織 + 既定 (acc) ハイライト + 最終バックアップ列）を確認
+  - 開発用オプション: `--open orgmanage`
+  - 移植済み: Compare Orgs / Org Info / Data I/O / Backup（3 タブ + レコード詳細 2）/ Org Manage（3 タブ）→ **残るは Phase F（macOS 固有）のみ**

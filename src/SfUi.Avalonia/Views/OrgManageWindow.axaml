@@ -1,0 +1,187 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:SfUi.Avalonia"
+        x:Class="SfUi.Avalonia.Views.OrgManageWindow"
+        Title="{Binding Title}"
+        Height="780" Width="1280" MinWidth="960" MinHeight="560"
+        WindowStartupLocation="CenterOwner"
+        FontSize="13">
+    <DockPanel>
+
+        <!-- 上部: 対象組織（全タブで共有） -->
+        <Border DockPanel.Dock="Top" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="{loc:Tr Main_OrgLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                    <ComboBox Width="360" ItemsSource="{Binding Orgs}"
+                              SelectedItem="{Binding SelectedOrgRow, Mode=TwoWay}"
+                              ToolTip.Tip="{loc:Tr OrgManage_OrgComboTip}"
+                              AutomationProperties.Name="{loc:Tr Main_OrgLabel}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Display}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <Button Content="{loc:Tr OrgManage_RefreshOrgs}" Margin="8,0,0,0" Padding="10,2"
+                            Command="{Binding RefreshOrgsCommand}"
+                            IsEnabled="{Binding CanInteract}"
+                            AutomationProperties.Name="{loc:Tr OrgManage_RefreshOrgs}" />
+                    <Button Content="{loc:Tr Common_Cancel}" Margin="8,0,0,0" Padding="10,2"
+                            Command="{Binding CancelCommand}"
+                            IsEnabled="{Binding CanCancel}"
+                            AutomationProperties.Name="{loc:Tr Common_Cancel}" />
+                </StackPanel>
+                <TextBlock Text="{Binding StatusMessage}" Foreground="#555555" Margin="0,4,0,0"
+                           TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
+
+        <TabControl Margin="8">
+            <!-- 組織タブ: 組織一覧と管理操作 -->
+            <TabItem Header="{loc:Tr OrgManage_TabOrgs}" AutomationProperties.Name="{loc:Tr OrgManage_TabOrgs}">
+                <DockPanel Margin="4">
+                    <StackPanel DockPanel.Dock="Top" Margin="0,0,0,6">
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="{loc:Tr OrgManage_SetDefault}" Padding="10,2"
+                                    Command="{Binding SetDefaultCommand}"
+                                    IsEnabled="{Binding CanInteract}"
+                                    ToolTip.Tip="{loc:Tr OrgManage_SetDefaultTip}"
+                                    AutomationProperties.Name="{loc:Tr OrgManage_SetDefault}" />
+                            <Button Content="{loc:Tr OrgManage_Open}" Margin="8,0,0,0" Padding="10,2"
+                                    Command="{Binding OpenOrgCommand}"
+                                    IsEnabled="{Binding CanInteract}"
+                                    AutomationProperties.Name="{loc:Tr OrgManage_Open}" />
+                            <Button Content="{loc:Tr OrgManage_Login}" Margin="8,0,0,0" Padding="10,2"
+                                    Command="{Binding LoginWebCommand}"
+                                    IsEnabled="{Binding CanInteract}"
+                                    ToolTip.Tip="{loc:Tr OrgManage_LoginTip}"
+                                    AutomationProperties.Name="{loc:Tr OrgManage_Login}" />
+                            <Button Content="{loc:Tr OrgManage_Logout}" Margin="8,0,0,0" Padding="10,2"
+                                    Command="{Binding LogoutCommand}"
+                                    IsEnabled="{Binding CanInteract}"
+                                    ToolTip.Tip="{loc:Tr OrgManage_LogoutTip}"
+                                    AutomationProperties.Name="{loc:Tr OrgManage_Logout}" />
+                            <Border Width="1" Background="#CCCCCC" Margin="10,2" />
+                            <Button Content="{loc:Tr OrgManage_TestSelected}" Padding="10,2"
+                                    Command="{Binding TestSelectedConnectionCommand}"
+                                    IsEnabled="{Binding CanTestConnections}"
+                                    ToolTip.Tip="{loc:Tr OrgManage_TestTip}"
+                                    AutomationProperties.Name="{loc:Tr OrgManage_TestSelected}" />
+                            <Button Content="{loc:Tr OrgManage_TestAll}" Margin="8,0,0,0" Padding="10,2"
+                                    Command="{Binding TestAllConnectionsCommand}"
+                                    IsEnabled="{Binding CanTestConnections}"
+                                    ToolTip.Tip="{loc:Tr OrgManage_TestTip}"
+                                    AutomationProperties.Name="{loc:Tr OrgManage_TestAll}" />
+                            <TextBlock Text="{Binding TestProgress}" Foreground="#555555" Margin="10,0,0,0" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                            <TextBlock Text="{loc:Tr OrgManage_AliasLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                            <TextBox Width="180" VerticalAlignment="Center"
+                                     Text="{Binding AliasInput, Mode=TwoWay}"
+                                     ToolTip.Tip="{loc:Tr OrgManage_AliasHint}"
+                                     AutomationProperties.Name="{loc:Tr OrgManage_AliasLabel}" />
+                            <Button Content="{loc:Tr OrgManage_SetAlias}" Margin="8,0,0,0" Padding="10,2"
+                                    Command="{Binding SetAliasCommand}"
+                                    IsEnabled="{Binding CanInteract}"
+                                    AutomationProperties.Name="{loc:Tr OrgManage_SetAlias}" />
+                            <Border Width="1" Background="#CCCCCC" Margin="10,2" />
+                            <TextBlock Text="{loc:Tr OrgManage_TagLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                            <TextBox Width="120" VerticalAlignment="Center"
+                                     Text="{Binding TagInput, Mode=TwoWay}"
+                                     ToolTip.Tip="{loc:Tr OrgManage_TagHint}"
+                                     AutomationProperties.Name="{loc:Tr OrgManage_TagLabel}" />
+                            <TextBlock Text="{loc:Tr OrgManage_NoteLabel}" VerticalAlignment="Center" Margin="10,0,4,0" />
+                            <TextBox Width="300" VerticalAlignment="Center"
+                                     Text="{Binding NoteInput, Mode=TwoWay}"
+                                     ToolTip.Tip="{loc:Tr OrgManage_NoteHint}"
+                                     AutomationProperties.Name="{loc:Tr OrgManage_NoteLabel}" />
+                            <Button Content="{loc:Tr OrgManage_SaveNote}" Margin="8,0,0,0" Padding="10,2"
+                                    Command="{Binding SaveNoteCommand}"
+                                    ToolTip.Tip="{loc:Tr OrgManage_NoteHint}"
+                                    AutomationProperties.Name="{loc:Tr OrgManage_SaveNote}" />
+                        </StackPanel>
+                        <TextBox Margin="0,6,0,0"
+                                 Text="{Binding SearchText, Mode=TwoWay}"
+                                 ToolTip.Tip="{loc:Tr OrgManage_OrgSearch}"
+                                 AutomationProperties.Name="{loc:Tr OrgManage_OrgSearch}" />
+                    </StackPanel>
+                    <DataGrid x:Name="OrgsGrid" ItemsSource="{Binding OrgsView}"
+                              SelectedItem="{Binding SelectedOrgRow, Mode=TwoWay}"
+                              AutoGenerateColumns="False" IsReadOnly="True"
+                              HeadersVisibility="Column"
+                              GridLinesVisibility="Horizontal" RowHeight="28" />
+                </DockPanel>
+            </TabItem>
+
+            <!-- ヘルス タブ: 組織の使用量 -->
+            <TabItem Header="{loc:Tr OrgManage_TabHealth}" AutomationProperties.Name="{loc:Tr OrgManage_TabHealth}">
+                <DockPanel Margin="4">
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,6">
+                        <Button Content="{loc:Tr OrgManage_HealthRefresh}" Padding="10,2"
+                                Command="{Binding Health.RefreshCommand}"
+                                AutomationProperties.Name="{loc:Tr OrgManage_HealthRefresh}" />
+                        <Button Content="{loc:Tr Common_Cancel}" Margin="8,0,0,0" Padding="10,2"
+                                Command="{Binding Health.CancelLoadCommand}"
+                                AutomationProperties.Name="{loc:Tr Common_Cancel}" />
+                        <TextBlock Text="{loc:Tr OrgManage_HealthFilterLabel}" VerticalAlignment="Center" Margin="16,0,4,0" />
+                        <TextBox Width="220" VerticalAlignment="Center"
+                                 Text="{Binding Health.FilterText, Mode=TwoWay}"
+                                 ToolTip.Tip="{loc:Tr OrgManage_HealthFilter}"
+                                 AutomationProperties.Name="{loc:Tr OrgManage_HealthFilter}" />
+                        <TextBlock Text="{Binding Health.StatusMessage}" Foreground="#555555" VerticalAlignment="Center"
+                                   Margin="12,0,0,0" TextTrimming="CharacterEllipsis" MaxWidth="480" />
+                    </StackPanel>
+                    <DataGrid x:Name="HealthGrid" ItemsSource="{Binding Health.RowsView}"
+                              AutoGenerateColumns="False" IsReadOnly="True"
+                              HeadersVisibility="Column"
+                              GridLinesVisibility="Horizontal" RowHeight="30" />
+                </DockPanel>
+            </TabItem>
+
+            <!-- 移行棚卸し タブ: Workflow / プロセスビルダー / フロー -->
+            <TabItem Header="{loc:Tr OrgManage_TabInventory}" AutomationProperties.Name="{loc:Tr OrgManage_TabInventory}">
+                <DockPanel Margin="4">
+                    <StackPanel DockPanel.Dock="Top" Margin="0,0,0,6">
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="{loc:Tr OrgManage_InvFetch}" Padding="10,2"
+                                    Command="{Binding Inventory.FetchCommand}"
+                                    AutomationProperties.Name="{loc:Tr OrgManage_InvFetch}" />
+                            <Button Content="{loc:Tr Common_Cancel}" Margin="8,0,0,0" Padding="10,2"
+                                    Command="{Binding Inventory.CancelLoadCommand}"
+                                    AutomationProperties.Name="{loc:Tr Common_Cancel}" />
+                            <Button Content="{loc:Tr OrgManage_InvExportCsv}" Margin="8,0,0,0" Padding="10,2"
+                                    Command="{Binding Inventory.ExportCsvCommand}"
+                                    AutomationProperties.Name="{loc:Tr OrgManage_InvExportCsv}" />
+                            <Border Width="1" Background="#CCCCCC" Margin="10,2" />
+                            <TextBlock Text="{loc:Tr OrgManage_InvKindLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                            <ComboBox Width="180" VerticalAlignment="Center"
+                                      ItemsSource="{Binding Inventory.KindOptions}"
+                                      SelectedIndex="{Binding Inventory.KindFilterIndex, Mode=TwoWay}"
+                                      AutomationProperties.Name="{loc:Tr OrgManage_InvKindLabel}" />
+                            <CheckBox Content="{loc:Tr OrgManage_InvActiveOnly}" Margin="12,0,0,0" VerticalAlignment="Center"
+                                      IsChecked="{Binding Inventory.ShowActiveOnly, Mode=TwoWay}"
+                                      AutomationProperties.Name="{loc:Tr OrgManage_InvActiveOnly}" />
+                            <TextBox Width="220" VerticalAlignment="Center" Margin="12,0,0,0"
+                                     Text="{Binding Inventory.SearchText, Mode=TwoWay}"
+                                     ToolTip.Tip="{loc:Tr OrgManage_InvSearch}"
+                                     AutomationProperties.Name="{loc:Tr OrgManage_InvSearch}" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                            <TextBlock Text="{Binding Inventory.SummaryText}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding Inventory.WarningText}" Foreground="#B26500" Margin="12,0,0,0"
+                                       VerticalAlignment="Center" TextWrapping="Wrap"
+                                       IsVisible="{Binding Inventory.HasWarning}" />
+                            <TextBlock Text="{Binding Inventory.StatusMessage}" Foreground="#555555" Margin="12,0,0,0"
+                                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="420" />
+                        </StackPanel>
+                    </StackPanel>
+                    <DataGrid x:Name="InventoryGrid" ItemsSource="{Binding Inventory.RowsView}"
+                              AutoGenerateColumns="False" IsReadOnly="True"
+                              HeadersVisibility="Column"
+                              GridLinesVisibility="Horizontal" RowHeight="28" />
+                </DockPanel>
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</Window>
