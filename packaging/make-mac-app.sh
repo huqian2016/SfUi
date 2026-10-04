@@ -29,18 +29,11 @@ dotnet publish "$ROOT/src/SfUi.Avalonia/SfUi.Avalonia.csproj" \
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp -R "$PUBLISH"/. "$APP/Contents/MacOS/"
 
-# ---- アイコン（.ico → .icns。iconutil / sips が無い環境ではスキップ） ----
-ICO="$ROOT/src/SfUi.App/Resources/SfUi.ico"
-if command -v iconutil >/dev/null 2>&1 && command -v sips >/dev/null 2>&1 && [ -f "$ICO" ]; then
-    ICONSET="$ROOT/dist/mac/SfUi.iconset"
-    rm -rf "$ICONSET"
-    mkdir -p "$ICONSET"
-    for size in 16 32 128 256 512; do
-        sips -z "$size" "$size" "$ICO" --out "$ICONSET/icon_${size}x${size}.png" >/dev/null 2>&1 || true
-        sips -z "$((size * 2))" "$((size * 2))" "$ICO" --out "$ICONSET/icon_${size}x${size}@2x.png" >/dev/null 2>&1 || true
-    done
+# ---- アイコン（packaging/mac/SfUi.iconset の PNG 一式 → SfUi.icns。iconutil が無い環境ではスキップ） ----
+# iconset の PNG は SfUi.ico の 256px フレームから生成済み（コミット済みなので macOS 以外でも同じ絵になる）。
+ICONSET="$ROOT/packaging/mac/SfUi.iconset"
+if command -v iconutil >/dev/null 2>&1 && [ -d "$ICONSET" ]; then
     iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/SfUi.icns" 2>/dev/null || true
-    rm -rf "$ICONSET"
 fi
 
 # ---- Info.plist（バージョン埋め込み） ----
