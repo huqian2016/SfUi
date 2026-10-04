@@ -298,12 +298,14 @@ dotnet publish src/SfUi.Avalonia -c Release -r osx-arm64 --self-contained true `
 | ジョブ | ランナー | 内容 |
 |---|---|---|
 | Test | windows-latest / macos-latest | `dotnet test tests/SfUi.Tests`（Core + Presentation の 395 テスト） |
-| Build Avalonia app | windows-latest / macos-latest | `dotnet build src/SfUi.Avalonia` |
-| Package .app | macos-latest | `make-mac-app.sh osx-arm64`（publish → `.app` → icns → zip）→ パッケージ済み実行ファイルで `--smoke`（起動 / 言語切替 / exit 0）→ zip を artifact へ |
+| Build Avalonia app | windows-latest / macos-latest | `dotnet build src/SfUi.Avalonia` + Windows では `--smoke` 起動スモーク（言語切替 / exit 0） |
+| Build WPF app | windows-latest | `dotnet build src/SfUi.App`（共有ロジック変更の WPF 回帰検知） |
+| Package .app | macos-latest | `make-mac-app.sh osx-arm64`（publish → `.app` → icns → zip）→ パッケージ済み実行ファイルで `--smoke` → zip を artifact へ |
 
-- WPF 版（`SfUi.App` / net9.0-windows）は CI 対象外（Windows で実機ビルド）
+- WPF 版のビルドは Windows のみ（net9.0-windows）
 - 署名 / 公証は証明書 secret を追加して `SFUI_CODESIGN_IDENTITY` 等を渡せばスクリプトがそのまま実行する
-- これにより**手元に Mac が無くても両 OS のビルド・テスト・macOS パッケージの起動確認まで回る**（署名 / 公証と UI 操作の最終確認のみ実機推奨）。
+- UIA 検証スクリプト（`sfui-*.ps1`）は対話デスクトップ + デモ環境（モック REST / サンプル組織）が必要なため CI 対象外（ローカルで実施）
+- これにより**手元に Mac が無くても両 OS のビルド・テスト・スモーク・macOS パッケージの起動確認まで回る**（署名 / 公証と UI 操作の最終確認のみ実機推奨）。
 
 ## 13. シングルソース戦略（1 か所の修正で両 OS に反映）
 

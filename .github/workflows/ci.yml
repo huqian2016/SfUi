@@ -36,6 +36,33 @@ jobs:
           dotnet-version: '9.0.x'
       - name: Build (Avalonia, cross-platform)
         run: dotnet build src/SfUi.Avalonia/SfUi.Avalonia.csproj -c Release
+      - name: Smoke run (--smoke, Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $exe = "src/SfUi.Avalonia/bin/Release/net9.0/SfUi.Avalonia.exe"
+          $data = Join-Path $env:RUNNER_TEMP "sfui-smoke"
+          $p = Start-Process -FilePath $exe -ArgumentList "--smoke", "--data-dir", $data -PassThru
+          if (-not $p.WaitForExit(180000)) {
+            $p.Kill()
+            Write-Error "smoke timed out after 180s"
+            Get-ChildItem "$data\logs\*.log" -ErrorAction SilentlyContinue | ForEach-Object { Get-Content $_ -Tail 60 }
+            exit 1
+          }
+          Write-Host "smoke exit code: $($p.ExitCode)"
+          Get-ChildItem "$data\logs\*.log" -ErrorAction SilentlyContinue | ForEach-Object { Get-Content $_ -Tail 60 }
+          exit $p.ExitCode
+
+  build-wpf:
+    name: Build WPF app (windows-latest)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '9.0.x'
+      - name: Build (WPF, Windows)
+        run: dotnet build src/SfUi.App/SfUi.App.csproj -c Release
 
   package-macos:
     name: Package .app (macos-latest)

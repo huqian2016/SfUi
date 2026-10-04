@@ -78,6 +78,7 @@ bash packaging/make-mac-app.sh osx-x64
 `.github/workflows/ci.yml`（push / PR / 手動実行）:
 
 1. `Test (windows-latest / macos-latest)`: `dotnet test tests/SfUi.Tests/SfUi.Tests.csproj`（Core + Presentation の 395 テスト）
-2. `Build Avalonia app (windows-latest / macos-latest)`: `dotnet build src/SfUi.Avalonia/SfUi.Avalonia.csproj`
-3. `Package .app (macos-latest)`: `bash packaging/make-mac-app.sh osx-arm64` → パッケージ済み実行ファイルで `--smoke`（起動 / 言語切替 / exit 0）→ zip を workflow artifact にアップロード（署名 / 公証は環境変数未設定のためスキップ）
+2. `Build Avalonia app (windows-latest / macos-latest)`: `dotnet build src/SfUi.Avalonia/SfUi.Avalonia.csproj`（Windows では続けて `--smoke` 起動スモーク）
+3. `Build WPF app (windows-latest)`: `dotnet build src/SfUi.App/SfUi.App.csproj`（共有ロジックの WPF 回帰検知）
+4. `Package .app (macos-latest)`: `bash packaging/make-mac-app.sh osx-arm64` → パッケージ済み実行ファイルで `--smoke`（起動 / 言語切替 / exit 0）→ zip を workflow artifact にアップロード（署名 / 公証は環境変数未設定のためスキップ）
 
