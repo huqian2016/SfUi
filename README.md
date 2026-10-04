@@ -129,10 +129,15 @@ All JSON files are written atomically (`AtomicJsonFile`: temp file → `File.Rep
 
 ## Build from source
 
+The build only needs the **free .NET SDK 9.0+** ([dotnet.microsoft.com](https://dotnet.microsoft.com/download)) — no paid Visual Studio is required. With the SDK installed, the `dotnet` CLI alone covers building, running, testing and producing the distributable EXE. There is no `global.json`, so any 9.0+ SDK works (WPF requires building on Windows).
+
 ```powershell
-# Requirements: .NET SDK 9.0+
+# Requirements: free .NET SDK 9.0+
 dotnet build SfUi.sln -c Debug
 dotnet test  SfUi.sln
+
+# Run the app from source
+dotnet run --project src/SfUi.App
 
 # Produce a self-contained single-file EXE into dist/
 dotnet publish src/SfUi.App/SfUi.App.csproj -c Release -r win-x64 `
@@ -264,7 +269,17 @@ JSON はすべて原子的書き込み（`AtomicJsonFile`: 一時ファイル �
 
 ## ビルド
 
+ビルドに必要なのは**無料の .NET SDK 9.0+**（[dotnet.microsoft.com](https://dotnet.microsoft.com/download)）だけです（有料の Visual Studio は不要）。SDK をインストールすれば、ビルド・テスト・配布用 EXE の作成まで `dotnet` コマンドだけで完結します。`global.json` が無いため SDK は 9.0 系以降なら OK です（WPF のためビルドは Windows のみ）。
+
 ```powershell
+# 必要なもの: 無料の .NET SDK 9.0+
 dotnet build SfUi.sln -c Debug
 dotnet test  SfUi.sln
+
+# ソースから実行
+dotnet run --project src/SfUi.App
+
+# 配布用の自己完結・単一 EXE を dist/ に作成
+dotnet publish src/SfUi.App/SfUi.App.csproj -c Release -r win-x64 `
+  --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o dist
 ```
