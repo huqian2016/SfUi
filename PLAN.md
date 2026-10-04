@@ -1,6 +1,6 @@
 # SfUi — Salesforce CLI 統合デスクトップツール 実装計画
 
-最終更新: 2026-10-04 / ステータス: Phase 0-15 完了 + AI 接続先の汎用化 + 組織比較 + データ入出力 + アクセス権限タブ + レコードのバックアップ・復元（自動ラベル・比較タブ付き）+ Microsoft Store（MSIX）提出準備完了（v0.8.0 / テスト 376 件 / 実 API スモーク + UIA E2E 検証済み。GitHub Release は v0.7.3 公開済み、Microsoft Store は審査準備中）
+最終更新: 2026-10-04 / ステータス: Phase 0-15 完了 + AI 接続先の汎用化 + 組織比較 + データ入出力 + アクセス権限タブ + レコードのバックアップ・復元（自動ラベル・比較タブ付き）+ Microsoft Store（MSIX）提出準備完了（v0.8.0 / テスト 380 件 / 実 API スモーク + UIA E2E 検証済み。GitHub Release は v0.8.0 公開済み、Microsoft Store は審査準備中）
 
 ## 1. 概要
 
@@ -444,6 +444,8 @@ data/
   - メイン上部バー「バックアップと復元」（Fluent の Cloud Arrow Down アイコン）+ BackupWindow（バックアップ / 復元 / バックアップ比較の 3 タブ）+ レコード詳細・比較レコードの別ウィンドウ
   - バックアップ タブ: ラベル / 説明の自動入力（`{エイリアス}_{yyyy-MM-dd_HH-mm}` / URL・組織 ID・種類）+ 選択をクリア。復元は Id（undelete で Id 維持）/ キー照合 + 参照張り替え
   - バックアップ比較タブ: 2 バックアップのレコード突合（REST×Bulk の型差を吸収）→ 差分行を色でハイライト + レコード単位の差分を別ウィンドウで表示（変更は `項目: A → B`）
-  - Core: `BackupModels` / `BackupStateStore` / `SalesforceSoapClient`（undelete）/ `BackupService`（背景件数取得・REST/Bulk 自動切替・Id/キー照合・参照張り替え）/ `BackupCompareService`（差分計算）
-  - テスト 376 件成功（+18）/ スモーク `--smoke --smoke-backup acc`（undelete で Id 維持・上書き・キー復元の参照張り替え・Bulk 保存まで全項目成功）/ UI チェック 17 項目 PASS
+  - レコード詳細 / 差分ウィンドウ: 先頭列「レコードページを開く」で Salesforce のレコードページをブラウザー表示（インスタンス URL はバックアップ元組織から解決）
+  - Core: `BackupModels` / `BackupStateStore` / `SalesforceSoapClient`（undelete）/ `BackupService`（背景件数取得・REST/Bulk 自動切替・Id/キー照合・参照張り替え）/ `BackupCompareService`（差分計算）/ `BackupOrgUrls`（URL 解決）
+  - テスト 380 件成功（+22）/ スモーク `--smoke --smoke-backup acc`（undelete で Id 維持・上書き・キー復元の参照張り替え・Bulk 保存まで全項目成功）/ UI チェック 20 項目 PASS
+  - 2026-10-04: README のスクリーンショットに「バックアップと復元」「バックアップ比較」を追加（EN/JA）。GitHub Release **v0.8.0** 公開（アセット = `SfUi.exe` + `SfUi-v0.8.0-portable.zip`）
   - バージョン **0.8.0**

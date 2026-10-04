@@ -4,7 +4,7 @@
              xmlns:loc="clr-namespace:SfUi.App">
     <Grid Margin="4">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="700" />
+            <ColumnDefinition Width="620" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
@@ -97,8 +97,8 @@
                     </Style>
                 </DataGrid.RowStyle>
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="{loc:Tr Backup_ColObject}" Width="190" Binding="{Binding Name}" />
-                    <DataGridTextColumn Header="{loc:Tr Backup_ColLabel}" Width="*" Binding="{Binding Label}" />
+                    <DataGridTextColumn Header="{loc:Tr Backup_ColObject}" Width="180" Binding="{Binding Name}" />
+                    <DataGridTextColumn Header="{loc:Tr Backup_ColLabel}" Width="*" MinWidth="140" Binding="{Binding Label}" />
                     <DataGridTextColumn Header="{loc:Tr BackupCompare_ColCountA}" Width="80" Binding="{Binding CountAText}" />
                     <DataGridTextColumn Header="{loc:Tr BackupCompare_ColCountB}" Width="80" Binding="{Binding CountBText}" />
                     <DataGridTextColumn Header="{loc:Tr BackupCompare_ColAdded}" Width="70" Binding="{Binding AddedText}" />
