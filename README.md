@@ -25,6 +25,15 @@ and an **Org Management** window that keeps your orgs in order (default, alias, 
 ![Backup compare tab](docs/screenshots/backup-compare-en.png)
 *Backup compare — objects with differences are highlighted by color (diff / only in A / only in B); record-level diffs open in a separate window*
 
+![Org Management window](docs/screenshots/orgmanage-en.png)
+*Org Management — every authenticated org with local tags / notes, connection tests, last backup and one-click default / alias / login / logout*
+
+![Org health tab](docs/screenshots/orgmanage-health-en.png)
+*Org health — REST limits with usage bars (red at 80%+), sorted by usage and filterable by name*
+
+![Migration inventory tab](docs/screenshots/orgmanage-inventory-en.png)
+*Migration inventory — workflow rules (active state read from their metadata), Process Builder processes and flows with kind / active filters, CSV export and Setup links*
+
 ![Execution history](docs/screenshots/history-en.png)
 *Every operation is saved in History and can be replayed with a double-click*
 
@@ -65,7 +74,7 @@ and an **Org Management** window that keeps your orgs in order (default, alias, 
 
 1. Download from the [Releases](../../releases) page:
    - **`SfUi.exe`** — the portable single executable, or
-   - **`SfUi-v0.8.0-portable.zip`** — the executable **plus a ready-to-use `data/` folder with 30 sample SOQL / Apex / commands / REST requests already in the history** (just extract and run).
+   - **`SfUi-v0.9.1-portable.zip`** — the executable **plus a ready-to-use `data/` folder with 30 sample SOQL / Apex / commands / REST requests already in the history** (just extract and run).
 2. Put it in any folder and double-click (no installer).
    - Windows SmartScreen may warn because the binary is unsigned — choose *More info* → *Run anyway*.
 3. On first run a `data/` folder is created next to the exe (portable mode).
@@ -153,7 +162,7 @@ SOQL・匿名Apex・デバッグログ・デプロイ・自由コマンド・RES
 少ないクリックで実行できます。組織とフォルダの切替、外部ツールの起動もワンクリック。
 組織情報の閲覧（別ウィンドウ）・複数組織の一括比較・データの入出力（CSV / JSON・REST / Bulk API）・
 レコードのバックアップと復元（バックアップ間の比較・レコード単位の差分表示付き）・
-組織管理（組織の既定 / エイリアス / ログイン操作と、使用量・移行棚卸しの確認）にも対応しています。
+組織管理（組織の既定 / エイリアス / ログイン操作、疎通テスト、タグ・メモ、使用量・移行棚卸しの確認）にも対応しています。
 
 - UI は **英語（既定）/ 日本語** に対応（上部バーのコンボで即時切替）
 - **AI チャット（複数プロバイダー対応）**: 自然言語から SOQL / 匿名Apex / sf コマンドを生成、実行結果の分析も可能（右サイドパネル表示・上部バーの「AI」で表示切替。既定の DeepSeek 接続先はすぐ試せるよう評価用キーを同梱。設定 → AI のプリセットから OpenAI / Anthropic（Claude）/ ローカル LLM（Ollama 等、キー不要）など **OpenAI 互換 API** に接続可。自分のキーは 設定 → AI（または環境変数 `SFUI_AI_API_KEY`）で登録）
@@ -185,6 +194,15 @@ SOQL・匿名Apex・デバッグログ・デプロイ・自由コマンド・RES
 ![バックアップ比較タブ](docs/screenshots/backup-compare-ja.png)
 *バックアップ比較 — 差分のあるオブジェクトを色でハイライト（差分 / A のみ / B のみ）。レコード単位の差分は別ウィンドウで表示*
 
+![組織管理ウィンドウ](docs/screenshots/orgmanage-ja.png)
+*組織管理 — 認証済み組織の一覧。ローカルのタグ・メモ、疎通テスト、最終バックアップ、既定 / エイリアス / ログイン / ログアウトをワンクリック*
+
+![組織のヘルス タブ](docs/screenshots/orgmanage-health-ja.png)
+*ヘルス — REST の使用量をバー付きで表示（80% 以上は赤）。使用率順 + 名前で絞り込み*
+
+![移行棚卸しタブ](docs/screenshots/orgmanage-inventory-ja.png)
+*移行棚卸し — Workflow ルール（有効 / 無効は Metadata から取得）/ プロセスビルダー / フローを種別・有効状態で絞り込み、CSV 出力と Setup リンク付き*
+
 ![実行履歴](docs/screenshots/history-ja.png)
 *すべての操作を履歴に保存し、ダブルクリックで再実行*
 
@@ -195,7 +213,7 @@ SOQL・匿名Apex・デバッグログ・デプロイ・自由コマンド・RES
 
 1. [Releases](../../releases) からダウンロード
    - **`SfUi.exe`** … 実行ファイル単体（サンプル履歴は設定画面から後で追加可）
-   - **`SfUi-v0.8.0-portable.zip`** … exe + サンプル履歴 30 件入りの `data/` フォルダ（解凍してそのまま実行）
+   - **`SfUi-v0.9.1-portable.zip`** … exe + サンプル履歴 30 件入りの `data/` フォルダ（解凍してそのまま実行）
 2. 任意のフォルダに置いてダブルクリック（インストーラー不要）
    - 署名なしのため SmartScreen の警告が出たら「詳細情報」→「実行」
 3. 初回起動時に exe 隣に `data/` フォルダ（設定・履歴・ログ）が作成されます（ポータブル動作）

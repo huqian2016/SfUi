@@ -1021,6 +1021,17 @@ public static partial class UiText
         ["Limit_DailyAsyncApexExecutions"] = "非同期 Apex 実行（日次）",
         ["Limit_DailyBulkApiBatches"] = "Bulk API バッチ（日次）",
         ["Limit_DailyBulkV2QueryJobs"] = "Bulk API v2 クエリ ジョブ（日次）",
+        ["Limit_ActiveScratchOrgs"] = "有効なスクラッチ組織",
+        ["Limit_DailyWorkflowEmails"] = "Workflow メール（日次）",
+        ["Limit_HourlyTimeBasedWorkflow"] = "時間ベース Workflow（1 時間あたり）",
+        ["Limit_SingleEmail"] = "単一メール送信（日次）",
+        ["Limit_MassEmail"] = "一括メール送信（日次）",
+        ["Limit_DailyStreamingApiEvents"] = "Streaming API イベント（日次）",
+        ["Limit_PermissionSets"] = "権限セット",
+        ["Limit_DailyStandardVolumePlatformEvents"] = "プラットフォーム イベント・標準ボリューム（日次）",
+        ["Limit_DailyDurableStreamingApiEvents"] = "永続 Streaming API イベント（日次）",
+        ["Limit_ConcurrentAsyncGetReportInstances"] = "非同期レポートの同時実行",
+        ["Limit_DailyAnalyticsApiRequests"] = "Analytics API リクエスト（日次）",
 
         // ---- 組織管理: 疎通テスト / タグ・メモ / 棚卸しの絞り込み ----
         ["OrgManage_TestSelected"] = "疎通テスト（選択）",

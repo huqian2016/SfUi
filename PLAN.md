@@ -485,4 +485,4 @@ data/
   - 移行棚卸し タブ: Workflow ルール + プロセスビルダー + フロー（`FlowDefinitionView`）の一覧 + サマリー + CSV エクスポート
   - Core: `OrgManageModels` / `OrgLimitsParser` / `OrgManageService` / `MigrationInventoryService`
   - テスト 385 件成功（+5）/ スモーク `--smoke --smoke-orgmanage acc`（組織 12 / limits 73 / 棚卸し 108）成功 / UI チェック（`sfui-orgmanage-ui-check.ps1`・読み取りのみ）14 項目 PASS
-  - 2026-10-04 拡張（v0.9.1）: 疎通テスト（選択 / すべて・進捗 / キャンセル）・タグ・メモ（`data/org-manage.json`・検索対象）・最終バックアップ列を追加。移行棚卸しに種別フィルタ / 有効のみ / Setup を開く / Workflow ルールの有効状態（Metadata XML）を追加。テスト 387 件 / スモーク + UI チェック 23 項目 PASS
+  - 2026-10-04 拡張（v0.9.1）: 疎通テスト（選択 / すべて・進捗 / キャンセル）・タグ・メモ（`data/org-manage.json`・検索対象）・最終バックアップ列を追加。移行棚卸しに種別フィルタ / 有効のみ / Setup を開く / Workflow ルールの有効状態（Metadata XML）を追加。テスト 387 件 / スモーク + UI チェック 23 項目 PASS。README のスクリーンショットに組織管理ウィンドウ（組織 / ヘルス / 移行棚卸し、EN + JA）を追加

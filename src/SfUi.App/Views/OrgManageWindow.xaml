@@ -114,8 +114,8 @@
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="{loc:Tr OrgManage_ColDefault}" Width="54" Binding="{Binding DefaultMark}" />
                             <DataGridTextColumn Header="{loc:Tr OrgManage_ColAlias}" Width="110" Binding="{Binding AliasText}" />
-                            <DataGridTextColumn Header="{loc:Tr OrgManage_ColUsername}" Width="210" Binding="{Binding Username}" />
-                            <DataGridTextColumn Header="{loc:Tr OrgManage_ColOrgId}" Width="165" Binding="{Binding OrgIdText}" />
+                            <DataGridTextColumn Header="{loc:Tr OrgManage_ColUsername}" Width="195" Binding="{Binding Username}" />
+                            <DataGridTextColumn Header="{loc:Tr OrgManage_ColOrgId}" Width="155" Binding="{Binding OrgIdText}" />
                             <DataGridTextColumn Header="{loc:Tr OrgManage_ColType}" Width="90" Binding="{Binding TypeText}" />
                             <DataGridTextColumn Header="{loc:Tr OrgManage_ColStatus}" Width="95" Binding="{Binding StatusText}" />
                             <DataGridTemplateColumn Header="{loc:Tr OrgManage_ColConnection}" Width="120">
@@ -127,7 +127,7 @@
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
                             <DataGridTextColumn Header="{loc:Tr OrgManage_ColTag}" Width="110" Binding="{Binding Tag}" />
-                            <DataGridTemplateColumn Header="{loc:Tr OrgManage_ColNote}" Width="200">
+                            <DataGridTemplateColumn Header="{loc:Tr OrgManage_ColNote}" Width="170">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBlock Text="{Binding Note}" VerticalAlignment="Center" Margin="4,0"
@@ -135,7 +135,7 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-                            <DataGridTextColumn Header="{loc:Tr OrgManage_ColLastBackup}" Width="140" Binding="{Binding LastBackupText}" />
+                            <DataGridTextColumn Header="{loc:Tr OrgManage_ColLastBackup}" Width="130" Binding="{Binding LastBackupText}" />
                             <DataGridTextColumn Header="{loc:Tr OrgManage_ColInstanceUrl}" Width="*" Binding="{Binding InstanceUrlText}" />
                         </DataGrid.Columns>
                     </DataGrid>

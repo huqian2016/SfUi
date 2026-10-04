@@ -1021,6 +1021,17 @@ public static partial class UiText
         ["Limit_DailyAsyncApexExecutions"] = "Async Apex executions (daily)",
         ["Limit_DailyBulkApiBatches"] = "Bulk API batches (daily)",
         ["Limit_DailyBulkV2QueryJobs"] = "Bulk API v2 query jobs (daily)",
+        ["Limit_ActiveScratchOrgs"] = "Active scratch orgs",
+        ["Limit_DailyWorkflowEmails"] = "Workflow emails (daily)",
+        ["Limit_HourlyTimeBasedWorkflow"] = "Time-based workflow (hourly)",
+        ["Limit_SingleEmail"] = "Single emails (daily)",
+        ["Limit_MassEmail"] = "Mass emails (daily)",
+        ["Limit_DailyStreamingApiEvents"] = "Streaming API events (daily)",
+        ["Limit_PermissionSets"] = "Permission sets",
+        ["Limit_DailyStandardVolumePlatformEvents"] = "Platform events - standard volume (daily)",
+        ["Limit_DailyDurableStreamingApiEvents"] = "Durable streaming API events (daily)",
+        ["Limit_ConcurrentAsyncGetReportInstances"] = "Concurrent async report runs",
+        ["Limit_DailyAnalyticsApiRequests"] = "Analytics API requests (daily)",
 
         // ---- 組織管理: 疎通テスト / タグ・メモ / 棚卸しの絞り込み ----
         ["OrgManage_TestSelected"] = "Test connection",
