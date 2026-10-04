@@ -36,3 +36,48 @@ jobs:
           dotnet-version: '9.0.x'
       - name: Build (Avalonia, cross-platform)
         run: dotnet build src/SfUi.Avalonia/SfUi.Avalonia.csproj -c Release
+
+  package-macos:
+    name: Package .app (macos-latest)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '9.0.x'
+      - name: Build .app bundle (packaging/make-mac-app.sh)
+        run: bash packaging/make-mac-app.sh osx-arm64
+      - name: Smoke run the packaged app (--smoke)
+        shell: bash
+        run: |
+          set +e
+          APP="dist/mac/SfUi.app/Contents/MacOS/SfUi.Avalonia"
+          DATA="$RUNNER_TEMP/sfui-smoke"
+          "$APP" --smoke --data-dir "$DATA" &
+          PID=$!
+          TIMED_OUT=1
+          for _ in $(seq 1 60); do
+            if ! kill -0 "$PID" 2>/dev/null; then TIMED_OUT=0; break; fi
+            sleep 2
+          done
+          if [ "$TIMED_OUT" = "1" ]; then
+            kill "$PID" 2>/dev/null
+            echo "::error::smoke timed out after 120s"
+            cat "$DATA"/logs/*.log 2>/dev/null | tail -60
+            exit 1
+          fi
+          wait "$PID"
+          CODE=$?
+          echo "smoke exit code: $CODE"
+          cat "$DATA"/logs/*.log 2>/dev/null | tail -60
+          exit $CODE
+      - name: Show bundle layout
+        run: |
+          find dist/mac/SfUi.app -maxdepth 2 -type d | head -10 || true
+          ls -lh dist/mac/*.zip
+      - name: Upload .app zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: SfUi-macos-app
+          path: dist/mac/SfUi-*-osx-arm64.zip
+          if-no-files-found: error

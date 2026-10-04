@@ -75,8 +75,9 @@ bash packaging/make-mac-app.sh osx-x64
 
 ## CI（GitHub Actions）
 
-`.github/workflows/ci.yml`: Windows / macOS の両方で
+`.github/workflows/ci.yml`（push / PR / 手動実行）:
 
-1. `dotnet test tests/SfUi.Tests/SfUi.Tests.csproj`（Core + Presentation の 395 テスト）
-2. `dotnet build src/SfUi.Avalonia/SfUi.Avalonia.csproj`（クロスプラットフォーム ビルド確認）
+1. `Test (windows-latest / macos-latest)`: `dotnet test tests/SfUi.Tests/SfUi.Tests.csproj`（Core + Presentation の 395 テスト）
+2. `Build Avalonia app (windows-latest / macos-latest)`: `dotnet build src/SfUi.Avalonia/SfUi.Avalonia.csproj`
+3. `Package .app (macos-latest)`: `bash packaging/make-mac-app.sh osx-arm64` → パッケージ済み実行ファイルで `--smoke`（起動 / 言語切替 / exit 0）→ zip を workflow artifact にアップロード（署名 / 公証は環境変数未設定のためスキップ）
 

@@ -554,8 +554,9 @@ data/
 - ✅ **Phase F（2026-10-04 完了・実機検証は未）**: macOS 固有対応
   - `packaging/make-mac-app.sh`: `dotnet publish`（osx-arm64 / osx-x64、self-contained）→ `SfUi.app`（Contents/MacOS + Info.plist + SfUi.icns）+ 配布 zip。icns は sips/iconutil で生成、署名・公証は環境変数指定時のみ
   - `packaging/mac/Info.plist`: バンドル ID `jp.hks.sfui` / LSMinimumSystemVersion 11.0 / バージョンは csproj から埋め込み
-  - `.github/workflows/ci.yml`: Windows + macOS マトリクスで ①テスト 395 件 ②Avalonia ビルドを実行
+  - `.github/workflows/ci.yml`: ①テスト 395 件（Windows / macOS）②Avalonia ビルド（Windows / macOS）③macOS で `.app` 組立 + スモーク実行 + zip artifact
   - キーボード（Cmd(Meta)+1..9 併設）・フォント（Consolas → Menlo フォールバック）は移植時に実装済み
   - 検証: bash 構文チェック OK / **Windows からの osx-arm64 クロス publish 成功**（SfUi.Avalonia Mach-O + DLL 群を生成）/ README（EN/JA）に macOS ビルド手順を追記
   - CI 初回実行で macOS のみ 1 件失敗 → `OrgInfoCacheStore.SanitizeOrgKey` が OS 依存の `Path.GetInvalidFileNameChars()`（macOS は `/` と NUL のみ）を使っていたのが原因。Windows 禁止文字セットを全 OS で常に置換する固定実装に変更し、OS 間で data フォルダーを共有してもキーが一致するようにした（commit 2420555、CI アクションも v5 に更新）
-  - 未実施: Apple Silicon 実機での起動・署名 / 公証・スクリーンショット（macOS 環境が必要）
+  - CI に macOS パッケージ ジョブ追加: `make-mac-app.sh osx-arm64` → **実 macOS ランナーで `.app` 組立** → パッケージ済み実行ファイルで `--smoke`（起動 / 言語切替 / exit 0）→ zip を artifact 保存
+  - 未実施: 署名 / 公証（Developer ID 証明書が必要）・実機での UI 操作 / スクリーンショット確認
