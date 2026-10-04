@@ -8,6 +8,7 @@ using SfUi.App.Services;
 using SfUi.App.ViewModels;
 using SfUi.App.Views;
 using SfUi.Core;
+using SfUi.Presentation;
 
 namespace SfUi.App;
 
@@ -49,6 +50,11 @@ public partial class App : Application
 
         var services = new ServiceCollection();
         services.AddSfUiCore(paths);
+        services.AddSingleton<IDialogService, WpfDialogService>();
+        services.AddSingleton<IFilePickerService, WpfFilePickerService>();
+        services.AddSingleton<IUiDispatcher, WpfUiDispatcher>();
+        services.AddSingleton<IClipboardService, WpfClipboardService>();
+        services.AddSingleton<IAppWindowService, WpfAppWindowService>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<HistoryViewModel>();
         services.AddSingleton<SoqlViewModel>();

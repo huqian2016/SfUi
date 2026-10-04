@@ -1,0 +1,57 @@
+using System.Windows;
+using SfUi.Core;
+using SfUi.Presentation;
+
+namespace SfUi.App.Services;
+
+/// <summary>WPF の WindowFactory 群へ委譲する IAppWindowService 実装。</summary>
+public sealed class WpfAppWindowService : IAppWindowService
+{
+    private readonly OrgInfoWindowFactory _orgInfo;
+    private readonly CompareOrgsWindowFactory _compareOrgs;
+    private readonly DataIoWindowFactory _dataIo;
+    private readonly BackupWindowFactory _backup;
+    private readonly OrgManageWindowFactory _orgManage;
+    private readonly BackupRecordsWindowFactory _records;
+    private readonly BackupCompareRecordsWindowFactory _compareRecords;
+
+    public WpfAppWindowService(
+        OrgInfoWindowFactory orgInfo,
+        CompareOrgsWindowFactory compareOrgs,
+        DataIoWindowFactory dataIo,
+        BackupWindowFactory backup,
+        OrgManageWindowFactory orgManage,
+        BackupRecordsWindowFactory records,
+        BackupCompareRecordsWindowFactory compareRecords)
+    {
+        _orgInfo = orgInfo;
+        _compareOrgs = compareOrgs;
+        _dataIo = dataIo;
+        _backup = backup;
+        _orgManage = orgManage;
+        _records = records;
+        _compareRecords = compareRecords;
+    }
+
+    public void OpenOrgInfo(OrgInfo org) => _orgInfo.Open(org, ActiveOwner());
+
+    public void OpenCompareOrgs(IReadOnlyList<OrgInfo> orgs) => _compareOrgs.Open(orgs, ActiveOwner());
+
+    public void OpenDataIo(OrgInfo org, string? objectName = null, string? initialSoql = null) =>
+        _dataIo.Open(org, objectName, initialSoql, ActiveOwner());
+
+    public void OpenBackup(OrgInfo org) => _backup.Open(org, ActiveOwner());
+
+    public void OpenOrgManage(OrgInfo? initial) => _orgManage.Open(initial, ActiveOwner());
+
+    public void OpenBackupRecords(string backupId, BackupObjectInfo info, string displayName, OrgInfo? currentOrg) =>
+        _records.Open(backupId, info, displayName, currentOrg, ActiveOwner());
+
+    public void OpenBackupCompareRecords(string backupIdA, string backupIdB, string objectName, string displayName, OrgInfo? currentOrg) =>
+        _compareRecords.Open(backupIdA, backupIdB, objectName, displayName, currentOrg, ActiveOwner());
+
+    /// <summary>アクティブ ウィンドウ（無ければメイン ウィンドウ）を親として返す。</summary>
+    private static Window? ActiveOwner() =>
+        Application.Current?.Windows.OfType<Window>().FirstOrDefault(w => w.IsActive)
+        ?? Application.Current?.MainWindow;
+}

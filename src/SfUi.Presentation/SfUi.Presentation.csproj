@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    SfUi.Presentation: ViewModel / UI サービス interface（UI フレームワーク非依存）。
+    WPF 版 (SfUi.App) と Avalonia 版 (SfUi.Avalonia) の両方から参照され、
+    ロジックの修正を 1 箇所で両 OS に反映するための共有レイヤー。
+    ※ 既存 ViewModel は名前空間 SfUi.App.ViewModels のまま（WPF 版削除時に SfUi.Presentation.ViewModels へ改名）。
+  -->
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>SfUi.Presentation</RootNamespace>
+    <Version>0.1.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SfUi.Core\SfUi.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+  </ItemGroup>
+
+</Project>

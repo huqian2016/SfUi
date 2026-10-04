@@ -492,3 +492,10 @@ data/
   - 新規 `SfUi.Avalonia`（net9.0）を WPF 版と並存させ、VM（42 ファイル・約 10,800 行）は MessageBox / ファイル ダイアログ / Dispatcher の 3 系統を抽象化してほぼ流用
   - 再設計ポイント: 動的 DataGrid 列 5 ビュー + `XamlReader` 3 箇所 / DataTrigger 33（行ハイライト）/ 編集可能 ComboBox（→ AutoCompleteBox）/ AvalonEdit → AvaloniaEdit
   - 目安工数 約 2〜3 週間（1 人）・検証は Core 387 テストの両 OS CI + スモーク移植 + OS 別スクリーンショット
+
+- ✅ **Phase A（2026-10-04 完了）**: Avalonia 移植準備 — ロジック共通化（Core プラットフォーム抽象化 + `SfUi.Presentation` 抽出）
+  - `SfUi.Core`: OS 分岐を `PlatformInfo` / `PathSearch` / `SfCliRunner`（mac は /opt/homebrew/bin/sf 等 + 直接起動）/ `ToolLauncherService`（mac は open / code）/ `AppPaths`（~/Library/Application Support）へ集約
+  - 新規 `src/SfUi.Presentation`（net9.0・UI 非依存）: ViewModel 42 ファイルを移動し、`IDialogService` / `IFilePickerService` / `IUiDispatcher` / `IAppWindowService` / `IClipboardService` / `ObservableFilterView<T>` / `UiDebouncer` で WPF 依存を排除
+  - `SfUi.App`: WPF 実装（`WpfDialogService` / `WpfFilePickerService` / `WpfUiDispatcher` / `WpfClipboardService` / `WpfAppWindowService`）を DI 登録。VM 名前空間は当面 `SfUi.App.ViewModels`（WPF 退役時に改名）
+  - これでロジック修正は Core + Presentation の 1 箇所で Windows / macOS 両方に反映される（Avalonia 側は UI のみ実装）
+  - 検証: ビルド 0 警告 / テスト 395 件成功 / スモーク OK（全タブ・言語切替）/ UIA チェック（組織管理 23・バックアップ 20 項目）すべて PASS

@@ -52,22 +52,30 @@
                 <TextBox DockPanel.Dock="Top" x:Name="ItemSearchBox" Margin="0,0,0,4" VerticalContentAlignment="Center"
                          Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          ToolTip="{loc:Tr OrgInfo_Custom_SearchTip}" />
-                <ListBox x:Name="AvailableList" ItemsSource="{Binding AvailableView}"
+                <ListBox x:Name="AvailableList" ItemsSource="{Binding AvailableDisplay}"
                          MouseDoubleClick="AvailableList_MouseDoubleClick">
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsHeader}" Value="True">
+                                    <Setter Property="IsHitTestVisible" Value="False" />
+                                    <Setter Property="Focusable" Value="False" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <TextBlock Text="{Binding Label}" />
+                            <TextBlock x:Name="ItemText" Text="{Binding Label}" />
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding IsHeader}" Value="True">
+                                    <Setter TargetName="ItemText" Property="FontWeight" Value="Bold" />
+                                    <Setter TargetName="ItemText" Property="Foreground" Value="#555555" />
+                                    <Setter TargetName="ItemText" Property="Margin" Value="0,6,0,2" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
-                    <ListBox.GroupStyle>
-                        <GroupStyle>
-                            <GroupStyle.HeaderTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding Name}" FontWeight="Bold" Foreground="#555555" Margin="0,6,0,2" />
-                                </DataTemplate>
-                            </GroupStyle.HeaderTemplate>
-                        </GroupStyle>
-                    </ListBox.GroupStyle>
                 </ListBox>
             </DockPanel>
 

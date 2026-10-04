@@ -1,6 +1,6 @@
 # SfUi → Avalonia 移植 設計調査（Windows / macOS 両対応）
 
-最終更新: 2026-10-04 / ステータス: 調査完了（実装前）
+最終更新: 2026-10-04 / ステータス: Phase A 完了（Core の OS 分岐集約 + `SfUi.Presentation` 抽出済み。次は Phase B: Avalonia シェル）
 
 ## 1. 目的とスコープ
 
