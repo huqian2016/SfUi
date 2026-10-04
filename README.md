@@ -10,7 +10,7 @@ an **Org Info** window for each org, and side-by-side comparison of 2–4 orgs.
 ## Screenshots
 
 ![SfUi main window](docs/screenshots/main-en.png)
-*SOQL workspace — Quick Panel on the left, AI chat panel on the right, org & folder switching in the top bar*
+*SOQL workspace — Quick Panel on the left, AI chat panel on the right, icon tool bar with org & folder switching on top*
 
 ![Org Info window](docs/screenshots/orginfo-en.png)
 *Org Info — a separate window per org with 20+ tabs, cross-tab search, Setup links and its own AI panel*
@@ -123,12 +123,12 @@ SOQL・匿名Apex・デバッグログ・デプロイ・自由コマンド・RES
 - **アクセス権限タブ（オブジェクト / 項目 / レコード）**: データ入出力ウィンドウに追加。オブジェクトアクセス = 選択中オブジェクトに対する PS / PSG / プロファイルの権限一覧（種類・ラベル・API 名・カスタム・Read / Create / Edit / Delete / View All Records / Modify All Records / View All Fields。PSG は構成権限セットの和集合）。項目アクセス = 項目 × 権限主体のマトリクス（セル = R / E・種類フィルタ・列絞り込み付き）。両タブとも行の検索（AND・スペース区切り・表示件数付き）に対応。レコードアクセス = 有効ユーザーをチェックボックスで選択（名前検索・3 行スクロール・全選択 / 全解除）し、任意 SOQL で抽出した対象レコード（200 件/ページ・検索付き）のユーザーごとの読取 / 編集 / 削除 / 転送（UserRecordAccess）を表示。リンクからレコードをブラウザーで開ける
 - **ブラウザボタン**: 組織ホーム / セットアップは `sf org open --url-only` のセッション付き URL（frontdoor）で開くため、ブラウザーでの再ログインは不要です（取得できない場合は通常 URL にフォールバック）
 - **アイコン ツールバー**: 上部バーのボタンは Fluent UI System Icons のアイコンのみ（マウスオーバーでラベルと説明をツールチップ表示・AI はオン/オフでアイコン切替）
-- 2026-10-04 時点で Phase 0〜14 完了（v0.7.1 / テスト 356 件 / スモーク + UIA E2E 検証済み。AI 接続先の汎用化・組織比較・データ入出力・アクセス権限タブを含む）
+- 2026-10-04 時点で Phase 0〜14 完了（v0.7.3 / テスト 358 件 / スモーク + UIA E2E 検証済み。AI 接続先の汎用化・組織比較・データ入出力・アクセス権限タブ・ブラウザのセッション URL・アイコン ツールバーを含む）
 
 ## スクリーンショット
 
 ![SfUi メイン画面](docs/screenshots/main-ja.png)
-*SOQL ワークスペース — 左: クイックパネル / 右: AI チャット / 上部: 組織・フォルダ切替*
+*SOQL ワークスペース — 左: クイックパネル / 右: AI チャット / 上部: アイコン ツールバーと組織・フォルダ切替*
 
 ![組織情報ウィンドウ](docs/screenshots/orginfo-ja.png)
 *組織情報 — 組織ごとの別ウィンドウ。20 以上のタブ・全タブ横断検索・Setup リンク・専用 AI パネル*
