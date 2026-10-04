@@ -486,3 +486,9 @@ data/
   - Core: `OrgManageModels` / `OrgLimitsParser` / `OrgManageService` / `MigrationInventoryService`
   - テスト 385 件成功（+5）/ スモーク `--smoke --smoke-orgmanage acc`（組織 12 / limits 73 / 棚卸し 108）成功 / UI チェック（`sfui-orgmanage-ui-check.ps1`・読み取りのみ）14 項目 PASS
   - 2026-10-04 拡張（v0.9.1）: 疎通テスト（選択 / すべて・進捗 / キャンセル）・タグ・メモ（`data/org-manage.json`・検索対象）・最終バックアップ列を追加。移行棚卸しに種別フィルタ / 有効のみ / Setup を開く / Workflow ルールの有効状態（Metadata XML）を追加。テスト 387 件 / スモーク + UI チェック 23 項目 PASS。README のスクリーンショットに組織管理ウィンドウ（組織 / ヘルス / 移行棚卸し、EN + JA）を追加
+
+- 📝 **2026-10-04 調査（実装前）**: Avalonia 移植の設計調査（Windows / macOS 両対応）— `docs/avalonia-port-plan.md`
+  - Core は WPF 非依存で、プラットフォーム依存は `SfCliRunner`（sf 解決 + cmd.exe 起動）/ `ToolLauncherService` / `AppPaths` / 設定文言の 4 箇所に集中（残り 26 サービスは改修なし）
+  - 新規 `SfUi.Avalonia`（net9.0）を WPF 版と並存させ、VM（42 ファイル・約 10,800 行）は MessageBox / ファイル ダイアログ / Dispatcher の 3 系統を抽象化してほぼ流用
+  - 再設計ポイント: 動的 DataGrid 列 5 ビュー + `XamlReader` 3 箇所 / DataTrigger 33（行ハイライト）/ 編集可能 ComboBox（→ AutoCompleteBox）/ AvalonEdit → AvaloniaEdit
+  - 目安工数 約 2〜3 週間（1 人）・検証は Core 387 テストの両 OS CI + スモーク移植 + OS 別スクリーンショット
