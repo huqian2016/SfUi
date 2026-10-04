@@ -1,19 +1,25 @@
 namespace SfUi.Core;
 
 /// <summary>
-/// 組織管理コマンド（既定組織 / エイリアス / ブラウザーで開く / ログイン / ログアウト）を sf CLI で実行する。
+/// 組織管理コマンド（既定組織 / エイリアス / ブラウザーで開く / ログイン / ログアウト / ページを開く）と
+/// 疎通テスト（REST で Organization を 1 件読む）を実行する。
 /// </summary>
 public sealed class OrgManageService
 {
     /// <summary>ログイン（ブラウザー操作待ち）用のタイムアウト。</summary>
     public static readonly TimeSpan LoginTimeout = TimeSpan.FromMinutes(5);
 
+    /// <summary>疎通テストで使う最小の SOQL（1 件のみ・読み取り専用）。</summary>
+    public const string ConnectionTestSoql = "SELECT Id, Name, OrganizationType, InstanceName FROM Organization LIMIT 1";
+
     private readonly SfCliRunner _runner;
+    private readonly SalesforceRestClient _rest;
     private readonly AppLog _log;
 
-    public OrgManageService(SfCliRunner runner, AppLog log)
+    public OrgManageService(SfCliRunner runner, SalesforceRestClient rest, AppLog log)
     {
         _runner = runner;
+        _rest = rest;
         _log = log;
     }
 
@@ -37,6 +43,57 @@ public sealed class OrgManageService
     public Task<OrgCommandResult> LogoutAsync(string target, CancellationToken cancellationToken) =>
         RunAsync(BuildLogoutArgs(target), SfCliRunner.DefaultTimeout, cancellationToken);
 
+    /// <summary>組織の特定ページ（Setup など）をブラウザーで開く。</summary>
+    public Task<OrgCommandResult> OpenPathAsync(string target, string path, CancellationToken cancellationToken) =>
+        RunAsync(BuildOpenPathArgs(target, path), SfCliRunner.DefaultTimeout, cancellationToken);
+
+    /// <summary>
+    /// 疎通テスト: REST で Organization を 1 件読み、トークンが生きているか確認する（読み取り専用）。
+    /// </summary>
+    public async Task<OrgConnectionTest> TestConnectionAsync(string target, CancellationToken cancellationToken)
+    {
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        try
+        {
+            using var document = await _rest.QueryAsync(target, ConnectionTestSoql, useToolingApi: false, cancellationToken)
+                .ConfigureAwait(false);
+            stopwatch.Stop();
+            string? name = null;
+            string? organizationType = null;
+            string? instanceName = null;
+            if (document.RootElement.TryGetProperty("records", out var records)
+                && records.ValueKind == System.Text.Json.JsonValueKind.Array)
+            {
+                foreach (var record in records.EnumerateArray())
+                {
+                    name = GetString(record, "Name") ?? name;
+                    organizationType = GetString(record, "OrganizationType") ?? organizationType;
+                    instanceName = GetString(record, "InstanceName") ?? instanceName;
+                    break;
+                }
+            }
+
+            _log.Info($"組織管理: 疎通テスト成功 {target}（{stopwatch.ElapsedMilliseconds} ms / {name} / {organizationType}）");
+            return new OrgConnectionTest(true, string.Empty, name, organizationType, instanceName, stopwatch.Elapsed);
+        }
+        catch (OperationCanceledException)
+        {
+            stopwatch.Stop();
+            throw;
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            _log.Warn($"組織管理: 疎通テスト失敗 {target}: {Truncate(ex.Message)}");
+            return new OrgConnectionTest(false, Truncate(ex.Message), null, null, null, stopwatch.Elapsed);
+        }
+    }
+
+    private static string? GetString(System.Text.Json.JsonElement element, string name) =>
+        element.TryGetProperty(name, out var value) && value.ValueKind == System.Text.Json.JsonValueKind.String
+            ? value.GetString()
+            : null;
+
     // ---- コマンド組み立て（テスト対象） ----
 
     public static IReadOnlyList<string> BuildSetDefaultArgs(string target) =>
@@ -50,6 +107,9 @@ public sealed class OrgManageService
 
     public static IReadOnlyList<string> BuildLogoutArgs(string target) =>
         new[] { "org", "logout", "--target-org", target, "--no-prompt" };
+
+    public static IReadOnlyList<string> BuildOpenPathArgs(string target, string path) =>
+        new[] { "org", "open", "--target-org", target, "--path", path };
 
     public static IReadOnlyList<string> BuildLoginArgs(string? instanceUrl) =>
         string.IsNullOrWhiteSpace(instanceUrl)

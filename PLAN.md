@@ -1,6 +1,6 @@
 # SfUi — Salesforce CLI 統合デスクトップツール 実装計画
 
-最終更新: 2026-10-04 / ステータス: Phase 0-16 完了 + AI 接続先の汎用化 + 組織比較 + データ入出力 + アクセス権限タブ + レコードのバックアップ・復元（自動ラベル・比較タブ付き）+ 組織管理ウィンドウ（組織一覧の管理 + ヘルス + 移行棚卸し）+ Microsoft Store（MSIX）提出準備完了（v0.9.0 / テスト 385 件 / 実 API スモーク + UIA E2E 検証済み。GitHub Release は v0.8.0 公開済み、Microsoft Store は審査準備中）
+最終更新: 2026-10-04 / ステータス: Phase 0-16 完了 + AI 接続先の汎用化 + 組織比較 + データ入出力 + アクセス権限タブ + レコードのバックアップ・復元（自動ラベル・比較タブ付き）+ 組織管理ウィンドウ（組織一覧の管理 + ヘルス + 移行棚卸し。疎通テスト・タグ/メモ・最終バックアップ・Setup リンク付き）+ Microsoft Store（MSIX）提出準備完了（v0.9.1 / テスト 387 件 / 実 API スモーク + UIA E2E 検証済み。GitHub Release は v0.8.0 公開済み、Microsoft Store は審査準備中）
 
 ## 1. 概要
 
@@ -305,8 +305,19 @@ data/
 - テスト: 385 件（+5: limits 解析（Max 欠落 / 文字列値 / 使用率）/ ラベルフォールバック / sf コマンド組み立て 5 種 / Workflow ルール変換 / フロー・プロセスビルダー変換）
 - スモーク: `--smoke --smoke-orgmanage <org>`（組織一覧 12 件 / `/limits` 解析 73 件（上位 FileStorageMB=30.0%）/ 棚卸し 108 件 = Workflow 0 / Process Builder 0 / Flow 108 / 有効 79。書き込みなし）
 - UI チェック（`C:\huqian\sfui-orgmanage-ui-check.ps1`・読み取りのみ）: 全 14 項目 PASS（タブ 3 つ / 組織コンボ / 組織一覧 12 行 + 操作ボタン 6 種 / ヘルス 21 行（仮想化された表示行）+ 「API requests (daily)」+ 取得時刻 / 棚卸し 21 行 + 合計 108 のサマリー + 取得・CSV ボタン）
-- 知見: `WorkflowRule` に `IsActive` 項目は存在しない（状態列は「—」表示。ツール選択で有効 / 無効は取れない）/ `FlowDefinitionView` の API 名は `DeveloperName` ではなく `ApiName` / `/limits` は `{ "Key": { "Max": n, "Remaining": n } }` のフラット構造（`Max` が null の項目あり → 使用率は Max > 0 のときのみ計算）
-- バージョン: **0.9.0**（`SfUi.App.csproj` = 0.9.0 / `AppxManifest.xml` = 0.9.0.0）
+- 知見: `WorkflowRule` に `IsActive` 項目は存在しない（有効 / 無効は Metadata XML の `<active>` から読む）/ `FlowDefinitionView` の API 名は `DeveloperName` ではなく `ApiName` / `/limits` は `{ "Key": { "Max": n, "Remaining": n } }` のフラット構造（`Max` が null の項目あり → 使用率は Max > 0 のときのみ計算）
+
+#### Phase 16 拡張（v0.9.1）: 組織管理ウィンドウ（疎通テスト / タグ・メモ / 棚卸し強化）
+
+- 組織の**疎通テスト**（選択 / すべて）: REST で `Organization` を 1 件読み、セッションと応答時間を検証（読み取り専用）。組織一覧に「疎通」列（OK (n ms) / NG、ツールチップに詳細）・進捗表示（n/m）・キャンセル対応。「すべてテスト」は逐次実行し、完了時に OK / NG 件数と所要時間を表示
+- 組織の**タグ・メモ**（ローカル管理情報）: `data/org-manage.json`（`OrgManageStateStore`・原子的書き込み）。一覧にタグ / メモ列 + ツールバーの入力欄と「タグ・メモを保存」。検索ボックスはエイリアス・ユーザー名・組織 ID・タグ・メモを対象に絞り込み。組織側には一切書き込まない
+- **最終バックアップ**列: ローカルのバックアップ（`BackupService.ListBackups()`）を組織（ユーザー名）ごとに集計して最新日時を表示
+- 移行棚卸しの強化: **種別フィルタ**（すべて / Workflow ルール / プロセスビルダー / フロー）+ **有効のみ** + 行ごとの **Setup ボタン**（Workflow ルール = `lightning/setup/WorkflowRules/home` / フロー = `lightning/setup/Flows/page?address=/{Id}` を `sf org open --path` で開く）+ **Workflow ルールの有効 / 無効**（Metadata XML の `<active>`）と triggerType のローカライズ表示
+- テスト: 387 件（+2: タグ・メモのストア round-trip（大文字小文字を無視・空で削除）+ WorkflowRule Metadata 解析の異常系）
+- スモーク: `--smoke --smoke-orgmanage acc` に疎通テスト（success / ms / 組織名・種類・インスタンス）とタグ・メモ round-trip を追加（すべて成功）
+- UI チェック: `C:\huqian\sfui-orgmanage-ui-check.ps1` を **23 項目**へ拡張（新ヘッダー / 組織の絞り込み 12→1 行 / 疎通テストのステータスと OK セル / タグ・メモの保存 / 種別フィルタ（Flow）/ 有効のみ / Setup ボタン）。すべて PASS
+- 知見: WPF ComboBox のポップアップ項目は別 HWND のため UIA ではウィンドウ子要素に出ないことがある → デスクトップ ルートから `ProcessId` で絞って `GetSupportedPatterns()` に `SelectionItemPattern` がある要素を選ぶ
+- バージョン: **0.9.1**（`SfUi.App.csproj` = 0.9.1 / `AppxManifest.xml` = 0.9.1.0）
 
 ## 10. 検証計画
 
@@ -328,7 +339,7 @@ data/
 - UI 文字列: コードは `UiText.T("Key")`、XAML は `{loc:Tr Key}`。辞書は `src/SfUi.Core/Localization/UiText.En.cs` / `UiText.Ja.cs`（キーは両ファイルで同一 — テストで検証）
 - スモーク起動: `dotnet run --project src/SfUi.App -- --smoke`（sf CLI で組織一覧取得を検証して自動終了、`data/logs` に記録）
 - スモーク起動（組織情報）: `dotnet run --project src/SfUi.App -- --smoke --smoke-orginfo <alias>`（初回は概要・ユーザーを取得、2 回目以降は API を呼ばずキャッシュを使用。`--smoke-orginfo-refresh` を付けると手動再取得で fetchedAt の更新を検証）
-- スモーク起動（組織管理）: `dotnet run --project src/SfUi.App -- --smoke --smoke-orgmanage <alias>`（組織一覧・REST `/limits`・移行棚卸しを取得して検証。書き込みなし）
+- スモーク起動（組織管理）: `dotnet run --project src/SfUi.App -- --smoke --smoke-orgmanage <alias>`（組織一覧・REST `/limits`・移行棚卸し・疎通テスト・タグ / メモ round-trip を検証。組織への書き込みなし＝タグ / メモはローカル保存のみ）
 - sf のフラグは実装時に `sf <command> --help` で確定する（バージョン差吸収）
 
 ## 13. 実装進捗
@@ -474,3 +485,4 @@ data/
   - 移行棚卸し タブ: Workflow ルール + プロセスビルダー + フロー（`FlowDefinitionView`）の一覧 + サマリー + CSV エクスポート
   - Core: `OrgManageModels` / `OrgLimitsParser` / `OrgManageService` / `MigrationInventoryService`
   - テスト 385 件成功（+5）/ スモーク `--smoke --smoke-orgmanage acc`（組織 12 / limits 73 / 棚卸し 108）成功 / UI チェック（`sfui-orgmanage-ui-check.ps1`・読み取りのみ）14 項目 PASS
+  - 2026-10-04 拡張（v0.9.1）: 疎通テスト（選択 / すべて・進捗 / キャンセル）・タグ・メモ（`data/org-manage.json`・検索対象）・最終バックアップ列を追加。移行棚卸しに種別フィルタ / 有効のみ / Setup を開く / Workflow ルールの有効状態（Metadata XML）を追加。テスト 387 件 / スモーク + UI チェック 23 項目 PASS

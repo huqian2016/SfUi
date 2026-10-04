@@ -26,7 +26,7 @@ public sealed class MigrationInventoryService
         try
         {
             var rows = await QueryRowsAsync(
-                targetOrg, "SELECT Id, Name, TableEnumOrId, LastModifiedDate FROM WorkflowRule", useToolingApi: true, cancellationToken)
+                targetOrg, "SELECT Id, Name, TableEnumOrId, LastModifiedDate, Metadata FROM WorkflowRule", useToolingApi: true, cancellationToken)
                 .ConfigureAwait(false);
             items.AddRange(ParseWorkflowRules(rows));
         }
@@ -63,25 +63,52 @@ public sealed class MigrationInventoryService
             workflowError);
     }
 
-    /// <summary>WorkflowRule（Tooling API）のレコードを棚卸し行へ変換する。</summary>
+    /// <summary>WorkflowRule（Tooling API）のレコードを棚卸し行へ変換する（有効 / トリガの種類は Metadata XML から読む）。</summary>
     public static List<MigrationItem> ParseWorkflowRules(IReadOnlyList<JsonElement> rows)
     {
         var items = new List<MigrationItem>();
         foreach (var row in rows)
         {
             var name = GetString(row, "Name") ?? string.Empty;
+            var metadata = ParseWorkflowMetadataXml(GetString(row, "Metadata"));
             items.Add(new MigrationItem(
                 MigrationItemKind.WorkflowRule,
                 name,
                 string.Empty,
                 GetString(row, "TableEnumOrId") ?? string.Empty,
-                null,
+                metadata.Active,
                 GetDate(row, "LastModifiedDate"),
-                string.Empty,
+                metadata.TriggerType ?? string.Empty,
                 GetString(row, "Id") ?? string.Empty));
         }
 
         return items;
+    }
+
+    /// <summary>
+    /// WorkflowRule の Metadata XML（例: <c>&lt;WorkflowRule&gt;&lt;active&gt;true&lt;/active&gt;…</c>）から
+    /// 有効フラグと triggerType を読み取る（名前空間の有無どちらでも可・不正な XML は null）。
+    /// </summary>
+    public static WorkflowRuleMetadataInfo ParseWorkflowMetadataXml(string? xml)
+    {
+        if (string.IsNullOrWhiteSpace(xml))
+        {
+            return new WorkflowRuleMetadataInfo(null, null);
+        }
+
+        try
+        {
+            var document = System.Xml.Linq.XDocument.Parse(xml);
+            var activeElement = document.Descendants().FirstOrDefault(e => e.Name.LocalName == "active");
+            var triggerElement = document.Descendants().FirstOrDefault(e => e.Name.LocalName == "triggerType");
+            bool? active = bool.TryParse(activeElement?.Value?.Trim(), out var value) ? value : null;
+            var triggerType = string.IsNullOrWhiteSpace(triggerElement?.Value) ? null : triggerElement!.Value.Trim();
+            return new WorkflowRuleMetadataInfo(active, triggerType);
+        }
+        catch (System.Xml.XmlException)
+        {
+            return new WorkflowRuleMetadataInfo(null, null);
+        }
     }
 
     /// <summary>FlowDefinitionView のレコードを棚卸し行へ変換する（ProcessType = Workflow はプロセスビルダー）。</summary>

@@ -40,6 +40,7 @@ public static class SfUiServiceCollectionExtensions
         services.AddSingleton<BackupService>();
         services.AddSingleton<BackupCompareService>();
         services.AddSingleton<OrgManageService>();
+        services.AddSingleton<OrgManageStateStore>();
         services.AddSingleton<MigrationInventoryService>();
         return services;
     }

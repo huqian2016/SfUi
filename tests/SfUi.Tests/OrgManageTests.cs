@@ -52,10 +52,48 @@ public sealed class OrgManageTests
         Assert.Equal(new[] { "alias", "set", "my=user@example.com" }, OrgManageService.BuildAliasArgs("my", "user@example.com"));
         Assert.Equal(new[] { "org", "open", "--target-org", "acc" }, OrgManageService.BuildOpenArgs("acc"));
         Assert.Equal(new[] { "org", "logout", "--target-org", "acc", "--no-prompt" }, OrgManageService.BuildLogoutArgs("acc"));
+        Assert.Equal(
+            new[] { "org", "open", "--target-org", "acc", "--path", "lightning/setup/Flows/page?address=/300" },
+            OrgManageService.BuildOpenPathArgs("acc", "lightning/setup/Flows/page?address=/300"));
         Assert.Equal(new[] { "org", "login", "web" }, OrgManageService.BuildLoginArgs(null));
         Assert.Equal(
             new[] { "org", "login", "web", "--instance-url", "https://test.salesforce.com" },
             OrgManageService.BuildLoginArgs("https://test.salesforce.com"));
+        Assert.Contains("FROM Organization", OrgManageService.ConnectionTestSoql);
+    }
+
+    // ---- 組織のタグ・メモ（ローカル保存） ----
+
+    [Fact]
+    public void OrgManageStateStore_TagAndNote_RoundTrip()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "sfui-orgmanage-test-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var paths = AppPaths.Resolve(dataRootOverride: root);
+            var store = new OrgManageStateStore(paths, new AppLog(paths));
+
+            Assert.Null(store.Get("user@example.com"));
+
+            store.Set("user@example.com", " 本番 ", "  触るな危険  ");
+            var entry = store.Get("user@example.com");
+            Assert.NotNull(entry);
+            Assert.Equal("本番", entry.Tag);
+            Assert.Equal("触るな危険", entry.Note);
+
+            // 大文字小文字を問わず同じ組織として扱う
+            Assert.NotNull(store.Get("USER@example.com"));
+
+            // 両方空にすると削除される
+            store.Set("user@example.com", " ", null);
+            Assert.Null(store.Get("user@example.com"));
+            Assert.Empty(store.GetAll());
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
     }
 
     // ---- 移行棚卸しの変換 ----
@@ -66,20 +104,48 @@ public sealed class OrgManageTests
         using var document = JsonDocument.Parse(
             """
             [
-              { "Id": "301A", "Name": "Set Rating", "TableEnumOrId": "Account", "LastModifiedDate": "2026-09-30T10:00:00.000+0000" },
-              { "Id": "301B", "Name": "Notify Owner", "TableEnumOrId": "Case" }
+              {
+                "Id": "301A", "Name": "Set Rating", "TableEnumOrId": "Account", "LastModifiedDate": "2026-09-30T10:00:00.000+0000",
+                "Metadata": "<WorkflowRule xmlns=\"http://soap.sforce.com/2006/04/metadata\"><fullName>Set_Rating</fullName><active>true</active><triggerType>onCreateOrTriggeringUpdate</triggerType><criteriaItems><field>Rating</field><operation>equals</operation><value>Hot</value></criteriaItems></WorkflowRule>"
+              },
+              { "Id": "301B", "Name": "Notify Owner", "TableEnumOrId": "Case" },
+              {
+                "Id": "301C", "Name": "Broken", "TableEnumOrId": "Lead",
+                "Metadata": "<WorkflowRule><active>not-a-bool</active></WorkflowRule>"
+              }
             ]
             """);
 
         var rows = document.RootElement.EnumerateArray().Select(r => r.Clone()).ToList();
         var items = MigrationInventoryService.ParseWorkflowRules(rows);
 
-        Assert.Equal(2, items.Count);
+        Assert.Equal(3, items.Count);
         Assert.All(items, i => Assert.Equal(MigrationItemKind.WorkflowRule, i.Kind));
         Assert.Equal("Set Rating", items[0].Name);
         Assert.Equal("Account", items[0].ObjectName);
         Assert.NotNull(items[0].LastModified);
-        Assert.Null(items[0].Active);
+        Assert.True(items[0].Active);
+        Assert.Equal("onCreateOrTriggeringUpdate", items[0].SubType);
+
+        // Metadata が無い行は状態不明
+        Assert.Null(items[1].Active);
+        Assert.Equal(string.Empty, items[1].SubType);
+
+        // active が真偽値でない場合は状態不明
+        Assert.Null(items[2].Active);
+    }
+
+    [Fact]
+    public void MigrationInventory_ParseWorkflowMetadataXml_HandlesEdgeCases()
+    {
+        Assert.Equal(new WorkflowRuleMetadataInfo(null, null), MigrationInventoryService.ParseWorkflowMetadataXml(null));
+        Assert.Equal(new WorkflowRuleMetadataInfo(null, null), MigrationInventoryService.ParseWorkflowMetadataXml("  "));
+        Assert.Equal(new WorkflowRuleMetadataInfo(null, null), MigrationInventoryService.ParseWorkflowMetadataXml("<broken"));
+
+        var active = MigrationInventoryService.ParseWorkflowMetadataXml(
+            "<WorkflowRule><active>false</active><triggerType>onCreateOnly</triggerType></WorkflowRule>");
+        Assert.False(active.Active);
+        Assert.Equal("onCreateOnly", active.TriggerType);
     }
 
     [Fact]

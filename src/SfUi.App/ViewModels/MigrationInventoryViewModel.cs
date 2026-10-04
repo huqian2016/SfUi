@@ -41,7 +41,13 @@ public sealed class MigrationItemRowViewModel
         _ => "—",
     };
 
-    public string SubTypeText => Item.SubType;
+    public string SubTypeText => Item.SubType switch
+    {
+        "onCreateOrTriggeringUpdate" => UiText.T("OrgManage_TriggerOnCreateOrTriggeringUpdate"),
+        "onAllChanges" => UiText.T("OrgManage_TriggerOnAllChanges"),
+        "onCreateOnly" => UiText.T("OrgManage_TriggerOnCreateOnly"),
+        _ => Item.SubType,
+    };
 
     public string LastModifiedText => Item.LastModified is { } date
         ? date.LocalDateTime.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)
@@ -55,21 +61,35 @@ public sealed class MigrationItemRowViewModel
 public sealed partial class MigrationInventoryViewModel : ObservableObject
 {
     private readonly MigrationInventoryService _inventory;
+    private readonly OrgManageService _manage;
     private readonly AppLog _log;
     private string? _target;
     private CancellationTokenSource? _cts;
 
-    public MigrationInventoryViewModel(MigrationInventoryService inventory, AppLog log)
+    public MigrationInventoryViewModel(MigrationInventoryService inventory, OrgManageService manage, AppLog log)
     {
         _inventory = inventory;
+        _manage = manage;
         _log = log;
         RowsView = new ListCollectionView(Rows);
         RowsView.Filter = o => o is MigrationItemRowViewModel row && Matches(row);
+        _kindOptions = new[]
+        {
+            UiText.T("Common_All"),
+            UiText.T("OrgManage_KindWorkflowRule"),
+            UiText.T("OrgManage_KindProcessBuilder"),
+            UiText.T("OrgManage_KindFlow"),
+        };
     }
 
     public ObservableCollection<MigrationItemRowViewModel> Rows { get; } = new();
 
     public ICollectionView RowsView { get; }
+
+    /// <summary>種別フィルタの選択肢（すべて / Workflow ルール / プロセスビルダー / フロー）。</summary>
+    private readonly IReadOnlyList<string> _kindOptions;
+
+    public IReadOnlyList<string> KindOptions => _kindOptions;
 
     [ObservableProperty]
     private bool _isLoading;
@@ -79,6 +99,12 @@ public sealed partial class MigrationInventoryViewModel : ObservableObject
 
     [ObservableProperty]
     private string _searchText = string.Empty;
+
+    [ObservableProperty]
+    private int _kindFilterIndex;
+
+    [ObservableProperty]
+    private bool _showActiveOnly;
 
     [ObservableProperty]
     private string _summaryText = string.Empty;
@@ -119,6 +145,42 @@ public sealed partial class MigrationInventoryViewModel : ObservableObject
     }
 
     partial void OnSearchTextChanged(string value) => RowsView.Refresh();
+
+    partial void OnKindFilterIndexChanged(int value) => RowsView.Refresh();
+
+    partial void OnShowActiveOnlyChanged(bool value) => RowsView.Refresh();
+
+    /// <summary>行の Setup ページ（Workflow ルール / フロー）をブラウザーで開く。</summary>
+    [RelayCommand]
+    private async Task OpenItemAsync(MigrationItemRowViewModel? row)
+    {
+        if (row is null)
+        {
+            StatusMessage = UiText.T("OrgManage_NeedRow");
+            return;
+        }
+
+        var target = _target;
+        if (string.IsNullOrWhiteSpace(target))
+        {
+            StatusMessage = UiText.T("OrgManage_NeedOrg");
+            return;
+        }
+
+        var path = BuildSetupPath(row.Item);
+        var result = await _manage.OpenPathAsync(target, path, CancellationToken.None);
+        StatusMessage = result.Success
+            ? UiText.T("OrgManage_OpenDoneFmt", path)
+            : UiText.T("OrgManage_OpenFailedFmt", result.Message);
+    }
+
+    /// <summary>種別に応じた Setup ページのパスを組み立てる（フローは Id で詳細ページ）。</summary>
+    public static string BuildSetupPath(MigrationItem item) => item.Kind switch
+    {
+        MigrationItemKind.WorkflowRule => "lightning/setup/WorkflowRules/home",
+        _ when !string.IsNullOrWhiteSpace(item.Id) => $"lightning/setup/Flows/page?address=/{item.Id}",
+        _ => "lightning/setup/Flows/home",
+    };
 
     /// <summary>棚卸しを再取得する。</summary>
     [RelayCommand]
@@ -242,10 +304,22 @@ public sealed partial class MigrationInventoryViewModel : ObservableObject
         }
     }
 
-    private bool Matches(MigrationItemRowViewModel row) =>
-        string.IsNullOrWhiteSpace(SearchText)
-        || row.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase)
-        || row.ApiNameText.Contains(SearchText, StringComparison.OrdinalIgnoreCase)
-        || row.ObjectText.Contains(SearchText, StringComparison.OrdinalIgnoreCase)
-        || row.KindText.Contains(SearchText, StringComparison.OrdinalIgnoreCase);
+    private bool Matches(MigrationItemRowViewModel row)
+    {
+        if (KindFilterIndex > 0 && (int)row.Item.Kind != KindFilterIndex - 1)
+        {
+            return false;
+        }
+
+        if (ShowActiveOnly && row.Item.Active != true)
+        {
+            return false;
+        }
+
+        return string.IsNullOrWhiteSpace(SearchText)
+            || row.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase)
+            || row.ApiNameText.Contains(SearchText, StringComparison.OrdinalIgnoreCase)
+            || row.ObjectText.Contains(SearchText, StringComparison.OrdinalIgnoreCase)
+            || row.KindText.Contains(SearchText, StringComparison.OrdinalIgnoreCase);
+    }
 }

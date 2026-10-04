@@ -374,6 +374,27 @@ public partial class App : Application
                 + (inventory.WorkflowError is { Length: > 0 } error
                     ? $" / WorkflowError={(error.Length <= 120 ? error : error[..120] + "…")}"
                     : string.Empty));
+
+            var manageService = Services.GetRequiredService<OrgManageService>();
+            var connection = await manageService.TestConnectionAsync(target, CancellationToken.None);
+            _log.Info($"--smoke-orgmanage: 疎通テスト success={connection.Success} / {connection.Duration.TotalMilliseconds:F0} ms"
+                + $" / {connection.Detail}{(connection.Success ? string.Empty : $" / {connection.Message}")}");
+            if (!connection.Success)
+            {
+                return false;
+            }
+
+            var stateStore = Services.GetRequiredService<OrgManageStateStore>();
+            stateStore.Set(org.Username, "smoke-tag", "smoke-note");
+            var entry = stateStore.Get(org.Username);
+            var tagOk = entry?.Tag == "smoke-tag" && entry.Note == "smoke-note";
+            stateStore.Set(org.Username, null, null);
+            _log.Info($"--smoke-orgmanage: タグ・メモ round-trip {(tagOk ? "OK" : "NG")}（{stateStore.StatePath}）");
+            if (!tagOk)
+            {
+                return false;
+            }
+
             return true;
         }
         catch (Exception ex)

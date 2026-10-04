@@ -1,13 +1,16 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Globalization;
 using System.Windows;
+using System.Windows.Data;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SfUi.Core;
 
 namespace SfUi.App.ViewModels;
 
-/// <summary>組織管理タブの 1 行。</summary>
-public sealed class OrgManageOrgRowViewModel
+/// <summary>組織管理タブの 1 行（タグ・メモ・疎通結果は後から更新される）。</summary>
+public sealed partial class OrgManageOrgRowViewModel : ObservableObject
 {
     public OrgManageOrgRowViewModel(OrgInfo org)
     {
@@ -32,6 +35,26 @@ public sealed class OrgManageOrgRowViewModel
 
     /// <summary>UIA 用の表示名。</summary>
     public string Display => Org.DisplayName;
+
+    /// <summary>ローカルのタグ（org-manage.json）。</summary>
+    [ObservableProperty]
+    private string _tag = string.Empty;
+
+    /// <summary>ローカルのメモ（org-manage.json）。</summary>
+    [ObservableProperty]
+    private string _note = string.Empty;
+
+    /// <summary>疎通テストの短い表示（OK 123 ms / NG / 空）。</summary>
+    [ObservableProperty]
+    private string _connectionText = string.Empty;
+
+    /// <summary>疎通テストの詳細（ツールチップ）。</summary>
+    [ObservableProperty]
+    private string _connectionDetail = string.Empty;
+
+    /// <summary>最終バックアップ日時（ローカル・無ければ —）。</summary>
+    [ObservableProperty]
+    private string _lastBackupText = "—";
 }
 
 /// <summary>
@@ -41,31 +64,43 @@ public sealed partial class OrgManageViewModel : ObservableObject, IDisposable
 {
     private readonly OrgService _orgs;
     private readonly OrgManageService _manage;
+    private readonly OrgManageStateStore _state;
+    private readonly BackupService _backups;
     private readonly AppLog _log;
     private string? _initialUsername;
     private bool _initialized;
     private bool _suspendSelection;
     private bool _disposed;
     private CancellationTokenSource? _cts;
+    private CancellationTokenSource? _testCts;
 
     public OrgManageViewModel(
         OrgService orgs,
         OrgManageService manage,
+        OrgManageStateStore state,
+        BackupService backups,
         OrgHealthViewModel health,
         MigrationInventoryViewModel inventory,
         AppLog log)
     {
         _orgs = orgs;
         _manage = manage;
+        _state = state;
+        _backups = backups;
         _log = log;
         Health = health;
         Inventory = inventory;
         _title = UiText.T("OrgManage_Title");
+        OrgsView = new ListCollectionView(Orgs);
+        OrgsView.Filter = o => o is OrgManageOrgRowViewModel row && Matches(row);
         UiText.LanguageChanged += OnLanguageChanged;
     }
 
     /// <summary>組織一覧（既定組織が先頭）。</summary>
     public ObservableCollection<OrgManageOrgRowViewModel> Orgs { get; } = new();
+
+    /// <summary>絞り込み適用後の組織一覧。</summary>
+    public ICollectionView OrgsView { get; }
 
     /// <summary>ヘルス タブの ViewModel。</summary>
     public OrgHealthViewModel Health { get; }
@@ -86,12 +121,45 @@ public sealed partial class OrgManageViewModel : ObservableObject, IDisposable
     private bool _isBusy;
 
     [ObservableProperty]
+    private bool _isTestingConnections;
+
+    [ObservableProperty]
+    private string _testProgress = string.Empty;
+
+    [ObservableProperty]
     private string _statusMessage = string.Empty;
 
-    /// <summary>操作（再読み込み・コマンド実行）が可能か。</summary>
+    [ObservableProperty]
+    private string _tagInput = string.Empty;
+
+    [ObservableProperty]
+    private string _noteInput = string.Empty;
+
+    [ObservableProperty]
+    private string _searchText = string.Empty;
+
+    /// <summary>組織コマンド（再読み込み・ログイン等）が可能か。</summary>
     public bool CanInteract => !IsBusy;
 
-    partial void OnIsBusyChanged(bool value) => OnPropertyChanged(nameof(CanInteract));
+    /// <summary>疎通テストを開始できるか。</summary>
+    public bool CanTestConnections => !IsTestingConnections;
+
+    /// <summary>取り消せる処理が実行中か（組織コマンド / 疎通テスト）。</summary>
+    public bool CanCancel => IsBusy || IsTestingConnections;
+
+    partial void OnIsBusyChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanInteract));
+        OnPropertyChanged(nameof(CanCancel));
+    }
+
+    partial void OnIsTestingConnectionsChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanTestConnections));
+        OnPropertyChanged(nameof(CanCancel));
+    }
+
+    partial void OnSearchTextChanged(string value) => OrgsView.Refresh();
 
     /// <summary>選択中の組織（未選択なら null）。</summary>
     public OrgInfo? SelectedOrg => SelectedOrgRow?.Org;
@@ -107,6 +175,9 @@ public sealed partial class OrgManageViewModel : ObservableObject, IDisposable
         {
             AliasInput = value.AliasText;
         }
+
+        TagInput = value?.Tag ?? string.Empty;
+        NoteInput = value?.Note ?? string.Empty;
 
         if (!_suspendSelection)
         {
@@ -235,9 +306,136 @@ public sealed partial class OrgManageViewModel : ObservableObject, IDisposable
             keepUsername: null);
     }
 
-    /// <summary>実行中のコマンドを取り消す（ログイン等）。</summary>
+    /// <summary>選択中の組織のタグ・メモを保存する（ローカルのみ）。</summary>
     [RelayCommand]
-    private void Cancel() => _cts?.Cancel();
+    private void SaveNote()
+    {
+        var row = SelectedOrgRow;
+        if (row is null)
+        {
+            StatusMessage = UiText.T("OrgManage_NeedOrg");
+            return;
+        }
+
+        _state.Set(row.Username, TagInput, NoteInput);
+        row.Tag = TagInput.Trim();
+        row.Note = NoteInput.Trim();
+        OrgsView.Refresh();
+        StatusMessage = UiText.T("OrgManage_NoteSavedFmt", row.Display);
+        _log.Info($"組織管理: タグ・メモを保存しました ({row.Username})");
+    }
+
+    /// <summary>選択中の組織の疎通テスト（REST で Organization を 1 件読む）。</summary>
+    [RelayCommand]
+    private async Task TestSelectedConnectionAsync()
+    {
+        var row = SelectedOrgRow;
+        if (row is null)
+        {
+            StatusMessage = UiText.T("OrgManage_NeedOrg");
+            return;
+        }
+
+        if (IsTestingConnections)
+        {
+            return;
+        }
+
+        IsTestingConnections = true;
+        _testCts = new CancellationTokenSource();
+        try
+        {
+            await TestRowAsync(row, _testCts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            StatusMessage = UiText.T("Common_Canceled");
+        }
+        finally
+        {
+            IsTestingConnections = false;
+            TestProgress = string.Empty;
+        }
+    }
+
+    /// <summary>表示中の全組織の疎通テスト（順番に実行・進捗表示・キャンセル可）。</summary>
+    [RelayCommand]
+    private async Task TestAllConnectionsAsync()
+    {
+        if (IsTestingConnections || Orgs.Count == 0)
+        {
+            return;
+        }
+
+        IsTestingConnections = true;
+        _testCts = new CancellationTokenSource();
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var total = Orgs.Count;
+        var ok = 0;
+        var failed = 0;
+        try
+        {
+            var rows = Orgs.ToList();
+            for (var index = 0; index < rows.Count; index++)
+            {
+                _testCts.Token.ThrowIfCancellationRequested();
+                TestProgress = UiText.T("OrgManage_TestingFmt", index + 1, total);
+                if (await TestRowAsync(rows[index], _testCts.Token))
+                {
+                    ok++;
+                }
+                else
+                {
+                    failed++;
+                }
+            }
+
+            StatusMessage = UiText.T(
+                "OrgManage_TestSummaryFmt",
+                ok,
+                failed,
+                TimeSpan.FromMilliseconds(stopwatch.ElapsedMilliseconds).ToString(@"m\:ss"));
+        }
+        catch (OperationCanceledException)
+        {
+            StatusMessage = UiText.T("Common_Canceled");
+        }
+        finally
+        {
+            IsTestingConnections = false;
+            TestProgress = string.Empty;
+        }
+    }
+
+    private async Task<bool> TestRowAsync(OrgManageOrgRowViewModel row, CancellationToken cancellationToken)
+    {
+        row.ConnectionText = UiText.T("OrgManage_TestingShort");
+        var result = await _manage.TestConnectionAsync(row.Username, cancellationToken);
+        if (result.Success)
+        {
+            row.ConnectionText = UiText.T("OrgManage_TestOkShortFmt", result.Duration.TotalMilliseconds);
+            row.ConnectionDetail = result.Detail;
+            StatusMessage = UiText.T(
+                "OrgManage_TestOkFmt",
+                row.Display,
+                result.Detail,
+                result.Duration.TotalMilliseconds);
+            return true;
+        }
+
+        row.ConnectionText = UiText.T("OrgManage_TestNgShort");
+        row.ConnectionDetail = result.Message;
+        StatusMessage = UiText.T("OrgManage_TestFailedFmt", row.Display, result.Message);
+        return false;
+    }
+
+    /// <summary>実行中のコマンド（ログイン等）と疎通テストを取り消す。</summary>
+    [RelayCommand]
+    private void Cancel()
+    {
+        _cts?.Cancel();
+        _testCts?.Cancel();
+    }
 
     public void Dispose()
     {
@@ -251,6 +449,9 @@ public sealed partial class OrgManageViewModel : ObservableObject, IDisposable
         _cts?.Cancel();
         _cts?.Dispose();
         _cts = null;
+        _testCts?.Cancel();
+        _testCts?.Dispose();
+        _testCts = null;
         Health.CancelBackgroundWork();
         Inventory.CancelBackgroundWork();
     }
@@ -283,24 +484,7 @@ public sealed partial class OrgManageViewModel : ObservableObject, IDisposable
         try
         {
             var orgs = await _orgs.ListOrgsAsync(CurrentToken());
-            _suspendSelection = true;
-            try
-            {
-                Orgs.Clear();
-                foreach (var org in orgs)
-                {
-                    Orgs.Add(new OrgManageOrgRowViewModel(org));
-                }
-
-                SelectedOrgRow = Orgs.FirstOrDefault(o => string.Equals(o.Username, keep, StringComparison.OrdinalIgnoreCase))
-                    ?? Orgs.FirstOrDefault(o => o.Org.IsDefault)
-                    ?? Orgs.FirstOrDefault();
-            }
-            finally
-            {
-                _suspendSelection = false;
-            }
-
+            RebuildRows(orgs, keep);
             ApplyTarget();
             StatusMessage = UiText.T("OrgManage_OrgsLoadedFmt", Orgs.Count);
         }
@@ -314,6 +498,91 @@ public sealed partial class OrgManageViewModel : ObservableObject, IDisposable
             IsBusy = false;
         }
     }
+
+    /// <summary>
+    /// 組織一覧を再構築する（選択の復元・タグ / メモ・最終バックアップの適用。選択変更イベントは抑止する）。
+    /// </summary>
+    private void RebuildRows(IReadOnlyList<OrgInfo> orgs, string? keepUsername)
+    {
+        var previous = SelectedOrgRow?.Org.Username;
+        var entries = _state.GetAll();
+        var lastBackups = LoadLastBackups();
+        _suspendSelection = true;
+        try
+        {
+            Orgs.Clear();
+            foreach (var org in orgs)
+            {
+                var row = new OrgManageOrgRowViewModel(org);
+                if (entries.TryGetValue(org.Username, out var entry))
+                {
+                    row.Tag = entry.Tag ?? string.Empty;
+                    row.Note = entry.Note ?? string.Empty;
+                }
+
+                row.LastBackupText = lastBackups.TryGetValue(org.Username, out var createdAt)
+                    ? createdAt.LocalDateTime.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)
+                    : "—";
+                Orgs.Add(row);
+            }
+
+            SelectedOrgRow = Orgs.FirstOrDefault(o => string.Equals(o.Username, keepUsername, StringComparison.OrdinalIgnoreCase))
+                ?? (previous is null ? null : Orgs.FirstOrDefault(o => string.Equals(o.Username, previous, StringComparison.OrdinalIgnoreCase)))
+                ?? Orgs.FirstOrDefault(o => o.Org.IsDefault)
+                ?? Orgs.FirstOrDefault();
+        }
+        finally
+        {
+            _suspendSelection = false;
+        }
+
+        OrgsView.Refresh();
+    }
+
+    /// <summary>組織（ユーザー名）ごとの最終バックアップ日時をローカルのバックアップから集計する。</summary>
+    private Dictionary<string, DateTimeOffset> LoadLastBackups()
+    {
+        var map = new Dictionary<string, DateTimeOffset>(StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            foreach (var backup in _backups.ListBackups())
+            {
+                if (string.IsNullOrWhiteSpace(backup.OrgUsername))
+                {
+                    continue;
+                }
+
+                if (!map.TryGetValue(backup.OrgUsername, out var current) || backup.CreatedAt > current)
+                {
+                    map[backup.OrgUsername] = backup.CreatedAt;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _log.Warn($"組織管理: 最終バックアップの集計に失敗しました: {ex.Message}");
+        }
+
+        return map;
+    }
+
+    private bool Matches(OrgManageOrgRowViewModel row)
+    {
+        var text = SearchText.Trim();
+        if (text.Length == 0)
+        {
+            return true;
+        }
+
+        return MatchesText(row.Username, text)
+            || MatchesText(row.AliasText, text)
+            || MatchesText(row.OrgIdText, text)
+            || MatchesText(row.Tag, text)
+            || MatchesText(row.Note, text);
+    }
+
+    private static bool MatchesText(string? value, string text) =>
+        value is { Length: > 0 } && value.Contains(text, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>sf コマンドを実行し、結果をステータスへ反映する（必要なら組織一覧を再読み込み）。</summary>
     private async Task RunOrgCommandAsync(
@@ -334,24 +603,7 @@ public sealed partial class OrgManageViewModel : ObservableObject, IDisposable
                 if (reloadOrgs)
                 {
                     var orgs = await _orgs.ListOrgsAsync(CurrentToken());
-                    _suspendSelection = true;
-                    try
-                    {
-                        Orgs.Clear();
-                        foreach (var org in orgs)
-                        {
-                            Orgs.Add(new OrgManageOrgRowViewModel(org));
-                        }
-
-                        SelectedOrgRow = Orgs.FirstOrDefault(o => string.Equals(o.Username, keepUsername, StringComparison.OrdinalIgnoreCase))
-                            ?? Orgs.FirstOrDefault(o => string.Equals(o.Username, SelectedOrgRow?.Org.Username, StringComparison.OrdinalIgnoreCase))
-                            ?? Orgs.FirstOrDefault();
-                    }
-                    finally
-                    {
-                        _suspendSelection = false;
-                    }
-
+                    RebuildRows(orgs, keepUsername);
                     ApplyTarget();
                 }
             }
