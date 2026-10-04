@@ -38,12 +38,12 @@ public sealed class AppPaths
     /// 1) 明示指定（--data-dir / SFUI_DATA_DIR）
     /// 2) 開発時: ソリューションルート（SfUi.sln を上方探索）の data/
     /// 3) ポータブル: 実行ファイル隣の data/（書込可の場合）
-    /// 4) %APPDATA%\SfUi
+    /// 4) OS 既定（Windows: %APPDATA%\SfUi / macOS: ~/Library/Application Support/SfUi）
     /// </summary>
     public static AppPaths Resolve(string? dataRootOverride = null, string? baseDirectory = null, string? appDataDirectory = null)
     {
         baseDirectory ??= AppContext.BaseDirectory;
-        appDataDirectory ??= Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        appDataDirectory ??= ResolveDefaultAppDataDirectory();
 
         if (!string.IsNullOrWhiteSpace(dataRootOverride))
         {
@@ -63,6 +63,23 @@ public sealed class AppPaths
         }
 
         return new AppPaths(Path.Combine(appDataDirectory, "SfUi"));
+    }
+
+    /// <summary>
+    /// OS 既定の設定ディレクトリ。macOS は .NET の ApplicationData（~/.config）ではなく
+    /// macOS 慣習の ~/Library/Application Support を明示的に使う。
+    /// </summary>
+    private static string ResolveDefaultAppDataDirectory()
+    {
+        if (PlatformInfo.IsMacOS)
+        {
+            return Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                "Library",
+                "Application Support");
+        }
+
+        return Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
     }
 
     private static string? FindSolutionRoot(string baseDirectory)

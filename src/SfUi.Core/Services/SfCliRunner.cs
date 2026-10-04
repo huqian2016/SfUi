@@ -22,7 +22,8 @@ public sealed record SfCliResult(
 
 /// <summary>
 /// Salesforce CLI (sf) を子プロセスとして実行する。
-/// .cmd は CreateProcess で直接起動できないため、cmd.exe /d /s /c 経由で実行する。
+/// Windows: .cmd は CreateProcess で直接起動できないため cmd.exe /d /s /c 経由。
+/// macOS: シェル スクリプトの sf を直接起動する（引用は ArgumentList が処理）。
 /// </summary>
 public sealed class SfCliRunner
 {
@@ -53,7 +54,9 @@ public sealed class SfCliRunner
 
     /// <summary>
     /// sf の実行ファイルを解決する。優先順位:
-    /// 1) 引数の明示パス（設定画面の値）  2) 環境変数 SFUI_SF_PATH  3) %ProgramFiles%\sf\bin\sf.cmd  4) PATH 上の sf.cmd / sf.exe
+    /// 1) 引数の明示パス（設定画面の値）  2) 環境変数 SFUI_SF_PATH
+    /// 3) OS 既定（Windows: %ProgramFiles%\sf\bin\sf.cmd / macOS: /opt/homebrew/bin/sf, /usr/local/bin/sf）
+    /// 4) PATH 上（Windows: sf.cmd / sf.exe ・ macOS: sf）
     /// </summary>
     public static string? ResolveSfPath(string? explicitPath = null)
     {
@@ -68,19 +71,21 @@ public sealed class SfCliRunner
             return overridePath;
         }
 
-        var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
-        var installed = Path.Combine(programFiles, "sf", "bin", "sf.cmd");
-        if (File.Exists(installed))
+        // 3) OS 既定のインストール先
+        if (PlatformInfo.IsWindows)
         {
-            return installed;
-        }
-
-        var pathVariable = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
-        foreach (var directory in pathVariable.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-        {
-            foreach (var fileName in new[] { "sf.cmd", "sf.exe" })
+            var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+            var installed = Path.Combine(programFiles, "sf", "bin", "sf.cmd");
+            if (File.Exists(installed))
             {
-                var candidate = Path.Combine(directory, fileName);
+                return installed;
+            }
+        }
+        else
+        {
+            // macOS: Homebrew（Apple Silicon / Intel）と /usr/local/bin
+            foreach (var candidate in new[] { "/opt/homebrew/bin/sf", "/usr/local/bin/sf" })
+            {
                 if (File.Exists(candidate))
                 {
                     return candidate;
@@ -88,7 +93,9 @@ public sealed class SfCliRunner
             }
         }
 
-        return null;
+        // 4) PATH 走査（OS 別の区切り文字・ファイル名）
+        var fileNames = PlatformInfo.IsWindows ? new[] { "sf.cmd", "sf.exe" } : new[] { "sf" };
+        return PathSearch.Find(Environment.GetEnvironmentVariable("PATH"), fileNames, PlatformInfo.PathListSeparator);
     }
 
     /// <summary>sf を実行して結果を返す。</summary>
@@ -107,18 +114,9 @@ public sealed class SfCliRunner
             throw new InvalidOperationException(UiText.T("Core_SfNotFound"));
         }
 
-        var commandLine = BuildCommandLine(_sfExecutablePath, arguments);
-        var startInfo = new ProcessStartInfo
-        {
-            FileName = Environment.GetEnvironmentVariable("ComSpec") ?? "cmd.exe",
-            Arguments = ToCmdArguments(commandLine),
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            StandardOutputEncoding = Encoding.UTF8,
-            StandardErrorEncoding = Encoding.UTF8,
-            CreateNoWindow = true,
-        };
+        var startInfo = PlatformInfo.IsWindows
+            ? CreateWindowsStartInfo(_sfExecutablePath, arguments)
+            : CreatePosixStartInfo(_sfExecutablePath, arguments);
 
         if (!string.IsNullOrWhiteSpace(workingDirectory) && Directory.Exists(workingDirectory))
         {
@@ -183,6 +181,44 @@ public sealed class SfCliRunner
         }
 
         return new SfCliResult(arguments.ToArray(), SafeGetExitCode(process), stdOut.TrimEnd(), stdErr.TrimEnd(), timedOut, stopwatch.Elapsed);
+    }
+
+    /// <summary>Windows: cmd.exe /d /s /c 経由（.cmd は CreateProcess で直接起動できないため）。</summary>
+    private static ProcessStartInfo CreateWindowsStartInfo(string executablePath, IReadOnlyList<string> arguments)
+    {
+        var commandLine = BuildCommandLine(executablePath, arguments);
+        return new ProcessStartInfo
+        {
+            FileName = Environment.GetEnvironmentVariable("ComSpec") ?? "cmd.exe",
+            Arguments = ToCmdArguments(commandLine),
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            StandardOutputEncoding = Encoding.UTF8,
+            StandardErrorEncoding = Encoding.UTF8,
+            CreateNoWindow = true,
+        };
+    }
+
+    /// <summary>macOS / Linux: sf（シェル スクリプト）を直接起動する（引用は ArgumentList が処理）。</summary>
+    private static ProcessStartInfo CreatePosixStartInfo(string executablePath, IReadOnlyList<string> arguments)
+    {
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = executablePath,
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            StandardOutputEncoding = Encoding.UTF8,
+            StandardErrorEncoding = Encoding.UTF8,
+            CreateNoWindow = true,
+        };
+        foreach (var argument in arguments)
+        {
+            startInfo.ArgumentList.Add(argument);
+        }
+
+        return startInfo;
     }
 
     /// <summary>実行ファイルパスと引数からコマンドライン文字列を組み立てる。</summary>

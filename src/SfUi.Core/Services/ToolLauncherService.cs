@@ -4,7 +4,8 @@ using System.Text;
 namespace SfUi.Core;
 
 /// <summary>
-/// ターミナル / エクスプローラー / VS Code / ブラウザの起動サービス。
+/// ターミナル / エクスプローラー（macOS: Finder） / VS Code / ブラウザの起動サービス。
+/// OS 差はこのクラス内に閉じ込める（Windows / macOS）。
 /// </summary>
 public sealed class ToolLauncherService
 {
@@ -19,7 +20,7 @@ public sealed class ToolLauncherService
 
     public sealed record LaunchResult(bool Success, string Message);
 
-    /// <summary>ターミナルを指定フォルダで起動する（kind: wt / powershell / cmd / wsl）。</summary>
+    /// <summary>ターミナルを指定フォルダで起動する（kind: wt / powershell / cmd / wsl。macOS は Terminal.app）。</summary>
     public LaunchResult LaunchTerminal(string folder, string kind = "wt")
     {
         if (!Directory.Exists(folder))
@@ -29,61 +30,7 @@ public sealed class ToolLauncherService
 
         try
         {
-            switch (kind)
-            {
-                case "powershell":
-                    Process.Start(new ProcessStartInfo
-                    {
-                        FileName = "powershell.exe",
-                        Arguments = $"-NoExit -Command Set-Location -LiteralPath \"{folder}\"",
-                        UseShellExecute = true,
-                        WorkingDirectory = folder,
-                    });
-                    return new LaunchResult(true, UiText.T("Launch_PsFmt", folder));
-
-                case "cmd":
-                    Process.Start(new ProcessStartInfo
-                    {
-                        FileName = "cmd.exe",
-                        Arguments = $"/k cd /d {SfCliRunner.QuoteArgument(folder)}",
-                        UseShellExecute = true,
-                        WorkingDirectory = folder,
-                    });
-                    return new LaunchResult(true, UiText.T("Launch_CmdFmt", folder));
-
-                case "wsl":
-                    Process.Start(new ProcessStartInfo
-                    {
-                        FileName = "wsl.exe",
-                        Arguments = $"--cd {SfCliRunner.QuoteArgument(ToWslPath(folder))}",
-                        UseShellExecute = true,
-                        WorkingDirectory = folder,
-                    });
-                    return new LaunchResult(true, UiText.T("Launch_WslFmt", folder));
-
-                default:
-                    var wtPath = ResolveConfiguredPath(_settings?.Current.WindowsTerminalPath) ?? ResolveWindowsTerminalPath();
-                    if (wtPath is not null)
-                    {
-                        Process.Start(new ProcessStartInfo
-                        {
-                            FileName = wtPath,
-                            Arguments = $"-d {SfCliRunner.QuoteArgument(folder)}",
-                            UseShellExecute = false,
-                            WorkingDirectory = folder,
-                        });
-                        return new LaunchResult(true, UiText.T("Launch_WtFmt", folder));
-                    }
-
-                    Process.Start(new ProcessStartInfo
-                    {
-                        FileName = "cmd.exe",
-                        Arguments = $"/k cd /d {SfCliRunner.QuoteArgument(folder)}",
-                        UseShellExecute = true,
-                        WorkingDirectory = folder,
-                    });
-                    return new LaunchResult(true, UiText.T("Launch_CmdFallbackFmt", folder));
-            }
+            return PlatformInfo.IsWindows ? LaunchTerminalWindows(folder, kind) : LaunchTerminalMac(folder, kind);
         }
         catch (Exception ex)
         {
@@ -92,18 +39,110 @@ public sealed class ToolLauncherService
         }
     }
 
-    /// <summary>エクスプローラーでフォルダ（またはファイル）を開く。select=true でファイルを選択状態にする。</summary>
+    /// <summary>Windows: wt / powershell / cmd / wsl（従来動作）。</summary>
+    private LaunchResult LaunchTerminalWindows(string folder, string kind)
+    {
+        switch (kind)
+        {
+            case "powershell":
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "powershell.exe",
+                    Arguments = $"-NoExit -Command Set-Location -LiteralPath \"{folder}\"",
+                    UseShellExecute = true,
+                    WorkingDirectory = folder,
+                });
+                return new LaunchResult(true, UiText.T("Launch_PsFmt", folder));
+
+            case "cmd":
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    Arguments = $"/k cd /d {SfCliRunner.QuoteArgument(folder)}",
+                    UseShellExecute = true,
+                    WorkingDirectory = folder,
+                });
+                return new LaunchResult(true, UiText.T("Launch_CmdFmt", folder));
+
+            case "wsl":
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "wsl.exe",
+                    Arguments = $"--cd {SfCliRunner.QuoteArgument(ToWslPath(folder))}",
+                    UseShellExecute = true,
+                    WorkingDirectory = folder,
+                });
+                return new LaunchResult(true, UiText.T("Launch_WslFmt", folder));
+
+            default:
+                var wtPath = ResolveConfiguredPath(_settings?.Current.WindowsTerminalPath) ?? ResolveWindowsTerminalPath();
+                if (wtPath is not null)
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = wtPath,
+                        Arguments = $"-d {SfCliRunner.QuoteArgument(folder)}",
+                        UseShellExecute = false,
+                        WorkingDirectory = folder,
+                    });
+                    return new LaunchResult(true, UiText.T("Launch_WtFmt", folder));
+                }
+
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    Arguments = $"/k cd /d {SfCliRunner.QuoteArgument(folder)}",
+                    UseShellExecute = true,
+                    WorkingDirectory = folder,
+                });
+                return new LaunchResult(true, UiText.T("Launch_CmdFallbackFmt", folder));
+        }
+    }
+
+    /// <summary>macOS: Terminal.app をフォルダで開く（powershell / cmd / wsl は非対応）。</summary>
+    private LaunchResult LaunchTerminalMac(string folder, string kind)
+    {
+        if (kind is "powershell" or "cmd" or "wsl")
+        {
+            return new LaunchResult(false, UiText.T("Launch_UnsupportedFmt", kind));
+        }
+
+        var startInfo = new ProcessStartInfo { FileName = "open", UseShellExecute = false };
+        startInfo.ArgumentList.Add("-a");
+        startInfo.ArgumentList.Add("Terminal");
+        startInfo.ArgumentList.Add(folder);
+        Process.Start(startInfo);
+        return new LaunchResult(true, UiText.T("Launch_TerminalFmt", folder));
+    }
+
+    /// <summary>フォルダ（またはファイル）を開く（Windows: エクスプローラー / macOS: Finder）。select=true でファイルを選択状態にする。</summary>
     public LaunchResult LaunchExplorer(string path, bool select = false)
     {
         try
         {
-            var arguments = select ? "/select," + SfCliRunner.QuoteArgument(path) : SfCliRunner.QuoteArgument(path);
-            Process.Start(new ProcessStartInfo
+            if (PlatformInfo.IsWindows)
             {
-                FileName = "explorer.exe",
-                Arguments = arguments,
-                UseShellExecute = true,
-            });
+                var arguments = select ? "/select," + SfCliRunner.QuoteArgument(path) : SfCliRunner.QuoteArgument(path);
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "explorer.exe",
+                    Arguments = arguments,
+                    UseShellExecute = true,
+                });
+            }
+            else
+            {
+                // macOS: open（select=true は -R で Finder に表示）
+                var startInfo = new ProcessStartInfo { FileName = "open", UseShellExecute = false };
+                if (select)
+                {
+                    startInfo.ArgumentList.Add("-R");
+                }
+
+                startInfo.ArgumentList.Add(path);
+                Process.Start(startInfo);
+            }
+
             return new LaunchResult(true, UiText.T("Launch_ExplorerFmt", path));
         }
         catch (Exception ex)
@@ -138,15 +177,27 @@ public sealed class ToolLauncherService
 
             arguments.Add(path);
 
-            var commandLine = SfCliRunner.BuildCommandLine(codePath, arguments);
-            Process.Start(new ProcessStartInfo
+            var startInfo = new ProcessStartInfo
             {
-                FileName = Environment.GetEnvironmentVariable("ComSpec") ?? "cmd.exe",
-                Arguments = SfCliRunner.ToCmdArguments(commandLine),
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 WorkingDirectory = Directory.Exists(path) ? path : Environment.CurrentDirectory,
-            });
+            };
+            if (PlatformInfo.IsWindows)
+            {
+                startInfo.FileName = Environment.GetEnvironmentVariable("ComSpec") ?? "cmd.exe";
+                startInfo.Arguments = SfCliRunner.ToCmdArguments(SfCliRunner.BuildCommandLine(codePath, arguments));
+            }
+            else
+            {
+                startInfo.FileName = codePath;
+                foreach (var argument in arguments)
+                {
+                    startInfo.ArgumentList.Add(argument);
+                }
+            }
+
+            Process.Start(startInfo);
             return new LaunchResult(true, UiText.T("Launch_VsCodeFmt", path));
         }
         catch (Exception ex)
@@ -156,12 +207,22 @@ public sealed class ToolLauncherService
         }
     }
 
-    /// <summary>既定のブラウザで URL を開く。</summary>
+    /// <summary>既定のブラウザで URL を開く（Windows: UseShellExecute / macOS: open）。</summary>
     public LaunchResult LaunchBrowser(string url)
     {
         try
         {
-            Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true });
+            if (PlatformInfo.IsWindows)
+            {
+                Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true });
+            }
+            else
+            {
+                var startInfo = new ProcessStartInfo { FileName = "open", UseShellExecute = false };
+                startInfo.ArgumentList.Add(url);
+                Process.Start(startInfo);
+            }
+
             return new LaunchResult(true, UiText.T("Launch_BrowserFmt", url));
         }
         catch (Exception ex)
@@ -175,9 +236,14 @@ public sealed class ToolLauncherService
     private static string? ResolveConfiguredPath(string? configuredPath)
         => !string.IsNullOrWhiteSpace(configuredPath) && File.Exists(configuredPath) ? configuredPath : null;
 
-    /// <summary>Windows Terminal (wt.exe) のパスを解決する（未検出時は null）。</summary>
+    /// <summary>Windows Terminal (wt.exe) のパスを解決する（Windows 以外・未検出時は null）。</summary>
     public static string? ResolveWindowsTerminalPath()
     {
+        if (!PlatformInfo.IsWindows)
+        {
+            return null;
+        }
+
         var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         var alias = Path.Combine(localAppData, "Microsoft", "WindowsApps", "wt.exe");
         if (File.Exists(alias))
@@ -188,40 +254,40 @@ public sealed class ToolLauncherService
         return FindOnPath("wt.exe");
     }
 
-    /// <summary>VS Code CLI (code.cmd) のパスを解決する（未検出時は null）。</summary>
+    /// <summary>VS Code CLI のパスを解決する（Windows: code.cmd / macOS: code。未検出時は null）。</summary>
     public static string? ResolveVsCodeCliPath()
     {
-        var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        var installed = Path.Combine(localAppData, "Programs", "Microsoft VS Code", "bin", "code.cmd");
-        if (File.Exists(installed))
+        if (PlatformInfo.IsWindows)
         {
-            return installed;
+            var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            var installed = Path.Combine(localAppData, "Programs", "Microsoft VS Code", "bin", "code.cmd");
+            if (File.Exists(installed))
+            {
+                return installed;
+            }
+
+            return FindOnPath("code.cmd") ?? FindOnPath("code.exe");
         }
 
-        return FindOnPath("code.cmd") ?? FindOnPath("code.exe");
-    }
-
-    private static string? FindOnPath(string fileName)
-    {
-        var pathVariable = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
-        foreach (var directory in pathVariable.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        // macOS: Homebrew / システムの code、VS Code.app 内の CLI
+        foreach (var candidate in new[]
         {
-            try
+            "/opt/homebrew/bin/code",
+            "/usr/local/bin/code",
+            "/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code",
+        })
+        {
+            if (File.Exists(candidate))
             {
-                var candidate = Path.Combine(directory, fileName);
-                if (File.Exists(candidate))
-                {
-                    return candidate;
-                }
-            }
-            catch
-            {
-                // 不正な PATH 要素は無視
+                return candidate;
             }
         }
 
-        return null;
+        return FindOnPath("code");
     }
+
+    private static string? FindOnPath(string fileName) =>
+        PathSearch.Find(Environment.GetEnvironmentVariable("PATH"), new[] { fileName }, PlatformInfo.PathListSeparator);
 
     /// <summary>Windows パスを WSL 用パスへ変換する（C:\foo\bar → /mnt/c/foo/bar）。</summary>
     public static string ToWslPath(string windowsPath)
