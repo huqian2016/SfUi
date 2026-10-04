@@ -560,4 +560,5 @@ data/
   - CI 初回実行で macOS のみ 1 件失敗 → `OrgInfoCacheStore.SanitizeOrgKey` が OS 依存の `Path.GetInvalidFileNameChars()`（macOS は `/` と NUL のみ）を使っていたのが原因。Windows 禁止文字セットを全 OS で常に置換する固定実装に変更し、OS 間で data フォルダーを共有してもキーが一致するようにした（commit 2420555、CI アクションも v5 に更新）
   - CI に macOS パッケージ ジョブ追加: `make-mac-app.sh osx-arm64` → **実 macOS ランナーで `.app` 組立** → パッケージ済み実行ファイルで `--smoke`（起動 / 言語切替 / exit 0）→ zip を artifact 保存
   - 検証結果: CI run 37206278945 で全 5 ジョブ green（Test×2 / Build×2 / Package）。実 macOS で `.app` 組立 + **パッケージ済み実行ファイルのスモーク起動成功（exit 0）** + zip artifact 44 MB を確認
+  - CI 拡張: Windows にも `--smoke` 起動スモーク（WinExe のため `Start-Process` + `WaitForExit` ガード）と WPF 版ビルド（共有ロジック変更の回帰検知）を追加 → run 37206955129 で全 6 ジョブ green
   - 未実施: 署名 / 公証（Developer ID 証明書が必要）・実機での UI 操作 / スクリーンショット確認
