@@ -23,6 +23,7 @@ public partial class MainViewModel : ObservableObject
     private readonly OrgInfoWindowFactory _orgInfoWindowFactory;
     private readonly CompareOrgsWindowFactory _compareOrgsWindowFactory;
     private readonly DataIoWindowFactory _dataIoWindowFactory;
+    private readonly BackupWindowFactory _backupWindowFactory;
 
     [ObservableProperty]
     private bool _isBusy;
@@ -125,7 +126,8 @@ public partial class MainViewModel : ObservableObject
         QuickPanelViewModel quickPanel,
         OrgInfoWindowFactory orgInfoWindowFactory,
         CompareOrgsWindowFactory compareOrgsWindowFactory,
-        DataIoWindowFactory dataIoWindowFactory)
+        DataIoWindowFactory dataIoWindowFactory,
+        BackupWindowFactory backupWindowFactory)
     {
         _orgService = orgService;
         _log = log;
@@ -137,6 +139,7 @@ public partial class MainViewModel : ObservableObject
         _orgInfoWindowFactory = orgInfoWindowFactory;
         _compareOrgsWindowFactory = compareOrgsWindowFactory;
         _dataIoWindowFactory = dataIoWindowFactory;
+        _backupWindowFactory = backupWindowFactory;
         Orgs.CollectionChanged += (_, _) => OnPropertyChanged(nameof(CanCompareOrgs));
         History = history;
         Soql = soql;
@@ -489,6 +492,28 @@ public partial class MainViewModel : ObservableObject
         {
             StatusMessage = UiText.T("Common_FailedFmt", ex.Message);
             _log.Error("データ入出力ウィンドウを開けませんでした", ex);
+        }
+    }
+
+    /// <summary>バックアップと復元ウィンドウを新しいウィンドウで開く。</summary>
+    [RelayCommand]
+    private void OpenBackup()
+    {
+        if (SelectedOrg is null)
+        {
+            StatusMessage = UiText.T("Msg_SelectOrg");
+            return;
+        }
+
+        try
+        {
+            _backupWindowFactory.Open(SelectedOrg, Application.Current?.MainWindow);
+            StatusMessage = UiText.T("Msg_BackupOpenedFmt", SelectedOrg.DisplayName);
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = UiText.T("Common_FailedFmt", ex.Message);
+            _log.Error("バックアップ ウィンドウを開けませんでした", ex);
         }
     }
 

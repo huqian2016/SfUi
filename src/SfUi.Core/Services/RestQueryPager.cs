@@ -13,12 +13,15 @@ internal static class RestQueryPager
         string targetOrg,
         string soql,
         int maxRecords,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool allRows = false)
     {
         var records = new List<JsonElement>();
         var truncated = false;
 
-        var document = await rest.QueryAsync(targetOrg, soql, false, cancellationToken).ConfigureAwait(false);
+        var document = allRows
+            ? await rest.QueryAllAsync(targetOrg, soql, cancellationToken).ConfigureAwait(false)
+            : await rest.QueryAsync(targetOrg, soql, false, cancellationToken).ConfigureAwait(false);
         try
         {
             var (done, next) = Append(document.RootElement, records);

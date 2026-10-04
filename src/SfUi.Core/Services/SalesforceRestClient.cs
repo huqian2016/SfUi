@@ -59,6 +59,15 @@ public sealed class SalesforceRestClient
         return JsonDocument.Parse(body);
     }
 
+    /// <summary>queryAll（削除済みレコードも含む・ALL ROWS 相当）で SOQL を実行する（1 ページ目のみ）。</summary>
+    public async Task<JsonDocument> QueryAllAsync(string targetOrg, string soql, CancellationToken cancellationToken = default)
+    {
+        var apiVersion = await GetApiVersionAsync(targetOrg, cancellationToken).ConfigureAwait(false);
+        var path = $"/services/data/v{apiVersion}/queryAll?q={Uri.EscapeDataString(soql)}";
+        var body = await SendForBodyAsync(targetOrg, HttpMethod.Get, path, null, cancellationToken, retryOn401: true).ConfigureAwait(false);
+        return JsonDocument.Parse(body);
+    }
+
     /// <summary>組織のリミット情報を取得する。</summary>
     public async Task<JsonDocument> GetLimitsAsync(string targetOrg, CancellationToken cancellationToken = default)
     {

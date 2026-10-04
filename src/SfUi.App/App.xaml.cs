@@ -1,4 +1,6 @@
+using System.Globalization;
 using System.Net.Http;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +25,7 @@ public partial class App : Application
     private string? _smokeCompare;
     private string? _smokeDataIo;
     private string? _smokeAccess;
+    private string? _smokeBackup;
     private int _dispatcherExceptionCount;
 
     protected override void OnStartup(StartupEventArgs e)
@@ -37,6 +40,7 @@ public partial class App : Application
         _smokeCompare = _smokeTest ? ReadOption(e.Args, "--smoke-compare") : null;
         _smokeDataIo = _smokeTest ? ReadOption(e.Args, "--smoke-dataio") : null;
         _smokeAccess = _smokeTest ? ReadOption(e.Args, "--smoke-access") : null;
+        _smokeBackup = _smokeTest ? ReadOption(e.Args, "--smoke-backup") : null;
         var dataDir = ReadOption(e.Args, "--data-dir") ?? Environment.GetEnvironmentVariable("SFUI_DATA_DIR");
 
         var paths = AppPaths.Resolve(dataDir);
@@ -68,6 +72,14 @@ public partial class App : Application
         services.AddTransient<FieldAccessViewModel>();
         services.AddTransient<RecordAccessViewModel>();
         services.AddTransient<DataIoWindow>();
+        services.AddSingleton<BackupWindowFactory>();
+        services.AddTransient<BackupViewModel>();
+        services.AddTransient<BackupTabViewModel>();
+        services.AddTransient<RestoreTabViewModel>();
+        services.AddTransient<BackupWindow>();
+        services.AddSingleton<BackupRecordsWindowFactory>();
+        services.AddTransient<BackupRecordsViewModel>();
+        services.AddTransient<BackupRecordsWindow>();
         services.AddSingleton<MainWindow>();
         Services = services.BuildServiceProvider();
 
@@ -221,6 +233,11 @@ public partial class App : Application
             {
                 exitCode = 1;
             }
+
+            if (!string.IsNullOrWhiteSpace(_smokeBackup) && !await RunBackupSmokeAsync(_smokeBackup))
+            {
+                exitCode = 1;
+            }
         }
         catch (Exception ex)
         {
@@ -301,6 +318,222 @@ public partial class App : Application
             _log.Error("--smoke-dataio: 検証に失敗しました", ex);
             return false;
         }
+    }
+
+    /// <summary>
+    /// --smoke-backup: バックアップと復元の E2E（マーカー レコード作成 → バックアップ → 削除 →
+    /// 復元1: Id 照合（削除済みは undelete で Id 維持）→ 復元2: 上書き → 復元3: キー照合（新 Id + 参照張り替え）→
+    /// Bulk エンジン確認 → 後片付け）を行う。
+    /// </summary>
+    private async Task<bool> RunBackupSmokeAsync(string target)
+    {
+        const string marker = "SfUiBkE2E";
+        try
+        {
+            var orgs = await Services.GetRequiredService<OrgService>().ListOrgsAsync();
+            var org = orgs.FirstOrDefault(o =>
+                string.Equals(o.Alias, target, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(o.Username, target, StringComparison.OrdinalIgnoreCase));
+            if (org is null)
+            {
+                _log.Error($"--smoke-backup: 組織が見つかりません: {target}");
+                return false;
+            }
+
+            var rest = Services.GetRequiredService<SalesforceRestClient>();
+            var backups = Services.GetRequiredService<BackupService>();
+            var settings = Services.GetRequiredService<AppSettingsStore>();
+            var apiVersion = await rest.GetApiVersionAsync(target);
+            var stamp = DateTime.Now.ToString("HHmmss", CultureInfo.InvariantCulture);
+            var unique = Guid.NewGuid().ToString("N")[..8];
+            var accountName = $"{marker} {unique} {stamp}";
+            var caseSubject = $"{marker} {unique} Child {stamp}";
+
+            // 0) 以前の失敗で残ったマーカーを掃除（重複ルール対策）
+            var cleanedCases = await DeleteMarkersAsync(rest, target, apiVersion, "Case", "Subject", marker + "%");
+            var cleanedAccounts = await DeleteMarkersAsync(rest, target, apiVersion, "Account", "Name", marker + "%");
+            if (cleanedCases > 0 || cleanedAccounts > 0)
+            {
+                _log.Info($"--smoke-backup: 残骸を掃除 Case={cleanedCases} / Account={cleanedAccounts}");
+            }
+
+            // 件数キャッシュ（並列 COUNT + キャッシュ）を検証
+            await backups.FetchCountsAsync(target, org.Username, new[] { "Account", "Case" }, null, CancellationToken.None);
+            var counts = backups.GetCachedCounts(org.Username);
+            _log.Info($"--smoke-backup: 件数 Account={counts.GetValueOrDefault("Account")} / Case={counts.GetValueOrDefault("Case")}");
+
+            // 1) マーカー レコード（親 + 子の参照）
+            var accountId = await CreateSmokeRecordAsync(rest, target, apiVersion, "Account",
+                new Dictionary<string, object?> { ["Name"] = accountName, ["BillingCity"] = "Tokyo" });
+            var caseId = await CreateSmokeRecordAsync(rest, target, apiVersion, "Case",
+                new Dictionary<string, object?> { ["Subject"] = caseSubject, ["AccountId"] = accountId });
+            _log.Info($"--smoke-backup: 作成 Account={accountId} / Case={caseId}");
+
+            // 2) バックアップ（REST）
+            var metadata = await backups.RunBackupAsync(
+                target, org.DisplayName, org.Username, org.OrgId, "smoke", "smoke backup", "smoke",
+                new[] { "Account", "Case" }, null, CancellationToken.None);
+            var accountInfo = metadata.Objects.First(o => o.Name == "Account");
+            var caseInfo = metadata.Objects.First(o => o.Name == "Case");
+            _log.Info($"--smoke-backup: バックアップ {metadata.Id}（Account {accountInfo.Count} / Case {caseInfo.Count} / Engine {accountInfo.Engine}）");
+            if (accountInfo.Count == 0 || caseInfo.Count == 0)
+            {
+                _log.Error("--smoke-backup: バックアップ件数が 0 です");
+                return false;
+            }
+
+            var records = await backups.LoadRecordsAsync(metadata.Id, accountInfo);
+            if (records.Rows.Count == 0 || !records.Columns.Contains("Id"))
+            {
+                _log.Error("--smoke-backup: レコード詳細の読み込みに失敗しました");
+                return false;
+            }
+
+            _log.Info($"--smoke-backup: レコード詳細 {records.Rows.Count} 件 / 列 {records.Columns.Count}");
+
+            // 3) 削除（子 → 親）
+            await DeleteSmokeRecordAsync(rest, target, apiVersion, "Case", caseId);
+            await DeleteSmokeRecordAsync(rest, target, apiVersion, "Account", accountId);
+
+            // 4) 復元1: Id 照合 + スキップ → 削除済みは undelete（Id 維持）
+            var summary1 = await backups.RunRestoreAsync(
+                target, org.OrgId, metadata, new[] { accountInfo, caseInfo },
+                new RestoreOptions(RestoreMatchMode.Id, RestoreExistingAction.Skip, new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)),
+                null, CancellationToken.None);
+            _log.Info($"--smoke-backup: 復元1(Id) 作成 {summary1.Created} / 上書き {summary1.Updated} / 復元 {summary1.Undeleted} / スキップ {summary1.Skipped} / 失敗 {summary1.Failed}");
+            var restoredCaseId = await QueryFieldAsync(rest, target, $"SELECT Id FROM Case WHERE Subject = '{caseSubject}'", "Id");
+            // 子（Case）は親の削除時にカスケード削除扱いとなり個別 undelete 不可 → insert フォールバックを許容
+            _log.Info($"--smoke-backup: Account は {((summary1.Undeleted > 0 && await ExistsAsync(rest, target, "Account", accountId)) ? "undelete（Id 維持）" : "未復元")} / Case は {(summary1.Created > 0 ? "insert フォールバック" : "undelete")}");
+            if (summary1.Undeleted < 1 || summary1.Failed > 0 || !await ExistsAsync(rest, target, "Account", accountId) || restoredCaseId is null)
+            {
+                _log.Error("--smoke-backup: undelete（Id 維持）の検証に失敗しました");
+                return false;
+            }
+
+            // 5) 復元2: Id 照合 + 上書き → 変更した項目がバックアップ値へ戻る
+            await UpdateSmokeRecordAsync(rest, target, apiVersion, "Account", accountId,
+                new Dictionary<string, object?> { ["BillingCity"] = "Osaka" });
+            var summary2 = await backups.RunRestoreAsync(
+                target, org.OrgId, metadata, new[] { accountInfo },
+                new RestoreOptions(RestoreMatchMode.Id, RestoreExistingAction.Overwrite, new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)),
+                null, CancellationToken.None);
+            var city = await QueryFieldAsync(rest, target, $"SELECT BillingCity FROM Account WHERE Id = '{accountId}'", "BillingCity");
+            _log.Info($"--smoke-backup: 復元2(上書き) 上書き {summary2.Updated} → BillingCity={city}");
+            if (summary2.Updated < 1 || !string.Equals(city, "Tokyo", StringComparison.Ordinal))
+            {
+                _log.Error("--smoke-backup: 上書き復元の検証に失敗しました");
+                return false;
+            }
+
+            // 6) 復元3: キー照合（Name / Subject）→ 新 Id で作成 + 参照の張り替え
+            await DeleteSmokeRecordAsync(rest, target, apiVersion, "Case", restoredCaseId);
+            await DeleteSmokeRecordAsync(rest, target, apiVersion, "Account", accountId);
+            var keyFields = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase) { ["Account"] = "Name", ["Case"] = "Subject" };
+            var summary3 = await backups.RunRestoreAsync(
+                target, org.OrgId, metadata, new[] { accountInfo, caseInfo },
+                new RestoreOptions(RestoreMatchMode.Key, RestoreExistingAction.Skip, keyFields),
+                null, CancellationToken.None);
+            var newAccountId = await QueryFieldAsync(rest, target, $"SELECT Id FROM Account WHERE Name = '{accountName}'", "Id");
+            var newCaseId = await QueryFieldAsync(rest, target, $"SELECT Id FROM Case WHERE Subject = '{caseSubject}'", "Id");
+            var newCaseAccount = newCaseId is null
+                ? null
+                : await QueryFieldAsync(rest, target, $"SELECT AccountId FROM Case WHERE Id = '{newCaseId}'", "AccountId");
+            _log.Info($"--smoke-backup: 復元3(キー) 作成 {summary3.Created} → Account={newAccountId} / Case={newCaseId} / Case.AccountId={newCaseAccount}");
+            if (newAccountId is null || newCaseId is null || newAccountId == accountId
+                || !string.Equals(newCaseAccount, newAccountId, StringComparison.Ordinal))
+            {
+                _log.Error("--smoke-backup: キー照合（新 Id・参照張り替え）の検証に失敗しました");
+                return false;
+            }
+
+            // 7) Bulk エンジン（しきい値を 1 にして CSV 保存を確認）
+            var originalThreshold = settings.Current.BackupRestMaxRecords;
+            try
+            {
+                settings.Current.BackupRestMaxRecords = 1;
+                var bulkMetadata = await backups.RunBackupAsync(
+                    target, org.DisplayName, org.Username, org.OrgId, "smoke", "smoke bulk", "smoke",
+                    new[] { "Account" }, null, CancellationToken.None);
+                var bulkInfo = bulkMetadata.Objects.First(o => o.Name == "Account");
+                var bulkRecords = await backups.LoadRecordsAsync(bulkMetadata.Id, bulkInfo);
+                _log.Info($"--smoke-backup: Bulk バックアップ {bulkMetadata.Id}（Engine {bulkInfo.Engine} / ファイル {bulkInfo.File} / 行 {bulkRecords.Rows.Count}）");
+                if (bulkInfo.Engine != BackupEngine.Bulk || bulkRecords.Rows.Count == 0)
+                {
+                    _log.Error("--smoke-backup: Bulk エンジンの検証に失敗しました");
+                    return false;
+                }
+            }
+            finally
+            {
+                settings.Current.BackupRestMaxRecords = originalThreshold;
+                settings.Save();
+            }
+
+            // 8) 後片付け（子 → 親、マーカー全体を掃除）
+            await DeleteMarkersAsync(rest, target, apiVersion, "Case", "Subject", marker + "%");
+            await DeleteMarkersAsync(rest, target, apiVersion, "Account", "Name", marker + "%");
+            _log.Info("--smoke-backup: 後片付け完了");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _log.Error("--smoke-backup: 検証に失敗しました", ex);
+            return false;
+        }
+    }
+
+    private static async Task<string> CreateSmokeRecordAsync(
+        SalesforceRestClient rest, string org, string apiVersion, string objectName, Dictionary<string, object?> fields)
+    {
+        var body = await rest.SendRawAsync(
+            org, HttpMethod.Post, $"/services/data/v{apiVersion}/sobjects/{objectName}", JsonSerializer.Serialize(fields));
+        using var document = JsonDocument.Parse(body);
+        return document.RootElement.GetProperty("id").GetString() ?? throw new InvalidOperationException("Id が返りませんでした");
+    }
+
+    /// <summary>LIKE パターンに一致するレコードを削除する（マーカーの掃除）。</summary>
+    private static async Task<int> DeleteMarkersAsync(
+        SalesforceRestClient rest, string org, string apiVersion, string objectName, string field, string pattern)
+    {
+        using var document = await rest.QueryAsync(org, $"SELECT Id FROM {objectName} WHERE {field} LIKE '{pattern}'");
+        var ids = document.RootElement.GetProperty("records").EnumerateArray()
+            .Select(record => record.GetProperty("Id").GetString())
+            .Where(id => id is not null)
+            .ToList();
+        foreach (var id in ids)
+        {
+            await DeleteSmokeRecordAsync(rest, org, apiVersion, objectName, id!);
+        }
+
+        return ids.Count;
+    }
+
+    private static Task<string> DeleteSmokeRecordAsync(
+        SalesforceRestClient rest, string org, string apiVersion, string objectName, string id) =>
+        rest.SendRawAsync(org, HttpMethod.Delete, $"/services/data/v{apiVersion}/sobjects/{objectName}/{id}");
+
+    private static Task<string> UpdateSmokeRecordAsync(
+        SalesforceRestClient rest, string org, string apiVersion, string objectName, string id, Dictionary<string, object?> fields) =>
+        rest.SendRawAsync(org, HttpMethod.Patch, $"/services/data/v{apiVersion}/sobjects/{objectName}/{id}", JsonSerializer.Serialize(fields));
+
+    private static async Task<bool> ExistsAsync(SalesforceRestClient rest, string org, string objectName, string id)
+    {
+        using var document = await rest.QueryAsync(org, $"SELECT Id FROM {objectName} WHERE Id = '{id}'");
+        return document.RootElement.GetProperty("records").GetArrayLength() > 0;
+    }
+
+    private static async Task<string?> QueryFieldAsync(SalesforceRestClient rest, string org, string soql, string field)
+    {
+        using var document = await rest.QueryAsync(org, soql);
+        var records = document.RootElement.GetProperty("records");
+        if (records.GetArrayLength() == 0)
+        {
+            return null;
+        }
+
+        return records[0].TryGetProperty(field, out var element) && element.ValueKind != JsonValueKind.Null
+            ? element.GetString()
+            : null;
     }
 
     /// <summary>
