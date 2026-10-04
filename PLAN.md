@@ -505,3 +505,11 @@ data/
   - UI サービス実装: `AvaloniaDialogService`（MessageBox/InputBox 相当の共通ダイアログ・DispatcherFrame で同期 API）/ `AvaloniaFilePickerService`（StorageProvider・WPF フィルタ形式を変換）/ `AvaloniaUiDispatcher` / `AvaloniaClipboardService` / `AvaloniaAppWindowService`（未移植ウィンドウは案内を表示）
   - 検証: ビルド 0 警告 / `--smoke` = シェル表示 → 組織一覧 12 件取得 → 言語切替 OK → 正常終了（exit 0）/ 起動スクリーンショットでアイコン・テーマ・タブ表示を確認
   - 未移植: 7 タブ + クイック/AI パネル（Phase C）/ グリッド系（D）/ バックアップ・組織管理（E）/ mac 固有（F）
+
+- ✅ **Phase C（2026-10-04 完了）**: Avalonia 版に小〜中ビューを移植（AI パネル以外の全タブ）
+  - 移植済みビュー: SOQL / Apex / Debug Logs / History / Deploy / Command / REST API + クイックパネル（左サイド）
+  - `Avalonia.Controls.DataGrid`（Fluent テーマ）と `Avalonia.AvaloniaEdit`（SQL / C# ハイライト + Ctrl+Enter 実行）を導入。列見出しはコードビハインドで構築し言語切替に追従（`UiText.LanguageChanged`）
+  - SOQL の結果グリッドは DataView → 数値インデクサー バインドの行配列へ変換して表示（動的列の Avalonia 向け再設計）
+  - 起動オプション `--tab 0..7` を追加（開発・スクリーンショット用に指定タブを開く）
+  - 検証: ビルド 0 警告 / スモーク OK（全タブ + 言語切替）/ Log・SOQL タブのウィンドウキャプチャで表示確認
+  - 残: AI チャット パネル（Phase C 残件）/ グリッド大物（D）/ バックアップ・組織管理（E）/ mac 固有（F）

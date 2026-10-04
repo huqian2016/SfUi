@@ -1,0 +1,59 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:SfUi.Avalonia"
+             x:Class="SfUi.Avalonia.Views.CommandView">
+    <DockPanel>
+
+        <!-- ツールバー -->
+        <Border DockPanel.Dock="Top" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
+            <StackPanel Orientation="Horizontal">
+                <Button Content="{loc:Tr Command_Run}" Padding="10,2" Margin="0,0,6,0" Command="{Binding ExecuteCommand}" />
+                <Button Content="{loc:Tr Common_Cancel}" Padding="10,2" Margin="0,0,12,0" Command="{Binding CancelCommand}" />
+                <TextBlock Text="{loc:Tr Common_HistoryLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                <ComboBox Width="300" ItemsSource="{Binding HistoryItems}" SelectedItem="{Binding SelectedHistoryItem, Mode=TwoWay}"
+                          ToolTip.Tip="{loc:Tr Command_HistoryTip}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Summary}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                <Button Content="⟳" Padding="8,2" Margin="0,0,12,0" Command="{Binding RefreshHistoryCommand}" />
+                <Button Content="{loc:Tr Common_AddFavorite}" Padding="10,2" Command="{Binding AddFavoriteCommand}" />
+            </StackPanel>
+        </Border>
+
+        <!-- ステータス -->
+        <Border DockPanel.Dock="Bottom" Background="#F7F7F7" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="8,4">
+            <TextBlock Text="{Binding StatusText}" />
+        </Border>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="4" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <TextBox x:Name="CommandInput" Grid.Row="0" Margin="8,8,8,0" Padding="6,4"
+                     FontFamily="Consolas, Menlo, monospace" FontSize="13"
+                     Text="{Binding CommandText, Mode=TwoWay}"
+                     ToolTip.Tip="{loc:Tr Command_InputTip}" />
+
+            <GridSplitter Grid.Row="1" Height="4" HorizontalAlignment="Stretch" Background="#DDDDDD" />
+
+            <TabControl Grid.Row="2" Margin="8">
+                <TabItem Header="{loc:Tr Command_StdOutTab}">
+                    <TextBox Text="{Binding StdOut}" IsReadOnly="True" FontFamily="Consolas, Menlo, monospace" FontSize="12"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                             TextWrapping="NoWrap" />
+                </TabItem>
+                <TabItem Header="{loc:Tr Command_StdErrTab}">
+                    <TextBox Text="{Binding StdErr}" IsReadOnly="True" FontFamily="Consolas, Menlo, monospace" FontSize="12"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                             TextWrapping="NoWrap" />
+                </TabItem>
+            </TabControl>
+        </Grid>
+    </DockPanel>
+</UserControl>

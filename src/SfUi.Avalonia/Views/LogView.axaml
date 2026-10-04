@@ -1,0 +1,44 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:SfUi.Avalonia"
+             x:Class="SfUi.Avalonia.Views.LogView">
+    <DockPanel>
+
+        <!-- ツールバー -->
+        <Border DockPanel.Dock="Top" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
+            <StackPanel Orientation="Horizontal">
+                <Button Content="{loc:Tr Log_Refresh}" Padding="10,2" Margin="0,0,6,0" Command="{Binding RefreshCommand}" />
+                <Button Content="{loc:Tr Log_Fetch}" Padding="10,2" Margin="0,0,6,0" Command="{Binding FetchCommand}"
+                        ToolTip.Tip="{loc:Tr Log_FetchTip}" />
+                <Button Content="{loc:Tr Log_Save}" Padding="10,2" Command="{Binding SaveLogCommand}" />
+            </StackPanel>
+        </Border>
+
+        <!-- ステータス -->
+        <Border DockPanel.Dock="Bottom" Background="#F7F7F7" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="8,4">
+            <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" />
+        </Border>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="480" MinWidth="280" />
+                <ColumnDefinition Width="4" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <DataGrid x:Name="LogGrid" Grid.Column="0" ItemsSource="{Binding Logs}"
+                      SelectedItem="{Binding SelectedLog, Mode=TwoWay}"
+                      AutoGenerateColumns="False" IsReadOnly="True"
+                      SelectionMode="Single"
+                      HeadersVisibility="Column"
+                      GridLinesVisibility="Horizontal" />
+
+            <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch" Background="#DDDDDD" />
+
+            <TextBox Grid.Column="2" Text="{Binding LogContent}" IsReadOnly="True"
+                     FontFamily="Consolas, Menlo, monospace" FontSize="12"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                     TextWrapping="NoWrap" />
+        </Grid>
+    </DockPanel>
+</UserControl>

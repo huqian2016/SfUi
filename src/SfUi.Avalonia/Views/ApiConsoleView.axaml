@@ -1,0 +1,58 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:SfUi.Avalonia"
+             x:Class="SfUi.Avalonia.Views.ApiConsoleView">
+    <DockPanel>
+
+        <!-- ツールバー -->
+        <Border DockPanel.Dock="Top" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
+            <StackPanel Orientation="Horizontal">
+                <ComboBox Width="90" ItemsSource="{Binding Methods}" SelectedItem="{Binding Method, Mode=TwoWay}" />
+                <TextBox Width="400" Margin="6,0,6,0" VerticalContentAlignment="Center" FontFamily="Consolas, Menlo, monospace"
+                         Text="{Binding Path, Mode=TwoWay}"
+                         ToolTip.Tip="{loc:Tr Api_PathTip}" />
+                <Button Content="{loc:Tr Api_Send}" Padding="10,2" Margin="0,0,12,0" Command="{Binding SendCommand}" />
+                <TextBlock Text="{loc:Tr Common_HistoryLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                <ComboBox Width="220" ItemsSource="{Binding HistoryItems}" SelectedItem="{Binding SelectedHistoryItem, Mode=TwoWay}"
+                          ToolTip.Tip="{loc:Tr Api_HistoryTip}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Summary}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                <Button Content="⟳" Padding="8,2" Margin="0,0,12,0" Command="{Binding RefreshHistoryCommand}" />
+                <Button Content="{loc:Tr Common_AddFavorite}" Padding="10,2" Command="{Binding AddFavoriteCommand}" />
+            </StackPanel>
+        </Border>
+
+        <!-- ステータス -->
+        <Border DockPanel.Dock="Bottom" Background="#F7F7F7" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="8,4">
+            <TextBlock Text="{Binding StatusText}" />
+        </Border>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="4" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <DockPanel Grid.Row="0" Margin="8,8,8,0">
+                <TextBlock DockPanel.Dock="Top" Text="{loc:Tr Api_BodyLabel}" Margin="0,0,0,4" Foreground="#666666" />
+                <TextBox Height="110" FontFamily="Consolas, Menlo, monospace" FontSize="12" AcceptsReturn="True"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                         TextWrapping="NoWrap"
+                         Text="{Binding RequestBody, Mode=TwoWay}" />
+            </DockPanel>
+
+            <GridSplitter Grid.Row="1" Height="4" HorizontalAlignment="Stretch" Background="#DDDDDD" />
+
+            <TextBox Grid.Row="2" Margin="8,4,8,8" Text="{Binding ResponseText}" IsReadOnly="True"
+                     FontFamily="Consolas, Menlo, monospace" FontSize="12"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                     TextWrapping="NoWrap"
+                     ToolTip.Tip="{loc:Tr Api_ResponseTip}" />
+        </Grid>
+    </DockPanel>
+</UserControl>

@@ -210,10 +210,10 @@
             </Grid>
         </Border>
 
-        <!-- クイックパネル（お気に入り）: 左サイド（Phase C で移植） -->
+        <!-- クイックパネル（お気に入り）: 左サイド -->
         <Border DockPanel.Dock="Left" Width="240" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="0,0,1,0"
                 IsVisible="{Binding IsQuickPanelVisible}">
-            <TextBlock Classes="placeholder" Text="Quick panel — ported in Phase C" TextWrapping="Wrap" />
+            <views:QuickPanelView DataContext="{Binding QuickPanel}" />
         </Border>
 
         <!-- AI パネル: 右サイド（Phase C で移植） -->
@@ -225,25 +225,25 @@
         <!-- メイン: 機能タブ（Settings 以外は Phase C–E で移植） -->
         <TabControl Margin="8" SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}">
             <TabItem Header="{loc:Tr Tab_Soql}">
-                <TextBlock Classes="placeholder" Text="SOQL — ported in Phase C" />
+                <views:SoqlView DataContext="{Binding Soql}" />
             </TabItem>
             <TabItem Header="{loc:Tr Tab_Apex}">
-                <TextBlock Classes="placeholder" Text="Apex — ported in Phase C" />
+                <views:ApexView DataContext="{Binding Apex}" />
             </TabItem>
             <TabItem Header="{loc:Tr Tab_Log}">
-                <TextBlock Classes="placeholder" Text="Log — ported in Phase C" />
+                <views:LogView DataContext="{Binding Logs}" />
             </TabItem>
             <TabItem Header="{loc:Tr Tab_History}">
-                <TextBlock Classes="placeholder" Text="History — ported in Phase C" />
+                <views:HistoryView DataContext="{Binding History}" />
             </TabItem>
             <TabItem Header="{loc:Tr Tab_Deploy}">
-                <TextBlock Classes="placeholder" Text="Deploy — ported in Phase C" />
+                <views:DeployView DataContext="{Binding Deploy}" />
             </TabItem>
             <TabItem Header="{loc:Tr Tab_Command}">
-                <TextBlock Classes="placeholder" Text="Command — ported in Phase C" />
+                <views:CommandView DataContext="{Binding Command}" />
             </TabItem>
             <TabItem Header="{loc:Tr Tab_Api}">
-                <TextBlock Classes="placeholder" Text="API console — ported in Phase C" />
+                <views:ApiConsoleView DataContext="{Binding Api}" />
             </TabItem>
             <TabItem Header="{loc:Tr Tab_Settings}">
                 <views:SettingsView DataContext="{Binding Settings}" />

@@ -65,6 +65,12 @@ public partial class App : Application
             Services.GetRequiredService<TopLevelAccessor>().Current = window;
             desktop.MainWindow = window;
 
+            // 開発/スクリーンショット用: 指定タブを開いた状態で起動（--tab 0..7）
+            if (int.TryParse(ReadOption(args, "--tab"), out var tabIndex) && tabIndex >= 0)
+            {
+                Services.GetRequiredService<MainViewModel>().SelectedTabIndex = tabIndex;
+            }
+
             if (_smokeTest)
             {
                 window.Opened += (_, _) => _ = RunSmokeAsync();

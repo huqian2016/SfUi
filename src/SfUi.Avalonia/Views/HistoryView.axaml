@@ -1,0 +1,62 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:SfUi.Avalonia"
+             xmlns:conv="clr-namespace:SfUi.Avalonia.Converters"
+             x:Class="SfUi.Avalonia.Views.HistoryView"
+             x:Name="Root">
+    <UserControl.Resources>
+        <conv:IsZeroConverter x:Key="IsZero" />
+    </UserControl.Resources>
+    <DockPanel>
+
+        <!-- ツールバー -->
+        <Border DockPanel.Dock="Top" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="{loc:Tr History_TypeLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                <ComboBox Width="120" Margin="0,0,12,0"
+                          ItemsSource="{Binding TypeFilters}"
+                          SelectedItem="{Binding TypeFilter, Mode=TwoWay}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Label}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+
+                <TextBlock Text="{loc:Tr History_SearchLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                <TextBox Width="260" Margin="0,0,12,0" VerticalContentAlignment="Center"
+                         Text="{Binding SearchText, Mode=TwoWay}"
+                         ToolTip.Tip="{loc:Tr History_SearchTip}" />
+
+                <Button Content="{loc:Tr History_Refresh}" Padding="10,2" Margin="0,0,6,0" Command="{Binding RefreshCommand}" />
+                <Button Content="{loc:Tr History_CopyParams}" Padding="10,2" Margin="0,0,6,0" Command="{Binding CopyParamsCommand}"
+                        ToolTip.Tip="{loc:Tr History_CopyParamsTip}" />
+                <Button Content="{loc:Tr History_DeleteSelected}" Padding="10,2" Margin="0,0,6,0" Command="{Binding DeleteSelectedCommand}" />
+                <Button Content="{loc:Tr History_ClearAll}" Padding="10,2" Command="{Binding ClearAllCommand}" />
+            </StackPanel>
+        </Border>
+
+        <Grid>
+            <DataGrid x:Name="HistoryGrid" ItemsSource="{Binding Entries}"
+                      SelectedItem="{Binding SelectedEntry, Mode=TwoWay}"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      SelectionMode="Single"
+                      HeadersVisibility="Column"
+                      GridLinesVisibility="Horizontal">
+                <DataGrid.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="{loc:Tr History_CopyParams}"
+                                  Command="{Binding $parent[ContextMenu].DataContext.CopyParamsCommand}" />
+                        <MenuItem Header="{loc:Tr History_DeleteSelected}"
+                                  Command="{Binding $parent[ContextMenu].DataContext.DeleteSelectedCommand}" />
+                    </ContextMenu>
+                </DataGrid.ContextMenu>
+            </DataGrid>
+
+            <TextBlock Text="{loc:Tr History_Empty}"
+                       IsVisible="{Binding Entries.Count, Converter={StaticResource IsZero}}"
+                       Foreground="#888888" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Grid>
+    </DockPanel>
+</UserControl>
