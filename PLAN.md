@@ -536,4 +536,11 @@ data/
   - 比較行のハイライトは `ControlTheme` + コンバーター（B のみ→紫 / A のみ→青 / エラー→赤 / 差分→黄）で WPF の DataTrigger を再現
   - 検証: ビルド 0 警告 / スモーク OK / 実ウィンドウのキャプチャ（オブジェクト一覧 + 件数 Account=15 + ラベル/説明の自動入力）
   - 開発用オプション: `--open backup`
-  - 残: レコード詳細 / 差分詳細の 2 ウィンドウ（XamlReader 残 1 箇所）/ 組織管理ウィンドウ
+
+- ✅ **Phase E-2（2026-10-04 完了）**: Avalonia 版 レコード詳細 / 差分詳細ウィンドウ
+  - `BackupRecordsWindow`（バックアップ内容から列を動的生成 + ↗ リンク列 + 検索/ページング + 上限注意表示）
+  - `BackupCompareRecordsWindow`（Kind/Id/Records/Changes + 追加=緑 / 削除=赤の行ハイライト）
+  - `XamlReader` によるリンクボタン テンプレートの残り 1 箇所を `FuncDataTemplate` へ置換（3 箇所すべて解消）
+  - 検証: ビルド 0 警告 / スモーク OK / 両ウィンドウのキャプチャで 69 列の実データ表示と差分行ハイライト（added 1 / removed 1 / changed 15）を確認
+  - 開発用オプション: `--open backuprecords` / `--open comparerecords`
+  - 残: 組織管理ウィンドウ（3 タブ）

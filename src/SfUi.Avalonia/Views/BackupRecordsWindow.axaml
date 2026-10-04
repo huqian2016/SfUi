@@ -1,0 +1,40 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:SfUi.Avalonia"
+        x:Class="SfUi.Avalonia.Views.BackupRecordsWindow"
+        Title="{Binding Title}"
+        Height="640" Width="1200" MinWidth="800" MinHeight="440"
+        WindowStartupLocation="CenterOwner"
+        FontSize="13">
+    <DockPanel>
+
+        <!-- 上部: 検索とページング -->
+        <Border DockPanel.Dock="Top" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="{loc:Tr BackupRecords_Search}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                <TextBox Width="280" VerticalAlignment="Center"
+                         Text="{Binding SearchText, Mode=TwoWay}"
+                         ToolTip.Tip="{loc:Tr BackupRecords_Search}"
+                         AutomationProperties.Name="{loc:Tr BackupRecords_Search}" />
+                <Button Content="{loc:Tr BackupRecords_Prev}" Margin="10,0,0,0" Padding="8,2"
+                        Command="{Binding PrevPageCommand}"
+                        AutomationProperties.Name="{loc:Tr BackupRecords_Prev}" />
+                <TextBlock Text="{Binding PageText}" VerticalAlignment="Center" Margin="8,0,0,0" />
+                <Button Content="{loc:Tr BackupRecords_Next}" Margin="8,0,0,0" Padding="8,2"
+                        Command="{Binding NextPageCommand}"
+                        AutomationProperties.Name="{loc:Tr BackupRecords_Next}" />
+                <TextBlock Text="{Binding StatusMessage}" Foreground="#666666" Margin="16,0,0,0" VerticalAlignment="Center" />
+            </StackPanel>
+        </Border>
+
+        <!-- 下部: 上限到達の注意 -->
+        <Border DockPanel.Dock="Bottom" Background="#FFF8E1" BorderBrush="#E8D9A0" BorderThickness="0,1,0,0"
+                Padding="8,4" IsVisible="{Binding Truncated}">
+            <TextBlock Text="{Binding TruncatedText}" Foreground="#8A6D00" TextWrapping="Wrap" />
+        </Border>
+
+        <DataGrid x:Name="RecordsGrid" Margin="8" ItemsSource="{Binding PageRows}"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True" HeadersVisibility="Column" GridLinesVisibility="Horizontal" />
+    </DockPanel>
+</Window>

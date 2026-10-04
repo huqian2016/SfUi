@@ -69,11 +69,19 @@ public sealed class AvaloniaAppWindowService : IAppWindowService
 
     public void OpenOrgManage(OrgInfo? initial) => NotPortedYet("Org Management");
 
-    public void OpenBackupRecords(string backupId, BackupObjectInfo info, string displayName, OrgInfo? currentOrg) =>
-        NotPortedYet("Backup Records");
+    public void OpenBackupRecords(string backupId, BackupObjectInfo info, string displayName, OrgInfo? currentOrg)
+    {
+        var viewModel = _services.GetRequiredService<BackupRecordsViewModel>();
+        viewModel.Initialize(backupId, info, displayName, currentOrg);
+        ShowOwned(new BackupRecordsWindow(viewModel));
+    }
 
-    public void OpenBackupCompareRecords(string backupIdA, string backupIdB, string objectName, string displayName, OrgInfo? currentOrg) =>
-        NotPortedYet("Backup Compare Records");
+    public void OpenBackupCompareRecords(string backupIdA, string backupIdB, string objectName, string displayName, OrgInfo? currentOrg)
+    {
+        var viewModel = _services.GetRequiredService<BackupCompareRecordsViewModel>();
+        viewModel.Initialize(backupIdA, backupIdB, objectName, displayName, currentOrg);
+        ShowOwned(new BackupCompareRecordsWindow(viewModel));
+    }
 
     private void NotPortedYet(string feature)
     {

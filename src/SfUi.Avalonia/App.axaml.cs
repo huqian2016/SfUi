@@ -64,6 +64,8 @@ public partial class App : Application
             services.AddTransient<BackupTabViewModel>();
             services.AddTransient<RestoreTabViewModel>();
             services.AddTransient<CompareTabViewModel>();
+            services.AddTransient<BackupRecordsViewModel>();
+            services.AddTransient<BackupCompareRecordsViewModel>();
             services.AddSingleton<MainWindow>();
             Services = services.BuildServiceProvider();
 
@@ -121,6 +123,32 @@ public partial class App : Application
                     {
                         Services.GetRequiredService<IAppWindowService>().OpenBackup(backupOrg);
                         _log?.Info("--open backup: バックアップ ウィンドウを開きました");
+                    }
+                    else if (string.Equals(openTarget, "backuprecords", StringComparison.OrdinalIgnoreCase)
+                        && (mainViewModel.SelectedOrg ?? mainViewModel.Orgs.FirstOrDefault()) is { } recordsOrg)
+                    {
+                        var backup = Services.GetRequiredService<BackupService>().ListBackups().FirstOrDefault();
+                        var info = backup?.Objects.FirstOrDefault();
+                        if (backup is not null && info is not null)
+                        {
+                            var displayName = string.IsNullOrWhiteSpace(info.Label) ? info.Name : info.Label;
+                            Services.GetRequiredService<IAppWindowService>().OpenBackupRecords(backup.Id, info, displayName, recordsOrg);
+                            _log?.Info("--open backuprecords: レコード詳細ウィンドウを開きました");
+                        }
+                    }
+                    else if (string.Equals(openTarget, "comparerecords", StringComparison.OrdinalIgnoreCase)
+                        && (mainViewModel.SelectedOrg ?? mainViewModel.Orgs.FirstOrDefault()) is { } compareOrg)
+                    {
+                        var backups = Services.GetRequiredService<BackupService>().ListBackups();
+                        var backupA = backups.ElementAtOrDefault(0);
+                        var backupB = backups.ElementAtOrDefault(1);
+                        var info = backupA?.Objects.FirstOrDefault();
+                        if (backupA is not null && backupB is not null && info is not null)
+                        {
+                            var displayName = string.IsNullOrWhiteSpace(info.Label) ? info.Name : info.Label;
+                            Services.GetRequiredService<IAppWindowService>().OpenBackupCompareRecords(backupA.Id, backupB.Id, info.Name, displayName, compareOrg);
+                            _log?.Info("--open comparerecords: 差分詳細ウィンドウを開きました");
+                        }
                     }
                 };
             }
