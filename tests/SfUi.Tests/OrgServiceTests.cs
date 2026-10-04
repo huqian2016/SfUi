@@ -86,4 +86,32 @@ public class OrgServiceTests
         Assert.Single(orgs);
         Assert.Equal("ok@example.com", orgs[0].Username);
     }
+
+    [Fact]
+    public void ParseFrontDoorUrl_ReturnsUrl_OnSuccess()
+    {
+        using var document = JsonDocument.Parse(
+            """{"status":0,"result":{"url":"https://hks4--hks4sand1.sandbox.my.salesforce.com/secur/frontdoor.jsp?sid=00DBK00000CHIZi!AQEAQJ5&retURL=%2Flightning%2Fpage%2Fhome"}}""");
+
+        var url = OrgService.ParseFrontDoorUrl(document.RootElement.GetProperty("result"));
+
+        Assert.NotNull(url);
+        Assert.Contains("/secur/frontdoor.jsp?sid=", url);
+        Assert.EndsWith("retURL=%2Flightning%2Fpage%2Fhome", url);
+    }
+
+    [Fact]
+    public void ParseFrontDoorUrl_ReturnsNull_WhenMissingOrNotHttp()
+    {
+        Assert.Null(OrgService.ParseFrontDoorUrl(null));
+
+        using var empty = JsonDocument.Parse("""{"status":0,"result":{}}""");
+        Assert.Null(OrgService.ParseFrontDoorUrl(empty.RootElement.GetProperty("result")));
+
+        using var notHttp = JsonDocument.Parse("""{"url":"not-a-url"}""");
+        Assert.Null(OrgService.ParseFrontDoorUrl(notHttp.RootElement));
+
+        using var wrongType = JsonDocument.Parse("""{"url":123}""");
+        Assert.Null(OrgService.ParseFrontDoorUrl(wrongType.RootElement));
+    }
 }

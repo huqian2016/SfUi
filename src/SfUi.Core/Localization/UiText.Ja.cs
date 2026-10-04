@@ -53,7 +53,7 @@ public static partial class UiText
         ["Main_VsCodeNew"] = "新規ウィンドウで開く（既定）",
         ["Main_VsCodeReuse"] = "現在のウィンドウで開く",
         ["Main_Browser"] = "ブラウザ",
-        ["Main_BrowserTip"] = "クリック: 現在の組織のホームを開く / 右クリック: URL を選択",
+        ["Main_BrowserTip"] = "クリック: 現在の組織のホームを開く（セッション付き・ログイン不要） / 右クリック: URL を選択",
         ["Main_BrowserHome"] = "組織ホーム（既定）",
         ["Main_BrowserSetup"] = "組織の設定（Setup）",
         ["Main_BrowserLogin"] = "Salesforce ログイン",

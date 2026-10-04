@@ -125,6 +125,62 @@ public sealed class OrgService
     /// <summary>トークンキャッシュを破棄する（401 時の再取得などに使用）。</summary>
     public void InvalidateAuth(string targetOrg) => _authCache.TryRemove(targetOrg, out _);
 
+    /// <summary>
+    /// セッション付き（frontdoor.jsp?sid=...）の組織 URL を <c>sf org open --url-only</c> で取得する。
+    /// この URL をブラウザーで開くと再ログイン不要で直接アクセスできる。
+    /// 取得に失敗した場合は null を返す（呼び出し側で通常 URL にフォールバックする）。
+    /// </summary>
+    public async Task<string?> GetFrontDoorUrlAsync(
+        string targetOrg,
+        string? path = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(targetOrg))
+        {
+            return null;
+        }
+
+        var args = new List<string> { "org", "open", "--url-only", "--target-org", targetOrg };
+        if (!string.IsNullOrWhiteSpace(path))
+        {
+            args.Add("--path");
+            args.Add(path);
+        }
+
+        args.Add("--json");
+
+        try
+        {
+            var raw = await _runner.RunAsync(args, cancellationToken: cancellationToken).ConfigureAwait(false);
+            var command = SfCommandResult.From(raw);
+            return command.IsSuccess ? ParseFrontDoorUrl(command.Result) : null;
+        }
+        catch (Exception)
+        {
+            // 認証なし・タイムアウト等はフォールバック対象（例外にしない）
+            return null;
+        }
+    }
+
+    /// <summary>sf org open --url-only の応答（result.url）から frontdoor URL を取り出す。</summary>
+    public static string? ParseFrontDoorUrl(JsonElement? result)
+    {
+        if (result is not { } root || root.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        if (!root.TryGetProperty("url", out var urlElement) || urlElement.ValueKind != JsonValueKind.String)
+        {
+            return null;
+        }
+
+        var url = urlElement.GetString();
+        return !string.IsNullOrWhiteSpace(url) && url.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+            ? url
+            : null;
+    }
+
     private static string? GetString(JsonElement element, string propertyName) =>
         element.TryGetProperty(propertyName, out var value) && value.ValueKind == JsonValueKind.String
             ? value.GetString()

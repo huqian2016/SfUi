@@ -53,7 +53,7 @@ public static partial class UiText
         ["Main_VsCodeNew"] = "Open in new window (default)",
         ["Main_VsCodeReuse"] = "Open in current window",
         ["Main_Browser"] = "Browser",
-        ["Main_BrowserTip"] = "Click: open the org home / Right-click: choose URL",
+        ["Main_BrowserTip"] = "Click: open the org home (session URL, no login needed) / Right-click: choose URL",
         ["Main_BrowserHome"] = "Org home (default)",
         ["Main_BrowserSetup"] = "Org setup",
         ["Main_BrowserLogin"] = "Salesforce login",

@@ -617,6 +617,17 @@ public partial class MainViewModel : ObservableObject
                     }
 
                     StatusMessage = UiText.T("Msg_GetOrgUrl");
+                    var path = target == "org-setup" ? "/lightning/setup/SetupOneHome/home" : "/lightning/page/home";
+
+                    // セッション付き URL（frontdoor・ログイン不要）を優先。取得できない場合は通常 URL にフォールバック。
+                    // セッション URL は認証情報を含むため「最近の URL」には保存しない。
+                    var frontDoor = await _orgService.GetFrontDoorUrlAsync(org, path);
+                    if (!string.IsNullOrWhiteSpace(frontDoor))
+                    {
+                        LaunchUrl(frontDoor, persist: false);
+                        return;
+                    }
+
                     var auth = await _orgService.GetAuthAsync(org);
                     if (string.IsNullOrWhiteSpace(auth.InstanceUrl))
                     {
@@ -624,7 +635,6 @@ public partial class MainViewModel : ObservableObject
                         return;
                     }
 
-                    var path = target == "org-setup" ? "/lightning/setup/SetupOneHome/home" : "/lightning/page/home";
                     LaunchUrl(auth.InstanceUrl.TrimEnd('/') + path);
                     break;
 
@@ -654,13 +664,17 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
-    private void LaunchUrl(string url)
+    private void LaunchUrl(string url, bool persist = true)
     {
         var result = _toolLauncher.LaunchBrowser(url);
         if (result.Success)
         {
-            _recentUrls.Touch(url);
-            ReloadRecentUrls();
+            if (persist)
+            {
+                _recentUrls.Touch(url);
+                ReloadRecentUrls();
+            }
+
             StatusMessage = UiText.T("Msg_BrowserFmt", url);
         }
         else

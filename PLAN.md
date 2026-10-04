@@ -1,6 +1,6 @@
 # SfUi — Salesforce CLI 統合デスクトップツール 実装計画
 
-最終更新: 2026-10-04 / ステータス: Phase 0-13 完了 + AI 接続先の汎用化 + 組織比較 + データ入出力 + アクセス権限タブ + Microsoft Store（MSIX）提出準備完了（v0.7.1 / テスト 356 件 / 実 API スモーク + UIA E2E 検証済み。v0.7.1 は GitHub Release で公開中、Microsoft Store は審査準備中）
+最終更新: 2026-10-04 / ステータス: Phase 0-13 完了 + AI 接続先の汎用化 + 組織比較 + データ入出力 + アクセス権限タブ + Microsoft Store（MSIX）提出準備完了（v0.7.2 / テスト 358 件 / 実 API スモーク + UIA E2E 検証済み。v0.7.1 は GitHub Release で公開中、Microsoft Store は審査準備中）
 
 ## 1. 概要
 
@@ -407,3 +407,8 @@ data/
   - バージョン: **0.7.0** 化（`SfUi.App.csproj` / `AppxManifest.xml` / `dist\SfUi_0.7.0.0_x64.msix` 再ビルド）
   - 2026-10-04 改修（v0.7.1）: オブジェクト / 項目アクセスに検索（行の内容・AND・スペース区切り・表示件数付き）を追加 / UI チェック 24 項目 PASS
   - 2026-10-04: GitHub Release **v0.7.1** 公開（アセット = `SfUi.exe` + `SfUi-v0.7.1-portable.zip`。v0.5.1 → v0.7.1 の累積リリース）
+
+- ✅ **2026-10-04 改修（v0.7.2）**: ブラウザボタンをセッション付き URL（ログイン不要）で開く
+  - `OrgService.GetFrontDoorUrlAsync` を追加し、`sf org open --url-only --target-org <org> --path <path> --json` の `result.url`（`/secur/frontdoor.jsp?sid=...&retURL=...`）で組織ホーム / セットアップを開く。ブラウザーでの再ログイン不要
+  - 取得失敗（未認証・CLI エラー・タイムアウト）時は従来の通常 URL にフォールバック。セッション URL は認証情報を含むため「最近の URL」には保存しない
+  - テスト 358 件（+2: frontdoor URL 解析）/ 実機 UI 検証（ブラウザボタン左クリック → ステータスに `frontdoor.jsp?sid=` 表示・PASS）
