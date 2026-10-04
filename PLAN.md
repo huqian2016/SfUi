@@ -550,3 +550,11 @@ data/
   - 検証: ビルド 0 警告 / スモーク OK / 実ウィンドウのキャプチャ（12 組織 + 既定 (acc) ハイライト + 最終バックアップ列）を確認
   - 開発用オプション: `--open orgmanage`
   - 移植済み: Compare Orgs / Org Info / Data I/O / Backup（3 タブ + レコード詳細 2）/ Org Manage（3 タブ）→ **残るは Phase F（macOS 固有）のみ**
+
+- ✅ **Phase F（2026-10-04 完了・実機検証は未）**: macOS 固有対応
+  - `packaging/make-mac-app.sh`: `dotnet publish`（osx-arm64 / osx-x64、self-contained）→ `SfUi.app`（Contents/MacOS + Info.plist + SfUi.icns）+ 配布 zip。icns は sips/iconutil で生成、署名・公証は環境変数指定時のみ
+  - `packaging/mac/Info.plist`: バンドル ID `jp.hks.sfui` / LSMinimumSystemVersion 11.0 / バージョンは csproj から埋め込み
+  - `.github/workflows/ci.yml`: Windows + macOS マトリクスで ①テスト 395 件 ②Avalonia ビルドを実行
+  - キーボード（Cmd(Meta)+1..9 併設）・フォント（Consolas → Menlo フォールバック）は移植時に実装済み
+  - 検証: bash 構文チェック OK / **Windows からの osx-arm64 クロス publish 成功**（SfUi.Avalonia Mach-O + DLL 群を生成）/ README（EN/JA）に macOS ビルド手順を追記
+  - 未実施: Apple Silicon 実機での起動・署名 / 公証・スクリーンショット（macOS 環境が必要）

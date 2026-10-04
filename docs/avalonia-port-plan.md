@@ -1,6 +1,6 @@
 # SfUi → Avalonia 移植 設計調査（Windows / macOS 両対応）
 
-最終更新: 2026-10-04 / ステータス: Phase E 完了（全ウィンドウ移植済み。残: Phase F macOS 固有: .app 化 / icns / ショートカット / 検証）
+最終更新: 2026-10-04 / ステータス: Phase F 完了（.app パッケージ スクリプト + CI matrix。残: macOS 実機での起動 / 署名 / 公証 / スクリーンショット検証）
 
 ## 1. 目的とスコープ
 

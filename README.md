@@ -144,6 +144,18 @@ dotnet publish src/SfUi.App/SfUi.App.csproj -c Release -r win-x64 `
   --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o dist
 ```
 
+### macOS / Avalonia build
+
+An Avalonia port lives in `src/SfUi.Avalonia` and shares all logic through `SfUi.Core` + `SfUi.Presentation` (UI-framework-free ViewModels). It builds and runs on both Windows and macOS:
+
+```bash
+# Run the Avalonia shell (any OS)
+dotnet run --project src/SfUi.Avalonia
+
+# On macOS: build SfUi.app + distributable zip into dist/mac/
+bash packaging/make-mac-app.sh osx-arm64   # or osx-x64
+```
+
 ### Project layout
 
 ```
@@ -152,11 +164,13 @@ SfUi.sln
 │  ├─ Services      … SfCliRunner, OrgService, SalesforceRestClient, DeployService, ToolLauncherService, …
 │  ├─ Storage       … atomic JSON stores (settings / history / favorites / recent)
 │  └─ Localization  … UiText dictionaries (en / ja)
-├─ src/SfUi.App     … WPF app (MVVM, views, localization markup extension)
-└─ tests/SfUi.Tests … xUnit (387 tests: quoting, JSON parsing, stores, services, org info, org compare, data I/O, backups, org management, localization, …)
+├─ src/SfUi.Presentation … UI-framework-free ViewModels + UI abstractions (shared by WPF and Avalonia)
+├─ src/SfUi.App     … WPF app (Windows; MVVM, views, localization markup extension)
+├─ src/SfUi.Avalonia … Avalonia 11 app (Windows / macOS; shares Core + Presentation)
+└─ tests/SfUi.Tests … xUnit (395 tests: quoting, JSON parsing, stores, services, org info, org compare, data I/O, backups, org management, localization, …)
 ```
 
-Built with C# / .NET 9 / WPF, CommunityToolkit.Mvvm and AvalonEdit.
+Built with C# / .NET 9, CommunityToolkit.Mvvm and AvalonEdit (WPF) / AvaloniaEdit (Avalonia). All business logic is shared through `SfUi.Core` and `SfUi.Presentation`, so fixes apply to both UIs at once.
 
 ---
 
@@ -282,4 +296,16 @@ dotnet run --project src/SfUi.App
 # 配布用の自己完結・単一 EXE を dist/ に作成
 dotnet publish src/SfUi.App/SfUi.App.csproj -c Release -r win-x64 `
   --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o dist
+```
+
+### macOS / Avalonia 版
+
+`src/SfUi.Avalonia` は Avalonia 11 ベースのクロスプラットフォーム版です（ロジックは `SfUi.Core` + `SfUi.Presentation` を WPF 版と共有）:
+
+```bash
+# Avalonia 版を実行（Windows / macOS どちらでも）
+dotnet run --project src/SfUi.Avalonia
+
+# macOS 上で SfUi.app + 配布 zip を作成（dist/mac/）
+bash packaging/make-mac-app.sh osx-arm64   # Intel は osx-x64
 ```

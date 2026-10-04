@@ -55,3 +55,28 @@ explorer.exe "shell:appsFolder\HKS.SfUi_m66ayswnkrx7j!SfUi"
 - **内蔵評価キーは Store 公開前に除去/差し替えを推奨**
 - 版番号は 4 桁（Major.Minor.Build.Revision）。更新のたびに `Version`（csproj）を上げて再ビルド → 再提出
 - GitHub のポータブル配布（exe / zip）とは併存可能（データ場所だけ異なる: Store 版 = `%APPDATA%\SfUi`）
+
+## macOS パッケージ（Avalonia 版、`SfUi.app`）
+
+macOS 上で実行:
+
+```bash
+# Apple Silicon
+bash packaging/make-mac-app.sh osx-arm64
+# Intel
+bash packaging/make-mac-app.sh osx-x64
+```
+
+- `dotnet publish`（self-contained）→ `dist/mac/SfUi.app`（`Contents/MacOS` + `Info.plist` + `SfUi.icns`）+ 配布用 zip を作成
+- バージョンは `src/SfUi.Avalonia/SfUi.Avalonia.csproj` の `<Version>` から自動取得
+- icns は `sips` / `iconutil` で `src/SfUi.App/Resources/SfUi.ico` から生成（ツールが無い環境ではスキップ）
+- 署名 / 公証は環境変数を設定した場合のみ実行（`SFUI_CODESIGN_IDENTITY` / `SFUI_NOTARIZE_APPLE_ID` / `SFUI_NOTARIZE_TEAM_ID` / `SFUI_NOTARIZE_PASSWORD`）
+- データ フォルダは実行ファイル隣接を優先し、書込不可時は `~/Library/Application Support/SfUi` にフォールバック
+
+## CI（GitHub Actions）
+
+`.github/workflows/ci.yml`: Windows / macOS の両方で
+
+1. `dotnet test tests/SfUi.Tests/SfUi.Tests.csproj`（Core + Presentation の 395 テスト）
+2. `dotnet build src/SfUi.Avalonia/SfUi.Avalonia.csproj`（クロスプラットフォーム ビルド確認）
+
