@@ -1,6 +1,6 @@
 # SfUi — Salesforce CLI 統合デスクトップツール 実装計画
 
-最終更新: 2026-10-04 / ステータス: Phase 0-13 完了 + AI 接続先の汎用化 + 組織比較 + データ入出力 + アクセス権限タブ + Microsoft Store（MSIX）提出準備完了（v0.7.3 / テスト 358 件 / 実 API スモーク + UIA E2E 検証済み。v0.7.2 は GitHub Release で公開中、Microsoft Store は審査準備中）
+最終更新: 2026-10-04 / ステータス: Phase 0-13 完了 + AI 接続先の汎用化 + 組織比較 + データ入出力 + アクセス権限タブ + Microsoft Store（MSIX）提出準備完了（v0.7.3 / テスト 358 件 / 実 API スモーク + UIA E2E 検証済み。v0.7.3 は GitHub Release で公開中、Microsoft Store は審査準備中）
 
 ## 1. 概要
 
@@ -420,3 +420,4 @@ data/
   - マウスオーバーで「ラベル + 説明」のツールチップを表示。AI トグルはオン/オフで Sparkle の regular / filled を切替
   - アクセシビリティ / E2E 互換のため `AutomationProperties.Name` にラベルを設定（既存 UI チェック・E2E のボタン名検索が継続動作）
   - 実機検証: トップバー スクリーンショット確認 / ツールチップ probe（UIA でラベル + 説明を確認・PASS）/ 既存 UI チェック OK（テスト 358 件）
+  - 2026-10-04: README のスクリーンショット（EN/JA 各 5 枚）を新 UI で再撮影。GitHub Release **v0.7.3** 公開（アセット = `SfUi.exe` + `SfUi-v0.7.3-portable.zip`）

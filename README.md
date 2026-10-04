@@ -55,7 +55,7 @@ an **Org Info** window for each org, and side-by-side comparison of 2–4 orgs.
 
 1. Download from the [Releases](../../releases) page:
    - **`SfUi.exe`** — the portable single executable, or
-   - **`SfUi-v0.7.2-portable.zip`** — the executable **plus a ready-to-use `data/` folder with 30 sample SOQL / Apex / commands / REST requests already in the history** (just extract and run).
+   - **`SfUi-v0.7.3-portable.zip`** — the executable **plus a ready-to-use `data/` folder with 30 sample SOQL / Apex / commands / REST requests already in the history** (just extract and run).
 2. Put it in any folder and double-click (no installer).
    - Windows SmartScreen may warn because the binary is unsigned — choose *More info* → *Run anyway*.
 3. On first run a `data/` folder is created next to the exe (portable mode).
@@ -146,7 +146,7 @@ SOQL・匿名Apex・デバッグログ・デプロイ・自由コマンド・RES
 
 1. [Releases](../../releases) からダウンロード
    - **`SfUi.exe`** … 実行ファイル単体（サンプル履歴は設定画面から後で追加可）
-   - **`SfUi-v0.7.2-portable.zip`** … exe + サンプル履歴 30 件入りの `data/` フォルダ（解凍してそのまま実行）
+   - **`SfUi-v0.7.3-portable.zip`** … exe + サンプル履歴 30 件入りの `data/` フォルダ（解凍してそのまま実行）
 2. 任意のフォルダに置いてダブルクリック（インストーラー不要）
    - 署名なしのため SmartScreen の警告が出たら「詳細情報」→「実行」
 3. 初回起動時に exe 隣に `data/` フォルダ（設定・履歴・ログ）が作成されます（ポータブル動作）
