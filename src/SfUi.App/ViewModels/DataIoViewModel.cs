@@ -14,19 +14,38 @@ public sealed partial class DataIoViewModel : ObservableObject, IDisposable
     private bool _suppressObjectText;
     private string? _pendingObjectName;
 
-    public DataIoViewModel(SObjectDescribeService describes, DataExportViewModel export, DataImportViewModel import, AppLog log)
+    public DataIoViewModel(
+        SObjectDescribeService describes,
+        DataExportViewModel export,
+        DataImportViewModel import,
+        ObjectAccessViewModel objectAccess,
+        FieldAccessViewModel fieldAccess,
+        RecordAccessViewModel recordAccess,
+        AppLog log)
     {
         _describes = describes;
         Export = export;
         Import = import;
+        ObjectAccess = objectAccess;
+        FieldAccess = fieldAccess;
+        RecordAccess = recordAccess;
         _log = log;
         export.Attach(this);
         import.Attach(this);
+        objectAccess.Attach(this);
+        fieldAccess.Attach(this);
+        recordAccess.Attach(this);
     }
 
     public DataExportViewModel Export { get; }
 
     public DataImportViewModel Import { get; }
+
+    public ObjectAccessViewModel ObjectAccess { get; }
+
+    public FieldAccessViewModel FieldAccess { get; }
+
+    public RecordAccessViewModel RecordAccess { get; }
 
     public OrgInfo? Org { get; private set; }
 
@@ -152,6 +171,19 @@ public sealed partial class DataIoViewModel : ObservableObject, IDisposable
             SelectedObject = null;
             _suppressObjectText = false;
         }
+
+        // 手入力テキストが一覧内の API 名 / 表示名と完全一致したら選択する（describe を読み込む）
+        if (SelectedObject is null && !string.IsNullOrWhiteSpace(value))
+        {
+            var text = value.Trim();
+            var exact = Objects.FirstOrDefault(o =>
+                string.Equals(o.Name, text, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(o.Display, text, StringComparison.OrdinalIgnoreCase));
+            if (exact is not null)
+            {
+                SelectedObject = exact;
+            }
+        }
     }
 
     private async Task LoadDescribeAsync(DataIoObject target)
@@ -229,6 +261,9 @@ public sealed partial class DataIoViewModel : ObservableObject, IDisposable
     {
         Export.Dispose();
         Import.Dispose();
+        ObjectAccess.Dispose();
+        FieldAccess.Dispose();
+        RecordAccess.Dispose();
         DescribeChanged = null;
     }
 }

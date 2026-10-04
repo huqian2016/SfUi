@@ -32,6 +32,15 @@
             <TabItem Header="{loc:Tr DataIo_TabImport}">
                 <views:DataImportView DataContext="{Binding Import}" />
             </TabItem>
+            <TabItem Header="{loc:Tr DataIo_TabObjectAccess}">
+                <views:ObjectAccessView DataContext="{Binding ObjectAccess}" />
+            </TabItem>
+            <TabItem Header="{loc:Tr DataIo_TabFieldAccess}">
+                <views:FieldAccessView DataContext="{Binding FieldAccess}" />
+            </TabItem>
+            <TabItem Header="{loc:Tr DataIo_TabRecordAccess}">
+                <views:RecordAccessView DataContext="{Binding RecordAccess}" />
+            </TabItem>
         </TabControl>
     </DockPanel>
 </Window>

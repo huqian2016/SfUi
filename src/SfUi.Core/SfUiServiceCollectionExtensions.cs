@@ -33,6 +33,8 @@ public static class SfUiServiceCollectionExtensions
         services.AddSingleton<SObjectDescribeService>();
         services.AddSingleton<DataExportService>();
         services.AddSingleton<DataImportService>();
+        services.AddSingleton<PermissionAccessService>();
+        services.AddSingleton<RecordAccessService>();
         return services;
     }
 }

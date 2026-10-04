@@ -22,6 +22,7 @@ public partial class App : Application
     private bool _smokeOrgInfoRefresh;
     private string? _smokeCompare;
     private string? _smokeDataIo;
+    private string? _smokeAccess;
     private int _dispatcherExceptionCount;
 
     protected override void OnStartup(StartupEventArgs e)
@@ -35,6 +36,7 @@ public partial class App : Application
         _smokeOrgInfoRefresh = _smokeTest && e.Args.Any(a => string.Equals(a, "--smoke-orginfo-refresh", StringComparison.OrdinalIgnoreCase));
         _smokeCompare = _smokeTest ? ReadOption(e.Args, "--smoke-compare") : null;
         _smokeDataIo = _smokeTest ? ReadOption(e.Args, "--smoke-dataio") : null;
+        _smokeAccess = _smokeTest ? ReadOption(e.Args, "--smoke-access") : null;
         var dataDir = ReadOption(e.Args, "--data-dir") ?? Environment.GetEnvironmentVariable("SFUI_DATA_DIR");
 
         var paths = AppPaths.Resolve(dataDir);
@@ -62,6 +64,9 @@ public partial class App : Application
         services.AddTransient<DataIoViewModel>();
         services.AddTransient<DataExportViewModel>();
         services.AddTransient<DataImportViewModel>();
+        services.AddTransient<ObjectAccessViewModel>();
+        services.AddTransient<FieldAccessViewModel>();
+        services.AddTransient<RecordAccessViewModel>();
         services.AddTransient<DataIoWindow>();
         services.AddSingleton<MainWindow>();
         Services = services.BuildServiceProvider();
@@ -211,6 +216,11 @@ public partial class App : Application
             {
                 exitCode = 1;
             }
+
+            if (!string.IsNullOrWhiteSpace(_smokeAccess) && !await RunAccessSmokeAsync(_smokeAccess))
+            {
+                exitCode = 1;
+            }
         }
         catch (Exception ex)
         {
@@ -289,6 +299,71 @@ public partial class App : Application
         catch (Exception ex)
         {
             _log.Error("--smoke-dataio: 検証に失敗しました", ex);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// --smoke-access: 権限カタログ・オブジェクト/項目アクセス・レコードアクセス（UserRecordAccess）を検証する（読み取りのみ）。
+    /// </summary>
+    private async Task<bool> RunAccessSmokeAsync(string target)
+    {
+        try
+        {
+            var orgs = await Services.GetRequiredService<OrgService>().ListOrgsAsync();
+            var org = orgs.FirstOrDefault(o =>
+                string.Equals(o.Alias, target, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(o.Username, target, StringComparison.OrdinalIgnoreCase));
+            if (org is null)
+            {
+                _log.Error($"--smoke-access: 組織が見つかりません: {target}");
+                return false;
+            }
+
+            var permissions = Services.GetRequiredService<PermissionAccessService>();
+            var catalog = await permissions.GetCatalogAsync(target);
+            _log.Info(
+                $"--smoke-access: 権限カタログ {catalog.Subjects.Count} 件（プロファイル {catalog.Subjects.Count(s => s.Kind == PermissionSubjectKind.Profile)}" +
+                $" / 権限セット {catalog.Subjects.Count(s => s.Kind == PermissionSubjectKind.PermissionSet)}" +
+                $" / PSG {catalog.Subjects.Count(s => s.Kind == PermissionSubjectKind.PermissionSetGroup)} / 構成 {catalog.GroupComponents.Count} グループ）");
+
+            var objectRows = await permissions.GetObjectAccessAsync(target, "Account");
+            _log.Info(
+                $"--smoke-access: オブジェクトアクセス(Account) {objectRows.Count} 行（読取 {objectRows.Count(r => r.Read)} / 作成 {objectRows.Count(r => r.Create)}" +
+                $" / 更新 {objectRows.Count(r => r.Edit)} / 参照すべて {objectRows.Count(r => r.ViewAllRecords)} / 更新すべて {objectRows.Count(r => r.ModifyAllRecords)}）");
+
+            var fieldAccess = await permissions.GetFieldAccessAsync(target, "Account");
+            _log.Info(
+                $"--smoke-access: 項目アクセス(Account) 主体 {fieldAccess.BySubject.Count} 件（項目行あり {fieldAccess.BySubject.Count(p => p.Value.Count > 0)}" +
+                $" / Name 権限あり {fieldAccess.BySubject.Count(p => p.Value.ContainsKey("Account.Name"))}）");
+
+            var recordAccess = Services.GetRequiredService<RecordAccessService>();
+            var users = await recordAccess.ListActiveUsersAsync(target);
+            _log.Info($"--smoke-access: 有効ユーザー {users.Count} 件");
+
+            var query = await recordAccess.QueryRecordsAsync(target, "SELECT Id, Name FROM Account LIMIT 5");
+            _log.Info($"--smoke-access: 対象レコード {query.Records.Count} 件 / 列 {string.Join(",", query.Columns)} / truncated={query.Truncated}");
+
+            if (users.Count > 0)
+            {
+                var ids = query.Records
+                    .Select(r => r.TryGetValue("Id", out var id) ? id : null)
+                    .Where(id => !string.IsNullOrEmpty(id))
+                    .Select(id => id!)
+                    .ToList();
+                if (ids.Count > 0)
+                {
+                    var flags = await recordAccess.GetAccessFlagsAsync(target, users[0].Id, ids);
+                    _log.Info(
+                        $"--smoke-access: UserRecordAccess {users[0].Name} × {ids.Count} 件 → {flags.Count} 行（読取あり {flags.Values.Count(f => f.Read)} / 編集あり {flags.Values.Count(f => f.Edit)}）");
+                }
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _log.Error("--smoke-access: 検証に失敗しました", ex);
             return false;
         }
     }

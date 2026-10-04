@@ -1,6 +1,6 @@
 # SfUi — Salesforce CLI 統合デスクトップツール 実装計画
 
-最終更新: 2026-10-04 / ステータス: Phase 0-12 完了 + AI 接続先の汎用化 + 組織比較 + データ入出力 + Microsoft Store（MSIX）提出準備完了（v0.6.0 / テスト 341 件 / 実 API スモーク + UIA E2E 検証済み。v0.2.0 は GitHub Release で公開中、Microsoft Store は審査準備中）
+最終更新: 2026-10-04 / ステータス: Phase 0-13 完了 + AI 接続先の汎用化 + 組織比較 + データ入出力 + アクセス権限タブ + Microsoft Store（MSIX）提出準備完了（v0.7.0 / テスト 356 件 / 実 API スモーク + UIA E2E 検証済み。v0.2.0 は GitHub Release で公開中、Microsoft Store は審査準備中）
 
 ## 1. 概要
 
@@ -258,6 +258,21 @@ data/
 - バージョン: **0.6.0**（`SfUi.App.csproj` = 0.6.0 / `AppxManifest.xml` = 0.6.0.0 / MSIX = `dist\SfUi_0.6.0.0_x64.msix`）
 - 知見: Composite API は各レコードの**先頭**に `attributes: {type: ...}` が必須（欠けると JSON_PARSER_ERROR）/ WPF の確認 MessageBox は UIA のボタン列挙が不安定なため Enter 送信で確定 / PowerShell の 1 要素配列スカラー展開（`@()` で回避）に注意
 
+### Phase 14: データ入出力ウィンドウ アクセス権限タブ（オブジェクト / 項目 / レコード） ✅
+
+データ入出力ウィンドウに、権限（アクセス権）を一覧化する 3 タブを追加。設計書と実 API 調査結果: `docs/access-tabs-plan.md`。
+
+- オブジェクトアクセス: 選択中オブジェクトに対する Permission Sets / Permission Set Groups / Profiles の権限を一覧（種類 / ラベル / API 名 / カスタム / Read / Create / Edit / Delete / View All Records / Modify All Records / View All Fields）。PSG 行は構成 PS の和集合
+- 項目アクセス: 項目（行）× 権限主体（列）のマトリクス（セル = R / E）。種類フィルタ（プロファイル / 権限セット / PSG）と列絞り込み付き。データ元は `FieldPermissions` の明示行のみ
+- レコードアクセス: 任意 SOQL で対象レコードを抽出（上限 10,000 件・queryMore）→ 200 件 / ページでページング + 検索。有効ユーザーをチェックボックス選択（名前検索・3 行でスクロール・全選択 / 全解除）し、UserRecordAccess でユーザーごとの読取 / 編集 / 削除 / 転送を表示（リンク列でレコードをブラウザーで開ける）
+- 実測した API 制約: UserRecordAccess は `UserId = '<単一 ID>'` のみ（IN 不可）・SELECT 可は RecordId / Has*Access / MaxAccessLevel のみ・**1 クエリ 200 行上限**（ページサイズ 200 はこの上限に適合）・アクセスなしでも全 false 行が返る
+- Core: `PermissionSubject` / `ObjectAccessRow` / `FieldAccessSnapshot` / `RecordAccessUser` / `RecordQueryResult` / `UserRecordAccessFlags` + `PermissionAccessService` / `RecordAccessService` / `RestQueryPager`（query + queryMore 共通化）
+- テスト: 356 件（+15: カタログ解析 / PSG 和集合 / 権限行マッピング / アクセス行 / チャンク分割 / レコード解析）
+- スモーク: `--smoke --smoke-access <org>`（カタログ / オブジェクト権限 / 項目権限 / 有効ユーザー / 対象レコード / UserRecordAccess）
+- UI チェック（`C:\huqian\sfui-access-tabs-check.ps1`・読み取りのみ）: 全 20 項目 PASS（178 行 / 71 項目 × 178 主体 / 種類フィルタ 178 → 160 列 / ユーザー 13 人のスクロールリスト / 15 件ページング / ユーザー権限列 / 検索絞り込み）
+- バージョン: **0.7.0**（`SfUi.App.csproj` = 0.7.0 / `AppxManifest.xml` = 0.7.0.0 / MSIX = `dist\SfUi_0.7.0.0_x64.msix`）
+- 知見: PSG には IsCustom が無い（常にカスタム扱い）/ PermissionSetGroupComponent にミューティング識別が無いため和集合で近似 / プロファイルは `IsOwnedByProfile = true` の PermissionSet（ラベル = Profile.Name）/ UIA の ValuePattern.SetValue では WPF ComboBox のテキストサーチが働かない → オブジェクト名の完全一致で選択するよう DataIoViewModel を改善
+
 ## 10. 検証計画
 
 1. `dotnet build` / `dotnet test`（引数クォート・JSON 解析・ストア round-trip・CSV）
@@ -382,3 +397,10 @@ data/
   - Core 9 ファイル（CSV パーサ / 型変換 / マッピング / バッチ計画 / 結果マッピング / SOQL ビルダ / describe キャッシュ / エクスポート / インポートサービス）+ テスト 64 件（合計 341 件成功）/ UI = DataIoWindow（エクスポート・インポートの 2 タブ + 共通の組織・オブジェクト選択と項目数表示）/ メイン「データ入出力」+ 組織情報オブジェクトタブ「データ入出力」（選択中オブジェクトを事前選択）
   - E2E（`C:\huqian\sfui-dataio-e2e.ps1`）: REST 挿入 → エクスポート（CSV/JSON）→ 更新 → 削除 → Bulk エクスポート/挿入/削除まで 25 項目 PASS / `sf data query` と件数一致（挿入 2 → 更新 2 → 削除 0 → Bulk 挿入 1 → Bulk 削除 0）。知見: composite/sobjects は `attributes` を先頭に含める必要あり / 確認 MessageBox は UIA ボタン列挙が不安定で Enter 送信で確定 / PS の 1 要素配列スカラー展開に `@()` で対処
   - バージョン: **0.6.0** 化（`SfUi.App.csproj` / `AppxManifest.xml` / `dist\SfUi_0.6.0.0_x64.msix` 再ビルド）
+
+- ✅ **Phase 14（2026-10-04 完了）**: データ入出力ウィンドウ アクセス権限タブ（設計: `docs/access-tabs-plan.md`）
+  - オブジェクトアクセス（PS / PSG / プロファイル × 11 列・PSG は構成 PS の和集合）/ 項目アクセス（項目 × 主体のマトリクス・種類フィルタ・列絞り込み）/ レコードアクセス（UserRecordAccess・ユーザーチェックボックス + 名前検索・3 行スクロール・SOQL 抽出・200 件ページング・検索・レコードリンク）
+  - テスト 356 件成功（+15）/ スモーク `--smoke --smoke-access acc`（カタログ 178 件・オブジェクト権限 178 行・項目権限 178 主体・有効ユーザー 13 件・UserRecordAccess 動作）/ UI チェック 20 項目 PASS
+  - 実測制約: UserRecordAccess は単一 UserId のみ・200 行 / クエリ上限（ページ 200 件に一致）・アクセスなしでも全 false 行あり
+  - 改善: 対象オブジェクト欄への API 名完全一致入力で describe を読み込むように（UIA / 手入力どちらでも安定）
+  - バージョン: **0.7.0** 化（`SfUi.App.csproj` / `AppxManifest.xml` / `dist\SfUi_0.7.0.0_x64.msix` 再ビルド）
