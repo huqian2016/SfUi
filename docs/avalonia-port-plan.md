@@ -70,18 +70,20 @@
 
 ```
 SfUi.sln
-├─ src/SfUi.Core        （変更: プラットフォーム抽象化のみ / 両 OS でビルド）
-├─ src/SfUi.App         （現行 WPF。当面維持し、移行完了まで並存）
-├─ src/SfUi.Avalonia    （新規: net9.0 / Avalonia 11.x。Core をそのまま参照）
-└─ tests/SfUi.Tests     （現行。Core 用はそのまま両 OS で実行）
+├─ src/SfUi.Core          （変更: プラットフォーム抽象化のみ / 両 OS でビルド・テスト）
+├─ src/SfUi.Presentation  （新規: 全 ViewModel + UI サービス interface。UI フレームワーク非依存）
+├─ src/SfUi.App           （現行 WPF。当面維持し、移行完了まで並存。Core + Presentation を参照）
+├─ src/SfUi.Avalonia      （新規: net9.0 / Avalonia 11.x。Windows / macOS 共通 UI の本命）
+└─ tests/SfUi.Tests       （現行。Core / Presentation 分はそのまま両 OS で実行）
 ```
 
 - **採用理由**: Core が WPF 非依存のため、WPF 版を壊さず Avalonia 版を並行開発できる。`CommunityToolkit.Mvvm` は Avalonia でもそのまま使える（`ObservableObject` / `RelayCommand`）。
+- **ViewModel も共有する**: VM を `SfUi.Presentation` に集約し、WPF 版 / Avalonia 版の両方から参照する（⇒ 13 章）。ロジックの修正は常に 1 箇所で完結する。
 - 移行完了後、WPF 版を削除して `SfUi.Avalonia` を `SfUi.App` にリネームするのが最終形。
 
 ### 3-2. ViewModel の流用と抽象化
 
-VM の WPF 依存は 3 系統のみ。**インターフェースを Core 直下（`SfUi.Core/UI/` など）に置き、WPF 版/Avalonia 版それぞれで実装**する。
+VM の WPF 依存は 3 系統のみ。**VM は新設の `SfUi.Presentation`（UI フレームワーク非依存）へ移動し、`IDialogService` などのインターフェースも同プロジェクトに置く。実装は WPF 版 / Avalonia 版がそれぞれ持ち、DI 登録（composition root）の 1 箇所だけで差し替える。** これにより VM・ロジックの修正は常に 1 箇所（Presentation / Core）で完結する。
 
 | 抽象化 | 置き換え対象 | 実装（Avalonia 側） |
 |---|---|---|
@@ -219,7 +221,7 @@ public interface IUiDispatcher
 
 | フェーズ | 内容 | 目安 |
 |---|---|---|
-| A | Core のプラットフォーム抽象化（SfCliRunner / ToolLauncher / AppPaths / 設定文言）+ テスト調整 | 1〜2 日 |
+| A | Core のプラットフォーム抽象化（SfCliRunner / ToolLauncher / AppPaths / 設定文言）+ **ViewModel を `SfUi.Presentation` へ抽出**（MessageBox / ダイアログ / Dispatcher の interface 化）+ テスト調整 | 2〜3 日 |
 | B | `SfUi.Avalonia` 骨組み（DI / テーマ / Icons / `{loc:Tr}` / IDialogService / IFilePicker / Dispatcher）+ MainWindow + ツール ランチャー + 設定 | 2〜3 日 |
 | C | 小〜中ビュー（History / Log / Command / ApiConsole / Soql / Apex / QuickPanel / AiChat / Deploy） | 2〜3 日 |
 | D | グリッド大物（Data I/O + アクセス 3 タブ / Org Info 5 ビュー / Compare Orgs）※動的列の再設計含む | 4〜6 日 |
@@ -256,9 +258,72 @@ public interface IUiDispatcher
 | 資産 | 再利用 |
 |---|---|
 | `SfUi.Core` サービス 30 / モデル / ストア / ローカライズ辞書（967 キー ×2 言語） | **そのまま**（プラットフォーム抽象化 4 ファイルのみ） |
-| ViewModel 42 ファイル（10,799 行） | **約 95% そのまま**（ダイアログ / ファイル / Dispatcher を抽象化後） |
+| ViewModel 42 ファイル（10,799 行） | **約 95% そのまま**（ダイアログ / ファイル / Dispatcher を抽象化後、`SfUi.Presentation` へ移動して WPF / Avalonia 共有） |
 | `UiText` / `CsvParser` / `CsvExporter` / `AtomicJsonFile` / REST / SOAP | **そのまま** |
 | 387 テスト | **そのまま**（数件 OS 別化） |
 | スモーク CLI（`--smoke-*`） | 引数・ログ形式を維持して移植 |
 | UIA 検証スクリプト（Windows） | Windows 版のみ継続 |
 | スクリーンショット パイプライン | モック REST + デモ データは流用（スクリプトは Windows 専用 → mac は別途） |
+
+## 12. ビルド / 配布モデル（クロス publish と CI）
+
+### 12-1. 結論
+
+- **macOS 実機でのビルドは必須ではない**。.NET の**クロス publish** により、**Windows から macOS 用バイナリを作成できる**。
+- ただし次の 2 点は macOS（または CI の macOS ランナー）が必要:
+  1. **署名・公証（`codesign` / `notarytool`）** — Apple のツールチェーン。Gatekeeper を通過する配布には macOS 上での処理が必要
+  2. **実機動作確認** — Finder 連携・キーボード（Cmd）・フォント・セキュリティ警告など
+- 現行 **WPF 版は Windows 専用**（win-x64 ビルドは macOS では動かない）。macOS 対応は Avalonia 版で実現する。
+
+### 12-2. publish コマンド（Windows マシンから実行可能）
+
+```powershell
+# Windows 用
+#   dotnet publish src/SfUi.Avalonia -c Release -r win-x64 --self-contained true `
+#     -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o dist/win-x64
+
+# macOS 用（Apple Silicon）。Windows 上からでも作成できる
+dotnet publish src/SfUi.Avalonia -c Release -r osx-arm64 --self-contained true `
+  -p:PublishSingleFile=true -o dist/osx-arm64
+# Intel Mac が必要なら osx-x64 も追加（.NET はユニバーサル バイナリ非対応 → 個別配布 or lipo で結合）
+```
+
+- 制約: **Native AOT はクロス OS 不可**（本アプリは未使用のため影響なし）。ReadyToRun のクロス生成も既定無効。
+- 成果物は自己完結の単一ファイル → **`SfUi.app`（`Info.plist` + `.icns`）へパッケージするスクリプトを 1 本追加**（組立は Windows でも可能。署名・公証のみ macOS）。
+
+### 12-3. CI（推奨構成）
+
+- GitHub Actions matrix: `windows-latest` / `macos-latest`
+  - 両 OS: `dotnet build` + `dotnet test`（Core / Presentation の 387 テスト）
+  - Windows: 既存スモーク（`--smoke*`）+ UIA スクリプト
+  - macOS: `--smoke` 実行 + `dotnet publish -r osx-arm64`（署名は証明書がある場合のみ）
+- これにより**手元に Mac が無くても両 OS のビルド・テスト検証が回る**（配布物の最終確認のみ実機推奨）。
+
+## 13. シングルソース戦略（1 か所の修正で両 OS に反映）
+
+「ロジックは OS 非依存・修正は 1 箇所」を守るためのルール:
+
+1. **ロジックの置き場所を 2 プロジェクトに限定**
+   - `SfUi.Core`（CLI / REST / ストア / モデル）+ `SfUi.Presentation`（全 ViewModel + UI サービス interface）
+   - どちらも **UI フレームワーク参照禁止・OS API 直接参照禁止**（CI でガード可: `#if WINDOWS` / `OperatingSystem.Is` / `C:\` / `.exe` 等の grep 検査）
+2. **OS 差分は「interface + 実装 2 つ + DI 登録 1 箇所」に集約**
+   - `ISfCliLocator` / `IShellLauncher` / `IAppPathsProvider` / `IDialogService` / `IFilePickerService` / `IUiDispatcher`
+   - 実装はアプリ側の `Platform/Windows/…` と `Platform/Mac/…` に置き、**登録だけが分岐**（composition root）
+3. **UI も 1 コードベース（SfUi.Avalonia）で両 OS をカバー**
+   - Windows / macOS とも同一ソースを RID 違いで publish → ビューの修正も 1 箇所
+   - Windows 固有の表示差（ショートカットの Ctrl/Cmd 表記など）は `PlatformInfo.ShortcutModifier` のような**実行時プロパティ 1 つ**で出し分け
+4. **WPF 版の扱い**
+   - 移行期間中は凍結（バグ修正のみ）。新機能は Core / Presentation / Avalonia にのみ追加 → 二重実装を作らない
+   - Presentation 抽出後は、VM の修正が WPF 版にも自動で反映される
+5. **テストで担保**
+   - Core / Presentation のテストを**両 OS の CI で常時実行**（OS 依存の混入はここで検出）
+
+最終形:
+
+```
+SfUi.Core / SfUi.Presentation     ← 唯一のロジック（両 OS 共用・テストも単一）
+        ▲
+   SfUi.Avalonia（1 ソース）
+        ├─ publish -r win-x64    → Windows 版
+        └─ publish -r osx-arm64  → macOS 版
+```
