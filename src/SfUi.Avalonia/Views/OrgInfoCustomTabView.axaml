@@ -1,0 +1,42 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:SfUi.Avalonia"
+             xmlns:conv="clr-namespace:SfUi.Avalonia.Converters"
+             x:Class="SfUi.Avalonia.Views.OrgInfoCustomTabView">
+    <UserControl.Resources>
+        <conv:IsNotEmptyConverter x:Key="IsNotEmpty" />
+    </UserControl.Resources>
+    <DockPanel>
+
+        <!-- ツールバー: 参照元の再取得 + 項目編集 -->
+        <Border DockPanel.Dock="Top" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
+            <StackPanel Orientation="Horizontal">
+                <Button Content="{loc:Tr OrgInfo_RefreshSection}" Padding="10,2" Margin="0,0,12,0"
+                        Command="{Binding RefreshCommand}" IsEnabled="{Binding CanRefresh}"
+                        ToolTip.Tip="{loc:Tr OrgInfo_Custom_RefreshTip}" />
+                <Button Content="{loc:Tr OrgInfo_Custom_Edit}" Padding="10,2" Margin="0,0,12,0"
+                        Command="{Binding EditCommand}" ToolTip.Tip="{loc:Tr OrgInfo_Custom_EditTip}" />
+                <TextBlock Text="{Binding CountText}" VerticalAlignment="Center" Foreground="#666666" />
+                <TextBlock Text="{loc:Tr OrgInfo_Loading}" VerticalAlignment="Center" Margin="12,0,0,0" Foreground="#666666"
+                           IsVisible="{Binding IsLoading}" />
+            </StackPanel>
+        </Border>
+
+        <!-- ステータス: 取得時刻 + エラー -->
+        <Border DockPanel.Dock="Bottom" Background="#F7F7F7" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="8,4">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="{Binding FetchedAtText}" Foreground="#555555" />
+                <TextBlock Text="{Binding ErrorText}" Foreground="#B00020" Margin="12,0,0,0" TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
+
+        <Grid>
+            <DataGrid x:Name="ItemsGrid" ItemsSource="{Binding Items}"
+                      AutoGenerateColumns="False" IsReadOnly="True"
+                      HeadersVisibility="Column" GridLinesVisibility="All" />
+            <TextBlock Text="{Binding EmptyMessage}" Foreground="#888888"
+                       IsVisible="{Binding EmptyMessage, Converter={StaticResource IsNotEmpty}}"
+                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Grid>
+    </DockPanel>
+</UserControl>

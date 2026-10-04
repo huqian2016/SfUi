@@ -1,0 +1,110 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:SfUi.Avalonia"
+             x:Class="SfUi.Avalonia.Views.OrgInfoMySettingsView">
+    <UserControl.Styles>
+        <!-- 利用可能リストのグループ見出し行 -->
+        <Style Selector="TextBlock.groupHeader">
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Foreground" Value="#555555" />
+            <Setter Property="Margin" Value="0,6,0,2" />
+        </Style>
+    </UserControl.Styles>
+    <DockPanel>
+
+        <!-- 上部: カスタムタブの選択・作成・名前変更・保存 -->
+        <Border DockPanel.Dock="Top" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="{loc:Tr OrgInfo_Custom_TabLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                <ComboBox x:Name="TabCombo" Width="200" ItemsSource="{Binding Tabs}"
+                          SelectedItem="{Binding SelectedTab, Mode=TwoWay}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Title}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                <Button Content="{loc:Tr OrgInfo_Custom_New}" Margin="6,0,0,0" Padding="10,2"
+                        Command="{Binding CreateCommand}" />
+                <Button Content="{loc:Tr OrgInfo_Custom_Delete}" Margin="6,0,0,0" Padding="10,2"
+                        Command="{Binding DeleteCommand}" IsEnabled="{Binding HasSelection}" />
+                <Border Width="1" Background="#CCCCCC" Margin="10,2,10,2" />
+                <TextBlock Text="{loc:Tr OrgInfo_Custom_NameLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                <TextBox x:Name="NameBox" Width="180" VerticalContentAlignment="Center"
+                         Text="{Binding EditName, Mode=TwoWay}"
+                         IsEnabled="{Binding HasSelection}" />
+                <Button Content="{loc:Tr OrgInfo_Custom_Save}" Margin="6,0,0,0" Padding="12,2"
+                        Command="{Binding SaveCommand}" IsEnabled="{Binding HasSelection}" />
+                <TextBlock Text="{Binding StatusText}" Margin="10,0,0,0" VerticalAlignment="Center" Foreground="#2E7D32" />
+            </StackPanel>
+        </Border>
+
+        <!-- 下部: ヒント -->
+        <Border DockPanel.Dock="Bottom" Background="#F7F7F7" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="8,4">
+            <TextBlock Text="{Binding HintText}" Foreground="#666666" TextWrapping="Wrap" />
+        </Border>
+
+        <!-- ピッカー: 左 = 利用可能（検索付き・グループ化） / 右 = 選択済み（並べ替え可） -->
+        <Grid Margin="8" IsEnabled="{Binding HasSelection}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <DockPanel Grid.Column="0">
+                <TextBlock DockPanel.Dock="Top" Text="{loc:Tr OrgInfo_Custom_Available}" FontWeight="Bold" Margin="0,0,0,4" />
+                <TextBox DockPanel.Dock="Top" Margin="0,0,0,4" VerticalContentAlignment="Center"
+                         Text="{Binding SearchText, Mode=TwoWay}"
+                         ToolTip.Tip="{loc:Tr OrgInfo_Custom_SearchTip}" />
+                <ListBox x:Name="AvailableList" ItemsSource="{Binding AvailableDisplay}"
+                         DoubleTapped="AvailableList_MouseDoubleClick">
+                    <ListBox.Styles>
+                        <Style Selector="ListBoxItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        </Style>
+                    </ListBox.Styles>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Label}" Classes.groupHeader="{Binding IsHeader}" />
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+
+            <StackPanel Grid.Column="1" Margin="8,24,8,0" VerticalAlignment="Top">
+                <Button Content="{loc:Tr OrgInfo_Custom_Add}" Padding="10,2" Margin="0,0,0,6"
+                        Command="{Binding AddItemCommand}"
+                        CommandParameter="{Binding #AvailableList.SelectedItem}" />
+                <Button Content="{loc:Tr OrgInfo_Custom_Remove}" Padding="10,2"
+                        Command="{Binding RemoveItemCommand}"
+                        CommandParameter="{Binding #SelectedList.SelectedItem}" />
+            </StackPanel>
+
+            <DockPanel Grid.Column="2">
+                <TextBlock DockPanel.Dock="Top" Text="{loc:Tr OrgInfo_Custom_Selected}" FontWeight="Bold" Margin="0,0,0,4" />
+                <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,4,0,0">
+                    <Button Content="{loc:Tr OrgInfo_Custom_MoveUp}" Padding="10,2" Margin="0,0,6,0"
+                            Command="{Binding MoveUpCommand}"
+                            CommandParameter="{Binding #SelectedList.SelectedItem}" />
+                    <Button Content="{loc:Tr OrgInfo_Custom_MoveDown}" Padding="10,2"
+                            Command="{Binding MoveDownCommand}"
+                            CommandParameter="{Binding #SelectedList.SelectedItem}" />
+                </StackPanel>
+                <ListBox x:Name="SelectedList" ItemsSource="{Binding SelectedItems}"
+                         DoubleTapped="SelectedList_MouseDoubleClick">
+                    <ListBox.Styles>
+                        <Style Selector="ListBoxItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        </Style>
+                    </ListBox.Styles>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Label}" />
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+        </Grid>
+    </DockPanel>
+</UserControl>

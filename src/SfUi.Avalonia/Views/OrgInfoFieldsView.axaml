@@ -1,0 +1,38 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="clr-namespace:SfUi.Avalonia.Views"
+             xmlns:vm="clr-namespace:SfUi.App.ViewModels;assembly=SfUi.Presentation"
+             xmlns:loc="clr-namespace:SfUi.Avalonia"
+             xmlns:conv="clr-namespace:SfUi.Avalonia.Converters"
+             x:Class="SfUi.Avalonia.Views.OrgInfoFieldsView">
+    <UserControl.Resources>
+        <conv:IsNullConverter x:Key="IsNull" />
+    </UserControl.Resources>
+    <UserControl.DataTemplates>
+        <DataTemplate DataType="{x:Type vm:OrgInfoSectionViewModel}">
+            <views:OrgInfoSectionView />
+        </DataTemplate>
+    </UserControl.DataTemplates>
+    <DockPanel>
+
+        <!-- ツールバー: オブジェクト選択（選択時に遅延取得） -->
+        <Border DockPanel.Dock="Top" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="{loc:Tr OrgInfo_Fields_SelectObject}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                <AutoCompleteBox x:Name="FieldObjectComboBox" Width="340" MinimumPrefixLength="0"
+                                 FilterMode="Contains"
+                                 ItemsSource="{Binding Objects}"
+                                 ValueMemberBinding="{Binding Display}" />
+                <TextBlock Text="{Binding Hint}" VerticalAlignment="Center" Margin="12,0,0,0" Foreground="#666666"
+                           TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+        </Border>
+
+        <Grid>
+            <ContentControl Content="{Binding Section}" />
+            <TextBlock Text="{loc:Tr OrgInfo_Fields_NoSelection}" Foreground="#888888"
+                       IsVisible="{Binding Section, Converter={StaticResource IsNull}}"
+                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Grid>
+    </DockPanel>
+</UserControl>

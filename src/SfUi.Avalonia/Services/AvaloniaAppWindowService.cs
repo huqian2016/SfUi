@@ -25,14 +25,24 @@ public sealed class AvaloniaAppWindowService : IAppWindowService
         _top = top;
     }
 
-    public void OpenOrgInfo(OrgInfo org) => NotPortedYet("Org Info");
+    /// <summary>組織情報ウィンドウを開く（非モーダル・複数同時表示可）。</summary>
+    public void OpenOrgInfo(OrgInfo org)
+    {
+        var viewModel = _services.GetRequiredService<OrgInfoViewModel>();
+        viewModel.Initialize(org);
+        ShowOwned(new OrgInfoWindow(viewModel));
+    }
 
     /// <summary>組織比較ウィンドウを開く（非モーダル・複数同時表示可）。</summary>
     public void OpenCompareOrgs(IReadOnlyList<OrgInfo> orgs)
     {
         var viewModel = _services.GetRequiredService<CompareOrgsViewModel>();
         viewModel.Initialize(orgs);
-        var window = new CompareOrgsWindow(viewModel);
+        ShowOwned(new CompareOrgsWindow(viewModel));
+    }
+
+    private void ShowOwned(Window window)
+    {
         if (_top.Current is Window owner && !ReferenceEquals(owner, window))
         {
             window.Show(owner);

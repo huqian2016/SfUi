@@ -1,0 +1,105 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:SfUi.Avalonia.Views"
+        xmlns:vm="clr-namespace:SfUi.App.ViewModels;assembly=SfUi.Presentation"
+        xmlns:loc="clr-namespace:SfUi.Avalonia"
+        x:Class="SfUi.Avalonia.Views.OrgInfoWindow"
+        Title="{Binding Title}"
+        Height="760" Width="1280" MinWidth="960" MinHeight="540"
+        WindowStartupLocation="CenterOwner"
+        FontSize="13">
+    <DockPanel>
+
+        <!-- 上部: すべて再取得 / キャンセル / 最終取得時刻 -->
+        <Border DockPanel.Dock="Top" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
+            <DockPanel>
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                    <Button Content="{loc:Tr OrgInfo_RefreshAll}" Padding="10,2"
+                            Command="{Binding RefreshAllCommand}" IsEnabled="{Binding CanRefresh}"
+                            ToolTip.Tip="{loc:Tr OrgInfo_RefreshAllTip}" />
+                    <Button Content="{loc:Tr Common_Cancel}" Padding="10,2" Margin="6,0,0,0"
+                            Command="{Binding CancelCommand}" IsEnabled="{Binding IsBusy}" />
+                    <Border Width="1" Background="#CCCCCC" Margin="12,2,12,2" />
+                    <TextBlock Text="{loc:Tr OrgInfo_Search_Global}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                    <TextBox x:Name="GlobalSearchBox" Width="240" VerticalContentAlignment="Center"
+                             Text="{Binding GlobalSearchText, Mode=TwoWay}"
+                             ToolTip.Tip="{loc:Tr OrgInfo_Search_GlobalTip}"
+                             KeyDown="GlobalSearchBox_KeyDown" />
+                    <Button Content="✕" Padding="6,2" Margin="4,0,0,0" Command="{Binding ClearSearchCommand}"
+                            ToolTip.Tip="{loc:Tr OrgInfo_Search_ClearTip}" />
+                    <TextBlock Text="{Binding SearchStatusText}" Margin="10,0,0,0" VerticalAlignment="Center" Foreground="#555555" />
+                    <TextBlock Text="{Binding LastFetchedText}" Margin="14,0,0,0" VerticalAlignment="Center" Foreground="#555555" />
+                    <ToggleButton Content="AI" Margin="14,0,0,0" Padding="10,2"
+                                  IsChecked="{Binding IsAiPanelOpen, Mode=TwoWay}"
+                                  ToolTip.Tip="{loc:Tr OrgInfo_Ai_ToggleTip}" />
+                </StackPanel>
+                <TextBlock Text="{Binding StatusMessage}" HorizontalAlignment="Right" VerticalAlignment="Center"
+                           Foreground="#333333" TextTrimming="CharacterEllipsis" />
+            </DockPanel>
+        </Border>
+
+        <!-- 検索結果（全タブ横断。ダブルクリック / Enter で該当タブへ移動） -->
+        <Border DockPanel.Dock="Top" Background="#FFFFFF" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,4"
+                IsVisible="{Binding IsSearchPanelOpen}">
+            <DataGrid x:Name="GlobalSearchResultsGrid" ItemsSource="{Binding SearchResults}" MaxHeight="180"
+                      AutoGenerateColumns="False" IsReadOnly="True"
+                      HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                      DoubleTapped="GlobalSearchResults_DoubleTapped"
+                      KeyDown="GlobalSearchResults_KeyDown" />
+        </Border>
+
+        <!-- 下部: ステータスバー -->
+        <Border DockPanel.Dock="Bottom" Background="#007ACC" Padding="8,4">
+            <DockPanel>
+                <TextBlock x:Name="VersionText" DockPanel.Dock="Right" Foreground="White" />
+                <TextBlock Text="{Binding OrgDetail}" Foreground="White" TextTrimming="CharacterEllipsis" />
+            </DockPanel>
+        </Border>
+
+        <!-- セクション（タブ） + AI パネル -->
+        <Grid Margin="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <TabControl Grid.Column="0" ItemsSource="{Binding Sections}" SelectedItem="{Binding SelectedSection, Mode=TwoWay}">
+                <TabControl.DataTemplates>
+                    <DataTemplate DataType="{x:Type vm:OrgInfoSectionViewModel}">
+                        <views:OrgInfoSectionView />
+                    </DataTemplate>
+                    <DataTemplate DataType="{x:Type vm:OrgInfoFieldsViewModel}">
+                        <views:OrgInfoFieldsView />
+                    </DataTemplate>
+                    <DataTemplate DataType="{x:Type vm:OrgInfoCustomTabViewModel}">
+                        <views:OrgInfoCustomTabView />
+                    </DataTemplate>
+                    <DataTemplate DataType="{x:Type vm:OrgInfoMySettingsViewModel}">
+                        <views:OrgInfoMySettingsView />
+                    </DataTemplate>
+                </TabControl.DataTemplates>
+                <TabControl.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Title}" />
+                    </DataTemplate>
+                </TabControl.ItemTemplate>
+            </TabControl>
+
+            <Border Grid.Column="1" Width="420" Margin="8,0,0,0"
+                    BorderBrush="#DDDDDD" BorderThickness="1"
+                    IsVisible="{Binding IsAiPanelOpen}">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,4">
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Content="✕" Padding="6,0"
+                                    Command="{Binding ToggleAiPanelCommand}"
+                                    ToolTip.Tip="{loc:Tr OrgInfo_Ai_ToggleTip}" />
+                            <TextBlock Text="{loc:Tr OrgInfo_Ai_Title}" FontWeight="Bold" VerticalAlignment="Center" />
+                        </DockPanel>
+                    </Border>
+                    <views:AiChatView DataContext="{Binding Ai}" />
+                </DockPanel>
+            </Border>
+        </Grid>
+    </DockPanel>
+</Window>

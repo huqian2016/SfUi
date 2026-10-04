@@ -53,6 +53,7 @@ public partial class App : Application
             services.AddSingleton<SettingsViewModel>();
             services.AddSingleton<QuickPanelViewModel>();
             services.AddTransient<CompareOrgsViewModel>();
+            services.AddTransient<OrgInfoViewModel>();
             services.AddSingleton<MainWindow>();
             Services = services.BuildServiceProvider();
 
@@ -92,6 +93,12 @@ public partial class App : Application
                     {
                         Services.GetRequiredService<IAppWindowService>().OpenCompareOrgs(mainViewModel.Orgs.ToList());
                         _log?.Info("--open compare: 比較ウィンドウを開きました");
+                    }
+                    else if (string.Equals(openTarget, "orginfo", StringComparison.OrdinalIgnoreCase)
+                        && (mainViewModel.SelectedOrg ?? mainViewModel.Orgs.FirstOrDefault()) is { } org)
+                    {
+                        Services.GetRequiredService<IAppWindowService>().OpenOrgInfo(org);
+                        _log?.Info("--open orginfo: 組織情報ウィンドウを開きました");
                     }
                 };
             }

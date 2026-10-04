@@ -519,4 +519,9 @@ data/
   - `AvaloniaAppWindowService.OpenCompareOrgs` を実装（上部バー「比較」から開く）。他ウィンドウは未移植の案内表示のまま
   - 検証: ビルド 0 警告 / `--smoke --smoke-compare` OK / 実比較（acc × agent1 = 10 diffs / 20 rows）のスクリーンショット確認
   - 開発用オプション: `--open compare`（比較ウィンドウを開いた状態で起動）
-  - 残: Org Info（5 ビュー）/ Data I/O（3 アクセスタブ）/ バックアップ / 組織管理
+
+- ✅ **Phase D-2（2026-10-04 完了）**: Avalonia 版 組織情報ウィンドウ（Org Info）
+  - `OrgInfoWindow`（21 セクション タブ + グローバル検索パネル + AI パネル + ステータスバー）/ `OrgInfoSectionView`（列を定義から動的生成・行リンク列）/ `OrgInfoFieldsView`（オブジェクト選択）/ `OrgInfoCustomTabView` / `OrgInfoMySettingsView`（項目ピッカー）
+  - 検証: ビルド 0 警告 / スモーク OK / 実ウィンドウのキャプチャで 21 タブ + Overview 20 行の実データ表示を確認
+  - 開発用オプション: `--open orginfo`（組織情報ウィンドウを開いた状態で起動）
+  - 残: Data I/O（3 アクセス タブ）/ バックアップ / 組織管理
