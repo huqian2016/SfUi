@@ -557,4 +557,5 @@ data/
   - `.github/workflows/ci.yml`: Windows + macOS マトリクスで ①テスト 395 件 ②Avalonia ビルドを実行
   - キーボード（Cmd(Meta)+1..9 併設）・フォント（Consolas → Menlo フォールバック）は移植時に実装済み
   - 検証: bash 構文チェック OK / **Windows からの osx-arm64 クロス publish 成功**（SfUi.Avalonia Mach-O + DLL 群を生成）/ README（EN/JA）に macOS ビルド手順を追記
+  - CI 初回実行で macOS のみ 1 件失敗 → `OrgInfoCacheStore.SanitizeOrgKey` が OS 依存の `Path.GetInvalidFileNameChars()`（macOS は `/` と NUL のみ）を使っていたのが原因。Windows 禁止文字セットを全 OS で常に置換する固定実装に変更し、OS 間で data フォルダーを共有してもキーが一致するようにした（commit 2420555、CI アクションも v5 に更新）
   - 未実施: Apple Silicon 実機での起動・署名 / 公証・スクリーンショット（macOS 環境が必要）
