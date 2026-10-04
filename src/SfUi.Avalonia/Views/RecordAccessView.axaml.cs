@@ -13,13 +13,18 @@ public partial class RecordAccessView : UserControl
 {
     private RecordAccessViewModel? _viewModel;
     private bool _languageHooked;
+    private bool _ensureLoaded;
 
     public RecordAccessView()
     {
         AvaloniaXamlLoader.Load(this);
 
-        DataContextChanged += (_, _) => HookViewModel();
-        AttachedToVisualTree += async (_, _) =>
+        DataContextChanged += (_, _) =>
+        {
+            HookViewModel();
+            TryEnsureLoaded();
+        };
+        AttachedToVisualTree += (_, _) =>
         {
             if (!_languageHooked)
             {
@@ -28,10 +33,7 @@ public partial class RecordAccessView : UserControl
             }
 
             RebuildColumns();
-            if (_viewModel is { } viewModel)
-            {
-                await viewModel.EnsureLoadedAsync();
-            }
+            TryEnsureLoaded();
         };
         DetachedFromVisualTree += (_, _) =>
         {
@@ -43,6 +45,23 @@ public partial class RecordAccessView : UserControl
         };
 
         HookViewModel();
+    }
+
+    /// <summary>
+    /// 初回表示時の読み込みを開始する。Avalonia では DataContext の継承バインド
+    /// （DataContext="{Binding RecordAccess}"）が attach 時に解決されるため、
+    /// attach 時点の ViewModel は未設定。attach と DataContextChanged の
+    /// 後から来た方で 1 回だけ読み込む（WPF 版の Loaded に相当）。
+    /// </summary>
+    private void TryEnsureLoaded()
+    {
+        if (_ensureLoaded || _viewModel is not { } viewModel || this.VisualRoot is null)
+        {
+            return;
+        }
+
+        _ensureLoaded = true;
+        _ = viewModel.EnsureLoadedAsync();
     }
 
     private void HookViewModel()

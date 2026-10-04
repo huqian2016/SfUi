@@ -11,6 +11,7 @@ public partial class ObjectAccessView : UserControl
 {
     private ObjectAccessViewModel? _viewModel;
     private bool _languageHooked;
+    private bool _ensureLoaded;
 
     public ObjectAccessView()
     {
@@ -20,8 +21,9 @@ public partial class ObjectAccessView : UserControl
         {
             _viewModel = DataContext as ObjectAccessViewModel;
             RebuildColumns();
+            TryEnsureLoaded();
         };
-        AttachedToVisualTree += async (_, _) =>
+        AttachedToVisualTree += (_, _) =>
         {
             if (!_languageHooked)
             {
@@ -30,10 +32,7 @@ public partial class ObjectAccessView : UserControl
             }
 
             RebuildColumns();
-            if (_viewModel is { } viewModel)
-            {
-                await viewModel.EnsureLoadedAsync();
-            }
+            TryEnsureLoaded();
         };
         DetachedFromVisualTree += (_, _) =>
         {
@@ -43,6 +42,21 @@ public partial class ObjectAccessView : UserControl
                 _languageHooked = false;
             }
         };
+    }
+
+    /// <summary>
+    /// 初回表示時の読み込みを開始する。attach 時は DataContext 継承バインディングが
+    /// 未解決のため（RecordAccessView と同様）、後から来た方で 1 回だけ実行する。
+    /// </summary>
+    private void TryEnsureLoaded()
+    {
+        if (_ensureLoaded || _viewModel is not { } viewModel || this.VisualRoot is null)
+        {
+            return;
+        }
+
+        _ensureLoaded = true;
+        _ = viewModel.EnsureLoadedAsync();
     }
 
     private void RebuildColumns()

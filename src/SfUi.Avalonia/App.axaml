@@ -14,5 +14,16 @@
         <FluentTheme />
         <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
         <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
+
+        <!-- タブ ヘッダーを本文と同じ文字サイズにする（Fluent の TabItemHeaderFontSize 既定値は大きめで、WPF 版と大きさが揃わない） -->
+        <Style Selector="TabItem">
+            <Setter Property="FontSize" Value="13" />
+        </Style>
+
+        <!-- 列幅のドラッグ変更・列の並べ替えを有効化（Avalonia の DataGrid は CanUserResizeColumns が既定 false のため、WPF 版と挙動が違う） -->
+        <Style Selector="DataGrid">
+            <Setter Property="CanUserResizeColumns" Value="True" />
+            <Setter Property="CanUserReorderColumns" Value="True" />
+        </Style>
     </Application.Styles>
 </Application>

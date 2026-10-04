@@ -562,3 +562,10 @@ data/
   - 検証結果: CI run 37206278945 で全 5 ジョブ green（Test×2 / Build×2 / Package）。実 macOS で `.app` 組立 + **パッケージ済み実行ファイルのスモーク起動成功（exit 0）** + zip artifact 44 MB を確認
   - CI 拡張: Windows にも `--smoke` 起動スモーク（WinExe のため `Start-Process` + `WaitForExit` ガード）と WPF 版ビルド（共有ロジック変更の回帰検知）を追加 → run 37206955129 で全 6 ジョブ green
   - 未実施: 署名 / 公証（Developer ID 証明書が必要）・実機での UI 操作 / スクリーンショット確認
+
+## 14. Avalonia 版 UI 改善（2026-10-04）
+- ① タブ ヘッダーの文字サイズを本文と同じ 13 に（`App.axaml` の `TabItem` スタイル。Fluent の `TabItemHeaderFontSize` 既定値が大きいため全ウィンドウのタブが大きかった）
+- ② DataGrid の列幅 D&D 変更・列並べ替えを有効化（Avalonia の `CanUserResizeColumns` は既定 false = WPF と逆 → `App.axaml` の `DataGrid` スタイルで True。リサイズはヘッダー境界 ±5px のヒット ゾーン方式）
+- ③ データ入出力の対象オブジェクトを AutoCompleteBox（テキスト ボックス風）→ ドロップダウン（ComboBox + `IsTextSearchEnabled`）に変更
+- ④ Record / Object / Field Access タブの初回表示で読み込まれない不具合を修正: Avalonia では `DataContext="{Binding …}"` の継承バインドが attach 時に解決されるため attach ハンドラーの ViewModel が null で `EnsureLoadedAsync` が実行されなかった → attach と DataContextChanged の後勝ちで 1 回だけ実行する `TryEnsureLoaded` 方式に変更（3 ビュー共通）
+- 検証: ビルド 0/0・395 テスト green・`--smoke` exit 0・実 UI でスクリーンショット + ドラッグ検証（境界のカーソル形状スキャンでリサイズ 120px の列幅変化を数値確認 / ユーザー 5 名 + SOQL 自動入力 / ドロップダウンに sObject 一覧表示）

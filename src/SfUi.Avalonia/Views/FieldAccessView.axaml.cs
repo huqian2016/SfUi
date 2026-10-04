@@ -11,13 +11,18 @@ public partial class FieldAccessView : UserControl
 {
     private FieldAccessViewModel? _viewModel;
     private bool _languageHooked;
+    private bool _ensureLoaded;
 
     public FieldAccessView()
     {
         AvaloniaXamlLoader.Load(this);
 
-        DataContextChanged += (_, _) => HookViewModel();
-        AttachedToVisualTree += async (_, _) =>
+        DataContextChanged += (_, _) =>
+        {
+            HookViewModel();
+            TryEnsureLoaded();
+        };
+        AttachedToVisualTree += (_, _) =>
         {
             if (!_languageHooked)
             {
@@ -26,10 +31,7 @@ public partial class FieldAccessView : UserControl
             }
 
             RebuildColumns();
-            if (_viewModel is { } viewModel)
-            {
-                await viewModel.EnsureLoadedAsync();
-            }
+            TryEnsureLoaded();
         };
         DetachedFromVisualTree += (_, _) =>
         {
@@ -41,6 +43,21 @@ public partial class FieldAccessView : UserControl
         };
 
         HookViewModel();
+    }
+
+    /// <summary>
+    /// 初回表示時の読み込みを開始する。attach 時は DataContext 継承バインディングが
+    /// 未解決のため（RecordAccessView と同様）、後から来た方で 1 回だけ実行する。
+    /// </summary>
+    private void TryEnsureLoaded()
+    {
+        if (_ensureLoaded || _viewModel is not { } viewModel || this.VisualRoot is null)
+        {
+            return;
+        }
+
+        _ensureLoaded = true;
+        _ = viewModel.EnsureLoadedAsync();
     }
 
     private void HookViewModel()
