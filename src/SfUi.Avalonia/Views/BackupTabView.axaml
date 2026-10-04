@@ -1,0 +1,86 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:SfUi.Avalonia"
+             x:Class="SfUi.Avalonia.Views.BackupTabView">
+    <Grid Margin="4">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="400" />
+        </Grid.ColumnDefinitions>
+
+        <!-- 左: オブジェクト一覧（検索・件数・選択） -->
+        <DockPanel Grid.Column="0" Margin="0,0,12,0">
+            <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,6">
+                <TextBlock Text="{loc:Tr Backup_ObjectsLabel}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                <TextBox Width="220" VerticalAlignment="Center"
+                         Text="{Binding SearchText, Mode=TwoWay}"
+                         ToolTip.Tip="{loc:Tr Backup_ObjectSearchTip}"
+                         AutomationProperties.Name="{loc:Tr Backup_ObjectSearchTip}" />
+                <Button Content="{loc:Tr Backup_RefreshCounts}" Margin="8,0,0,0" Padding="10,2"
+                        Command="{Binding RefreshCountsCommand}"
+                        AutomationProperties.Name="{loc:Tr Backup_RefreshCounts}" />
+                <Button Content="{loc:Tr Backup_ClearSelection}" Margin="8,0,0,0" Padding="10,2"
+                        Command="{Binding ClearSelectionCommand}"
+                        AutomationProperties.Name="{loc:Tr Backup_ClearSelection}" />
+                <TextBlock Text="{Binding CountsProgress}" Foreground="#666666" Margin="10,0,0,0" VerticalAlignment="Center" />
+            </StackPanel>
+            <ListBox ItemsSource="{Binding ObjectsView}" BorderBrush="#DDDDDD">
+                <ListBox.Styles>
+                    <Style Selector="ListBoxItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                    </Style>
+                </ListBox.Styles>
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                      VerticalAlignment="Center" Margin="0,0,6,0" />
+                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding Name}" Foreground="#888888" Margin="6,0,0,0"
+                                           VerticalAlignment="Center"
+                                           IsVisible="{Binding ShowName}" />
+                            </StackPanel>
+                            <TextBlock Grid.Column="2" Text="{Binding CountText}" Foreground="#555555"
+                                       MinWidth="64" TextAlignment="Right" VerticalAlignment="Center" Margin="8,0,4,0" />
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </DockPanel>
+
+        <!-- 右: ラベル・説明・実行 -->
+        <StackPanel Grid.Column="1">
+            <TextBlock Text="{Binding SummaryText}" FontWeight="SemiBold" Margin="0,0,0,10" TextWrapping="Wrap" />
+
+            <TextBlock Text="{loc:Tr Backup_LabelLabel}" Margin="0,0,0,2" />
+            <TextBox Text="{Binding Label, Mode=TwoWay}"
+                     ToolTip.Tip="{loc:Tr Backup_LabelHint}"
+                     AutomationProperties.Name="{loc:Tr Backup_LabelLabel}" />
+            <TextBlock Text="{loc:Tr Backup_LabelHint}" Foreground="#888888" FontSize="11" Margin="0,2,0,10" TextWrapping="Wrap" />
+
+            <TextBlock Text="{loc:Tr Backup_DescLabel}" Margin="0,0,0,2" />
+            <TextBox Text="{Binding Description, Mode=TwoWay}"
+                     Height="72" TextWrapping="Wrap" AcceptsReturn="True"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                     ToolTip.Tip="{loc:Tr Backup_DescHint}"
+                     AutomationProperties.Name="{loc:Tr Backup_DescLabel}" />
+            <TextBlock Text="{loc:Tr Backup_DescHint}" Foreground="#888888" FontSize="11" Margin="0,2,0,12" TextWrapping="Wrap" />
+
+            <StackPanel Orientation="Horizontal">
+                <Button Content="{loc:Tr Backup_Run}" Padding="14,4" Command="{Binding RunBackupCommand}"
+                        AutomationProperties.Name="{loc:Tr Backup_Run}" />
+                <Button Content="{loc:Tr Backup_Cancel}" Margin="8,0,0,0" Padding="14,4"
+                        Command="{Binding CancelBackupCommand}"
+                        AutomationProperties.Name="{loc:Tr Backup_Cancel}" />
+            </StackPanel>
+
+            <TextBlock Text="{Binding StatusMessage}" Foreground="#555555" Margin="0,10,0,0" TextWrapping="Wrap" />
+        </StackPanel>
+    </Grid>
+</UserControl>

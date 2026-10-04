@@ -60,6 +60,10 @@ public partial class App : Application
             services.AddTransient<ObjectAccessViewModel>();
             services.AddTransient<FieldAccessViewModel>();
             services.AddTransient<RecordAccessViewModel>();
+            services.AddTransient<BackupViewModel>();
+            services.AddTransient<BackupTabViewModel>();
+            services.AddTransient<RestoreTabViewModel>();
+            services.AddTransient<CompareTabViewModel>();
             services.AddSingleton<MainWindow>();
             Services = services.BuildServiceProvider();
 
@@ -111,6 +115,12 @@ public partial class App : Application
                     {
                         Services.GetRequiredService<IAppWindowService>().OpenDataIo(dataIoOrg);
                         _log?.Info("--open dataio: データ入出力ウィンドウを開きました");
+                    }
+                    else if (string.Equals(openTarget, "backup", StringComparison.OrdinalIgnoreCase)
+                        && (mainViewModel.SelectedOrg ?? mainViewModel.Orgs.FirstOrDefault()) is { } backupOrg)
+                    {
+                        Services.GetRequiredService<IAppWindowService>().OpenBackup(backupOrg);
+                        _log?.Info("--open backup: バックアップ ウィンドウを開きました");
                     }
                 };
             }

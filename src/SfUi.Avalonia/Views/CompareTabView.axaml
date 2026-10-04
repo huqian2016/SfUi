@@ -1,0 +1,101 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:SfUi.Avalonia"
+             xmlns:conv="clr-namespace:SfUi.Avalonia.Converters"
+             x:Class="SfUi.Avalonia.Views.CompareTabView">
+    <UserControl.Resources>
+        <conv:BackupCompareRowBrushConverter x:Key="BackupRowBrush" />
+        <!-- 比較結果の行ハイライト（差分 / エラー / A のみ / B のみ） -->
+        <ControlTheme x:Key="CompareTabRowTheme" TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
+            <Setter Property="Background" Value="{Binding Converter={StaticResource BackupRowBrush}}" />
+        </ControlTheme>
+    </UserControl.Resources>
+    <Grid Margin="4">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="620" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- 左: 基準 (A) と 比較対象 (B) の選択 -->
+        <Grid Grid.Column="0" Margin="0,0,12,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <DockPanel Grid.Column="0" Margin="0,0,8,0">
+                <TextBlock DockPanel.Dock="Top" Text="{loc:Tr BackupCompare_BaseLabelA}" FontWeight="SemiBold" Margin="0,0,0,4" />
+                <TextBox DockPanel.Dock="Top" Margin="0,0,0,6"
+                         Text="{Binding SearchTextA, Mode=TwoWay}"
+                         ToolTip.Tip="{loc:Tr Restore_BackupSearch}"
+                         AutomationProperties.Name="{loc:Tr Restore_BackupSearch}" />
+                <ListBox ItemsSource="{Binding BackupsViewA}" BorderBrush="#DDDDDD"
+                         SelectedItem="{Binding SelectedBackupA, Mode=TwoWay}">
+                    <ListBox.Styles>
+                        <Style Selector="ListBoxItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        </Style>
+                    </ListBox.Styles>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="2,3">
+                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                <TextBlock Text="{Binding Subtitle}" Foreground="#666666" FontSize="11" />
+                                <TextBlock Text="{Binding Summary}" Foreground="#666666" FontSize="11" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+            <DockPanel Grid.Column="1">
+                <TextBlock DockPanel.Dock="Top" Text="{loc:Tr BackupCompare_BaseLabelB}" FontWeight="SemiBold" Margin="0,0,0,4" />
+                <TextBox DockPanel.Dock="Top" Margin="0,0,0,6"
+                         Text="{Binding SearchTextB, Mode=TwoWay}"
+                         ToolTip.Tip="{loc:Tr Restore_BackupSearch}"
+                         AutomationProperties.Name="{loc:Tr Restore_BackupSearch}" />
+                <ListBox ItemsSource="{Binding BackupsViewB}" BorderBrush="#DDDDDD"
+                         SelectedItem="{Binding SelectedBackupB, Mode=TwoWay}">
+                    <ListBox.Styles>
+                        <Style Selector="ListBoxItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        </Style>
+                    </ListBox.Styles>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="2,3">
+                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                <TextBlock Text="{Binding Subtitle}" Foreground="#666666" FontSize="11" />
+                                <TextBlock Text="{Binding Summary}" Foreground="#666666" FontSize="11" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+        </Grid>
+
+        <!-- 右: 比較結果（差分はハイライト） -->
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <StackPanel Grid.Row="0" Orientation="Horizontal">
+                <Button Content="{loc:Tr BackupCompare_Compare}" Padding="14,4"
+                        Command="{Binding CompareCommand}"
+                        AutomationProperties.Name="{loc:Tr BackupCompare_Compare}" />
+                <Button Content="{loc:Tr BackupCompare_Cancel}" Margin="8,0,0,0" Padding="14,4"
+                        Command="{Binding CancelCompareCommand}"
+                        AutomationProperties.Name="{loc:Tr BackupCompare_Cancel}" />
+                <CheckBox Content="{loc:Tr BackupCompare_DiffOnly}" Margin="14,0,0,0" VerticalAlignment="Center"
+                          IsChecked="{Binding DiffOnly, Mode=TwoWay}" />
+                <TextBlock Text="{Binding StatusMessage}" VerticalAlignment="Center" Margin="12,0,0,0"
+                           Foreground="#555555" TextTrimming="CharacterEllipsis" MaxWidth="380" />
+            </StackPanel>
+            <TextBlock Grid.Row="1" Text="{Binding SummaryText}" FontWeight="SemiBold" Margin="0,8,0,6" TextWrapping="Wrap" />
+            <DataGrid x:Name="CompareGrid" Grid.Row="2" ItemsSource="{Binding ResultsView}"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True" HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                      RowHeight="28" RowTheme="{StaticResource CompareTabRowTheme}" />
+        </Grid>
+    </Grid>
+</UserControl>

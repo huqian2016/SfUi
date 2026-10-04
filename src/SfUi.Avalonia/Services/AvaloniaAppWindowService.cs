@@ -60,7 +60,12 @@ public sealed class AvaloniaAppWindowService : IAppWindowService
         ShowOwned(new DataIoWindow(viewModel));
     }
 
-    public void OpenBackup(OrgInfo org) => NotPortedYet("Backup & Restore");
+    public void OpenBackup(OrgInfo org)
+    {
+        var viewModel = _services.GetRequiredService<BackupViewModel>();
+        viewModel.Initialize(org);
+        ShowOwned(new BackupWindow(viewModel));
+    }
 
     public void OpenOrgManage(OrgInfo? initial) => NotPortedYet("Org Management");
 

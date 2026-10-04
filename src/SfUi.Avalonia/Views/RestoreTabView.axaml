@@ -1,0 +1,90 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:SfUi.Avalonia"
+             x:Class="SfUi.Avalonia.Views.RestoreTabView">
+    <Grid Margin="4">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="370" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- 左: バックアップ一覧（検索・再読み込み・削除） -->
+        <DockPanel Grid.Column="0" Margin="0,0,12,0">
+            <StackPanel DockPanel.Dock="Top" Margin="0,0,0,6">
+                <TextBox Text="{Binding BackupSearchText, Mode=TwoWay}"
+                         ToolTip.Tip="{loc:Tr Restore_BackupSearch}"
+                         AutomationProperties.Name="{loc:Tr Restore_BackupSearch}" />
+                <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                    <Button Content="{loc:Tr Restore_Reload}" Padding="10,2" Command="{Binding ReloadBackupsCommand}"
+                            AutomationProperties.Name="{loc:Tr Restore_Reload}" />
+                    <Button Content="{loc:Tr Restore_Delete}" Padding="10,2" Margin="8,0,0,0"
+                            Command="{Binding DeleteBackupCommand}"
+                            AutomationProperties.Name="{loc:Tr Restore_Delete}" />
+                </StackPanel>
+            </StackPanel>
+            <ListBox ItemsSource="{Binding BackupsView}" BorderBrush="#DDDDDD"
+                     SelectedItem="{Binding SelectedBackup, Mode=TwoWay}">
+                <ListBox.Styles>
+                    <Style Selector="ListBoxItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                    </Style>
+                </ListBox.Styles>
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Margin="2,3">
+                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding Subtitle}" Foreground="#666666" FontSize="11" />
+                            <TextBlock Text="{Binding Summary}" Foreground="#666666" FontSize="11" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </DockPanel>
+
+        <!-- 右: オブジェクト選択 → 復元実行 → 結果 -->
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="3*" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="2*" />
+            </Grid.RowDefinitions>
+
+            <StackPanel Grid.Row="0">
+                <TextBlock Text="{Binding OrgHint}" Foreground="#555555" TextWrapping="Wrap" Margin="0,0,0,6" />
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="{loc:Tr Restore_MatchLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                    <ComboBox ItemsSource="{Binding MatchModeOptions}" Width="280"
+                              SelectedIndex="{Binding MatchModeIndex, Mode=TwoWay}"
+                              AutomationProperties.Name="{loc:Tr Restore_MatchLabel}" />
+                    <TextBlock Text="{loc:Tr Restore_ExistingLabel}" VerticalAlignment="Center" Margin="16,0,4,0" />
+                    <ComboBox ItemsSource="{Binding ExistingOptions}" Width="130"
+                              SelectedIndex="{Binding ExistingIndex, Mode=TwoWay}"
+                              AutomationProperties.Name="{loc:Tr Restore_ExistingLabel}" />
+                    <TextBlock Text="{Binding SummaryText}" VerticalAlignment="Center" Margin="16,0,0,0" Foreground="#555555" />
+                </StackPanel>
+            </StackPanel>
+
+            <DataGrid x:Name="ObjectsGrid" Grid.Row="1" Margin="0,8,0,0"
+                      ItemsSource="{Binding Objects}" AutoGenerateColumns="False"
+                      HeadersVisibility="Column"
+                      GridLinesVisibility="Horizontal" RowHeight="30" />
+
+            <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,8,0,8">
+                <Button Content="{loc:Tr Restore_Run}" Padding="14,4" Command="{Binding RunRestoreCommand}"
+                        AutomationProperties.Name="{loc:Tr Restore_Run}" />
+                <Button Content="{loc:Tr Restore_Cancel}" Margin="8,0,0,0" Padding="14,4"
+                        Command="{Binding CancelRestoreCommand}"
+                        AutomationProperties.Name="{loc:Tr Restore_Cancel}" />
+                <TextBlock Text="{Binding StatusMessage}" VerticalAlignment="Center" Margin="12,0,0,0"
+                           Foreground="#555555" TextTrimming="CharacterEllipsis" MaxWidth="620" />
+            </StackPanel>
+
+            <DataGrid x:Name="ResultsGrid" Grid.Row="3"
+                      IsVisible="{Binding HasResults}"
+                      ItemsSource="{Binding Results}" AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      HeadersVisibility="Column" GridLinesVisibility="Horizontal" />
+        </Grid>
+    </Grid>
+</UserControl>
