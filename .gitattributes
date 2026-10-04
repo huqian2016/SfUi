@@ -1,0 +1,2 @@
+# macOS / Linux 用スクリプトは LF を維持（Windows の autocrlf でも壊れないように）
+*.sh text eol=lf

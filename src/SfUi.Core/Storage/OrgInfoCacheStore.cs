@@ -29,7 +29,11 @@ public sealed class OrgInfoCacheStore
     public static string GetOrgKey(OrgInfo org) =>
         !string.IsNullOrWhiteSpace(org.OrgId) ? org.OrgId! : SanitizeOrgKey(org.Username);
 
-    /// <summary>ファイル名に使えない文字を置換する。</summary>
+    /// <summary>
+    /// ファイル名に使えない文字を置換する。macOS / Linux の GetInvalidFileNameChars は
+    /// '/' と NUL のみのため、Windows の禁止文字も常に置換して両 OS で同じキーにする
+    /// （data フォルダーを OS 間で持ち運べるようにする）。
+    /// </summary>
     public static string SanitizeOrgKey(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -37,11 +41,11 @@ public sealed class OrgInfoCacheStore
             return "org";
         }
 
-        var invalid = Path.GetInvalidFileNameChars();
         var builder = new StringBuilder(value.Trim().Length);
         foreach (var c in value.Trim())
         {
-            builder.Append(Array.IndexOf(invalid, c) >= 0 ? '_' : c);
+            var invalid = c < ' ' || c is '/' or '\\' or ':' or '*' or '?' or '"' or '<' or '>' or '|';
+            builder.Append(invalid ? '_' : c);
         }
 
         return builder.Length == 0 ? "org" : builder.ToString();
