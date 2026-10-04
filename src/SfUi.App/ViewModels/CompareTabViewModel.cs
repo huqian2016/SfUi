@@ -58,6 +58,7 @@ public sealed partial class CompareTabViewModel : ObservableObject
     private readonly BackupCompareService _compare;
     private readonly BackupCompareRecordsWindowFactory _recordsFactory;
     private readonly AppLog _log;
+    private OrgInfo? _org;
     private CancellationTokenSource? _runCts;
 
     public CompareTabViewModel(BackupCompareService compare, BackupCompareRecordsWindowFactory recordsFactory, AppLog log)
@@ -109,6 +110,9 @@ public sealed partial class CompareTabViewModel : ObservableObject
 
     [ObservableProperty]
     private string _summaryText = string.Empty;
+
+    /// <summary>バックアップ ウィンドウを開いたときに組織を受け取る（レコードページ リンク用）。</summary>
+    public void Initialize(OrgInfo org) => _org = org;
 
     /// <summary>バックアップ一覧を読み込む（選択中 ID は維持）。</summary>
     public void RefreshBackups()
@@ -235,7 +239,7 @@ public sealed partial class CompareTabViewModel : ObservableObject
         {
             var owner = Application.Current?.Windows.OfType<Window>().FirstOrDefault(w => w.IsActive);
             _recordsFactory.Open(
-                SelectedBackupA.Id, SelectedBackupB.Id, row.Name, row.Label,
+                SelectedBackupA.Id, SelectedBackupB.Id, row.Name, row.Label, _org,
                 owner ?? Application.Current?.MainWindow);
         }
         catch (Exception ex)

@@ -357,7 +357,7 @@ public sealed partial class RestoreTabViewModel : ObservableObject
         {
             // アクティブ ウィンドウ（バックアップ ウィンドウ）を親にして開く（親を閉じると一緒に閉じる）
             var owner = Application.Current?.Windows.OfType<Window>().FirstOrDefault(w => w.IsActive);
-            _recordsFactory.Open(SelectedBackup.Id, row.Info, row.Label, owner ?? Application.Current?.MainWindow);
+            _recordsFactory.Open(SelectedBackup.Id, row.Info, row.Label, _org, owner ?? Application.Current?.MainWindow);
         }
         catch (Exception ex)
         {

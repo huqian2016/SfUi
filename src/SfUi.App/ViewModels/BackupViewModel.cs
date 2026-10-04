@@ -44,6 +44,7 @@ public sealed partial class BackupViewModel : ObservableObject, IDisposable
         Title = UiText.T("Backup_TitleFmt", org.DisplayName);
         Backup.Initialize(org);
         Restore.Initialize(org);
+        Compare.Initialize(org);
     }
 
     /// <summary>ウィンドウ表示後に 1 回呼ぶ。</summary>

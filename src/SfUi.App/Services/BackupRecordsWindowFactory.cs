@@ -15,11 +15,11 @@ public sealed class BackupRecordsWindowFactory
         _services = services;
     }
 
-    /// <summary>バックアップ ID とオブジェクト情報を指定して開く。</summary>
-    public BackupRecordsWindow Open(string backupId, BackupObjectInfo info, string displayName, Window? owner = null)
+    /// <summary>バックアップ ID（と現在の組織）を指定して開く。</summary>
+    public BackupRecordsWindow Open(string backupId, BackupObjectInfo info, string displayName, OrgInfo? currentOrg = null, Window? owner = null)
     {
         var window = _services.GetRequiredService<BackupRecordsWindow>();
-        window.ViewModel.Initialize(backupId, info, displayName);
+        window.ViewModel.Initialize(backupId, info, displayName, currentOrg);
         if (owner is not null && !ReferenceEquals(owner, window))
         {
             window.Owner = owner;

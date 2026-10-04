@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SfUi.Core;
@@ -11,7 +12,7 @@ public sealed class BackupCompareRecordRowViewModel
     private const int MaxFieldsShown = 5;
     private const int MaxValueLength = 40;
 
-    public BackupCompareRecordRowViewModel(BackupRecordDiff diff)
+    public BackupCompareRecordRowViewModel(BackupRecordDiff diff, string? linkUrl)
     {
         KindText = UiText.T(diff.Kind switch
         {
@@ -23,6 +24,7 @@ public sealed class BackupCompareRecordRowViewModel
         IsRemoved = diff.Kind == BackupDiffKind.Removed;
         Id = diff.Id;
         Display = diff.Display;
+        LinkUrl = linkUrl ?? string.Empty;
         ChangeSummary = BuildSummary(diff);
         Blob = $"{KindText}\n{Id}\n{Display}\n{ChangeSummary}".ToLowerInvariant();
     }
@@ -36,6 +38,11 @@ public sealed class BackupCompareRecordRowViewModel
     public string Id { get; }
 
     public string Display { get; }
+
+    /// <summary>Salesforce のレコードページ URL（解決できない場合は空）。</summary>
+    public string LinkUrl { get; }
+
+    public bool HasLink => !string.IsNullOrEmpty(LinkUrl);
 
     public string ChangeSummary { get; }
 
@@ -76,18 +83,21 @@ public sealed partial class BackupCompareRecordsViewModel : ObservableObject
     private const int PageSize = 200;
 
     private readonly BackupCompareService _compare;
+    private readonly OrgService _orgs;
     private readonly AppLog _log;
     private readonly List<BackupCompareRecordRowViewModel> _all = new();
     private List<BackupCompareRecordRowViewModel> _filtered = new();
     private string _backupIdA = string.Empty;
     private string _backupIdB = string.Empty;
     private string _objectName = string.Empty;
+    private OrgInfo? _currentOrg;
     private bool _loaded;
     private int _pageIndex;
 
-    public BackupCompareRecordsViewModel(BackupCompareService compare, AppLog log)
+    public BackupCompareRecordsViewModel(BackupCompareService compare, OrgService orgs, AppLog log)
     {
         _compare = compare;
+        _orgs = orgs;
         _log = log;
     }
 
@@ -120,7 +130,7 @@ public sealed partial class BackupCompareRecordsViewModel : ObservableObject
     /// <summary>上限で打ち切られたときに表示する注意文。</summary>
     public string TruncatedText => UiText.T("BackupRecords_Truncated", BackupCompareService.MaxDetailRows);
 
-    public void Initialize(string backupIdA, string backupIdB, string objectName, string displayName)
+    public void Initialize(string backupIdA, string backupIdB, string objectName, string displayName, OrgInfo? currentOrg = null)
     {
         if (_loaded)
         {
@@ -130,6 +140,7 @@ public sealed partial class BackupCompareRecordsViewModel : ObservableObject
         _backupIdA = backupIdA;
         _backupIdB = backupIdB;
         _objectName = objectName;
+        _currentOrg = currentOrg;
         Title = UiText.T("BackupCompare_RecordsTitleFmt", displayName, backupIdA, backupIdB);
     }
 
@@ -146,10 +157,14 @@ public sealed partial class BackupCompareRecordsViewModel : ObservableObject
         try
         {
             var detail = await _compare.LoadDetailAsync(_backupIdA, _backupIdB, _objectName, CancellationToken.None);
+            var (urlA, urlB) = await ResolveUrlsAsync();
             _all.Clear();
             foreach (var diff in detail.Rows)
             {
-                _all.Add(new BackupCompareRecordRowViewModel(diff));
+                // 削除行は A、追加 / 変更行は B のレコードページを開く（無い場合は他方で代替）
+                var baseUrl = diff.Kind == BackupDiffKind.Removed ? urlA ?? urlB : urlB ?? urlA;
+                var link = BackupOrgUrls.BuildRecordUrl(baseUrl, _objectName, string.IsNullOrEmpty(diff.Id) ? null : diff.Id);
+                _all.Add(new BackupCompareRecordRowViewModel(diff, link));
             }
 
             Truncated = detail.Truncated;
@@ -170,6 +185,53 @@ public sealed partial class BackupCompareRecordsViewModel : ObservableObject
     }
 
     partial void OnSearchTextChanged(string value) => ApplyFilter();
+
+    /// <summary>バックアップ元（A / B）組織のインスタンス URL を解決する（レコードページ リンク用）。</summary>
+    private async Task<(string? UrlA, string? UrlB)> ResolveUrlsAsync()
+    {
+        try
+        {
+            var metadata = _compare.ListBackupMetadata();
+            var metaA = metadata.FirstOrDefault(m => string.Equals(m.Id, _backupIdA, StringComparison.Ordinal));
+            var metaB = metadata.FirstOrDefault(m => string.Equals(m.Id, _backupIdB, StringComparison.Ordinal));
+            // 同一組織なら sf CLI を呼ばずに即返す（別組織のときだけ認証済み組織一覧を照会）
+            var urlA = BackupOrgUrls.Resolve(_currentOrg, metaA?.OrgUsername, metaA?.OrgId, Array.Empty<OrgInfo>());
+            var urlB = BackupOrgUrls.Resolve(_currentOrg, metaB?.OrgUsername, metaB?.OrgId, Array.Empty<OrgInfo>());
+            if (!string.IsNullOrEmpty(urlA) && !string.IsNullOrEmpty(urlB))
+            {
+                return (urlA, urlB);
+            }
+
+            var orgs = await _orgs.ListOrgsAsync();
+            return (
+                urlA ?? BackupOrgUrls.Resolve(_currentOrg, metaA?.OrgUsername, metaA?.OrgId, orgs),
+                urlB ?? BackupOrgUrls.Resolve(_currentOrg, metaB?.OrgUsername, metaB?.OrgId, orgs));
+        }
+        catch (Exception ex)
+        {
+            _log.Warn($"レコードページ用のインスタンス URL を解決できませんでした: {ex.Message}");
+            return (null, null);
+        }
+    }
+
+    /// <summary>Salesforce のレコードページをブラウザーで開く。</summary>
+    [RelayCommand]
+    private void OpenRecord(BackupCompareRecordRowViewModel? row)
+    {
+        if (string.IsNullOrEmpty(row?.LinkUrl))
+        {
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo(row.LinkUrl) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            _log.Error($"レコードページを開けませんでした: {row.LinkUrl}", ex);
+        }
+    }
 
     private void ApplyFilter()
     {

@@ -54,6 +54,18 @@
                 </Style>
             </DataGrid.RowStyle>
             <DataGrid.Columns>
+                <DataGridTemplateColumn Header="{loc:Tr BackupRecords_OpenRecord}" Width="60">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Button Content="↗" Padding="6,0" Margin="2,0" FontSize="11"
+                                    IsEnabled="{Binding HasLink}"
+                                    ToolTip="{loc:Tr BackupRecords_OpenRecord}"
+                                    AutomationProperties.Name="{loc:Tr BackupRecords_OpenRecord}"
+                                    Command="{Binding DataContext.OpenRecordCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    CommandParameter="{Binding}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
                 <DataGridTextColumn Header="{loc:Tr BackupCompare_ColKind}" Width="70" Binding="{Binding KindText}" />
                 <DataGridTextColumn Header="Id" Width="200" Binding="{Binding Id}" />
                 <DataGridTextColumn Header="{loc:Tr Restore_Details}" Width="200" Binding="{Binding Display}" />

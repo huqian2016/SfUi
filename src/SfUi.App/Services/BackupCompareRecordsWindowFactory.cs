@@ -1,6 +1,7 @@
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using SfUi.App.Views;
+using SfUi.Core;
 
 namespace SfUi.App.Services;
 
@@ -16,10 +17,10 @@ public sealed class BackupCompareRecordsWindowFactory
 
     /// <summary>2 つのバックアップ ID とオブジェクトを指定して開く。</summary>
     public BackupCompareRecordsWindow Open(
-        string backupIdA, string backupIdB, string objectName, string displayName, Window? owner = null)
+        string backupIdA, string backupIdB, string objectName, string displayName, OrgInfo? currentOrg = null, Window? owner = null)
     {
         var window = _services.GetRequiredService<BackupCompareRecordsWindow>();
-        window.ViewModel.Initialize(backupIdA, backupIdB, objectName, displayName);
+        window.ViewModel.Initialize(backupIdA, backupIdB, objectName, displayName, currentOrg);
         if (owner is not null && !ReferenceEquals(owner, window))
         {
             window.Owner = owner;

@@ -1,13 +1,22 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Markup;
 using SfUi.App.ViewModels;
+using SfUi.Core;
 
 namespace SfUi.App.Views;
 
 /// <summary>バックアップ内のレコードを表示する別ウィンドウ（列はバックアップ内容から動的に生成）。</summary>
 public partial class BackupRecordsWindow : Window
 {
+    private const string LinkButtonTemplateXaml =
+        "<DataTemplate xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\">"
+        + "<Button Content=\"↗\" Padding=\"6,0\" Margin=\"2,0\" FontSize=\"11\" IsEnabled=\"{Binding HasLink}\" "
+        + "ToolTip=\"__NAME__\" AutomationProperties.Name=\"__NAME__\" "
+        + "Command=\"{Binding DataContext.OpenRecordCommand, RelativeSource={RelativeSource AncestorType=Window}}\" "
+        + "CommandParameter=\"{Binding}\" /></DataTemplate>";
+
     private readonly BackupRecordsViewModel _viewModel;
     private bool _loaded;
 
@@ -37,6 +46,14 @@ public partial class BackupRecordsWindow : Window
     private void RebuildColumns()
     {
         RecordsGrid.Columns.Clear();
+        var openRecord = UiText.T("BackupRecords_OpenRecord");
+        RecordsGrid.Columns.Add(new DataGridTemplateColumn
+        {
+            Header = openRecord,
+            Width = new DataGridLength(60),
+            CellTemplate = (DataTemplate)XamlReader.Parse(LinkButtonTemplateXaml.Replace("__NAME__", openRecord)),
+        });
+
         var columns = _viewModel.Columns;
         for (var i = 0; i < columns.Count; i++)
         {

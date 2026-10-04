@@ -843,6 +843,7 @@ public static partial class UiText
         ["Restore_ColFailed"] = "Failed",
         ["Restore_ColError"] = "Error",
         ["BackupRecords_TitleFmt"] = "{0} — {1}",
+        ["BackupRecords_OpenRecord"] = "Open record page",
         ["BackupRecords_Search"] = "Search (AND)",
         ["BackupRecords_Loading"] = "Loading records…",
         ["BackupRecords_Prev"] = "◀ Prev",

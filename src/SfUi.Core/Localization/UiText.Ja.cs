@@ -843,6 +843,7 @@ public static partial class UiText
         ["Restore_ColFailed"] = "失敗",
         ["Restore_ColError"] = "エラー",
         ["BackupRecords_TitleFmt"] = "{0} — {1}",
+        ["BackupRecords_OpenRecord"] = "レコードページを開く",
         ["BackupRecords_Search"] = "検索（AND）",
         ["BackupRecords_Loading"] = "レコードを読み込み中…",
         ["BackupRecords_Prev"] = "◀ 前へ",
