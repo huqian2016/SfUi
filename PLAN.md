@@ -1,6 +1,6 @@
 # SfUi — Salesforce CLI 統合デスクトップツール 実装計画
 
-最終更新: 2026-10-04 / ステータス: Phase 0-13 完了 + AI 接続先の汎用化 + 組織比較 + データ入出力 + アクセス権限タブ + Microsoft Store（MSIX）提出準備完了（v0.7.1 / テスト 356 件 / 実 API スモーク + UIA E2E 検証済み。v0.2.0 は GitHub Release で公開中、Microsoft Store は審査準備中）
+最終更新: 2026-10-04 / ステータス: Phase 0-13 完了 + AI 接続先の汎用化 + 組織比較 + データ入出力 + アクセス権限タブ + Microsoft Store（MSIX）提出準備完了（v0.7.1 / テスト 356 件 / 実 API スモーク + UIA E2E 検証済み。v0.7.1 は GitHub Release で公開中、Microsoft Store は審査準備中）
 
 ## 1. 概要
 
@@ -406,3 +406,4 @@ data/
   - 改善: 対象オブジェクト欄への API 名完全一致入力で describe を読み込むように（UIA / 手入力どちらでも安定）
   - バージョン: **0.7.0** 化（`SfUi.App.csproj` / `AppxManifest.xml` / `dist\SfUi_0.7.0.0_x64.msix` 再ビルド）
   - 2026-10-04 改修（v0.7.1）: オブジェクト / 項目アクセスに検索（行の内容・AND・スペース区切り・表示件数付き）を追加 / UI チェック 24 項目 PASS
+  - 2026-10-04: GitHub Release **v0.7.1** 公開（アセット = `SfUi.exe` + `SfUi-v0.7.1-portable.zip`。v0.5.1 → v0.7.1 の累積リリース）
