@@ -1,0 +1,41 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:SfUi.Avalonia"
+             xmlns:conv="clr-namespace:SfUi.Avalonia.Converters"
+             x:Class="SfUi.Avalonia.Views.CompareCategoryView">
+    <UserControl.Resources>
+        <conv:IsNotNullConverter x:Key="IsNotNull" />
+        <conv:DiffRowBrushConverter x:Key="DiffBrush" />
+        <!-- 差分のある行のみ黄色でハイライトする -->
+        <ControlTheme x:Key="CompareRowTheme" TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
+            <Setter Property="Background" Value="{Binding IsDiff, Converter={StaticResource DiffBrush}}" />
+        </ControlTheme>
+    </UserControl.Resources>
+    <DockPanel>
+
+        <!-- ツールバー: 集計 + タブ内検索 + 読み込み中 -->
+        <Border DockPanel.Dock="Top" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="{Binding SummaryText}" VerticalAlignment="Center" FontWeight="SemiBold" />
+                <TextBlock Text="{loc:Tr Compare_SearchLabel}" Margin="16,0,4,0" VerticalAlignment="Center" />
+                <TextBox x:Name="FilterBox" Width="240" VerticalContentAlignment="Center"
+                         AutomationProperties.AutomationId="CompareFilterBox"
+                         Text="{Binding FilterText, Mode=TwoWay}"
+                         ToolTip.Tip="{loc:Tr Compare_SearchTip}" />
+                <TextBlock Text="{Binding FilteredCountText}" Margin="8,0,0,0" VerticalAlignment="Center" Foreground="#666666" />
+                <TextBlock Text="{loc:Tr Compare_Loading}" Margin="12,0,0,0" VerticalAlignment="Center" Foreground="#666666"
+                           IsVisible="{Binding IsLoading}" />
+            </StackPanel>
+        </Border>
+
+        <Grid>
+            <DataGrid x:Name="RowsGrid" ItemsSource="{Binding Rows}"
+                      AutoGenerateColumns="False" IsReadOnly="True" CanUserSortColumns="False"
+                      HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                      RowTheme="{StaticResource CompareRowTheme}" />
+            <TextBlock Text="{Binding EmptyMessage}" Foreground="#888888"
+                       IsVisible="{Binding EmptyMessage, Converter={StaticResource IsNotNull}}"
+                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Grid>
+    </DockPanel>
+</UserControl>

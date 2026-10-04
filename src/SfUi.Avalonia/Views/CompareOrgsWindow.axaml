@@ -1,0 +1,64 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:SfUi.Avalonia.Views"
+        xmlns:loc="clr-namespace:SfUi.Avalonia"
+        x:Class="SfUi.Avalonia.Views.CompareOrgsWindow"
+        Title="{Binding Title}"
+        Height="760" Width="1280" MinWidth="980" MinHeight="540"
+        WindowStartupLocation="CenterOwner"
+        FontSize="13">
+    <DockPanel>
+
+        <!-- 上部: 組織選択 + 操作 -->
+        <Border DockPanel.Dock="Top" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
+            <StackPanel>
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Left" Text="{loc:Tr Compare_SelectOrgs}" VerticalAlignment="Top" Margin="0,4,6,0" />
+                    <!-- 組織は最大 3 列。多くて収まらない場合は縦スクロール（高さは約 4 行まで） -->
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="104">
+                        <ItemsControl ItemsSource="{Binding Orgs}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="3" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <CheckBox Margin="0,1,10,1" VerticalAlignment="Center"
+                                              IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                              ToolTip.Tip="{Binding Username}">
+                                        <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" />
+                                    </CheckBox>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                    <Button Content="{loc:Tr Compare_Refetch}" Padding="10,2"
+                            Command="{Binding RefreshCurrentCommand}" IsEnabled="{Binding CanInteract}" />
+                    <CheckBox Content="{loc:Tr Compare_DiffOnly}" Margin="12,0,0,0" VerticalAlignment="Center"
+                              IsChecked="{Binding DiffOnly, Mode=TwoWay}" />
+                    <Button Content="{loc:Tr Compare_ExportCsv}" Padding="10,2" Margin="12,0,0,0"
+                            Command="{Binding ExportCsvCommand}" IsEnabled="{Binding CanInteract}" />
+                    <TextBlock Text="{Binding StatusMessage}" Margin="16,0,0,0" VerticalAlignment="Center"
+                               Foreground="#555555" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- カテゴリ（タブ） -->
+        <TabControl ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory, Mode=TwoWay}" Margin="8">
+            <TabControl.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding Title}" />
+                </DataTemplate>
+            </TabControl.ItemTemplate>
+            <TabControl.ContentTemplate>
+                <DataTemplate>
+                    <views:CompareCategoryView />
+                </DataTemplate>
+            </TabControl.ContentTemplate>
+        </TabControl>
+    </DockPanel>
+</Window>

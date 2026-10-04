@@ -1,26 +1,47 @@
+using Avalonia.Controls;
+using Microsoft.Extensions.DependencyInjection;
+using SfUi.App.ViewModels;
+using SfUi.Avalonia.Views;
 using SfUi.Core;
 using SfUi.Presentation;
 
 namespace SfUi.Avalonia.Services;
 
 /// <summary>
-/// Avalonia 版の IAppWindowService。各ウィンドウは Phase C–E で移植するため、
-/// 現時点では未移植である旨を表示する。
+/// Avalonia 版の IAppWindowService。未移植のウィンドウは案内を表示する（Phase D–E で順次移植）。
 /// </summary>
 public sealed class AvaloniaAppWindowService : IAppWindowService
 {
     private readonly IDialogService _dialogs;
     private readonly AppLog _log;
+    private readonly IServiceProvider _services;
+    private readonly TopLevelAccessor _top;
 
-    public AvaloniaAppWindowService(IDialogService dialogs, AppLog log)
+    public AvaloniaAppWindowService(IDialogService dialogs, AppLog log, IServiceProvider services, TopLevelAccessor top)
     {
         _dialogs = dialogs;
         _log = log;
+        _services = services;
+        _top = top;
     }
 
     public void OpenOrgInfo(OrgInfo org) => NotPortedYet("Org Info");
 
-    public void OpenCompareOrgs(IReadOnlyList<OrgInfo> orgs) => NotPortedYet("Compare Orgs");
+    /// <summary>組織比較ウィンドウを開く（非モーダル・複数同時表示可）。</summary>
+    public void OpenCompareOrgs(IReadOnlyList<OrgInfo> orgs)
+    {
+        var viewModel = _services.GetRequiredService<CompareOrgsViewModel>();
+        viewModel.Initialize(orgs);
+        var window = new CompareOrgsWindow(viewModel);
+        if (_top.Current is Window owner && !ReferenceEquals(owner, window))
+        {
+            window.Show(owner);
+        }
+        else
+        {
+            window.Show();
+        }
+    }
 
     public void OpenDataIo(OrgInfo org, string? objectName = null, string? initialSoql = null) => NotPortedYet("Data I/O");
 

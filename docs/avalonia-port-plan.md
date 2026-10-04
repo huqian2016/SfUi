@@ -1,6 +1,6 @@
 # SfUi → Avalonia 移植 設計調査（Windows / macOS 両対応）
 
-最終更新: 2026-10-04 / ステータス: Phase C 完了（AI パネル以外の全タブ移植済み。残: AI チャット、Phase D 以降）
+最終更新: 2026-10-04 / ステータス: Phase D 進行中（全タブ + AI パネル + Compare Orgs 移植済み。次: Org Info / Data I/O ウィンドウ）
 
 ## 1. 目的とスコープ
 

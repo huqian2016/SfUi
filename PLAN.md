@@ -512,4 +512,11 @@ data/
   - SOQL の結果グリッドは DataView → 数値インデクサー バインドの行配列へ変換して表示（動的列の Avalonia 向け再設計）
   - 起動オプション `--tab 0..7` を追加（開発・スクリーンショット用に指定タブを開く）
   - 検証: ビルド 0 警告 / スモーク OK（全タブ + 言語切替）/ Log・SOQL タブのウィンドウキャプチャで表示確認
-  - 残: AI チャット パネル（Phase C 残件）/ グリッド大物（D）/ バックアップ・組織管理（E）/ mac 固有（F）
+  - AI チャット パネル（右サイド）も移植済み → 全タブ + 両サイド パネル完了
+
+- ✅ **Phase D-1（2026-10-04 完了）**: Avalonia 版 組織比較ウィンドウ（Compare Orgs）
+  - `CompareOrgsWindow` + `CompareCategoryView`（列は組織数に応じて動的生成、差分行は黄色ハイライト、セルは欠落/未取得=グレー・失敗=赤 + 斜体、ツールチップ付き）
+  - `AvaloniaAppWindowService.OpenCompareOrgs` を実装（上部バー「比較」から開く）。他ウィンドウは未移植の案内表示のまま
+  - 検証: ビルド 0 警告 / `--smoke --smoke-compare` OK / 実比較（acc × agent1 = 10 diffs / 20 rows）のスクリーンショット確認
+  - 開発用オプション: `--open compare`（比較ウィンドウを開いた状態で起動）
+  - 残: Org Info（5 ビュー）/ Data I/O（3 アクセスタブ）/ バックアップ / 組織管理

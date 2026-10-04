@@ -1,0 +1,120 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:SfUi.Avalonia"
+             x:Class="SfUi.Avalonia.Views.AiChatView">
+    <UserControl.Styles>
+        <!-- ユーザー発言の吹き出し -->
+        <Style Selector="Border.bubble">
+            <Setter Property="Background" Value="#FFFFFF" />
+        </Style>
+        <Style Selector="Border.bubble.user">
+            <Setter Property="Background" Value="#E7F1FF" />
+        </Style>
+    </UserControl.Styles>
+    <DockPanel>
+
+        <!-- ツールバー（コンテキスト選択と操作） -->
+        <Border DockPanel.Dock="Top" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,6"
+                            IsVisible="{Binding ShowTabDataButton}">
+                    <Button Content="{loc:Tr OrgInfo_Ai_AttachTab}" Padding="10,2"
+                            Command="{Binding AttachTabDataCommand}" />
+                </StackPanel>
+                <ItemsControl ItemsSource="{Binding QuickPrompts}" Margin="0,0,0,4"
+                              IsVisible="{Binding HasQuickPrompts}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Content="{Binding}" Padding="8,2" Margin="0,0,6,4" FontSize="12"
+                                    Command="{Binding $parent[UserControl].DataContext.UseQuickPromptCommand}"
+                                    CommandParameter="{Binding}" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="{loc:Tr Ai_Clear}" Padding="10,2" Margin="0,0,6,0" Command="{Binding ClearChatCommand}" />
+                    <Button Content="{loc:Tr Ai_AnalyzeLast}" Padding="10,2" Margin="0,0,6,0" Command="{Binding AnalyzeLastCommand}" />
+                    <Button Content="⟳" Padding="8,2" Command="{Binding RefreshContextCommand}" ToolTip.Tip="{loc:Tr Common_RefreshTip}" />
+                </StackPanel>
+                <Grid Margin="0,6,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="{loc:Tr Ai_ContextLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                    <ComboBox Grid.Column="1" ItemsSource="{Binding ContextEntries}" SelectedItem="{Binding SelectedContextEntry, Mode=TwoWay}"
+                              ToolTip.Tip="{loc:Tr Ai_ContextTip}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Summary}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                </Grid>
+                <CheckBox Content="{loc:Tr Ai_AttachContext}" IsChecked="{Binding AttachContext, Mode=TwoWay}" Margin="0,6,0,0" />
+            </StackPanel>
+        </Border>
+
+        <!-- ステータス -->
+        <Border DockPanel.Dock="Bottom" Background="#F7F7F7" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="8,4">
+            <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" />
+        </Border>
+
+        <!-- 入力 -->
+        <Grid DockPanel.Dock="Bottom" Margin="8,8,8,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBox Grid.Column="0" x:Name="InputBox" Height="64" AcceptsReturn="True" TextWrapping="Wrap"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto" Padding="6,4"
+                     Text="{Binding InputText, Mode=TwoWay}"
+                     ToolTip.Tip="{loc:Tr Ai_InputTip}" />
+            <Button Grid.Column="1" Content="{loc:Tr Ai_Send}" Width="96" Margin="6,0,0,0" VerticalAlignment="Stretch"
+                    Command="{Binding SendCommand}" />
+            <Button Grid.Column="2" Content="{loc:Tr Common_Cancel}" Width="72" Margin="6,0,0,0" VerticalAlignment="Stretch"
+                    Command="{Binding CancelCommand}" />
+        </Grid>
+
+        <!-- 会話 -->
+        <ScrollViewer x:Name="MessagesScroll" VerticalScrollBarVisibility="Auto" Padding="4">
+            <ItemsControl ItemsSource="{Binding Messages}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Classes="bubble" Classes.user="{Binding IsUser}"
+                                Margin="8,4" Padding="10,6" CornerRadius="6" MaxWidth="900" HorizontalAlignment="Left"
+                                BorderBrush="#DDDDDD" BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock Text="{Binding HeaderText}" FontWeight="Bold" FontSize="11" Foreground="#007ACC" />
+                                <TextBox Text="{Binding Content, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap"
+                                         BorderThickness="0" Background="Transparent" MaxWidth="860"
+                                         ScrollViewer.VerticalScrollBarVisibility="Disabled" />
+                                <ItemsControl ItemsSource="{Binding Snippets}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Button Content="{Binding ApplyLabel}" Padding="10,2" Margin="0,6,8,0"
+                                                    IsVisible="{Binding CanApply}"
+                                                    Command="{Binding $parent[UserControl].DataContext.ApplySnippetCommand}"
+                                                    CommandParameter="{Binding}" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>

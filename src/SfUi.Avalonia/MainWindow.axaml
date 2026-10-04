@@ -216,10 +216,10 @@
             <views:QuickPanelView DataContext="{Binding QuickPanel}" />
         </Border>
 
-        <!-- AI パネル: 右サイド（Phase C で移植） -->
+        <!-- AI パネル: 右サイド -->
         <Border DockPanel.Dock="Right" Width="400" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="1,0,0,0"
                 IsVisible="{Binding IsAiPanelVisible}">
-            <TextBlock Classes="placeholder" Text="AI chat panel — ported in Phase C" TextWrapping="Wrap" />
+            <views:AiChatView DataContext="{Binding Ai}" />
         </Border>
 
         <!-- メイン: 機能タブ（Settings 以外は Phase C–E で移植） -->

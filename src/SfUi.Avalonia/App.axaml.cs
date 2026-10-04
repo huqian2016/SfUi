@@ -17,6 +17,8 @@ public partial class App : Application
 
     private AppLog? _log;
     private bool _smokeTest;
+    private bool _smokeCompare;
+    private MainWindow? _mainWindow;
 
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
 
@@ -26,6 +28,7 @@ public partial class App : Application
         {
             var args = desktop.Args ?? Array.Empty<string>();
             _smokeTest = args.Any(a => string.Equals(a, "--smoke", StringComparison.OrdinalIgnoreCase));
+            _smokeCompare = _smokeTest && args.Any(a => string.Equals(a, "--smoke-compare", StringComparison.OrdinalIgnoreCase));
             var dataDir = ReadOption(args, "--data-dir") ?? Environment.GetEnvironmentVariable("SFUI_DATA_DIR");
 
             var paths = AppPaths.Resolve(dataDir);
@@ -49,6 +52,7 @@ public partial class App : Application
             services.AddTransient<AiChatViewModel>();
             services.AddSingleton<SettingsViewModel>();
             services.AddSingleton<QuickPanelViewModel>();
+            services.AddTransient<CompareOrgsViewModel>();
             services.AddSingleton<MainWindow>();
             Services = services.BuildServiceProvider();
 
@@ -64,11 +68,32 @@ public partial class App : Application
             var window = Services.GetRequiredService<MainWindow>();
             Services.GetRequiredService<TopLevelAccessor>().Current = window;
             desktop.MainWindow = window;
+            _mainWindow = window;
 
             // 開発/スクリーンショット用: 指定タブを開いた状態で起動（--tab 0..7）
             if (int.TryParse(ReadOption(args, "--tab"), out var tabIndex) && tabIndex >= 0)
             {
                 Services.GetRequiredService<MainViewModel>().SelectedTabIndex = tabIndex;
+            }
+
+            // 開発/スクリーンショット用: 指定ウィンドウを開いた状態で起動（--open compare）
+            var openTarget = ReadOption(args, "--open");
+            if (openTarget is not null)
+            {
+                window.Opened += async (_, _) =>
+                {
+                    var mainViewModel = Services.GetRequiredService<MainViewModel>();
+                    for (var i = 0; i < 60 && mainViewModel.Orgs.Count == 0; i++)
+                    {
+                        await Task.Delay(500);
+                    }
+
+                    if (string.Equals(openTarget, "compare", StringComparison.OrdinalIgnoreCase) && mainViewModel.Orgs.Count > 0)
+                    {
+                        Services.GetRequiredService<IAppWindowService>().OpenCompareOrgs(mainViewModel.Orgs.ToList());
+                        _log?.Info("--open compare: 比較ウィンドウを開きました");
+                    }
+                };
             }
 
             if (_smokeTest)
@@ -92,6 +117,22 @@ public partial class App : Application
             }
 
             _log?.Info($"--smoke: 組織一覧 {vm.Orgs.Count} 件");
+
+            if (_smokeCompare)
+            {
+                Services.GetRequiredService<IAppWindowService>().OpenCompareOrgs(vm.Orgs.ToList());
+                await Task.Delay(2500);
+                if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime lifetime)
+                {
+                    foreach (var extra in lifetime.Windows.Where(w => !ReferenceEquals(w, _mainWindow)).ToList())
+                    {
+                        extra.Close();
+                    }
+                }
+
+                _log?.Info("--smoke: compare ウィンドウ OK");
+            }
+
             UiText.SetLanguage(UiText.Japanese);
             await Dispatcher.UIThread.InvokeAsync(() => { });
             UiText.SetLanguage(UiText.English);
