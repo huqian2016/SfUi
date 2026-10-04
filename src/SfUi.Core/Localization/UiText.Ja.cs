@@ -7,6 +7,9 @@ public static partial class UiText
     {
         // ---- 共通 ----
         ["Common_Ready"] = "準備完了",
+        ["Common_OK"] = "OK",
+        ["Common_Yes"] = "はい",
+        ["Common_No"] = "いいえ",
         ["Common_Cancel"] = "キャンセル",
         ["Common_Canceled"] = "キャンセルしました",
         ["Common_Running"] = "実行中…",

@@ -499,3 +499,9 @@ data/
   - `SfUi.App`: WPF 実装（`WpfDialogService` / `WpfFilePickerService` / `WpfUiDispatcher` / `WpfClipboardService` / `WpfAppWindowService`）を DI 登録。VM 名前空間は当面 `SfUi.App.ViewModels`（WPF 退役時に改名）
   - これでロジック修正は Core + Presentation の 1 箇所で Windows / macOS 両方に反映される（Avalonia 側は UI のみ実装）
   - 検証: ビルド 0 警告 / テスト 395 件成功 / スモーク OK（全タブ・言語切替）/ UIA チェック（組織管理 23・バックアップ 20 項目）すべて PASS
+
+- ✅ **Phase B（2026-10-04 完了）**: `SfUi.Avalonia` 骨髓み（DI / テーマ / Icons / `{loc:Tr}` / UI サービス実装）+ MainWindow シェル + 設定タブ
+  - 新規 `src/SfUi.Avalonia`（net9.0 / Avalonia 11.3.2）: `Program` / `App`（DI 登録）/ `Localization` + `TrExtension`（言語切替追従）/ `Resources/Icons.axaml`（WPF 版と同一ジオメトリ）/ `MainWindow`（上部バー・ステータスバー・クイック/AI パネル枠・8 タブ）/ `Views/SettingsView`
+  - UI サービス実装: `AvaloniaDialogService`（MessageBox/InputBox 相当の共通ダイアログ・DispatcherFrame で同期 API）/ `AvaloniaFilePickerService`（StorageProvider・WPF フィルタ形式を変換）/ `AvaloniaUiDispatcher` / `AvaloniaClipboardService` / `AvaloniaAppWindowService`（未移植ウィンドウは案内を表示）
+  - 検証: ビルド 0 警告 / `--smoke` = シェル表示 → 組織一覧 12 件取得 → 言語切替 OK → 正常終了（exit 0）/ 起動スクリーンショットでアイコン・テーマ・タブ表示を確認
+  - 未移植: 7 タブ + クイック/AI パネル（Phase C）/ グリッド系（D）/ バックアップ・組織管理（E）/ mac 固有（F）

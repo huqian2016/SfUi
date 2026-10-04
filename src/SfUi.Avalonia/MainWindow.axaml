@@ -1,0 +1,253 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:SfUi.Avalonia.Views"
+        xmlns:loc="clr-namespace:SfUi.Avalonia"
+        x:Class="SfUi.Avalonia.MainWindow"
+        Title="{loc:Tr App_Title}"
+        Width="1520" Height="720" MinWidth="1000" MinHeight="540"
+        WindowStartupLocation="CenterScreen"
+        FontSize="13">
+    <Window.Resources>
+        <SolidColorBrush x:Key="IconFill" Color="#3A3A3A" />
+    </Window.Resources>
+    <Window.Styles>
+        <!-- アイコンのみのボタン（ツールチップでラベルと説明を表示） -->
+        <Style Selector="Button.icon">
+            <Setter Property="Width" Value="32" />
+            <Setter Property="Height" Value="26" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="ToggleButton.icontoggle">
+            <Setter Property="Width" Value="32" />
+            <Setter Property="Height" Value="26" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+        </Style>
+        <!-- メイン タブの暫定プレースホルダ（Phase C–E で各ビューを移植） -->
+        <Style Selector="TextBlock.placeholder">
+            <Setter Property="Margin" Value="16" />
+            <Setter Property="Foreground" Value="Gray" />
+        </Style>
+    </Window.Styles>
+    <DockPanel>
+
+        <!-- 上部バー: 組織/フォルダ切替とツール起動 -->
+        <Border DockPanel.Dock="Top" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="{loc:Tr Main_OrgLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                <ComboBox x:Name="OrgComboBox" Width="215" Margin="0,0,6,0"
+                          ItemsSource="{Binding Orgs}"
+                          SelectedItem="{Binding SelectedOrg, Mode=TwoWay}"
+                          ToolTip.Tip="{loc:Tr Main_OrgTooltip}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding DisplayName}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                <Button Classes="icon" Margin="0,0,12,0"
+                        Command="{Binding RefreshOrgsCommand}"
+                        ToolTip.Tip="{loc:Tr Main_RefreshOrgsTip}"
+                        AutomationProperties.Name="{loc:Tr Main_RefreshOrgsTip}">
+                    <Path Width="16" Height="16" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconArrowClockwise}" />
+                </Button>
+
+                <Button Classes="icon" Margin="0,0,8,0"
+                        Command="{Binding OpenOrgInfoCommand}"
+                        IsEnabled="{Binding HasSelectedOrg}"
+                        ToolTip.Tip="{loc:Tr Main_OrgInfoTip}"
+                        AutomationProperties.Name="{loc:Tr Main_OrgInfo}">
+                    <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconInfo}" />
+                </Button>
+
+                <Button Classes="icon" Margin="0,0,8,0"
+                        Command="{Binding OpenCompareOrgsCommand}"
+                        IsEnabled="{Binding CanCompareOrgs}"
+                        ToolTip.Tip="{loc:Tr Main_CompareTip}"
+                        AutomationProperties.Name="{loc:Tr Main_Compare}">
+                    <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconCompare}" />
+                </Button>
+
+                <Button Classes="icon" Margin="0,0,10,0"
+                        Command="{Binding OpenDataIoCommand}"
+                        IsEnabled="{Binding HasSelectedOrg}"
+                        ToolTip.Tip="{loc:Tr Main_DataIoTip}"
+                        AutomationProperties.Name="{loc:Tr Main_DataIo}">
+                    <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconDataIo}" />
+                </Button>
+
+                <Button Classes="icon" Margin="0,0,10,0"
+                        Command="{Binding OpenBackupCommand}"
+                        IsEnabled="{Binding HasSelectedOrg}"
+                        ToolTip.Tip="{loc:Tr Main_BackupTip}"
+                        AutomationProperties.Name="{loc:Tr Main_Backup}">
+                    <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconCloudDownload}" />
+                </Button>
+
+                <Button Classes="icon" Margin="0,0,10,0"
+                        Command="{Binding OpenOrgManageCommand}"
+                        ToolTip.Tip="{loc:Tr Main_OrgManageTip}"
+                        AutomationProperties.Name="{loc:Tr Main_OrgManage}">
+                    <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconBuilding}" />
+                </Button>
+
+                <TextBlock Text="{loc:Tr Main_FolderLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                <AutoCompleteBox x:Name="FolderComboBox" Width="230" Margin="0,0,4,0"
+                                 ItemsSource="{Binding RecentFolders}"
+                                 ValueMemberBinding="{Binding Path}"
+                                 Text="{Binding SelectedFolder, Mode=TwoWay}"
+                                 SelectionChanged="FolderComboBox_SelectionChanged"
+                                 KeyDown="FolderComboBox_KeyDown"
+                                 LostFocus="FolderComboBox_LostFocus"
+                                 ToolTip.Tip="{loc:Tr Main_FolderTooltip}" />
+                <Button Classes="icon" Margin="0,0,8,0"
+                        Command="{Binding BrowseFolderCommand}"
+                        ToolTip.Tip="{loc:Tr Main_BrowseTip}"
+                        AutomationProperties.Name="{loc:Tr Main_Browse}">
+                    <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconFolderSearch}" />
+                </Button>
+
+                <Border Width="1" Background="#CCCCCC" Margin="0,2,8,2" />
+
+                <Button Classes="icon" Margin="0,0,6,0"
+                        Command="{Binding OpenTerminalCommand}"
+                        ToolTip.Tip="{loc:Tr Main_TerminalTip}"
+                        AutomationProperties.Name="{loc:Tr Main_Terminal}">
+                    <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconTerminal}" />
+                    <Button.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="{loc:Tr Main_TermWt}" Command="{Binding $parent[ContextMenu].DataContext.OpenTerminalCommand}" />
+                            <MenuItem Header="{loc:Tr Main_TermPs}" Command="{Binding $parent[ContextMenu].DataContext.OpenTerminalCommand}" CommandParameter="powershell" />
+                            <MenuItem Header="{loc:Tr Main_TermCmd}" Command="{Binding $parent[ContextMenu].DataContext.OpenTerminalCommand}" CommandParameter="cmd" />
+                            <MenuItem Header="{loc:Tr Main_TermWsl}" Command="{Binding $parent[ContextMenu].DataContext.OpenTerminalCommand}" CommandParameter="wsl" />
+                        </ContextMenu>
+                    </Button.ContextMenu>
+                </Button>
+
+                <Button Classes="icon" Margin="0,0,6,0"
+                        Command="{Binding OpenExplorerCommand}"
+                        ToolTip.Tip="{loc:Tr Main_ExplorerTip}"
+                        AutomationProperties.Name="{loc:Tr Main_Explorer}">
+                    <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconFolderOpen}" />
+                    <Button.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="{loc:Tr Main_OpenFolder}" Command="{Binding $parent[ContextMenu].DataContext.OpenExplorerCommand}" />
+                            <MenuItem Header="{loc:Tr Main_CopyPath}" Command="{Binding $parent[ContextMenu].DataContext.OpenExplorerCommand}" CommandParameter="copy-path" />
+                        </ContextMenu>
+                    </Button.ContextMenu>
+                </Button>
+
+                <Button Classes="icon" Margin="0,0,6,0"
+                        Command="{Binding OpenVsCodeCommand}"
+                        ToolTip.Tip="{loc:Tr Main_VsCodeTip}"
+                        AutomationProperties.Name="{loc:Tr Main_VsCode}">
+                    <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconCode}" />
+                    <Button.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="{loc:Tr Main_VsCodeNew}" Command="{Binding $parent[ContextMenu].DataContext.OpenVsCodeCommand}" />
+                            <MenuItem Header="{loc:Tr Main_VsCodeReuse}" Command="{Binding $parent[ContextMenu].DataContext.OpenVsCodeCommand}" CommandParameter="reuse" />
+                        </ContextMenu>
+                    </Button.ContextMenu>
+                </Button>
+
+                <Button Classes="icon" Margin="0,0,6,0"
+                        Command="{Binding OpenBrowserCommand}"
+                        ToolTip.Tip="{loc:Tr Main_BrowserTip}"
+                        AutomationProperties.Name="{loc:Tr Main_Browser}">
+                    <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconGlobe}" />
+                    <Button.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="{loc:Tr Main_BrowserHome}" Command="{Binding $parent[ContextMenu].DataContext.OpenBrowserCommand}" />
+                            <MenuItem Header="{loc:Tr Main_BrowserSetup}" Command="{Binding $parent[ContextMenu].DataContext.OpenBrowserCommand}" CommandParameter="org-setup" />
+                            <MenuItem Header="{loc:Tr Main_BrowserLogin}" Command="{Binding $parent[ContextMenu].DataContext.OpenBrowserCommand}" CommandParameter="login" />
+                            <Separator />
+                            <MenuItem Header="{loc:Tr Main_BrowserInput}" Command="{Binding $parent[ContextMenu].DataContext.OpenBrowserCommand}" CommandParameter="input" />
+                        </ContextMenu>
+                    </Button.ContextMenu>
+                </Button>
+
+                <Border Width="1" Background="#CCCCCC" Margin="12,2,12,2" />
+
+                <ToggleButton Classes="icontoggle"
+                              IsChecked="{Binding IsQuickPanelVisible, Mode=TwoWay}"
+                              ToolTip.Tip="{loc:Tr Main_QuickToggleTip}"
+                              AutomationProperties.Name="{loc:Tr Main_QuickToggle}">
+                    <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconPanelLeft}" />
+                </ToggleButton>
+
+                <ToggleButton Classes="icontoggle" Margin="6,0,0,0"
+                              IsChecked="{Binding IsAiPanelVisible, Mode=TwoWay}"
+                              ToolTip.Tip="{loc:Tr Main_AiToggleTip}"
+                              AutomationProperties.Name="AI">
+                    <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconSparkle}" />
+                </ToggleButton>
+
+                <ComboBox Width="96" Margin="6,0,0,0" VerticalContentAlignment="Center"
+                          ItemsSource="{Binding LanguageLabels}"
+                          SelectedItem="{Binding LanguageLabel, Mode=TwoWay}"
+                          ToolTip.Tip="{loc:Tr Main_LanguageTip}" />
+            </StackPanel>
+        </Border>
+
+        <!-- ステータスバー -->
+        <Border DockPanel.Dock="Bottom" Background="#007ACC" Padding="8,4">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock x:Name="StatusText" Text="{Binding StatusMessage}" Foreground="White" />
+                    <TextBlock Text="{Binding StatusDetail}" Foreground="#CFE8FF" Margin="16,0,0,0" />
+                </StackPanel>
+                <TextBlock Grid.Column="1" x:Name="DataPathText" Text="" Foreground="#CFE8FF"
+                           HorizontalAlignment="Right" Margin="0,0,12,0" TextTrimming="CharacterEllipsis" />
+                <TextBlock Grid.Column="2" x:Name="VersionText" Text="" Foreground="White" />
+            </Grid>
+        </Border>
+
+        <!-- クイックパネル（お気に入り）: 左サイド（Phase C で移植） -->
+        <Border DockPanel.Dock="Left" Width="240" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="0,0,1,0"
+                IsVisible="{Binding IsQuickPanelVisible}">
+            <TextBlock Classes="placeholder" Text="Quick panel — ported in Phase C" TextWrapping="Wrap" />
+        </Border>
+
+        <!-- AI パネル: 右サイド（Phase C で移植） -->
+        <Border DockPanel.Dock="Right" Width="400" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="1,0,0,0"
+                IsVisible="{Binding IsAiPanelVisible}">
+            <TextBlock Classes="placeholder" Text="AI chat panel — ported in Phase C" TextWrapping="Wrap" />
+        </Border>
+
+        <!-- メイン: 機能タブ（Settings 以外は Phase C–E で移植） -->
+        <TabControl Margin="8" SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}">
+            <TabItem Header="{loc:Tr Tab_Soql}">
+                <TextBlock Classes="placeholder" Text="SOQL — ported in Phase C" />
+            </TabItem>
+            <TabItem Header="{loc:Tr Tab_Apex}">
+                <TextBlock Classes="placeholder" Text="Apex — ported in Phase C" />
+            </TabItem>
+            <TabItem Header="{loc:Tr Tab_Log}">
+                <TextBlock Classes="placeholder" Text="Log — ported in Phase C" />
+            </TabItem>
+            <TabItem Header="{loc:Tr Tab_History}">
+                <TextBlock Classes="placeholder" Text="History — ported in Phase C" />
+            </TabItem>
+            <TabItem Header="{loc:Tr Tab_Deploy}">
+                <TextBlock Classes="placeholder" Text="Deploy — ported in Phase C" />
+            </TabItem>
+            <TabItem Header="{loc:Tr Tab_Command}">
+                <TextBlock Classes="placeholder" Text="Command — ported in Phase C" />
+            </TabItem>
+            <TabItem Header="{loc:Tr Tab_Api}">
+                <TextBlock Classes="placeholder" Text="API console — ported in Phase C" />
+            </TabItem>
+            <TabItem Header="{loc:Tr Tab_Settings}">
+                <views:SettingsView DataContext="{Binding Settings}" />
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</Window>

@@ -1,0 +1,157 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:SfUi.Avalonia"
+             x:Class="SfUi.Avalonia.Views.SettingsView">
+    <DockPanel>
+
+        <!-- ステータス -->
+        <Border DockPanel.Dock="Bottom" Background="#F7F7F7" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="8,4">
+            <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" />
+        </Border>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="12" MaxWidth="860" HorizontalAlignment="Left">
+
+                <TextBlock Text="{loc:Tr Settings_Title}" FontSize="16" FontWeight="Bold" />
+                <TextBlock Text="{Binding DataRootText}" Foreground="Gray" Margin="0,2,0,4" TextWrapping="Wrap" />
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                    <Button Content="{loc:Tr Settings_OpenDataFolder}" Padding="10,2" Margin="0,0,6,0" Command="{Binding OpenDataFolderCommand}" />
+                    <Button Content="{loc:Tr Settings_Reload}" Padding="10,2" Command="{Binding ReloadCommand}" ToolTip.Tip="{loc:Tr Settings_ReloadTip}" />
+                </StackPanel>
+
+                <Border BorderBrush="#DDDDDD" BorderThickness="1" CornerRadius="4" Padding="8">
+                    <StackPanel>
+                        <TextBlock Text="{loc:Tr Settings_SfGroup}" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="110" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{loc:Tr Settings_SfPath}" VerticalAlignment="Center" />
+                            <TextBox Grid.Column="1" Padding="4,2" FontFamily="Consolas, Menlo, monospace"
+                                     Text="{Binding SfPath, Mode=TwoWay}"
+                                     ToolTip.Tip="{loc:Tr Settings_SfPathTip}" />
+                            <Button Grid.Column="2" Content="{loc:Tr Settings_Browse}" Padding="10,2" Margin="6,0,0,0" Command="{Binding BrowseSfCommand}" />
+                            <Button Grid.Column="3" Content="{loc:Tr Settings_Clear}" Padding="10,2" Margin="6,0,0,0" Command="{Binding ClearSfPathCommand}"
+                                    ToolTip.Tip="{loc:Tr Settings_ClearTip}" />
+                        </Grid>
+                        <TextBlock Text="{Binding DetectedSummary}" Foreground="Gray" FontSize="11" Margin="0,6,0,0" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <Border BorderBrush="#DDDDDD" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,10,0,0">
+                    <StackPanel>
+                        <TextBlock Text="{loc:Tr Settings_ToolsGroup}" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="110" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{loc:Tr Settings_Terminal}" VerticalAlignment="Center" />
+                            <TextBox Grid.Column="1" Padding="4,2" FontFamily="Consolas, Menlo, monospace"
+                                     Text="{Binding TerminalPath, Mode=TwoWay}"
+                                     ToolTip.Tip="{loc:Tr Settings_TerminalTip}" />
+                            <Button Grid.Column="2" Content="{loc:Tr Settings_Browse}" Padding="10,2" Margin="6,0,0,0" Command="{Binding BrowseTerminalCommand}" />
+                        </Grid>
+                        <Grid Margin="0,6,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="110" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{loc:Tr Settings_VsCode}" VerticalAlignment="Center" />
+                            <TextBox Grid.Column="1" Padding="4,2" FontFamily="Consolas, Menlo, monospace"
+                                     Text="{Binding VsCodePath, Mode=TwoWay}"
+                                     ToolTip.Tip="{loc:Tr Settings_VsCodeTip}" />
+                            <Button Grid.Column="2" Content="{loc:Tr Settings_Browse}" Padding="10,2" Margin="6,0,0,0" Command="{Binding BrowseVsCodeCommand}" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <Border BorderBrush="#DDDDDD" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,10,0,0">
+                    <StackPanel>
+                        <TextBlock Text="{loc:Tr Settings_HistoryGroup}" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{loc:Tr Settings_HistoryLimit}" VerticalAlignment="Center" Width="110" />
+                            <TextBox Width="100" Padding="4,2" Text="{Binding HistoryLimitText, Mode=TwoWay}" />
+                            <TextBlock Text="{loc:Tr Settings_PerType}" VerticalAlignment="Center" Margin="6,0,0,0" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                            <TextBlock Text="{loc:Tr Settings_Threshold}" VerticalAlignment="Center" Width="110" />
+                            <TextBox Width="100" Padding="4,2" Text="{Binding ThresholdKbText, Mode=TwoWay}" />
+                            <TextBlock Text="{loc:Tr Settings_ThresholdSuffix}" VerticalAlignment="Center" Margin="6,0,0,0" />
+                        </StackPanel>
+                        <Button Content="{loc:Tr Settings_SeedSamples}" Padding="10,2" Margin="0,10,0,0"
+                                HorizontalAlignment="Left" Command="{Binding SeedSamplesCommand}"
+                                ToolTip.Tip="{loc:Tr Settings_SeedSamplesTip}" />
+                    </StackPanel>
+                </Border>
+
+                <Border BorderBrush="#DDDDDD" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,10,0,0">
+                    <StackPanel>
+                        <TextBlock Text="{loc:Tr Settings_ConfirmGroup}" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{loc:Tr Settings_ConfirmPolicy}" VerticalAlignment="Center" Width="110" />
+                        <ComboBox Width="200" ItemsSource="{Binding ConfirmPolicyLabels}"
+                                  SelectedItem="{Binding ConfirmPolicyLabel, Mode=TwoWay}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border BorderBrush="#DDDDDD" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,10,0,0">
+                    <StackPanel>
+                        <TextBlock Text="{loc:Tr Settings_AiGroup}" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{loc:Tr Settings_AiPresets}" Width="110" VerticalAlignment="Center" />
+                            <Button Content="{loc:Tr Settings_AiPresetDeepSeek}" Padding="8,2" Margin="0,0,6,0"
+                                    Command="{Binding UseDeepSeekPresetCommand}" />
+                            <Button Content="{loc:Tr Settings_AiPresetOpenAI}" Padding="8,2" Margin="0,0,6,0"
+                                    Command="{Binding UseOpenAiPresetCommand}" />
+                            <Button Content="{loc:Tr Settings_AiPresetAnthropic}" Padding="8,2" Margin="0,0,6,0"
+                                    Command="{Binding UseAnthropicPresetCommand}" />
+                            <Button Content="{loc:Tr Settings_AiPresetLocal}" Padding="8,2"
+                                    Command="{Binding UseLocalPresetCommand}" />
+                        </StackPanel>
+                        <Grid Margin="0,6,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="110" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{loc:Tr Settings_AiEndpoint}" VerticalAlignment="Center" />
+                            <TextBox Grid.Column="1" Padding="4,2" FontFamily="Consolas, Menlo, monospace"
+                                     Text="{Binding ApiEndpoint, Mode=TwoWay}"
+                                     ToolTip.Tip="{loc:Tr Settings_AiEndpointTip}" />
+                        </Grid>
+                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                            <TextBlock Text="{loc:Tr Settings_Model}" Width="110" VerticalAlignment="Center" />
+                            <TextBox Width="260" Padding="4,2" FontFamily="Consolas, Menlo, monospace"
+                                     Text="{Binding AiModel, Mode=TwoWay}"
+                                     ToolTip.Tip="{loc:Tr Settings_AiModelTip}" />
+                        </StackPanel>
+                        <Grid Margin="0,6,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="110" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{loc:Tr Settings_ApiKey}" VerticalAlignment="Center" />
+                            <TextBox Grid.Column="1" Padding="4,2" FontFamily="Consolas, Menlo, monospace"
+                                     Text="{Binding ApiKey, Mode=TwoWay}"
+                                     ToolTip.Tip="{loc:Tr Settings_ApiKeyTip}" />
+                            <Button Grid.Column="2" Content="{loc:Tr Settings_Test}" Padding="10,2" Margin="6,0,0,0"
+                                    Command="{Binding TestConnectionCommand}" />
+                        </Grid>
+                        <TextBlock Text="{loc:Tr Settings_ApiKeyTip}" Foreground="Gray" FontSize="11" Margin="0,6,0,0" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <StackPanel Orientation="Horizontal" Margin="0,14,0,8">
+                    <Button Content="{loc:Tr Settings_Save}" Padding="18,4" FontWeight="Bold" Command="{Binding SaveCommand}" />
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>
