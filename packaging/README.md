@@ -69,9 +69,10 @@ bash packaging/make-mac-app.sh osx-x64
 
 - `dotnet publish`（self-contained）→ `dist/mac/SfUi.app`（`Contents/MacOS` + `Info.plist` + `SfUi.icns`）+ 配布用 zip を作成
 - バージョンは `src/SfUi.Avalonia/SfUi.Avalonia.csproj` の `<Version>` から自動取得
-- icns は `sips` / `iconutil` で `src/SfUi.App/Resources/SfUi.ico` から生成（ツールが無い環境ではスキップ）
+- icns はコミット済みの `packaging/mac/SfUi.iconset`（PNG 一式）から `iconutil` で生成（`SfUi.ico` の 256px フレームを元に Windows で生成 → どの環境でも同じアイコン）
 - 署名 / 公証は環境変数を設定した場合のみ実行（`SFUI_CODESIGN_IDENTITY` / `SFUI_NOTARIZE_APPLE_ID` / `SFUI_NOTARIZE_TEAM_ID` / `SFUI_NOTARIZE_PASSWORD`）
 - データ フォルダは実行ファイル隣接を優先し、書込不可時は `~/Library/Application Support/SfUi` にフォールバック
+- GitHub Release には CI の macos-latest で組み立てた `SfUi-<version>-osx-arm64.zip`（`.app`・アイコン入り・起動スモーク済み）を添付する（例: v0.9.2）
 
 ## CI（GitHub Actions）
 

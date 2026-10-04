@@ -73,8 +73,8 @@ and an **Org Management** window that keeps your orgs in order (default, alias, 
 ## Getting started
 
 1. Download from the [Releases](../../releases) page:
-   - **`SfUi.exe`** — the portable single executable, or
-   - **`SfUi-v0.9.1-portable.zip`** — the executable **plus a ready-to-use `data/` folder with 30 sample SOQL / Apex / commands / REST requests already in the history** (just extract and run).
+   - **Windows** — **`SfUi.exe`** (the portable single executable), or **`SfUi-v0.9.2-portable.zip`** — the executable **plus a ready-to-use `data/` folder with 30 sample SOQL / Apex / commands / REST requests already in the history** (just extract and run).
+   - **macOS (Apple Silicon)** — **`SfUi-0.9.2-osx-arm64.zip`** — extract the zip and run `SfUi.app`. The app is not notarized yet, so on the first launch **right-click the app → Open** once (or run `xattr -dr com.apple.quarantine SfUi.app` in Terminal); double-click works from the second launch on.
 2. Put it in any folder and double-click (no installer).
    - Windows SmartScreen may warn because the binary is unsigned — choose *More info* → *Run anyway*.
 3. On first run a `data/` folder is created next to the exe (portable mode).
@@ -156,6 +156,8 @@ dotnet run --project src/SfUi.Avalonia
 bash packaging/make-mac-app.sh osx-arm64   # or osx-x64
 ```
 
+The prebuilt macOS app (`SfUi.app`, Apple Silicon) is attached to each [release](../../releases) — it is assembled and smoke-tested (launch / language switch / exit 0) on real macOS runners in CI.
+
 ### Project layout
 
 ```
@@ -231,8 +233,8 @@ SOQL・匿名Apex・デバッグログ・デプロイ・自由コマンド・RES
 ## 使い方
 
 1. [Releases](../../releases) からダウンロード
-   - **`SfUi.exe`** … 実行ファイル単体（サンプル履歴は設定画面から後で追加可）
-   - **`SfUi-v0.9.1-portable.zip`** … exe + サンプル履歴 30 件入りの `data/` フォルダ（解凍してそのまま実行）
+   - **Windows 版** … **`SfUi.exe`**（実行ファイル単体。サンプル履歴は設定画面から後で追加可）または **`SfUi-v0.9.2-portable.zip`**（exe + サンプル履歴 30 件入りの `data/` フォルダ。解凍してそのまま実行）
+   - **macOS 版（Apple Silicon）** … **`SfUi-0.9.2-osx-arm64.zip`**（解凍して `SfUi.app` を実行。未署名のため初回のみ **右クリック →「開く」**、または ターミナルで `xattr -dr com.apple.quarantine SfUi.app` を 1 回実行。2 回目以降はダブルクリックで起動できます）
 2. 任意のフォルダに置いてダブルクリック（インストーラー不要）
    - 署名なしのため SmartScreen の警告が出たら「詳細情報」→「実行」
 3. 初回起動時に exe 隣に `data/` フォルダ（設定・履歴・ログ）が作成されます（ポータブル動作）
@@ -309,3 +311,5 @@ dotnet run --project src/SfUi.Avalonia
 # macOS 上で SfUi.app + 配布 zip を作成（dist/mac/）
 bash packaging/make-mac-app.sh osx-arm64   # Intel は osx-x64
 ```
+
+ビルド済みの macOS 版（`SfUi.app`・Apple Silicon）は各 [Release](../../releases) に添付されています（CI の実 macOS ランナーで組立 + 起動スモーク済み）。
