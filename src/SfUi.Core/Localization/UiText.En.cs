@@ -38,6 +38,7 @@ public static partial class UiText
         ["Main_FolderLabel"] = "SF folder:",
         ["Main_FolderTooltip"] = "Working folder for sf commands (choose from recent or type)",
         ["Main_Browse"] = "Browse…",
+        ["Main_BrowseTip"] = "Choose the SF project folder",
         ["Main_Terminal"] = "Terminal",
         ["Main_TerminalTip"] = "Click: open a terminal in the current folder / Right-click: choose type",
         ["Main_TermWt"] = "Windows Terminal (default)",

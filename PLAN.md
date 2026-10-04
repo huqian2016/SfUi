@@ -1,6 +1,6 @@
 # SfUi — Salesforce CLI 統合デスクトップツール 実装計画
 
-最終更新: 2026-10-04 / ステータス: Phase 0-13 完了 + AI 接続先の汎用化 + 組織比較 + データ入出力 + アクセス権限タブ + Microsoft Store（MSIX）提出準備完了（v0.7.2 / テスト 358 件 / 実 API スモーク + UIA E2E 検証済み。v0.7.2 は GitHub Release で公開中、Microsoft Store は審査準備中）
+最終更新: 2026-10-04 / ステータス: Phase 0-13 完了 + AI 接続先の汎用化 + 組織比較 + データ入出力 + アクセス権限タブ + Microsoft Store（MSIX）提出準備完了（v0.7.3 / テスト 358 件 / 実 API スモーク + UIA E2E 検証済み。v0.7.2 は GitHub Release で公開中、Microsoft Store は審査準備中）
 
 ## 1. 概要
 
@@ -413,3 +413,10 @@ data/
   - 取得失敗（未認証・CLI エラー・タイムアウト）時は従来の通常 URL にフォールバック。セッション URL は認証情報を含むため「最近の URL」には保存しない
   - テスト 358 件（+2: frontdoor URL 解析）/ 実機 UI 検証（ブラウザボタン左クリック → ステータスに `frontdoor.jsp?sid=` 表示・PASS）
   - 2026-10-04: GitHub Release **v0.7.2** 公開（アセット = `SfUi.exe` + `SfUi-v0.7.2-portable.zip`）
+
+- ✅ **2026-10-04 改修（v0.7.3）**: Main ウィンドウ上部バーのボタンを Fluent アイコン化
+  - Microsoft Fluent UI System Icons（MIT）からアイコンを取得し、`src/SfUi.App/Resources/Icons.xaml`（StreamGeometry）として同梱
+  - 上部バーの全ボタン（組織更新 / 組織情報 / 組織比較 / データ入出力 / 参照 / ターミナル / エクスプローラー / VS Code / ブラウザ / クイックパネル / AI）をアイコンのみに変更
+  - マウスオーバーで「ラベル + 説明」のツールチップを表示。AI トグルはオン/オフで Sparkle の regular / filled を切替
+  - アクセシビリティ / E2E 互換のため `AutomationProperties.Name` にラベルを設定（既存 UI チェック・E2E のボタン名検索が継続動作）
+  - 実機検証: トップバー スクリーンショット確認 / ツールチップ probe（UIA でラベル + 説明を確認・PASS）/ 既存 UI チェック OK（テスト 358 件）

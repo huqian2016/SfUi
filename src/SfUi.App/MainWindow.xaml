@@ -10,6 +10,22 @@
         FontSize="13">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
+        <SolidColorBrush x:Key="IconFill" Color="#3A3A3A" />
+        <!-- アイコンのみのボタン（ツールチップでラベルと説明を表示） -->
+        <Style x:Key="IconButton" TargetType="Button">
+            <Setter Property="Width" Value="32" />
+            <Setter Property="Height" Value="26" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+        </Style>
+        <Style x:Key="IconToggleButton" TargetType="ToggleButton">
+            <Setter Property="Width" Value="32" />
+            <Setter Property="Height" Value="26" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+        </Style>
     </Window.Resources>
     <DockPanel>
 
@@ -22,24 +38,51 @@
                           SelectedItem="{Binding SelectedOrg, Mode=TwoWay}"
                           DisplayMemberPath="DisplayName"
                           ToolTip="{loc:Tr Main_OrgTooltip}" />
-                <Button Content="⟳" Padding="8,2" Margin="0,0,12,0"
+                <Button Style="{StaticResource IconButton}" Margin="0,0,12,0"
                         Command="{Binding RefreshOrgsCommand}"
-                        ToolTip="{loc:Tr Main_RefreshOrgsTip}" />
+                        ToolTip="{loc:Tr Main_RefreshOrgsTip}"
+                        AutomationProperties.Name="{loc:Tr Main_RefreshOrgsTip}">
+                    <Path Width="16" Height="16" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconArrowClockwise}" />
+                </Button>
 
-                <Button Content="{loc:Tr Main_OrgInfo}" Padding="10,2" Margin="0,0,8,0"
+                <Button Style="{StaticResource IconButton}" Margin="0,0,8,0"
                         Command="{Binding OpenOrgInfoCommand}"
                         IsEnabled="{Binding HasSelectedOrg}"
-                        ToolTip="{loc:Tr Main_OrgInfoTip}" />
+                        AutomationProperties.Name="{loc:Tr Main_OrgInfo}">
+                    <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconInfo}" />
+                    <Button.ToolTip>
+                        <StackPanel MaxWidth="360">
+                            <TextBlock Text="{loc:Tr Main_OrgInfo}" FontWeight="SemiBold" />
+                            <TextBlock Text="{loc:Tr Main_OrgInfoTip}" TextWrapping="Wrap" Foreground="#555555" Margin="0,2,0,0" />
+                        </StackPanel>
+                    </Button.ToolTip>
+                </Button>
 
-                <Button Content="{loc:Tr Main_Compare}" Padding="10,2" Margin="0,0,8,0"
+                <Button Style="{StaticResource IconButton}" Margin="0,0,8,0"
                         Command="{Binding OpenCompareOrgsCommand}"
                         IsEnabled="{Binding CanCompareOrgs}"
-                        ToolTip="{loc:Tr Main_CompareTip}" />
+                        AutomationProperties.Name="{loc:Tr Main_Compare}">
+                    <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconCompare}" />
+                    <Button.ToolTip>
+                        <StackPanel MaxWidth="360">
+                            <TextBlock Text="{loc:Tr Main_Compare}" FontWeight="SemiBold" />
+                            <TextBlock Text="{loc:Tr Main_CompareTip}" TextWrapping="Wrap" Foreground="#555555" Margin="0,2,0,0" />
+                        </StackPanel>
+                    </Button.ToolTip>
+                </Button>
 
-                <Button Content="{loc:Tr Main_DataIo}" Padding="10,2" Margin="0,0,10,0"
+                <Button Style="{StaticResource IconButton}" Margin="0,0,10,0"
                         Command="{Binding OpenDataIoCommand}"
                         IsEnabled="{Binding HasSelectedOrg}"
-                        ToolTip="{loc:Tr Main_DataIoTip}" />
+                        AutomationProperties.Name="{loc:Tr Main_DataIo}">
+                    <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconDataIo}" />
+                    <Button.ToolTip>
+                        <StackPanel MaxWidth="360">
+                            <TextBlock Text="{loc:Tr Main_DataIo}" FontWeight="SemiBold" />
+                            <TextBlock Text="{loc:Tr Main_DataIoTip}" TextWrapping="Wrap" Foreground="#555555" Margin="0,2,0,0" />
+                        </StackPanel>
+                    </Button.ToolTip>
+                </Button>
 
                 <TextBlock Text="{loc:Tr Main_FolderLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
                 <ComboBox x:Name="FolderComboBox" Width="230" IsEditable="True" Margin="0,0,4,0"
@@ -50,14 +93,30 @@
                           KeyDown="FolderComboBox_KeyDown"
                           LostKeyboardFocus="FolderComboBox_LostFocus"
                           ToolTip="{loc:Tr Main_FolderTooltip}" />
-                <Button Content="{loc:Tr Main_Browse}" Padding="10,2" Margin="0,0,8,0"
-                        Command="{Binding BrowseFolderCommand}" />
+                <Button Style="{StaticResource IconButton}" Margin="0,0,8,0"
+                        Command="{Binding BrowseFolderCommand}"
+                        AutomationProperties.Name="{loc:Tr Main_Browse}">
+                    <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconFolderSearch}" />
+                    <Button.ToolTip>
+                        <StackPanel MaxWidth="360">
+                            <TextBlock Text="{loc:Tr Main_Browse}" FontWeight="SemiBold" />
+                            <TextBlock Text="{loc:Tr Main_BrowseTip}" TextWrapping="Wrap" Foreground="#555555" Margin="0,2,0,0" />
+                        </StackPanel>
+                    </Button.ToolTip>
+                </Button>
 
                 <Border Width="1" Background="#CCCCCC" Margin="0,2,8,2" />
 
-                <Button Content="{loc:Tr Main_Terminal}" Padding="10,2" Margin="0,0,6,0"
+                <Button Style="{StaticResource IconButton}" Margin="0,0,6,0"
                         Command="{Binding OpenTerminalCommand}"
-                        ToolTip="{loc:Tr Main_TerminalTip}">
+                        AutomationProperties.Name="{loc:Tr Main_Terminal}">
+                    <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconTerminal}" />
+                    <Button.ToolTip>
+                        <StackPanel MaxWidth="360">
+                            <TextBlock Text="{loc:Tr Main_Terminal}" FontWeight="SemiBold" />
+                            <TextBlock Text="{loc:Tr Main_TerminalTip}" TextWrapping="Wrap" Foreground="#555555" Margin="0,2,0,0" />
+                        </StackPanel>
+                    </Button.ToolTip>
                     <Button.ContextMenu>
                         <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
                             <MenuItem Header="{loc:Tr Main_TermWt}" Command="{Binding OpenTerminalCommand}" />
@@ -68,9 +127,16 @@
                     </Button.ContextMenu>
                 </Button>
 
-                <Button Content="{loc:Tr Main_Explorer}" Padding="10,2" Margin="0,0,6,0"
+                <Button Style="{StaticResource IconButton}" Margin="0,0,6,0"
                         Command="{Binding OpenExplorerCommand}"
-                        ToolTip="{loc:Tr Main_ExplorerTip}">
+                        AutomationProperties.Name="{loc:Tr Main_Explorer}">
+                    <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconFolderOpen}" />
+                    <Button.ToolTip>
+                        <StackPanel MaxWidth="360">
+                            <TextBlock Text="{loc:Tr Main_Explorer}" FontWeight="SemiBold" />
+                            <TextBlock Text="{loc:Tr Main_ExplorerTip}" TextWrapping="Wrap" Foreground="#555555" Margin="0,2,0,0" />
+                        </StackPanel>
+                    </Button.ToolTip>
                     <Button.ContextMenu>
                         <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
                             <MenuItem Header="{loc:Tr Main_OpenFolder}" Command="{Binding OpenExplorerCommand}" />
@@ -79,9 +145,16 @@
                     </Button.ContextMenu>
                 </Button>
 
-                <Button Content="{loc:Tr Main_VsCode}" Padding="10,2" Margin="0,0,6,0"
+                <Button Style="{StaticResource IconButton}" Margin="0,0,6,0"
                         Command="{Binding OpenVsCodeCommand}"
-                        ToolTip="{loc:Tr Main_VsCodeTip}">
+                        AutomationProperties.Name="{loc:Tr Main_VsCode}">
+                    <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconCode}" />
+                    <Button.ToolTip>
+                        <StackPanel MaxWidth="360">
+                            <TextBlock Text="{loc:Tr Main_VsCode}" FontWeight="SemiBold" />
+                            <TextBlock Text="{loc:Tr Main_VsCodeTip}" TextWrapping="Wrap" Foreground="#555555" Margin="0,2,0,0" />
+                        </StackPanel>
+                    </Button.ToolTip>
                     <Button.ContextMenu>
                         <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
                             <MenuItem Header="{loc:Tr Main_VsCodeNew}" Command="{Binding OpenVsCodeCommand}" />
@@ -90,9 +163,16 @@
                     </Button.ContextMenu>
                 </Button>
 
-                <Button Content="{loc:Tr Main_Browser}" Padding="10,2"
+                <Button Style="{StaticResource IconButton}" Margin="0,0,6,0"
                         Command="{Binding OpenBrowserCommand}"
-                        ToolTip="{loc:Tr Main_BrowserTip}">
+                        AutomationProperties.Name="{loc:Tr Main_Browser}">
+                    <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconGlobe}" />
+                    <Button.ToolTip>
+                        <StackPanel MaxWidth="360">
+                            <TextBlock Text="{loc:Tr Main_Browser}" FontWeight="SemiBold" />
+                            <TextBlock Text="{loc:Tr Main_BrowserTip}" TextWrapping="Wrap" Foreground="#555555" Margin="0,2,0,0" />
+                        </StackPanel>
+                    </Button.ToolTip>
                     <Button.ContextMenu>
                         <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
                             <MenuItem Header="{loc:Tr Main_BrowserHome}" Command="{Binding OpenBrowserCommand}" />
@@ -115,13 +195,40 @@
 
                 <Border Width="1" Background="#CCCCCC" Margin="12,2,12,2" />
 
-                <ToggleButton Content="{loc:Tr Main_QuickToggle}" Padding="10,2"
+                <ToggleButton Style="{StaticResource IconToggleButton}"
                               IsChecked="{Binding IsQuickPanelVisible, Mode=TwoWay}"
-                              ToolTip="{loc:Tr Main_QuickToggleTip}" />
+                              AutomationProperties.Name="{loc:Tr Main_QuickToggle}">
+                    <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconPanelLeft}" />
+                    <ToggleButton.ToolTip>
+                        <StackPanel MaxWidth="360">
+                            <TextBlock Text="{loc:Tr Main_QuickToggle}" FontWeight="SemiBold" />
+                            <TextBlock Text="{loc:Tr Main_QuickToggleTip}" TextWrapping="Wrap" Foreground="#555555" Margin="0,2,0,0" />
+                        </StackPanel>
+                    </ToggleButton.ToolTip>
+                </ToggleButton>
 
-                <ToggleButton Content="AI" Padding="10,2" Margin="6,0,0,0"
+                <ToggleButton Style="{StaticResource IconToggleButton}" Margin="6,0,0,0"
                               IsChecked="{Binding IsAiPanelVisible, Mode=TwoWay}"
-                              ToolTip="{loc:Tr Main_AiToggleTip}" />
+                              AutomationProperties.Name="AI">
+                    <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}">
+                        <Path.Style>
+                            <Style TargetType="Path">
+                                <Setter Property="Data" Value="{StaticResource IconSparkle}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsChecked, RelativeSource={RelativeSource AncestorType=ToggleButton}}" Value="True">
+                                        <Setter Property="Data" Value="{StaticResource IconSparkleFilled}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Path.Style>
+                    </Path>
+                    <ToggleButton.ToolTip>
+                        <StackPanel MaxWidth="360">
+                            <TextBlock Text="AI" FontWeight="SemiBold" />
+                            <TextBlock Text="{loc:Tr Main_AiToggleTip}" TextWrapping="Wrap" Foreground="#555555" Margin="0,2,0,0" />
+                        </StackPanel>
+                    </ToggleButton.ToolTip>
+                </ToggleButton>
 
                 <ComboBox Width="96" Margin="6,0,0,0" VerticalContentAlignment="Center"
                           ItemsSource="{Binding LanguageLabels}"

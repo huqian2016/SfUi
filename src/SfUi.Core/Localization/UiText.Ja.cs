@@ -38,6 +38,7 @@ public static partial class UiText
         ["Main_FolderLabel"] = "SFフォルダ:",
         ["Main_FolderTooltip"] = "sf コマンドを実行するフォルダ（最近使用したフォルダから選択 or 入力）",
         ["Main_Browse"] = "参照…",
+        ["Main_BrowseTip"] = "SF プロジェクトのフォルダーを選択",
         ["Main_Terminal"] = "ターミナル",
         ["Main_TerminalTip"] = "クリック: 現在のフォルダでターミナルを開く / 右クリック: 種類を選択",
         ["Main_TermWt"] = "Windows Terminal（既定）",

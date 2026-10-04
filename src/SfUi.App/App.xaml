@@ -3,6 +3,12 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              ShutdownMode="OnMainWindowClose">
     <Application.Resources>
-        <!-- 基本スタイルは後続フェーズで拡充 -->
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- Fluent UI System Icons（MIT）のアイコン ジオメトリ -->
+                <ResourceDictionary Source="Resources/Icons.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <!-- 基本スタイルは後続フェーズで拡張 -->
+        </ResourceDictionary>
     </Application.Resources>
 </Application>
