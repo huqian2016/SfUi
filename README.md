@@ -88,6 +88,34 @@ The **Org Info** button (next to the org combo) opens a separate non-modal windo
 
 The **Compare Orgs** button (enabled when 2 or more orgs are available) opens the side-by-side comparison window — 13 categories matched **by API name**, with diff highlighting, a *Diff only* filter, per-tab search and CSV export.
 
+## Where settings and data are stored
+
+The data root is resolved in this order: 1) `--data-dir <path>` / the `SFUI_DATA_DIR` environment variable, 2) the solution root's `data/` when running from source, 3) a portable `data/` folder next to the exe when writable, 4) `%APPDATA%\SfUi` as a fallback (e.g. when placed inside Program Files).
+
+```
+data\
+├─ settings.json            settings (language, sf path, AI, history limits, confirm policy, backupRestMaxRecords, …)
+├─ favorites.json           favorites (Quick Panel)
+├─ recent-folders.json      recently used folders
+├─ recent-urls.json         recently opened URLs
+├─ history\                 execution history per type (soql.json / apex.json / api.json / data.json / …)
+├─ results\                 large execution results saved per history entry (.txt / .json)
+├─ logs\app-yyyyMMdd.log    application log
+├─ tmp\                     temporary files
+├─ orginfo\                 Org Info window caches
+│   ├─ <org key>.json       per-org tab data
+│   ├─ preferences.json     tab visibility preferences
+│   └─ compare.json         Compare Orgs state
+├─ backup-state.json        remembered backup object selection (per org)
+└─ backups\
+    ├─ counts.json          record-count cache
+    └─ <yyyyMMdd-HHmmss>\   a backup
+        ├─ metadata.json    label, description, org info, object list
+        └─ <Object>.json / <Object>.csv   REST / Bulk data
+```
+
+All JSON files are written atomically (`AtomicJsonFile`: temp file → `File.Replace`) and keep a `*.bak` copy for corruption recovery. Copying the `data/` folder along with the exe moves your settings, history and backups.
+
 ## Build from source
 
 ```powershell
@@ -169,6 +197,34 @@ SOQL・匿名Apex・デバッグログ・デプロイ・自由コマンド・RES
 3. 初回起動時に exe 隣に `data/` フォルダ（設定・履歴・ログ）が作成されます（ポータブル動作）
 4. 上部バーで組織を選び、各タブから操作を開始。サンプルの SOQL / Apex / コマンド / REST は
    「設定 → サンプル履歴を投入」で追加できます
+
+## 設定・データの保存場所
+
+データ ルートは次の順で決まります: 1) `--data-dir <パス>` / 環境変数 `SFUI_DATA_DIR`、2) ソースから実行時のソリューションルートの `data/`、3) exe の隣のポータブル `data/`（書き込み可能な場合）、4) 書き込み不可なら `%APPDATA%\SfUi`。
+
+```
+data\
+├─ settings.json            設定（言語 / sf パス / AI / 履歴上限 / 確認ポリシー / backupRestMaxRecords など）
+├─ favorites.json           お気に入り（クイックパネル）
+├─ recent-folders.json      最近使ったフォルダ
+├─ recent-urls.json         最近開いた URL
+├─ history\                 実行履歴（種別ごと: soql.json / apex.json / api.json / data.json …）
+├─ results\                 大きい実行結果の保存（履歴エントリ単位の .txt / .json）
+├─ logs\app-yyyyMMdd.log    アプリの実行ログ
+├─ tmp\                     一時ファイル
+├─ orginfo\                 組織情報ウィンドウのキャッシュ
+│   ├─ <組織キー>.json      組織ごとのタブ データ
+│   ├─ preferences.json     タブ表示設定
+│   └─ compare.json         組織比較の状態
+├─ backup-state.json        バックアップタブの選択オブジェクト記憶（組織別）
+└─ backups\
+    ├─ counts.json          オブジェクト件数キャッシュ
+    └─ <yyyyMMdd-HHmmss>\   バックアップ本体
+        ├─ metadata.json    ラベル・説明・組織情報・オブジェクト一覧
+        └─ <Object>.json / <Object>.csv   REST / Bulk の保存データ
+```
+
+JSON はすべて原子的書き込み（`AtomicJsonFile`: 一時ファイル → `File.Replace`）で、破損時に備えて `*.bak` を残します。`data/` フォルダごとコピーすれば設定・履歴・バックアップも一緒に移せます。
 
 ## 前提条件
 
