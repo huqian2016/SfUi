@@ -26,6 +26,7 @@ public partial class App : Application
     private string? _smokeDataIo;
     private string? _smokeAccess;
     private string? _smokeBackup;
+    private string? _smokeOrgManage;
     private int _dispatcherExceptionCount;
 
     protected override void OnStartup(StartupEventArgs e)
@@ -41,6 +42,7 @@ public partial class App : Application
         _smokeDataIo = _smokeTest ? ReadOption(e.Args, "--smoke-dataio") : null;
         _smokeAccess = _smokeTest ? ReadOption(e.Args, "--smoke-access") : null;
         _smokeBackup = _smokeTest ? ReadOption(e.Args, "--smoke-backup") : null;
+        _smokeOrgManage = _smokeTest ? ReadOption(e.Args, "--smoke-orgmanage") : null;
         var dataDir = ReadOption(e.Args, "--data-dir") ?? Environment.GetEnvironmentVariable("SFUI_DATA_DIR");
 
         var paths = AppPaths.Resolve(dataDir);
@@ -84,6 +86,11 @@ public partial class App : Application
         services.AddSingleton<BackupCompareRecordsWindowFactory>();
         services.AddTransient<BackupCompareRecordsViewModel>();
         services.AddTransient<BackupCompareRecordsWindow>();
+        services.AddSingleton<OrgManageWindowFactory>();
+        services.AddTransient<OrgManageViewModel>();
+        services.AddTransient<OrgHealthViewModel>();
+        services.AddTransient<MigrationInventoryViewModel>();
+        services.AddTransient<OrgManageWindow>();
         services.AddSingleton<MainWindow>();
         Services = services.BuildServiceProvider();
 
@@ -242,6 +249,11 @@ public partial class App : Application
             {
                 exitCode = 1;
             }
+
+            if (!string.IsNullOrWhiteSpace(_smokeOrgManage) && !await RunOrgManageSmokeAsync(_smokeOrgManage))
+            {
+                exitCode = 1;
+            }
         }
         catch (Exception ex)
         {
@@ -320,6 +332,53 @@ public partial class App : Application
         catch (Exception ex)
         {
             _log.Error("--smoke-dataio: 検証に失敗しました", ex);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// --smoke-orgmanage: 組織一覧・REST /limits・移行棚卸しを取得する（書き込みなし）。
+    /// </summary>
+    private async Task<bool> RunOrgManageSmokeAsync(string target)
+    {
+        try
+        {
+            var orgs = await Services.GetRequiredService<OrgService>().ListOrgsAsync();
+            var org = orgs.FirstOrDefault(o =>
+                string.Equals(o.Alias, target, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(o.Username, target, StringComparison.OrdinalIgnoreCase));
+            if (org is null)
+            {
+                _log.Error($"--smoke-orgmanage: 組織が見つかりません: {target}");
+                return false;
+            }
+
+            _log.Info($"--smoke-orgmanage: 組織一覧 {orgs.Count} 件（既定: {orgs.FirstOrDefault(o => o.IsDefault)?.DisplayName ?? "なし"}）");
+
+            var rest = Services.GetRequiredService<SalesforceRestClient>();
+            using (var limits = await rest.GetLimitsAsync(target))
+            {
+                var parsed = OrgLimitsParser.Parse(limits.RootElement);
+                var top = parsed
+                    .Where(l => l.Percent is not null)
+                    .OrderByDescending(l => l.Percent)
+                    .Take(3)
+                    .Select(l => $"{l.Key}={l.Percent!.Value:F1}%");
+                _log.Info($"--smoke-orgmanage: /limits 解析 {parsed.Count} 件（上位: {string.Join(", ", top)}）");
+            }
+
+            var inventoryService = Services.GetRequiredService<MigrationInventoryService>();
+            var inventory = await inventoryService.FetchAsync(target, CancellationToken.None);
+            _log.Info($"--smoke-orgmanage: 棚卸し 合計 {inventory.Total} 件"
+                + $"（Workflow {inventory.WorkflowCount} / Process Builder {inventory.ProcessBuilderCount} / Flow {inventory.FlowCount} / 有効 {inventory.ActiveCount}）"
+                + (inventory.WorkflowError is { Length: > 0 } error
+                    ? $" / WorkflowError={(error.Length <= 120 ? error : error[..120] + "…")}"
+                    : string.Empty));
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _log.Error("--smoke-orgmanage: 検証に失敗しました", ex);
             return false;
         }
     }

@@ -1,6 +1,6 @@
 # SfUi — Salesforce CLI 統合デスクトップツール 実装計画
 
-最終更新: 2026-10-04 / ステータス: Phase 0-15 完了 + AI 接続先の汎用化 + 組織比較 + データ入出力 + アクセス権限タブ + レコードのバックアップ・復元（自動ラベル・比較タブ付き）+ Microsoft Store（MSIX）提出準備完了（v0.8.0 / テスト 380 件 / 実 API スモーク + UIA E2E 検証済み。GitHub Release は v0.8.0 公開済み、Microsoft Store は審査準備中）
+最終更新: 2026-10-04 / ステータス: Phase 0-16 完了 + AI 接続先の汎用化 + 組織比較 + データ入出力 + アクセス権限タブ + レコードのバックアップ・復元（自動ラベル・比較タブ付き）+ 組織管理ウィンドウ（組織一覧の管理 + ヘルス + 移行棚卸し）+ Microsoft Store（MSIX）提出準備完了（v0.9.0 / テスト 385 件 / 実 API スモーク + UIA E2E 検証済み。GitHub Release は v0.8.0 公開済み、Microsoft Store は審査準備中）
 
 ## 1. 概要
 
@@ -292,6 +292,22 @@ data/
 - バージョン: **0.8.0**（`SfUi.App.csproj` = 0.8.0 / `AppxManifest.xml` = 0.8.0.0）
 - 知見: Id を指定した挿入は REST / Bulk / SOAP のいずれも不可（`INVALID_FIELD_FOR_INSERT_UPDATE cannot specify Id in an insert call`）→ Id 維持は undelete のみ / partner SOAP には `SOAPAction: ""` ヘッダーが必要（無いと応答を解析できない）/ 親の削除時にカスケード削除された子レコードは個別 undelete 不可（"Entity is not in the recycle bin"）
 
+### Phase 16: 組織管理ウィンドウ（組織一覧の管理 + ヘルス + 移行棚卸し） ✅
+
+認証済み組織の管理と、その組織の**ヘルス（API 使用量）**・**移行棚卸し（Workflow / プロセスビルダー / フロー）** を 1 つの独立ウィンドウ（非モーダル）にまとめた。メイン上部バーの「組織管理」から開く（組織未選択でも可）。
+
+- 組織タブ: 認証済み組織の一覧（既定 ★ / エイリアス / ユーザー名 / 組織 ID / 種別 / 接続状態 / インスタンス URL）と、選択行へのワンクリック操作
+  - **既定に設定**（`sf config set target-org=<target>`）・**ブラウザーで開く**（`sf org open --target-org`）・**ログイン追加（ブラウザー）**（`sf org login web`。確認ダイアログ・タイムアウト 5 分）・**ログアウト**（`sf org logout --no-prompt`。確認ダイアログ付き）・**エイリアスを設定**（`sf alias set <alias>=<username>`。ヘッダーのエイリアス入力欄を使用）
+  - 変更系コマンドの後は組織一覧を自動で再読み込み（既定 ★ の移動・エイリアスの反映）。実行中はボタンを無効化し、キャンセル可能
+- ヘルス タブ: 選択中組織の REST `/limits` を取得し、使用量 / 上限 / 使用率（バー付き・80% 以上は赤）を表示。使用率の降順 + 名前絞り込み + 取得時刻。組織を切り替えると自動再取得（`CancellationToken` で前回の取得を中断）
+- 移行棚卸し タブ: Workflow ルール（Tooling API。失敗してもフローは継続し警告表示）と、プロセスビルダー / フロー（`FlowDefinitionView`。`ProcessType = Workflow` はプロセスビルダー）を一覧（種別 / 名前 / API 名 / オブジェクト / 状態 / サブタイプ / 最終更新）+ 種別ごとのサマリー + CSV エクスポート。組織を切り替えると自動再取得
+- Core: `OrgManageModels`（コマンド結果 / 使用量 / 棚卸し）+ `OrgLimitsParser`（`/limits` の解析・ラベルローカライズ。未知キーはキー名で表示）+ `OrgManageService`（sf コマンドの組み立て・実行・ログ）+ `MigrationInventoryService`（Tooling / REST のクエリ + `queryMore` ページング）
+- テスト: 385 件（+5: limits 解析（Max 欠落 / 文字列値 / 使用率）/ ラベルフォールバック / sf コマンド組み立て 5 種 / Workflow ルール変換 / フロー・プロセスビルダー変換）
+- スモーク: `--smoke --smoke-orgmanage <org>`（組織一覧 12 件 / `/limits` 解析 73 件（上位 FileStorageMB=30.0%）/ 棚卸し 108 件 = Workflow 0 / Process Builder 0 / Flow 108 / 有効 79。書き込みなし）
+- UI チェック（`C:\huqian\sfui-orgmanage-ui-check.ps1`・読み取りのみ）: 全 14 項目 PASS（タブ 3 つ / 組織コンボ / 組織一覧 12 行 + 操作ボタン 6 種 / ヘルス 21 行（仮想化された表示行）+ 「API requests (daily)」+ 取得時刻 / 棚卸し 21 行 + 合計 108 のサマリー + 取得・CSV ボタン）
+- 知見: `WorkflowRule` に `IsActive` 項目は存在しない（状態列は「—」表示。ツール選択で有効 / 無効は取れない）/ `FlowDefinitionView` の API 名は `DeveloperName` ではなく `ApiName` / `/limits` は `{ "Key": { "Max": n, "Remaining": n } }` のフラット構造（`Max` が null の項目あり → 使用率は Max > 0 のときのみ計算）
+- バージョン: **0.9.0**（`SfUi.App.csproj` = 0.9.0 / `AppxManifest.xml` = 0.9.0.0）
+
 ## 10. 検証計画
 
 1. `dotnet build` / `dotnet test`（引数クォート・JSON 解析・ストア round-trip・CSV）
@@ -312,6 +328,7 @@ data/
 - UI 文字列: コードは `UiText.T("Key")`、XAML は `{loc:Tr Key}`。辞書は `src/SfUi.Core/Localization/UiText.En.cs` / `UiText.Ja.cs`（キーは両ファイルで同一 — テストで検証）
 - スモーク起動: `dotnet run --project src/SfUi.App -- --smoke`（sf CLI で組織一覧取得を検証して自動終了、`data/logs` に記録）
 - スモーク起動（組織情報）: `dotnet run --project src/SfUi.App -- --smoke --smoke-orginfo <alias>`（初回は概要・ユーザーを取得、2 回目以降は API を呼ばずキャッシュを使用。`--smoke-orginfo-refresh` を付けると手動再取得で fetchedAt の更新を検証）
+- スモーク起動（組織管理）: `dotnet run --project src/SfUi.App -- --smoke --smoke-orgmanage <alias>`（組織一覧・REST `/limits`・移行棚卸しを取得して検証。書き込みなし）
 - sf のフラグは実装時に `sf <command> --help` で確定する（バージョン差吸収）
 
 ## 13. 実装進捗
@@ -449,3 +466,11 @@ data/
   - テスト 380 件成功（+22）/ スモーク `--smoke --smoke-backup acc`（undelete で Id 維持・上書き・キー復元の参照張り替え・Bulk 保存まで全項目成功）/ UI チェック 20 項目 PASS
   - 2026-10-04: README のスクリーンショットに「バックアップと復元」「バックアップ比較」を追加（EN/JA）。GitHub Release **v0.8.0** 公開（アセット = `SfUi.exe` + `SfUi-v0.8.0-portable.zip`）
   - バージョン **0.8.0**
+
+- ✅ **Phase 16（2026-10-04 完了）**: 組織管理ウィンドウ（組織一覧の管理 + ヘルス + 移行棚卸し）
+  - メイン上部バー「組織管理」（Fluent の Building アイコン）+ OrgManageWindow（組織 / ヘルス / 移行棚卸しの 3 タブ・組織未選択でも開ける）
+  - 組織タブ: 組織一覧（既定 ★ / エイリアス / ユーザー名 / 組織 ID / 種別 / 接続状態 / インスタンス URL）+ 既定に設定 / ブラウザーで開く / ログイン追加（web）/ ログアウト（確認）/ エイリアス設定（実行後は一覧を自動再読み込み）
+  - ヘルス タブ: REST `/limits` を使用量 / 上限 / 使用率（バー・80% 以上は赤）+ 絞り込みで表示。組織切替で自動再取得
+  - 移行棚卸し タブ: Workflow ルール + プロセスビルダー + フロー（`FlowDefinitionView`）の一覧 + サマリー + CSV エクスポート
+  - Core: `OrgManageModels` / `OrgLimitsParser` / `OrgManageService` / `MigrationInventoryService`
+  - テスト 385 件成功（+5）/ スモーク `--smoke --smoke-orgmanage acc`（組織 12 / limits 73 / 棚卸し 108）成功 / UI チェック（`sfui-orgmanage-ui-check.ps1`・読み取りのみ）14 項目 PASS

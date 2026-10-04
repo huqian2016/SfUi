@@ -39,6 +39,8 @@ public static class SfUiServiceCollectionExtensions
         services.AddSingleton<BackupStateStore>();
         services.AddSingleton<BackupService>();
         services.AddSingleton<BackupCompareService>();
+        services.AddSingleton<OrgManageService>();
+        services.AddSingleton<MigrationInventoryService>();
         return services;
     }
 }

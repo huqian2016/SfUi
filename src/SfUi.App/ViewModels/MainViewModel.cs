@@ -24,6 +24,7 @@ public partial class MainViewModel : ObservableObject
     private readonly CompareOrgsWindowFactory _compareOrgsWindowFactory;
     private readonly DataIoWindowFactory _dataIoWindowFactory;
     private readonly BackupWindowFactory _backupWindowFactory;
+    private readonly OrgManageWindowFactory _orgManageWindowFactory;
 
     [ObservableProperty]
     private bool _isBusy;
@@ -127,7 +128,8 @@ public partial class MainViewModel : ObservableObject
         OrgInfoWindowFactory orgInfoWindowFactory,
         CompareOrgsWindowFactory compareOrgsWindowFactory,
         DataIoWindowFactory dataIoWindowFactory,
-        BackupWindowFactory backupWindowFactory)
+        BackupWindowFactory backupWindowFactory,
+        OrgManageWindowFactory orgManageWindowFactory)
     {
         _orgService = orgService;
         _log = log;
@@ -140,6 +142,7 @@ public partial class MainViewModel : ObservableObject
         _compareOrgsWindowFactory = compareOrgsWindowFactory;
         _dataIoWindowFactory = dataIoWindowFactory;
         _backupWindowFactory = backupWindowFactory;
+        _orgManageWindowFactory = orgManageWindowFactory;
         Orgs.CollectionChanged += (_, _) => OnPropertyChanged(nameof(CanCompareOrgs));
         History = history;
         Soql = soql;
@@ -514,6 +517,22 @@ public partial class MainViewModel : ObservableObject
         {
             StatusMessage = UiText.T("Common_FailedFmt", ex.Message);
             _log.Error("バックアップ ウィンドウを開けませんでした", ex);
+        }
+    }
+
+    /// <summary>組織管理ウィンドウを新しいウィンドウで開く（組織未選択でも可）。</summary>
+    [RelayCommand]
+    private void OpenOrgManage()
+    {
+        try
+        {
+            _orgManageWindowFactory.Open(SelectedOrg, Application.Current?.MainWindow);
+            StatusMessage = UiText.T("Msg_OrgManageOpenedFmt", SelectedOrg?.DisplayName ?? UiText.T("Main_NotSelected"));
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = UiText.T("Common_FailedFmt", ex.Message);
+            _log.Error("組織管理ウィンドウを開けませんでした", ex);
         }
     }
 
