@@ -54,6 +54,12 @@ public partial class App : Application
             services.AddSingleton<QuickPanelViewModel>();
             services.AddTransient<CompareOrgsViewModel>();
             services.AddTransient<OrgInfoViewModel>();
+            services.AddTransient<DataIoViewModel>();
+            services.AddTransient<DataExportViewModel>();
+            services.AddTransient<DataImportViewModel>();
+            services.AddTransient<ObjectAccessViewModel>();
+            services.AddTransient<FieldAccessViewModel>();
+            services.AddTransient<RecordAccessViewModel>();
             services.AddSingleton<MainWindow>();
             Services = services.BuildServiceProvider();
 
@@ -99,6 +105,12 @@ public partial class App : Application
                     {
                         Services.GetRequiredService<IAppWindowService>().OpenOrgInfo(org);
                         _log?.Info("--open orginfo: 組織情報ウィンドウを開きました");
+                    }
+                    else if (string.Equals(openTarget, "dataio", StringComparison.OrdinalIgnoreCase)
+                        && (mainViewModel.SelectedOrg ?? mainViewModel.Orgs.FirstOrDefault()) is { } dataIoOrg)
+                    {
+                        Services.GetRequiredService<IAppWindowService>().OpenDataIo(dataIoOrg);
+                        _log?.Info("--open dataio: データ入出力ウィンドウを開きました");
                     }
                 };
             }

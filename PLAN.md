@@ -524,4 +524,10 @@ data/
   - `OrgInfoWindow`（21 セクション タブ + グローバル検索パネル + AI パネル + ステータスバー）/ `OrgInfoSectionView`（列を定義から動的生成・行リンク列）/ `OrgInfoFieldsView`（オブジェクト選択）/ `OrgInfoCustomTabView` / `OrgInfoMySettingsView`（項目ピッカー）
   - 検証: ビルド 0 警告 / スモーク OK / 実ウィンドウのキャプチャで 21 タブ + Overview 20 行の実データ表示を確認
   - 開発用オプション: `--open orginfo`（組織情報ウィンドウを開いた状態で起動）
-  - 残: Data I/O（3 アクセス タブ）/ バックアップ / 組織管理
+
+- ✅ **Phase D-3（2026-10-04 完了）**: Avalonia 版 データ入出力ウィンドウ（Data I/O）
+  - `DataIoWindow`（対象オブジェクト選択 + 5 タブ）/ `DataExportView`（ビルダー / SOQL モード・エンジン選択・結果グリッド）/ `DataImportView`（マッピング編集・結果一覧）/ `ObjectAccessView` / `FieldAccessView`（主体列の動的生成）/ `RecordAccessView`（ユーザー別 4 列 × N の動的生成 + レコードリンク列）
+  - `XamlReader` によるリンクボタン テンプレート（3 箇所中の 2 つ）を `FuncDataTemplate` のコード ビルドへ置換
+  - 検証: ビルド 0 警告 / スモーク OK / 実ウィンドウのキャプチャで 5 タブ + エクスポート画面表示を確認
+  - 開発用オプション: `--open dataio`
+  - 残: バックアップ（3 タブ + 2 ウィンドウ）/ 組織管理（3 タブ）

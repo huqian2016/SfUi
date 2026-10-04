@@ -1,0 +1,74 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:SfUi.Avalonia"
+             x:Class="SfUi.Avalonia.Views.RecordAccessView"
+             FontSize="13">
+    <DockPanel Margin="6">
+        <Grid DockPanel.Dock="Top" Margin="0,0,0,6">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="360" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- ユーザー選択（3 行以上はスクロール） -->
+            <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                <TextBlock Text="{loc:Tr RecordAccess_UsersLabel}" FontWeight="SemiBold" />
+                <StackPanel Orientation="Horizontal" Margin="0,3,0,3">
+                    <TextBox Width="190" Text="{Binding UserFilter, Mode=TwoWay}"
+                             ToolTip.Tip="{loc:Tr RecordAccess_UserFilterHint}" AutomationProperties.AutomationId="UserFilterBox" />
+                    <Button Content="{loc:Tr RecordAccess_SelectAll}" Command="{Binding SelectAllUsersCommand}" Padding="8,2" Margin="6,0,0,0"
+                            AutomationProperties.AutomationId="SelectAllUsers" />
+                    <Button Content="{loc:Tr RecordAccess_SelectNone}" Command="{Binding ClearUsersCommand}" Padding="8,2" Margin="4,0,0,0"
+                            AutomationProperties.AutomationId="ClearUsers" />
+                </StackPanel>
+                <ListBox x:Name="UsersList" ItemsSource="{Binding VisibleUsers}" MaxHeight="100"
+                         AutomationProperties.AutomationId="UsersList">
+                    <ListBox.Styles>
+                        <Style Selector="ListBoxItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        </Style>
+                    </ListBox.Styles>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <CheckBox Content="{Binding Display}" IsChecked="{Binding IsSelected, Mode=TwoWay}" Margin="0,1" />
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </StackPanel>
+
+            <!-- 対象レコード SOQL とページング -->
+            <StackPanel Grid.Column="1">
+                <TextBlock Text="{loc:Tr RecordAccess_SoqlLabel}" FontWeight="SemiBold" />
+                <TextBox Margin="0,3,0,0" Text="{Binding SoqlText, Mode=TwoWay}"
+                         FontFamily="Consolas, Menlo, monospace" AutomationProperties.AutomationId="RecordSoqlBox" />
+                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                    <Button Content="{loc:Tr RecordAccess_Run}" Command="{Binding RunCommand}" Padding="16,3"
+                            AutomationProperties.AutomationId="RecordRunButton" />
+                    <TextBlock Text="{loc:Tr RecordAccess_DisplayFieldLabel}" VerticalAlignment="Center" Margin="14,0,4,0" />
+                    <ComboBox Width="150" ItemsSource="{Binding DisplayFields}" SelectedItem="{Binding SelectedDisplayField, Mode=TwoWay}"
+                              AutomationProperties.AutomationId="DisplayFieldCombo" />
+                    <TextBox Width="160" Margin="14,0,0,0" Text="{Binding RecordFilter, Mode=TwoWay}"
+                             ToolTip.Tip="{loc:Tr RecordAccess_SearchHint}" AutomationProperties.AutomationId="RecordSearchBox" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                    <Button Content="{loc:Tr RecordAccess_First}" Command="{Binding MoveFirstCommand}" Padding="8,2"
+                            AutomationProperties.AutomationId="PageFirst" />
+                    <Button Content="{loc:Tr RecordAccess_Prev}" Command="{Binding MovePrevCommand}" Padding="8,2" Margin="4,0,0,0"
+                            AutomationProperties.AutomationId="PagePrev" />
+                    <Button Content="{loc:Tr RecordAccess_Next}" Command="{Binding MoveNextCommand}" Padding="8,2" Margin="4,0,0,0"
+                            AutomationProperties.AutomationId="PageNext" />
+                    <Button Content="{loc:Tr RecordAccess_Last}" Command="{Binding MoveLastCommand}" Padding="8,2" Margin="4,0,0,0"
+                            AutomationProperties.AutomationId="PageLast" />
+                    <TextBlock Text="{Binding PageText}" Margin="10,0,0,0" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding SummaryText}" Margin="14,0,0,0" VerticalAlignment="Center" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding StatusMessage}" Margin="14,0,0,0" VerticalAlignment="Center" Foreground="#555555"
+                               TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+            </StackPanel>
+        </Grid>
+
+        <DataGrid x:Name="AccessGrid" ItemsSource="{Binding Rows}" IsReadOnly="True" AutoGenerateColumns="False"
+                  HeadersVisibility="Column" GridLinesVisibility="All"
+                  AutomationProperties.AutomationId="RecordAccessGrid" />
+    </DockPanel>
+</UserControl>

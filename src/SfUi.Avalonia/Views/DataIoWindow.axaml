@@ -1,0 +1,46 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:SfUi.Avalonia.Views"
+        xmlns:loc="clr-namespace:SfUi.Avalonia"
+        x:Class="SfUi.Avalonia.Views.DataIoWindow"
+        Title="{Binding Title}"
+        Height="800" Width="1360" MinWidth="1000" MinHeight="600"
+        WindowStartupLocation="CenterOwner"
+        FontSize="13">
+    <DockPanel>
+
+        <!-- 上部: 対象オブジェクト（各タブで共有） -->
+        <Border DockPanel.Dock="Top" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="{loc:Tr DataIo_ObjectLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                <AutoCompleteBox x:Name="ObjectComboBox" Width="340" MinimumPrefixLength="0"
+                                 FilterMode="Contains"
+                                 ItemsSource="{Binding Objects}"
+                                 SelectedItem="{Binding SelectedObject, Mode=TwoWay}"
+                                 Text="{Binding ObjectText, Mode=TwoWay}"
+                                 ToolTip.Tip="{loc:Tr DataIo_ObjectTip}" />
+                <TextBlock Text="{Binding DescribeSummary}" Margin="10,0,0,0" VerticalAlignment="Center" Foreground="#555555" />
+                <TextBlock Text="{Binding StatusMessage}" Margin="16,0,0,0" VerticalAlignment="Center"
+                           Foreground="#555555" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+        </Border>
+
+        <TabControl Margin="8">
+            <TabItem Header="{loc:Tr DataIo_TabExport}">
+                <views:DataExportView DataContext="{Binding Export}" />
+            </TabItem>
+            <TabItem Header="{loc:Tr DataIo_TabImport}">
+                <views:DataImportView DataContext="{Binding Import}" />
+            </TabItem>
+            <TabItem Header="{loc:Tr DataIo_TabObjectAccess}">
+                <views:ObjectAccessView DataContext="{Binding ObjectAccess}" />
+            </TabItem>
+            <TabItem Header="{loc:Tr DataIo_TabFieldAccess}">
+                <views:FieldAccessView DataContext="{Binding FieldAccess}" />
+            </TabItem>
+            <TabItem Header="{loc:Tr DataIo_TabRecordAccess}">
+                <views:RecordAccessView DataContext="{Binding RecordAccess}" />
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</Window>

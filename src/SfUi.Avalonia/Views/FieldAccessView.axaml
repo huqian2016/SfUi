@@ -1,0 +1,37 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:SfUi.Avalonia"
+             x:Class="SfUi.Avalonia.Views.FieldAccessView"
+             FontSize="13">
+    <DockPanel Margin="6">
+        <Border DockPanel.Dock="Top" Padding="4,4,4,6" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="{loc:Tr FieldAccess_KindsLabel}" VerticalAlignment="Center" />
+                    <CheckBox Content="{loc:Tr Access_KindProfile}" IsChecked="{Binding ShowProfiles, Mode=TwoWay}"
+                              Margin="8,0,0,0" VerticalAlignment="Center" AutomationProperties.AutomationId="KindProfileChk" />
+                    <CheckBox Content="{loc:Tr Access_KindPermissionSet}" IsChecked="{Binding ShowPermissionSets, Mode=TwoWay}"
+                              Margin="12,0,0,0" VerticalAlignment="Center" AutomationProperties.AutomationId="KindPsChk" />
+                    <CheckBox Content="{loc:Tr Access_KindPermissionSetGroup}" IsChecked="{Binding ShowGroups, Mode=TwoWay}"
+                              Margin="12,0,0,0" VerticalAlignment="Center" AutomationProperties.AutomationId="KindPsgChk" />
+                    <TextBlock Text="{loc:Tr Access_SearchLabel}" Margin="16,0,4,0" VerticalAlignment="Center" />
+                    <TextBox Width="150" Text="{Binding SearchText, Mode=TwoWay}"
+                             ToolTip.Tip="{loc:Tr Access_SearchTip}" AutomationProperties.AutomationId="FieldAccessSearchBox" />
+                    <TextBlock Text="{loc:Tr FieldAccess_ColumnFilter}" Margin="18,0,0,0" VerticalAlignment="Center" />
+                    <TextBox Width="170" Margin="4,0,0,0" Text="{Binding ColumnFilter, Mode=TwoWay}"
+                             AutomationProperties.AutomationId="ColumnFilterBox" />
+                    <Button Content="{loc:Tr Access_Reload}" Command="{Binding ReloadCommand}" Padding="12,3" Margin="10,0,0,0"
+                            AutomationProperties.AutomationId="FieldAccessReload" />
+                    <TextBlock Text="{Binding SummaryText}" Margin="12,0,0,0" VerticalAlignment="Center" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding StatusMessage}" Margin="16,0,0,0" VerticalAlignment="Center" Foreground="#555555"
+                               TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+                <TextBlock Text="{loc:Tr FieldAccess_Legend}" Foreground="#777777" Margin="0,4,0,0" TextWrapping="Wrap" FontSize="12" />
+            </StackPanel>
+        </Border>
+        <DataGrid x:Name="MatrixGrid" ItemsSource="{Binding Rows}" IsReadOnly="True"
+                  AutoGenerateColumns="False" HeadersVisibility="Column"
+                  GridLinesVisibility="All"
+                  AutomationProperties.AutomationId="FieldMatrixGrid" />
+    </DockPanel>
+</UserControl>

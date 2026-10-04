@@ -1,0 +1,23 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:SfUi.Avalonia"
+             x:Class="SfUi.Avalonia.Views.ObjectAccessView"
+             FontSize="13">
+    <DockPanel Margin="6">
+        <Border DockPanel.Dock="Top" Padding="4,4,4,6" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1">
+            <StackPanel Orientation="Horizontal">
+                <Button Content="{loc:Tr Access_Reload}" Command="{Binding ReloadCommand}" Padding="12,3"
+                        AutomationProperties.AutomationId="ObjectAccessReload" />
+                <TextBlock Text="{loc:Tr Access_SearchLabel}" Margin="14,0,4,0" VerticalAlignment="Center" />
+                <TextBox Width="180" Text="{Binding SearchText, Mode=TwoWay}"
+                         ToolTip.Tip="{loc:Tr Access_SearchTip}" AutomationProperties.AutomationId="ObjectAccessSearchBox" />
+                <TextBlock Text="{Binding SummaryText}" Margin="12,0,0,0" VerticalAlignment="Center" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding StatusMessage}" Margin="16,0,0,0" VerticalAlignment="Center" Foreground="#555555"
+                           TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+        </Border>
+        <DataGrid x:Name="RowsGrid" ItemsSource="{Binding Rows}" IsReadOnly="True"
+                  AutoGenerateColumns="False" HeadersVisibility="Column"
+                  GridLinesVisibility="Horizontal" AutomationProperties.AutomationId="ObjectAccessGrid" />
+    </DockPanel>
+</UserControl>

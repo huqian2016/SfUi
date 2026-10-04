@@ -1,6 +1,6 @@
 # SfUi → Avalonia 移植 設計調査（Windows / macOS 両対応）
 
-最終更新: 2026-10-04 / ステータス: Phase D 進行中（Compare Orgs + Org Info 移植済み。次: Data I/O / バックアップ / 組織管理ウィンドウ）
+最終更新: 2026-10-04 / ステータス: Phase D 完了（Compare Orgs / Org Info / Data I/O 移植済み。次: Phase E バックアップ + 組織管理）
 
 ## 1. 目的とスコープ
 

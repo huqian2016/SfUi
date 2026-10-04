@@ -53,7 +53,12 @@ public sealed class AvaloniaAppWindowService : IAppWindowService
         }
     }
 
-    public void OpenDataIo(OrgInfo org, string? objectName = null, string? initialSoql = null) => NotPortedYet("Data I/O");
+    public void OpenDataIo(OrgInfo org, string? objectName = null, string? initialSoql = null)
+    {
+        var viewModel = _services.GetRequiredService<DataIoViewModel>();
+        viewModel.Initialize(org, objectName, initialSoql);
+        ShowOwned(new DataIoWindow(viewModel));
+    }
 
     public void OpenBackup(OrgInfo org) => NotPortedYet("Backup & Restore");
 
