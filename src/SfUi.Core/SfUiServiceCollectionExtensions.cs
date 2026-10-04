@@ -38,6 +38,7 @@ public static class SfUiServiceCollectionExtensions
         services.AddSingleton<SalesforceSoapClient>();
         services.AddSingleton<BackupStateStore>();
         services.AddSingleton<BackupService>();
+        services.AddSingleton<BackupCompareService>();
         return services;
     }
 }

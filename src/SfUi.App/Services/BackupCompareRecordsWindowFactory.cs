@@ -1,0 +1,31 @@
+using System.Windows;
+using Microsoft.Extensions.DependencyInjection;
+using SfUi.App.Views;
+
+namespace SfUi.App.Services;
+
+/// <summary>バックアップ比較のレコード単位差分ウィンドウを生成して開く。</summary>
+public sealed class BackupCompareRecordsWindowFactory
+{
+    private readonly IServiceProvider _services;
+
+    public BackupCompareRecordsWindowFactory(IServiceProvider services)
+    {
+        _services = services;
+    }
+
+    /// <summary>2 つのバックアップ ID とオブジェクトを指定して開く。</summary>
+    public BackupCompareRecordsWindow Open(
+        string backupIdA, string backupIdB, string objectName, string displayName, Window? owner = null)
+    {
+        var window = _services.GetRequiredService<BackupCompareRecordsWindow>();
+        window.ViewModel.Initialize(backupIdA, backupIdB, objectName, displayName);
+        if (owner is not null && !ReferenceEquals(owner, window))
+        {
+            window.Owner = owner;
+        }
+
+        window.Show();
+        return window;
+    }
+}

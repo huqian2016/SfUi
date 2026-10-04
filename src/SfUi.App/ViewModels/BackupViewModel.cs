@@ -8,16 +8,23 @@ public sealed partial class BackupViewModel : ObservableObject, IDisposable
 {
     private bool _initialized;
 
-    public BackupViewModel(BackupTabViewModel backup, RestoreTabViewModel restore, AppLog log)
+    public BackupViewModel(BackupTabViewModel backup, RestoreTabViewModel restore, CompareTabViewModel compare, AppLog log)
     {
         Backup = backup;
         Restore = restore;
-        Backup.BackupCompleted += () => Restore.RefreshBackups();
+        Compare = compare;
+        Backup.BackupCompleted += () =>
+        {
+            Restore.RefreshBackups();
+            Compare.RefreshBackups();
+        };
     }
 
     public BackupTabViewModel Backup { get; }
 
     public RestoreTabViewModel Restore { get; }
+
+    public CompareTabViewModel Compare { get; }
 
     public OrgInfo? Org { get; private set; }
 
@@ -44,11 +51,13 @@ public sealed partial class BackupViewModel : ObservableObject, IDisposable
     {
         await Backup.LoadAsync();
         Restore.RefreshBackups();
+        Compare.RefreshBackups();
     }
 
     public void Dispose()
     {
         Backup.CancelBackgroundWork();
         Restore.CancelBackgroundWork();
+        Compare.CancelBackgroundWork();
     }
 }

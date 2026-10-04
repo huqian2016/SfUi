@@ -22,6 +22,9 @@
                 <Button Content="{loc:Tr Backup_RefreshCounts}" Margin="8,0,0,0" Padding="10,2"
                         Command="{Binding RefreshCountsCommand}"
                         AutomationProperties.Name="{loc:Tr Backup_RefreshCounts}" />
+                <Button Content="{loc:Tr Backup_ClearSelection}" Margin="8,0,0,0" Padding="10,2"
+                        Command="{Binding ClearSelectionCommand}"
+                        AutomationProperties.Name="{loc:Tr Backup_ClearSelection}" />
                 <TextBlock Text="{Binding CountsProgress}" Foreground="#666666" Margin="10,0,0,0" VerticalAlignment="Center" />
             </StackPanel>
             <ListView ItemsSource="{Binding ObjectsView}" BorderBrush="#DDDDDD">
@@ -60,13 +63,15 @@
 
             <TextBlock Text="{loc:Tr Backup_LabelLabel}" Margin="0,0,0,2" />
             <TextBox Text="{Binding Label, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                     ToolTip="{loc:Tr Backup_LabelHint}" />
+                     ToolTip="{loc:Tr Backup_LabelHint}"
+                     AutomationProperties.Name="{loc:Tr Backup_LabelLabel}" />
             <TextBlock Text="{loc:Tr Backup_LabelHint}" Foreground="#888888" FontSize="11" Margin="0,2,0,10" TextWrapping="Wrap" />
 
             <TextBlock Text="{loc:Tr Backup_DescLabel}" Margin="0,0,0,2" />
             <TextBox Text="{Binding Description, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                      Height="72" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"
-                     ToolTip="{loc:Tr Backup_DescHint}" />
+                     ToolTip="{loc:Tr Backup_DescHint}"
+                     AutomationProperties.Name="{loc:Tr Backup_DescLabel}" />
             <TextBlock Text="{loc:Tr Backup_DescHint}" Foreground="#888888" FontSize="11" Margin="0,2,0,12" TextWrapping="Wrap" />
 
             <StackPanel Orientation="Horizontal">

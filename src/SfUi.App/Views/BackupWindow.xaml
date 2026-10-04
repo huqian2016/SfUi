@@ -25,6 +25,9 @@
             <TabItem Header="{loc:Tr Backup_TabRestore}">
                 <views:RestoreTabView DataContext="{Binding Restore}" />
             </TabItem>
+            <TabItem Header="{loc:Tr BackupCompare_Tab}">
+                <views:CompareTabView DataContext="{Binding Compare}" />
+            </TabItem>
         </TabControl>
     </DockPanel>
 </Window>

@@ -98,7 +98,28 @@ public sealed partial class BackupTabViewModel : ObservableObject
 
     private string TargetOrg => _org is null ? string.Empty : (string.IsNullOrWhiteSpace(_org.Alias) ? _org.Username : _org.Alias!);
 
-    public void Initialize(OrgInfo org) => _org = org;
+    public void Initialize(OrgInfo org)
+    {
+        _org = org;
+        // ラベルと説明はウィンドウを開いた時点の既定値を入れておく（クリアした場合は実行時に再生成）
+        Label = BuildDefaultLabel(org);
+        Description = BuildDefaultDescription(org);
+    }
+
+    /// <summary>既定ラベル（組織エイリアス_yyyy-MM-dd_HH-mm）。</summary>
+    public static string BuildDefaultLabel(OrgInfo org)
+    {
+        var name = string.IsNullOrWhiteSpace(org.Alias) ? org.Username : org.Alias!;
+        return UiText.T("Backup_DefaultLabelFmt", name, DateTime.Now);
+    }
+
+    /// <summary>既定説明（エイリアス・URL・組織 ID・種類）。</summary>
+    public static string BuildDefaultDescription(OrgInfo org)
+    {
+        var name = string.IsNullOrWhiteSpace(org.Alias) ? org.Username : org.Alias!;
+        var type = UiText.T(org.IsSandbox ? "Backup_OrgTypeSandbox" : "Backup_OrgTypeProduction");
+        return UiText.T("Backup_DefaultDescFmt", name, org.InstanceUrl ?? string.Empty, org.OrgId ?? string.Empty, type);
+    }
 
     /// <summary>オブジェクト一覧を読み込み、記憶した選択と件数キャッシュを適用する（1 回）。</summary>
     public async Task LoadAsync()
@@ -174,6 +195,26 @@ public sealed partial class BackupTabViewModel : ObservableObject
     /// <summary>件数を再取得する（キャッシュを破棄）。</summary>
     [RelayCommand]
     private async Task RefreshCountsAsync() => await FetchCountsCoreAsync(clearFirst: true, auto: false);
+
+    /// <summary>選択を全解除する（記憶もクリア）。</summary>
+    [RelayCommand]
+    private void ClearSelection()
+    {
+        if (_org is null)
+        {
+            return;
+        }
+
+        _restoringSelection = true;
+        foreach (var row in Objects)
+        {
+            row.IsSelected = false;
+        }
+
+        _restoringSelection = false;
+        _state.SetSelectedObjects(_org.Username, Array.Empty<string>());
+        UpdateSummary();
+    }
 
     private async Task FetchCountsCoreAsync(bool clearFirst, bool auto)
     {
@@ -251,10 +292,10 @@ public sealed partial class BackupTabViewModel : ObservableObject
         try
         {
             var label = string.IsNullOrWhiteSpace(Label)
-                ? UiText.T("Backup_DefaultLabelFmt", DateTime.Now)
+                ? BuildDefaultLabel(org)
                 : Label.Trim();
             var description = string.IsNullOrWhiteSpace(Description)
-                ? (string.IsNullOrWhiteSpace(org.OrgId) ? org.DisplayName : $"{org.DisplayName} / {org.OrgId}")
+                ? BuildDefaultDescription(org)
                 : Description.Trim();
             var appVersion = typeof(BackupTabViewModel).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
             var progress = new Progress<BackupProgress>(p =>

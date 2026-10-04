@@ -76,10 +76,14 @@ public partial class App : Application
         services.AddTransient<BackupViewModel>();
         services.AddTransient<BackupTabViewModel>();
         services.AddTransient<RestoreTabViewModel>();
+        services.AddTransient<CompareTabViewModel>();
         services.AddTransient<BackupWindow>();
         services.AddSingleton<BackupRecordsWindowFactory>();
         services.AddTransient<BackupRecordsViewModel>();
         services.AddTransient<BackupRecordsWindow>();
+        services.AddSingleton<BackupCompareRecordsWindowFactory>();
+        services.AddTransient<BackupCompareRecordsViewModel>();
+        services.AddTransient<BackupCompareRecordsWindow>();
         services.AddSingleton<MainWindow>();
         Services = services.BuildServiceProvider();
 

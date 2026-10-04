@@ -1,6 +1,6 @@
 # SfUi — Salesforce CLI 統合デスクトップツール 実装計画
 
-最終更新: 2026-10-04 / ステータス: Phase 0-15 完了 + AI 接続先の汎用化 + 組織比較 + データ入出力 + アクセス権限タブ + レコードのバックアップ・復元 + Microsoft Store（MSIX）提出準備完了（v0.8.0 / テスト 371 件 / 実 API スモーク + UIA E2E 検証済み。GitHub Release は v0.7.3 公開済み、Microsoft Store は審査準備中）
+最終更新: 2026-10-04 / ステータス: Phase 0-15 完了 + AI 接続先の汎用化 + 組織比較 + データ入出力 + アクセス権限タブ + レコードのバックアップ・復元（自動ラベル・比較タブ付き）+ Microsoft Store（MSIX）提出準備完了（v0.8.0 / テスト 376 件 / 実 API スモーク + UIA E2E 検証済み。GitHub Release は v0.7.3 公開済み、Microsoft Store は審査準備中）
 
 ## 1. 概要
 
@@ -279,14 +279,15 @@ data/
 選択中組織のレコードをローカルに**バックアップ**し、あとから**復元**する独立ウィンドウ（非モーダル）。設計書: `docs/backup-window-plan.md`。メイン上部バーの「バックアップと復元」から開く。
 
 - 保存形式: `data/backups/<yyyyMMdd-HHmmss>/`（`metadata.json` + オブジェクトごとの `<Object>.json`（REST）/ `<Object>.csv`（Bulk）+ `backups/counts.json` キャッシュ + `backup-state.json` 選択状態）
-- バックアップタブ: オブジェクト一覧（検索・件数付き・背景取得 + キャッシュ + 再取得ボタン・選択は組織ごとに記憶）→ ラベル / 説明（既定 = 時刻・組織情報）→ 実行（進捗 / キャンセル）。件数 ≤ `backupRestMaxRecords`（既定 2000）は REST（JSON）、超える場合は Bulk API（CSV）
+- バックアップタブ: オブジェクト一覧（検索・件数付き・背景取得 + キャッシュ + 再取得ボタン・選択は組織ごとに記憶 / 「選択をクリア」あり）→ ラベル / 説明（開いた時点で自動入力: `{エイリアス}_{yyyy-MM-dd_HH-mm}` / エイリアス・インスタンス URL・組織 ID・種類（本番 / サンドボックス）。クリアして実行した場合は再生成）→ 実行（進捗 / キャンセル）。件数 ≤ `backupRestMaxRecords`（既定 2000）は REST（JSON）、超える場合は Bulk API（CSV）
+- バックアップ比較タブ: 基準 (A) と比較対象 (B) の 2 つのバックアップをオブジェクト単位にレコード突合（キー = Id。値は REST の型付き値と Bulk CSV の文字列・null ↔ 空・数値/真偽値/日時の表記差を吸収）。結果グリッドは追加 / 削除 / 変更と状態を表示し、**差分のある行を色でハイライト**（差分 = 黄 / A のみ = 青 / B のみ = 紫 / エラー = 赤）+ 「差分のみ」フィルタ。「↗」で**レコード単位の比較結果を別ウィンドウ**（状態 / Id / 表示名 / `項目: A → B` の変更内容、検索 + 200 件/ページ、上限 20,000 件）
 - 復元タブ: バックアップ選択（検索・削除）→ オブジェクト一覧（件数・エンジン・キー項目 ComboBox・「レコード」ボタンで別ウィンドウのレコード詳細）→ 照合方式（自動 / Id / キー）× 既存一致時（スキップ / 上書き）→ 実行。結果グリッド（作成 / 上書き / 復元 / スキップ / 失敗 + エラー）
 - 復元の意味論（実測に基づく）: **同じ組織** = Id で照合。既存 → スキップ / 上書き（PATCH）、**削除済み → SOAP undelete で Id を維持して復元**（親の削除でカスケード削除された子は undelete 不可のため新規挿入にフォールバック）、完全に無い → 新規挿入（Id は新規 + 旧 Id → 新 Id の**参照張り替え**）。**別の組織** = キー項目（既定 Name）で照合
 - レコード詳細ウィンドウ: 列はバックアップ内容から動的生成・200 件/ページ・AND 検索・上限 20,000 件（打ち切り表示）
-- Core: `BackupModels` / `BackupStateStore` / `SalesforceSoapClient`（partner SOAP の undelete のみ）/ `BackupService`（並列件数取得・REST/Bulk バックアップ・Id/キー照合復元・参照張り替え・結果集計）
-- テスト: 371 件（+13: SOQL 生成 / JSON 解析 / フィールド構築 / CSV 変換 / 表示変換 / パストラバーサル防止 / メタデータ round-trip / ストア / SOAP エンベロープ・解析）
+- Core: `BackupModels` / `BackupStateStore` / `SalesforceSoapClient`（partner SOAP の undelete のみ）/ `BackupService`（並列件数取得・REST/Bulk バックアップ・Id/キー照合復元・参照張り替え・結果集計）/ `BackupCompareService`（バックアップ間のレコード突合・差分計算。ローカル ファイルのみで組織 API は呼ばない）
+- テスト: 376 件（+18: SOQL 生成 / JSON 解析 / フィールド構築 / CSV 変換 / 表示変換 / パストラバーサル防止 / メタデータ round-trip / ストア / SOAP エンベロープ・解析 / 値正規化 / 差分計算 / REST×Bulk 比較）
 - スモーク: `--smoke --smoke-backup <org>`（マーカーレコード作成 → バックアップ → 削除 → Id 復元（undelete で Id 維持）→ 上書き → キー復元（新 Id + 参照張り替え）→ Bulk 確認 → 後片付け。全項目成功）
-- UI チェック（`C:\huqian\sfui-backup-ui-check.ps1`・読み取りのみ）: 全 14 項目 PASS（タブ 2 つ / オブジェクト一覧 33 行 / フィルタ 21 行 / 選択の記憶 / バックアップ一覧 / 復元グリッド + キー項目 / レコード詳細 69 列 × 18 行 / 検索 0 件絞り込み）
+- UI チェック（`C:\huqian\sfui-backup-ui-check.ps1`・読み取りのみ）: 全 17 項目 PASS（タブ 3 つ / オブジェクト一覧 33 行 / 自動ラベル `acc_yyyy-MM-dd_HH-mm` / 自動説明（URL・組織 ID・種類）/ フィルタ 21 行 / 選択の記憶 / 選択クリア / バックアップ一覧 / 復元グリッド + キー項目 / レコード詳細 69 列 / 検索 0 件絞り込み / 比較グリッド 9 列 × 2 行 / 比較のレコード単位ウィンドウ 29 行）
 - バージョン: **0.8.0**（`SfUi.App.csproj` = 0.8.0 / `AppxManifest.xml` = 0.8.0.0）
 - 知見: Id を指定した挿入は REST / Bulk / SOAP のいずれも不可（`INVALID_FIELD_FOR_INSERT_UPDATE cannot specify Id in an insert call`）→ Id 維持は undelete のみ / partner SOAP には `SOAPAction: ""` ヘッダーが必要（無いと応答を解析できない）/ 親の削除時にカスケード削除された子レコードは個別 undelete 不可（"Entity is not in the recycle bin"）
 
@@ -439,7 +440,9 @@ data/
   - 2026-10-04: README のスクリーンショット（EN/JA 各 5 枚）を新 UI で再撮影。GitHub Release **v0.7.3** 公開（アセット = `SfUi.exe` + `SfUi-v0.7.3-portable.zip`）
 
 - ✅ **Phase 15（2026-10-04 完了）**: レコードのバックアップ・復元（設計: `docs/backup-window-plan.md`）
-  - メイン上部バー「バックアップと復元」（Fluent の Cloud Arrow Down アイコン）+ BackupWindow（バックアップ / 復元の 2 タブ）+ レコード詳細ウィンドウ（動的列・200 件/ページ・AND 検索）
-  - Core: `BackupModels` / `BackupStateStore` / `SalesforceSoapClient`（undelete）/ `BackupService`（背景件数取得・REST/Bulk 自動切替・Id/キー照合・参照張り替え）
-  - テスト 371 件成功（+13）/ スモーク `--smoke --smoke-backup acc`（undelete で Id 維持・上書き・キー復元の参照張り替え・Bulk 保存まで全項目成功）/ UI チェック 14 項目 PASS
+  - メイン上部バー「バックアップと復元」（Fluent の Cloud Arrow Down アイコン）+ BackupWindow（バックアップ / 復元 / バックアップ比較の 3 タブ）+ レコード詳細・比較レコードの別ウィンドウ
+  - バックアップ タブ: ラベル / 説明の自動入力（`{エイリアス}_{yyyy-MM-dd_HH-mm}` / URL・組織 ID・種類）+ 選択をクリア。復元は Id（undelete で Id 維持）/ キー照合 + 参照張り替え
+  - バックアップ比較タブ: 2 バックアップのレコード突合（REST×Bulk の型差を吸収）→ 差分行を色でハイライト + レコード単位の差分を別ウィンドウで表示（変更は `項目: A → B`）
+  - Core: `BackupModels` / `BackupStateStore` / `SalesforceSoapClient`（undelete）/ `BackupService`（背景件数取得・REST/Bulk 自動切替・Id/キー照合・参照張り替え）/ `BackupCompareService`（差分計算）
+  - テスト 376 件成功（+18）/ スモーク `--smoke --smoke-backup acc`（undelete で Id 維持・上書き・キー復元の参照張り替え・Bulk 保存まで全項目成功）/ UI チェック 17 項目 PASS
   - バージョン **0.8.0**
