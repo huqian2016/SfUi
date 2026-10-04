@@ -26,6 +26,12 @@ public sealed partial class ObjectAccessViewModel : ObservableObject, IDisposabl
 
     public ObservableCollection<ObjectAccessRowViewModel> Rows { get; } = new();
 
+    /// <summary>全行（検索フィルタ前）。</summary>
+    private readonly List<ObjectAccessRowViewModel> _allRows = new();
+
+    [ObservableProperty]
+    private string _searchText = string.Empty;
+
     [ObservableProperty]
     private string _statusMessage = string.Empty;
 
@@ -34,6 +40,8 @@ public sealed partial class ObjectAccessViewModel : ObservableObject, IDisposabl
 
     [ObservableProperty]
     private bool _isBusy;
+
+    partial void OnSearchTextChanged(string value) => ApplyFilter();
 
     public void Attach(DataIoViewModel owner)
     {
@@ -90,6 +98,7 @@ public sealed partial class ObjectAccessViewModel : ObservableObject, IDisposabl
         var describe = _owner.Describe;
         if (string.IsNullOrEmpty(_owner.TargetOrg) || describe is null)
         {
+            _allRows.Clear();
             Rows.Clear();
             SummaryText = string.Empty;
             StatusMessage = UiText.T("Access_SelectObjectFirst");
@@ -102,13 +111,13 @@ public sealed partial class ObjectAccessViewModel : ObservableObject, IDisposabl
         try
         {
             var rows = await _service.GetObjectAccessAsync(_owner.TargetOrg, describe.Name);
-            Rows.Clear();
+            _allRows.Clear();
             foreach (var row in rows)
             {
-                Rows.Add(new ObjectAccessRowViewModel(row));
+                _allRows.Add(new ObjectAccessRowViewModel(row));
             }
 
-            SummaryText = UiText.T("Access_RowCountFmt", rows.Count);
+            ApplyFilter();
             StatusMessage = string.Empty;
         }
         catch (Exception ex)
@@ -128,6 +137,35 @@ public sealed partial class ObjectAccessViewModel : ObservableObject, IDisposabl
             }
         }
     }
+
+    /// <summary>検索テキスト（スペース区切りは AND）で行を絞り込む。</summary>
+    private void ApplyFilter()
+    {
+        var terms = ParseTerms(SearchText);
+        Rows.Clear();
+        foreach (var row in _allRows)
+        {
+            if (terms.Count > 0 && !terms.All(t => row.SearchText.Contains(t, StringComparison.Ordinal)))
+            {
+                continue;
+            }
+
+            Rows.Add(row);
+        }
+
+        SummaryText = _allRows.Count == 0
+            ? string.Empty
+            : terms.Count == 0
+                ? UiText.T("Access_RowCountFmt", _allRows.Count)
+                : UiText.T("Access_FilteredFmt", Rows.Count, _allRows.Count);
+    }
+
+    private static IReadOnlyList<string> ParseTerms(string? filter) =>
+        string.IsNullOrWhiteSpace(filter)
+            ? Array.Empty<string>()
+            : filter.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(t => t.ToLowerInvariant())
+                .ToArray();
 
     public void Dispose()
     {

@@ -12,12 +12,16 @@ public sealed class FieldMatrixRowViewModel
     {
         Label = label;
         Cells = cells;
+        SearchText = label.ToLowerInvariant();
     }
 
     public string Label { get; }
 
     /// <summary>主体（列）順のセル文字列（R / E / R, E / 空欄）。</summary>
     public string[] Cells { get; }
+
+    /// <summary>検索用（ラベル (API 名) の小文字）。</summary>
+    public string SearchText { get; }
 }
 
 /// <summary>
@@ -60,6 +64,9 @@ public sealed partial class FieldAccessViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private string _columnFilter = string.Empty;
+
+    [ObservableProperty]
+    private string _searchText = string.Empty;
 
     [ObservableProperty]
     private string _statusMessage = string.Empty;
@@ -107,6 +114,8 @@ public sealed partial class FieldAccessViewModel : ObservableObject, IDisposable
     partial void OnShowGroupsChanged(bool value) => Rebuild();
 
     partial void OnColumnFilterChanged(string value) => Rebuild();
+
+    partial void OnSearchTextChanged(string value) => Rebuild();
 
     private void OnDescribeChanged()
     {
@@ -197,8 +206,15 @@ public sealed partial class FieldAccessViewModel : ObservableObject, IDisposable
         Rows.Clear();
         if (describe is not null && _snapshot is not null && filtered.Count > 0)
         {
+            var terms = ParseTerms(SearchText);
             foreach (var field in describe.Fields)
             {
+                var label = $"{field.Label} ({field.Name})";
+                if (terms.Count > 0 && !terms.All(t => label.Contains(t, StringComparison.OrdinalIgnoreCase)))
+                {
+                    continue;
+                }
+
                 var cells = new string[filtered.Count];
                 var fullName = $"{describe.Name}.{field.Name}";
                 for (var i = 0; i < filtered.Count; i++)
@@ -208,7 +224,7 @@ public sealed partial class FieldAccessViewModel : ObservableObject, IDisposable
                         : string.Empty;
                 }
 
-                Rows.Add(new FieldMatrixRowViewModel($"{field.Label} ({field.Name})", cells));
+                Rows.Add(new FieldMatrixRowViewModel(label, cells));
             }
 
             SummaryText = UiText.T("FieldAccess_SummaryFmt", Rows.Count, filtered.Count);
@@ -220,6 +236,13 @@ public sealed partial class FieldAccessViewModel : ObservableObject, IDisposable
 
         MatrixChanged?.Invoke();
     }
+
+    private static IReadOnlyList<string> ParseTerms(string? filter) =>
+        string.IsNullOrWhiteSpace(filter)
+            ? Array.Empty<string>()
+            : filter.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(t => t.ToLowerInvariant())
+                .ToArray();
 
     /// <summary>セル文字列（R / E / R, E）。</summary>
     public static string FormatCell(FieldAccessCell cell) => cell switch

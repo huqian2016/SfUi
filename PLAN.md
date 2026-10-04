@@ -1,6 +1,6 @@
 # SfUi — Salesforce CLI 統合デスクトップツール 実装計画
 
-最終更新: 2026-10-04 / ステータス: Phase 0-13 完了 + AI 接続先の汎用化 + 組織比較 + データ入出力 + アクセス権限タブ + Microsoft Store（MSIX）提出準備完了（v0.7.0 / テスト 356 件 / 実 API スモーク + UIA E2E 検証済み。v0.2.0 は GitHub Release で公開中、Microsoft Store は審査準備中）
+最終更新: 2026-10-04 / ステータス: Phase 0-13 完了 + AI 接続先の汎用化 + 組織比較 + データ入出力 + アクセス権限タブ + Microsoft Store（MSIX）提出準備完了（v0.7.1 / テスト 356 件 / 実 API スモーク + UIA E2E 検証済み。v0.2.0 は GitHub Release で公開中、Microsoft Store は審査準備中）
 
 ## 1. 概要
 
@@ -262,8 +262,8 @@ data/
 
 データ入出力ウィンドウに、権限（アクセス権）を一覧化する 3 タブを追加。設計書と実 API 調査結果: `docs/access-tabs-plan.md`。
 
-- オブジェクトアクセス: 選択中オブジェクトに対する Permission Sets / Permission Set Groups / Profiles の権限を一覧（種類 / ラベル / API 名 / カスタム / Read / Create / Edit / Delete / View All Records / Modify All Records / View All Fields）。PSG 行は構成 PS の和集合
-- 項目アクセス: 項目（行）× 権限主体（列）のマトリクス（セル = R / E）。種類フィルタ（プロファイル / 権限セット / PSG）と列絞り込み付き。データ元は `FieldPermissions` の明示行のみ
+- オブジェクトアクセス: 選択中オブジェクトに対する Permission Sets / Permission Set Groups / Profiles の権限を一覧（種類 / ラベル / API 名 / カスタム / Read / Create / Edit / Delete / View All Records / Modify All Records / View All Fields。検索付き）。PSG 行は構成 PS の和集合
+- 項目アクセス: 項目（行）× 権限主体（列）のマトリクス（セル = R / E）。種類フィルタ（プロファイル / 権限セット / PSG）・行の検索・列絞り込み付き。データ元は `FieldPermissions` の明示行のみ
 - レコードアクセス: 任意 SOQL で対象レコードを抽出（上限 10,000 件・queryMore）→ 200 件 / ページでページング + 検索。有効ユーザーをチェックボックス選択（名前検索・3 行でスクロール・全選択 / 全解除）し、UserRecordAccess でユーザーごとの読取 / 編集 / 削除 / 転送を表示（リンク列でレコードをブラウザーで開ける）
 - 実測した API 制約: UserRecordAccess は `UserId = '<単一 ID>'` のみ（IN 不可）・SELECT 可は RecordId / Has*Access / MaxAccessLevel のみ・**1 クエリ 200 行上限**（ページサイズ 200 はこの上限に適合）・アクセスなしでも全 false 行が返る
 - Core: `PermissionSubject` / `ObjectAccessRow` / `FieldAccessSnapshot` / `RecordAccessUser` / `RecordQueryResult` / `UserRecordAccessFlags` + `PermissionAccessService` / `RecordAccessService` / `RestQueryPager`（query + queryMore 共通化）
@@ -272,6 +272,7 @@ data/
 - UI チェック（`C:\huqian\sfui-access-tabs-check.ps1`・読み取りのみ）: 全 20 項目 PASS（178 行 / 71 項目 × 178 主体 / 種類フィルタ 178 → 160 列 / ユーザー 13 人のスクロールリスト / 15 件ページング / ユーザー権限列 / 検索絞り込み）
 - バージョン: **0.7.0**（`SfUi.App.csproj` = 0.7.0 / `AppxManifest.xml` = 0.7.0.0 / MSIX = `dist\SfUi_0.7.0.0_x64.msix`）
 - 知見: PSG には IsCustom が無い（常にカスタム扱い）/ PermissionSetGroupComponent にミューティング識別が無いため和集合で近似 / プロファイルは `IsOwnedByProfile = true` の PermissionSet（ラベル = Profile.Name）/ UIA の ValuePattern.SetValue では WPF ComboBox のテキストサーチが働かない → オブジェクト名の完全一致で選択するよう DataIoViewModel を改善
+- 2026-10-04 改修（v0.7.1）: オブジェクト / 項目アクセスに検索（行の内容で絞り込み・AND・スペース区切り・「表示: n 件 / 全 m 件」）を追加。UI チェック 24 項目 PASS
 
 ## 10. 検証計画
 
@@ -404,3 +405,4 @@ data/
   - 実測制約: UserRecordAccess は単一 UserId のみ・200 行 / クエリ上限（ページ 200 件に一致）・アクセスなしでも全 false 行あり
   - 改善: 対象オブジェクト欄への API 名完全一致入力で describe を読み込むように（UIA / 手入力どちらでも安定）
   - バージョン: **0.7.0** 化（`SfUi.App.csproj` / `AppxManifest.xml` / `dist\SfUi_0.7.0.0_x64.msix` 再ビルド）
+  - 2026-10-04 改修（v0.7.1）: オブジェクト / 項目アクセスに検索（行の内容・AND・スペース区切り・表示件数付き）を追加 / UI チェック 24 項目 PASS

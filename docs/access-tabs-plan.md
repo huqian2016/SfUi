@@ -73,6 +73,7 @@
 - 行 = 選択中オブジェクトについての全主体（プロファイル所有 PS・通常 PS・PSG の合計。権限行が無い主体も全 false で表示）
 - 列 = 種類 / ラベル / API名 / カスタムかどうか / Read / Create / Edit / Delete / View All Records / Modify All Records / View All Fields
 - 並び順 = プロファイル → 権限セット → 権限セットグループ、各ラベル順
+- 検索 = 行の内容（種類 / ラベル / API 名）で絞り込み（スペース区切りは AND。絞り込み中は「表示: n 件 / 全 m 件」）
 - データ元: `ObjectPermissions WHERE SobjectType = '<obj>'`。**PSG 行は構成 PS（PermissionSetGroupComponent）の権限の和集合**
 
 ### 3.2 項目アクセス タブ
@@ -92,6 +93,7 @@
 - 列 = 種類フィルタに合致する主体（ヘッダ = ラベル(API名)、ツールチップ = 種類）
 - セル = `R` / `E` / `R, E`（`FieldPermissions` の PermissionsRead / PermissionsEdit。PSG 列は構成 PS の和集合）
 - 種類フィルタ（3 チェックボックス）と列絞り込み（部分一致）で列を削減可能
+- 検索 = 項目（ラベル / API 名）で行を絞り込み（スペース区切りは AND。件数表示に反映）
 
 ### 3.3 レコードアクセス タブ
 
@@ -132,6 +134,7 @@
 | 7 | 列 = ID / オブジェクト項目 / リンク / ユーザー毎の権限列 | Id / 表示項目 / ↗ リンク / ユーザー毎 読取・編集・削除・転送 |
 | 8 | CRUD は UserRecordAccess を利用 | 1 ユーザー × ≤200 レコードの REST クエリ（上限 200 行に一致） |
 | 9 | 日英対応 | UiText キー追加（En/Ja 同一キー・LocalizationUsageTests 対応） |
+| 10 | オブジェクト / 項目アクセスにも検索 | 行の内容で絞り込み（AND・スペース区切り・件数表示付き） |
 
 ---
 

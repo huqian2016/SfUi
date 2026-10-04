@@ -15,6 +15,7 @@ public sealed class ObjectAccessRowViewModel
         });
         Label = row.Subject.Label;
         ApiName = row.Subject.ApiName;
+        SearchText = $"{Kind} {Label} {ApiName}".ToLowerInvariant();
         Custom = Tick(row.Subject.IsCustom);
         Read = Tick(row.Read);
         Create = Tick(row.Create);
@@ -46,6 +47,9 @@ public sealed class ObjectAccessRowViewModel
     public string ModifyAllRecords { get; }
 
     public string ViewAllFields { get; }
+
+    /// <summary>検索用（種類 + ラベル + API 名の小文字連結）。</summary>
+    public string SearchText { get; }
 
     public static string Tick(bool value) => value ? "✓" : "−";
 }

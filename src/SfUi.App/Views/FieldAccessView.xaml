@@ -14,6 +14,9 @@
                               Margin="12,0,0,0" VerticalAlignment="Center" AutomationProperties.AutomationId="KindPsChk" />
                     <CheckBox Content="{loc:Tr Access_KindPermissionSetGroup}" IsChecked="{Binding ShowGroups, Mode=TwoWay}"
                               Margin="12,0,0,0" VerticalAlignment="Center" AutomationProperties.AutomationId="KindPsgChk" />
+                    <TextBlock Text="{loc:Tr Access_SearchLabel}" Margin="16,0,4,0" VerticalAlignment="Center" />
+                    <TextBox Width="150" Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             ToolTip="{loc:Tr Access_SearchTip}" AutomationProperties.AutomationId="FieldAccessSearchBox" />
                     <TextBlock Text="{loc:Tr FieldAccess_ColumnFilter}" Margin="18,0,0,0" VerticalAlignment="Center" />
                     <TextBox Width="170" Margin="4,0,0,0" Text="{Binding ColumnFilter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                              AutomationProperties.AutomationId="ColumnFilterBox" />
