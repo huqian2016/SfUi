@@ -1,7 +1,7 @@
 # macOS 署名・公証（Developer ID）手順書
 
-最終更新: 2026-10-05 / ステータス: **未実施（実施は後回し・保留中）**
-→ 証明書の準備ができたら「Step 5」から実行する。リポジトリ側の配線は実装済み（§0 参照）。
+最終更新: 2026-10-05 / ステータス: **メンバーシップ更新済み（有効期限 2027-10-06）。次の作業 = Developer ID Application 証明書の発行（§2）→ 公証用パスワード（§4）→ 署名 + 公証の実行（§5）**
+→ リポジトリ側の配線は実装済み（§0 参照）。手元に Mac が無い場合は §2 方法 C（Windows + OpenSSL）で CSR / .p12 を作成し、CI（§8）で署名・公証を実行できる。
 
 ## 0. 目的と現状
 
@@ -10,14 +10,16 @@
   - 回避策（現行リリースに記載済み）: `SfUi.app` を右クリック →「開く」、または `xattr -dr com.apple.quarantine SfUi.app`
   - 参考: `curl` 等のコマンドでダウンロードした場合は quarantine が付かないため初回からダブルクリックで起動できる
 - **費用**: Apple Developer Program 年会費 **¥12,980/年（日本・税込）**。証明書の発行も公証サービスもこの年会費に含まれる（公証のたびの追加課金はなし）
-- **本プロジェクトの状況（2026-10-05 時点）**:
-  - 使用予定の Apple ID は **2015-09-10 で期限切れの個人メンバーシップ（Team ID `WSDCSNQC59`）の Account Holder** になっている
-  - そのため新規登録は「別のメンバーシップの Account Holder に関連付けられています」エラーでブロックされる → **新規登録ではなく「更新（Renew）」** が必要（Step 1）
+- **本プロジェクトの状況（2026-10-05 更新）**:
+  - **Apple Developer Program の更新（Renew）が完了** — チーム ID `WSDCSNQC59`・プログラム = Apple Developer Program・登録タイプ = 個人・**更新日（有効期限）2027-10-06**・年間登録料 ¥12,980（手順は §1）
+  - **次にやること**: ① Developer ID Application 証明書の発行（§2。Mac = 方法 A / B、Windows = 方法 C）→ ② 公証用のアプリ用パスワード（§4）→ ③ 署名 + 公証の実行（§5。Mac が無ければ CI = §8）
 - **リポジトリ側の対応は実装済み**（追加作業なしで Step 5 を実行できる）:
   - `packaging/make-mac-app.sh` … 環境変数を設定すると `codesign`（hardened runtime）+ `notarytool` + `stapler` を自動実行（未設定時はスキップ）
   - `packaging/mac/entitlements.plist` … **.NET の JIT 許可**（`allow-jit` / `allow-unsigned-executable-memory`）。hardened runtime 下でこれが無いと署名後に起動クラッシュする（`c0641a7` で配線済み）
 
 ## 1. メンバーシップの更新（既存 Apple ID）
+
+> **✅ 完了（2026-10-05）**: 下記手順で更新済み（チーム ID `WSDCSNQC59` 継続・更新日 2027-10-06・年間登録料 ¥12,980）。以下は実施記録として残す。
 
 1. [developer.apple.com/account](https://developer.apple.com/account) に **同じ Apple ID** でサインイン
 2. **Membership details** → 「**Renew Membership**（メンバーシップを更新）」→ 年額 **¥12,980** を支払う
@@ -49,6 +51,23 @@
 1. Certificates, Identifiers & Profiles → Certificates → 「+」→ Developer ID Application
 2. キーチェーンアクセスで CSR を作成 → アップロード
 3. `.cer` をダウンロード → ダブルクリックでキーチェーンへ
+
+**方法 C: Windows（OpenSSL。手元に Mac / Xcode が無い場合）**
+1. CSR を作成（Git for Windows 同梱の OpenSSL を使用）
+   ```powershell
+   & 'C:\Program Files\Git\usr\bin\openssl.exe' req -new -newkey rsa:2048 -nodes `
+       -keyout sfui-developerid.key `
+       -out sfui-developerid.certSigningRequest `
+       -subj "/CN=HKS Tech/emailAddress=<Apple ID のメール>/C=JP"
+   ```
+2. [ポータル](https://developer.apple.com/account) → Certificates → 「+」→ **Developer ID Application** → `sfui-developerid.certSigningRequest` をアップロード → `.cer` をダウンロード
+3. `.cer` を秘密鍵入り `.p12` に変換（CI の secret `MACOS_CERT_P12` 用）
+   ```powershell
+   & 'C:\Program Files\Git\usr\bin\openssl.exe' x509 -inform DER -in DeveloperIDApplication.cer -out sfui-developerid.pem
+   & 'C:\Program Files\Git\usr\bin\openssl.exe' pkcs12 -export -inkey sfui-developerid.key -in sfui-developerid.pem -out sfui-developerid.p12
+   ```
+4. 署名 + 公証（codesign / notarytool）は macOS 専用 → Mac があれば §5、無ければ §8（CI）へ `.p12` を登録
+5. `sfui-developerid.key` と `.p12` は厳重に保管（漏洩すると第三者が署名できる）。**PR / Issue / チャットには絶対に貼らない**
 
 > `Developer ID Installer` は `.pkg` 配布用。今回の `.app` + zip 配布には**不要**。
 > 証明書（秘密鍵入り .p12）はバックアップを取っておくとマシン移行時に楽。
@@ -109,6 +128,8 @@ open /tmp/SfUi-test.app                                  # 警告なしで起動
 
 ## 8. CI（GitHub Actions）での自動署名（任意）
 
+> 現状の `package-macos` ジョブ（`.github/workflows/ci.yml`）は環境変数なしで `make-mac-app.sh` を実行 = **未署名**のまま。下記 secrets を登録してステップを追加すると CI で署名 + 公証まで実行できる（Mac が手元に無い場合はこの方法）。
+
 secrets（リポジトリ設定 → Secrets and variables → Actions）:
 
 | secret | 内容 |
@@ -152,9 +173,9 @@ secrets（リポジトリ設定 → Secrets and variables → Actions）:
 
 ## 10. 再開時のチェックリスト
 
-- [ ] Apple ID の 2FA 有効化
-- [ ] メンバーシップ更新（Team ID `WSDCSNQC59`）→ 有効化を確認
-- [ ] Developer ID Application 証明書を発行（+ .p12 バックアップ）
+- [x] Apple ID の 2FA 有効化（更新手続き時点で有効）
+- [x] メンバーシップ更新（Team ID `WSDCSNQC59`）→ ✅ 2026-10-05 完了（更新日 2027-10-06）
+- [ ] Developer ID Application 証明書を発行（+ .p12 バックアップ）（§2。Mac が無ければ方法 C）
 - [ ] アプリ用パスワードを発行
 - [ ] Step 5 を実行（署名 + 公証 + ステープル）
 - [ ] Step 6 で検証（spctl / stapler / 隔離再現テスト）
