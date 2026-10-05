@@ -1,14 +1,14 @@
 # macOS 署名・公証（Developer ID）手順書
 
-最終更新: 2026-10-06 / ステータス: **CI での署名 + 公証に成功・検証済み（`spctl` = Notarized Developer ID / `stapler validate` OK）。残りはリリース反映（§7: 公証済み zip の添付 + README の回避策記載の削除）**
+最終更新: 2026-10-06 / ステータス: **✅ 完了 — 署名 + 公証済み macOS ビルドを v0.10.1 で公開（README の回避策記載も削除済み）**
 → CI は secrets 未登録の間は自動スキップ（= 未署名）。失敗時は Actions の **Annotations** / ログに `::error::` 付きの理由が表示される。
 
 ## 0. 目的と現状
 
 - **目的**: `SfUi.app` を **Developer ID 署名 + 公証（notarization）** し、ユーザーがダウンロード後に「右クリック → 開く」なしで（ダブルクリックで）起動できるようにする
-- **現状（2026-10-06 更新）**: **CI が署名 + 公証済みの zip を生成できるようになった**（検証済み: `spctl` = `accepted / source=Notarized Developer ID`・`stapler validate: OK`）。ただし回避策の記載（右クリック →「開く」）は**公証済み zip を添付したリリースまで有効**（現行 v0.10.0 の zip は未署名）
+- **現状（2026-10-06 更新）**: **v0.10.1 として署名 + 公証済みの macOS zip を公開済み**（CI が生成 → 検証: `spctl` = `accepted / source=Notarized Developer ID`・`stapler validate: OK`。初回からダブルクリックで起動可）。README の回避策記載も削除済み
   - 背景: 未署名の zip はブラウザーでダウンロードすると macOS が quarantine（隔離）属性を付けるため、初回のみ Gatekeeper がブロックする
-  - 回避策（現行リリースに記載済み）: `SfUi.app` を右クリック →「開く」、または `xattr -dr com.apple.quarantine SfUi.app`
+  - 回避策（v0.10.0 以前のリリース向け）: `SfUi.app` を右クリック →「開く」、または `xattr -dr com.apple.quarantine SfUi.app`
   - 参考: `curl` 等のコマンドでダウンロードした場合は quarantine が付かないため初回からダブルクリックで起動できる
 - **費用**: Apple Developer Program 年会費 **¥12,980/年（日本・税込）**。証明書の発行も公証サービスもこの年会費に含まれる（公証のたびの追加課金はなし）
 - **本プロジェクトの状況（2026-10-06 更新）**:
@@ -145,9 +145,9 @@ open /tmp/SfUi-test.app                                  # 警告なしで起動
 
 ## 7. リリースへの反映
 
-1. 公証済みの `SfUi-<version>-osx-arm64.zip` を GitHub Release に添付
-2. **README / リリースノートから「右クリック → 開く」の回避策の記載を削除**（`README.md` の EN/JA ダウンロード節、リリースノートの macOS 初回起動手順）
-3. PLAN.md / 本手順書のステータスを「実施済み」に更新
+1. 公証済みの `SfUi-<version>-osx-arm64.zip` を GitHub Release に添付 — **✅ v0.10.1（2026-10-06）で実施**
+2. **README / リリースノートから「右クリック → 開く」の回避策の記載を削除**（`README.md` の EN/JA ダウンロード節、リリースノートの macOS 初回起動手順）— **✅ 実施**
+3. PLAN.md / 本手順書のステータスを「実施済み」に更新 — **✅ 実施**
 
 ## 8. CI（GitHub Actions）での自動署名（配線済み）
 
@@ -191,8 +191,8 @@ secrets（リポジトリ設定 → Secrets and variables → Actions）:
 - [x] GitHub secrets を登録（§8 の 5 つ）して署名 + 公証ビルドを実行 → ✅ 2026-10-06（CI run 37331822538）
 - [x] Step 6 の検証（spctl / stapler validate）→ ✅ CI で自動 PASS（2026-10-06）
 - [ ] （任意）隔離再現テスト（Mac で quarantine 属性を付けてダブルクリック起動）
-- [ ] Release に公証済み zip を添付し、README / リリースノートの回避策記載を削除
-- [ ] 本手順書と PLAN.md のステータスを「実施済み」に更新
+- [x] Release に公証済み zip を添付し、README / リリースノートの回避策記載を削除 → ✅ v0.10.1（2026-10-06）
+- [x] 本手順書と PLAN.md のステータスを「実施済み」に更新 → ✅（2026-10-06）
 
 ## 参考リンク
 

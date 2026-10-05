@@ -585,9 +585,9 @@ data/
 - 検証: hks4 で WPF / Avalonia 両方の「主な設定」初回取得 + 再取得が成功（20/20 行・エラーなし）
 - 2026-10-05: GitHub Release **v0.9.3** 公開（アセット = `SfUi.exe` + `SfUi-v0.9.3-portable.zip` + `SfUi-0.9.3-osx-arm64.zip`）。§15 のツールバー折り返しと §16 の主な設定修正を反映。README（EN/JA）のダウンロード参照も v0.9.3 に更新
 
-## 17. macOS 署名・公証の準備（2026-10-06、CI 署名 + 公証に成功・リリース反映待ち）
+## 17. macOS 署名・公証（完了）— 公証済み macOS ビルドを v0.10.1 で公開（2026-10-06）
 - 手順書を作成: `docs/macos-signing-notarization.md`（メンバーシップ更新 → 証明書発行 → 署名 + 公証 + ステープル → 検証（spctl / 隔離再現）→ Release 反映 → CI 配線 → トラブルシューティング → 再開チェックリスト）
-- 状況: **2026-10-06 に CI での署名 + 公証に成功・検証済み**（`package-macos` が署名 ID を自動検出 → codesign + notarytool + stapler → 検証。run `37331822538`: `spctl` = `accepted / source=Notarized Developer ID`・`stapler validate: OK`・artifact `SfUi-macos-app` 43.5MB）。初回 workflow_dispatch 失敗の原因 = ランナーの `base64` オプション差異（exit 64）→ 複数方式フォールバックで解消。残りはリリース反映（公証済み zip の添付 + README / リリースノートの「右クリック → 開く」記載の削除）
+- 状況: **2026-10-06 に CI での署名 + 公証に成功・検証済み**（`package-macos` が署名 ID を自動検出 → codesign + notarytool + stapler → 検証。run `37331822538`: `spctl` = `accepted / source=Notarized Developer ID`・`stapler validate: OK`・artifact `SfUi-macos-app` 43.5MB）。初回 workflow_dispatch 失敗の原因 = ランナーの `base64` オプション差異（exit 64）→ 複数方式フォールバックで解消。**2026-10-06: v0.10.1 として公証済み macOS zip を Release に添付し、README / リリースノートから回避策記載を削除 = 完了**
 - リポジトリ側は実装済み: `make-mac-app.sh`（codesign hardened runtime + notarytool + stapler）+ `packaging/mac/entitlements.plist`（.NET JIT 許可）。証明書が揃えば手順書 Step 5 を実行するだけで署名・公証済みリリースを作れる
 
 ## 18. 起動時のようこそ画面（Welcome）（2026-10-05）
@@ -610,3 +610,4 @@ data/
 - 文言: `OrgManage_Register*`（22 キー × En/Ja/Zh/Ko。WPF のアクセス トークン欄は PasswordBox のため特例で `AutomationProperties.Name` を付与）
 - 検証: ビルド 0 警告 / テスト 399 件（+1: `ExtractSfdxAuthUrl` の正常・異常系 + 引数組み立ての拡張アサーション）/ 両アプリ `--smoke` exit 0 / UIA チェック `C:\huqian\sfui-orgmanage-register-check.ps1` 20 項目 PASS（EN + JA。パネル開閉・3 方法の表示切替・トークンのマスク・スクリーンショット 3 種）/ 登録フロー `C:\huqian\sfui-orgmanage-register-flow.ps1` = モック sf 成功パス（パネル自動クローズ + ステータス「組織を登録しました」）+ 実 sf 失敗パス（`RefreshTokenAuthError` がステータスに表示されパネル維持）どちらも PASS / Avalonia は `--open orgmanage` でスクリーンショット確認（ブラウザー → SFDX の動的切替含む）
 - 知見: `sf org login sfdx-url` の `--sfdx-url-file` は「URL だけのプレーン テキスト」で可（stdin 不要）。`sf org login access-token` は `SF_ACCESS_TOKEN` + `--no-prompt` 必須（対話プロンプト回避）。`sf org login web` も `--alias` / `--set-default` 対応。デモ用モック `C:\SfUiDemo\sf-demo-multi.cmd` に `org login` の成功応答を追加（フロー検証用）
+- 2026-10-06: GitHub Release **v0.10.1** 公開（アセット = `SfUi.exe` 165.6MB + `SfUi-v0.10.1-portable.zip` 65.9MB + `SfUi-0.10.1-x64.msix` 67.3MB + `SfUi-0.10.1-x64.cer` + **公証済み** `SfUi-0.10.1-osx-arm64.zip` 43.8MB）。バージョン bump = `281a5bd`（`SfUi.App.csproj` / `SfUi.Avalonia.csproj` = 0.10.1、`AppxManifest.xml` = 0.10.1.0）。macOS 版は Developer ID 署名 + 公証 + ステープル済み（CI run `37333361071`・spctl / stapler 検証 PASS）で初回からダブルクリック起動可（README の回避策記載を削除）。本 §19 の組織登録 + §17 の署名・公証を反映

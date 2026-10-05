@@ -4,7 +4,7 @@ A Windows desktop tool that wraps the Salesforce CLI (`sf`) with a fast, click-l
 Run SOQL, anonymous Apex, debug logs, deploys, free-form `sf` commands and raw REST API calls —
 with history/favorites, quick switching between orgs and project folders, one-click tool launcher,
 an **Org Info** window for each org, side-by-side comparison of 2–4 orgs, **record backup / restore** with backup-to-backup comparison,
-and an **Org Management** window that keeps your orgs in order (default, alias, login, logout) and shows per-org limits and a workflow/flow migration inventory.
+and an **Org Management** window that keeps your orgs in order (default, alias, login, register, logout) and shows per-org limits and a workflow/flow migration inventory.
 
 > UI languages: **English (default) / 日本語 / 简体中文 / 한국어** — switch instantly from the top bar.
 
@@ -16,16 +16,16 @@ Two ways to get going: use a prebuilt binary below, or [build from source](#buil
 
 1. Download from the [Releases](../../releases) page:
    - **`SfUi.exe`** — the portable single executable, or
-   - **`SfUi-v0.10.0-portable.zip`** — the executable **plus a ready-to-use `data/` folder with 30 sample SOQL / Apex / commands / REST requests already in the history** (just extract and run).
-   - **`SfUi-0.10.0-x64.msix`** — Windows installer (MSIX). Trust the bundled certificate first: double-click **`SfUi-0.10.0-x64.cer`** → *Install Certificate* → **Local Machine** → **Trusted People** (admin required), then double-click the `.msix` to install.
+   - **`SfUi-v0.10.1-portable.zip`** — the executable **plus a ready-to-use `data/` folder with 30 sample SOQL / Apex / commands / REST requests already in the history** (just extract and run).
+   - **`SfUi-0.10.1-x64.msix`** — Windows installer (MSIX). Trust the bundled certificate first: double-click **`SfUi-0.10.1-x64.cer`** → *Install Certificate* → **Local Machine** → **Trusted People** (admin required), then double-click the `.msix` to install.
 2. Put it in any folder and double-click (no installer).
    - Windows SmartScreen may warn because the binary is unsigned — choose *More info* → *Run anyway*.
 3. On first run a `data/` folder is created next to the exe (portable mode). Pick your org in the top bar and start with a tab — or add the sample history via **Settings → Seed sample history**.
 
 ### macOS (Apple Silicon, prebuilt)
 
-1. Download **`SfUi-0.10.0-osx-arm64.zip`** from [Releases](../../releases), extract it and run `SfUi.app`.
-2. The app is not notarized yet, so on the first launch **right-click the app → Open** once (or run `xattr -dr com.apple.quarantine SfUi.app` in Terminal); double-click works from the second launch on.
+1. Download **`SfUi-0.10.1-osx-arm64.zip`** from [Releases](../../releases), extract it and run `SfUi.app`.
+2. The app is signed with a Developer ID certificate and **notarized by Apple**, so it opens with a normal double-click — including the very first launch.
 3. Same as Windows from there: pick your org in the top bar and start with a tab.
 
 > Both need the **Salesforce CLI (`sf`)** installed and at least one authenticated org (`sf org login web`) — see [Requirements](#requirements).
@@ -207,7 +207,7 @@ SOQL・匿名Apex・デバッグログ・デプロイ・自由コマンド・RES
 少ないクリックで実行できます。組織とフォルダの切替、外部ツールの起動もワンクリック。
 組織情報の閲覧（別ウィンドウ）・複数組織の一括比較・データの入出力（CSV / JSON・REST / Bulk API）・
 レコードのバックアップと復元（バックアップ間の比較・レコード単位の差分表示付き）・
-組織管理（組織の既定 / エイリアス / ログイン操作、疎通テスト、タグ・メモ、使用量・移行棚卸しの確認）にも対応しています。
+組織管理（組織の既定 / エイリアス / ログイン・登録操作、疎通テスト、タグ・メモ、使用量・移行棚卸しの確認）にも対応しています。
 
 - **ようこそ画面**: 起動のたびに Welcome ウィンドウを表示（「今後表示しない」チェックで次回以降は非表示、設定タブの「ようこそ画面を表示」で再表示）。主な機能の一覧に加え、Salesforce CLI（sf コマンド）が見つからない場合はインストール案内（公式インストーラーを開く + npm コマンド例 + 再チェック）を表示し、UI 言語もウィンドウ内のコンボでその場で切り替えられます
 - UI は **英語（既定）/ 日本語 / 简体中文 / 한국어** に対応（上部バーのコンボで即時切替）
@@ -221,7 +221,7 @@ SOQL・匿名Apex・デバッグログ・デプロイ・自由コマンド・RES
 - **組織管理ウィンドウ**: 上部バーの「組織管理」から開く独立ウィンドウ。組織タブ = 認証済み組織の一覧（既定 ★ / エイリアス / ユーザー名 / 組織 ID / 種別 / 接続状態 / インスタンス URL / **最終バックアップ** / **ローカルのタグ・メモ**）とワンクリック操作（**既定に設定** / **ブラウザーで開く** / **ログイン追加（ブラウザー）** / **組織を登録…**（ブラウザー ログイン / SFDX 認証 URL / アクセス トークンの 3 方法。他マシンの `sf org display --verbose --json` の JSON をそのまま貼り付け可。エイリアス・既定組織への設定付き）/ **ログアウト**（確認付き）/ **エイリアスを設定** / **疎通テスト（選択 / すべて）**（REST で Organization を 1 件読み、セッションと応答時間を確認。進捗・キャンセル付き））+ 絞り込み（エイリアス・ユーザー名・組織 ID・タグ・メモ。タグ・メモは `data/org-manage.json` に保存され組織側には書き込みません）。ヘルス タブ = 選択中組織の REST `/limits` を取得し、使用量 / 上限 / 使用率をバー付きで表示（80% 以上は赤・使用率順 + 名前絞り込み）。移行棚卸し タブ = Workflow ルール（Tooling API） / プロセスビルダー / フロー（FlowDefinitionView）の一覧（種別 / 名前 / API 名 / オブジェクト / 状態 / サブタイプ / 最終更新）+ 種別フィルタ + 有効のみ + 種別ごとのサマリー + CSV エクスポート + 行ごとの **Setup** ボタン（`sf org open --path` で該当ページをブラウザー表示）。Workflow ルールの有効 / 無効は Metadata API の XML から読み取ります。ヘッダーの組織コンボで切り替えるとヘルスと棚卸しが自動で再取得されます（どちらも読み取り専用）
 - **ブラウザボタン**: 組織ホーム / セットアップは `sf org open --url-only` のセッション付き URL（frontdoor）で開くため、ブラウザーでの再ログインは不要です（取得できない場合は通常 URL にフォールバック）
 - **アイコン ツールバー**: 上部バーのボタンは Fluent UI System Icons のアイコンのみ（マウスオーバーでラベルと説明をツールチップ表示・AI はオン/オフでアイコン切替）
-- 2026-10-05 時点で v0.10.0（テスト 398 件 / スモーク + UIA E2E 検証済み。AI 接続先の汎用化・組織比較・データ入出力・アクセス権限タブ・レコードのバックアップと復元（比較タブ付き）・組織管理ウィンドウ（組織 / ヘルス / 移行棚卸し。疎通テスト・タグ/メモ・最終バックアップ・Setup リンク付き）・ブラウザのセッション URL・アイコン ツールバー・ようこそ画面・4 言語 UI を含む）
+- 2026-10-06 時点で v0.10.1（テスト 399 件 / スモーク + UIA E2E 検証済み。AI 接続先の汎用化・組織比較・データ入出力・アクセス権限タブ・レコードのバックアップと復元（比較タブ付き）・組織管理ウィンドウ（組織 / ヘルス / 移行棚卸し。新規組織の登録（ブラウザー / SFDX 認証 URL / アクセス トークン）・疎通テスト・タグ/メモ・最終バックアップ・Setup リンク付き）・ブラウザのセッション URL・アイコン ツールバー・ようこそ画面・4 言語 UI・macOS 署名 + 公証済みビルドを含む）
 
 ## 使い方
 
@@ -231,16 +231,16 @@ SOQL・匿名Apex・デバッグログ・デプロイ・自由コマンド・RES
 
 1. [Releases](../../releases) からダウンロード
    - **`SfUi.exe`**（実行ファイル単体）または
-   - **`SfUi-v0.10.0-portable.zip`**（exe + サンプル履歴 30 件入りの `data/` フォルダ。解凍してそのまま実行）
-   - **`SfUi-0.10.0-x64.msix`** — Windows インストーラー（MSIX）。先に同梱の **`SfUi-0.10.0-x64.cer`** を信頼させる（証明書のインストール → ローカル コンピューター → 信頼されたユーザー。管理者権限が必要）→ `.msix` をダブルクリックでインストール
+   - **`SfUi-v0.10.1-portable.zip`**（exe + サンプル履歴 30 件入りの `data/` フォルダ。解凍してそのまま実行）
+   - **`SfUi-0.10.1-x64.msix`** — Windows インストーラー（MSIX）。先に同梱の **`SfUi-0.10.1-x64.cer`** を信頼させる（証明書のインストール → ローカル コンピューター → 信頼されたユーザー。管理者権限が必要）→ `.msix` をダブルクリックでインストール
 2. 任意のフォルダに置いてダブルクリック（インストーラー不要）
    - 署名なしのため SmartScreen の警告が出たら「詳細情報」→「実行」
 3. 初回起動時に exe 隣に `data/` フォルダ（設定・履歴・ログ）が作成されます。上部バーで組織を選び、各タブから操作を開始（サンプルの SOQL / Apex / コマンド / REST は「設定 → サンプル履歴を投入」で追加できます）
 
 ### macOS（Apple Silicon・ビルド済み）
 
-1. [Releases](../../releases) から **`SfUi-0.10.0-osx-arm64.zip`** をダウンロード → 解凍して `SfUi.app` を実行
-2. 未署名のため初回のみ **右クリック →「開く」**、または ターミナルで `xattr -dr com.apple.quarantine SfUi.app` を 1 回実行（2 回目以降はダブルクリックで起動できます）
+1. [Releases](../../releases) から **`SfUi-0.10.1-osx-arm64.zip`** をダウンロード → 解凍して `SfUi.app` を実行
+2. Developer ID 署名 + **Apple の公証（ステープル込み）** 済みのため、初回からダブルクリックで起動できます（「右クリック →「開く」」の回避策は不要）
 3. 以降は Windows 版と同じ（上部バーで組織を選んで開始）
 
 > どちらの場合も **Salesforce CLI（`sf`）** のインストールといずれかの組織へのログイン（`sf org login web`）が必要です（→ [前提条件](#前提条件)）。
