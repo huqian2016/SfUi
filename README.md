@@ -8,6 +8,81 @@ and an **Org Management** window that keeps your orgs in order (default, alias, 
 
 > UI languages: **English (default) / 日本語 / 简体中文 / 한국어** — switch instantly from the top bar.
 
+## Getting started
+
+Two ways to get going: use a prebuilt binary below, or [build from source](#build-from-source).
+
+### Windows (prebuilt)
+
+1. Download from the [Releases](../../releases) page:
+   - **`SfUi.exe`** — the portable single executable, or
+   - **`SfUi-v0.10.0-portable.zip`** — the executable **plus a ready-to-use `data/` folder with 30 sample SOQL / Apex / commands / REST requests already in the history** (just extract and run).
+2. Put it in any folder and double-click (no installer).
+   - Windows SmartScreen may warn because the binary is unsigned — choose *More info* → *Run anyway*.
+3. On first run a `data/` folder is created next to the exe (portable mode). Pick your org in the top bar and start with a tab — or add the sample history via **Settings → Seed sample history**.
+
+### macOS (Apple Silicon, prebuilt)
+
+1. Download **`SfUi-0.10.0-osx-arm64.zip`** from [Releases](../../releases), extract it and run `SfUi.app`.
+2. The app is not notarized yet, so on the first launch **right-click the app → Open** once (or run `xattr -dr com.apple.quarantine SfUi.app` in Terminal); double-click works from the second launch on.
+3. Same as Windows from there: pick your org in the top bar and start with a tab.
+
+> Both need the **Salesforce CLI (`sf`)** installed and at least one authenticated org (`sf org login web`) — see [Requirements](#requirements).
+
+## Build from source
+
+The build only needs the **free .NET SDK 9.0+** ([dotnet.microsoft.com](https://dotnet.microsoft.com/download)) — no paid Visual Studio is required. With the SDK installed, the `dotnet` CLI alone covers building, running, testing and producing the distributable EXE. There is no `global.json`, so any 9.0+ SDK works.
+
+```bash
+git clone https://github.com/huqian2016/SfUi.git
+cd SfUi
+```
+
+### Windows (WPF app)
+
+```powershell
+# Build everything + run the tests
+dotnet build SfUi.sln -c Debug
+dotnet test  SfUi.sln
+
+# Run the WPF app from source
+dotnet run --project src/SfUi.App
+
+# Produce a self-contained single-file EXE into dist/
+dotnet publish src/SfUi.App/SfUi.App.csproj -c Release -r win-x64 `
+  --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o dist
+```
+
+The Avalonia shell below also runs on Windows: `dotnet run --project src/SfUi.Avalonia`.
+
+### macOS (Avalonia app)
+
+```bash
+# Run the Avalonia shell
+dotnet run --project src/SfUi.Avalonia
+
+# Build SfUi.app + distributable zip into dist/mac/
+bash packaging/make-mac-app.sh osx-arm64   # or osx-x64
+```
+
+`src/SfUi.Avalonia` is an Avalonia 11 port that shares all logic through `SfUi.Core` + `SfUi.Presentation` (UI-framework-free ViewModels), so the same source builds and runs on Windows and macOS. The prebuilt macOS app (`SfUi.app`, Apple Silicon) is attached to each [release](../../releases) — it is assembled and smoke-tested (launch / language switch / exit 0) on real macOS runners in CI.
+
+### Project layout
+
+```
+SfUi.sln
+├─ src/SfUi.Core    … WPF-free logic (services, stores, localization dictionaries, tests target)
+│  ├─ Services      … SfCliRunner, OrgService, SalesforceRestClient, DeployService, ToolLauncherService, …
+│  ├─ Storage       … atomic JSON stores (settings / history / favorites / recent)
+│  └─ Localization  … UiText dictionaries (en / ja / zh / ko)
+├─ src/SfUi.Presentation … UI-framework-free ViewModels + UI abstractions (shared by WPF and Avalonia)
+├─ src/SfUi.App     … WPF app (Windows; MVVM, views, localization markup extension)
+├─ src/SfUi.Avalonia … Avalonia 11 app (Windows / macOS; shares Core + Presentation)
+└─ tests/SfUi.Tests … xUnit (398 tests: quoting, JSON parsing, stores, services, org info, org compare, data I/O, backups, org management, localization, …)
+```
+
+Built with C# / .NET 9, CommunityToolkit.Mvvm and AvalonEdit (WPF) / AvaloniaEdit (Avalonia). All business logic is shared through `SfUi.Core` and `SfUi.Presentation`, so fixes apply to both UIs at once.
+
 ## Screenshots
 
 ![SfUi main window](docs/screenshots/main-en.png)
@@ -71,16 +146,6 @@ and an **Org Management** window that keeps your orgs in order (default, alias, 
   - The app runs `sf` behind the scenes; default path is `C:\Program Files\sf\bin\sf.cmd` (configurable in Settings, or via the `SFUI_SF_PATH` environment variable)
 - Running the released EXE requires **no .NET runtime** (self-contained)
 
-## Getting started
-
-1. Download from the [Releases](../../releases) page:
-   - **Windows** — **`SfUi.exe`** (the portable single executable), or **`SfUi-v0.10.0-portable.zip`** — the executable **plus a ready-to-use `data/` folder with 30 sample SOQL / Apex / commands / REST requests already in the history** (just extract and run).
-   - **macOS (Apple Silicon)** — **`SfUi-0.10.0-osx-arm64.zip`** — extract the zip and run `SfUi.app`. The app is not notarized yet, so on the first launch **right-click the app → Open** once (or run `xattr -dr com.apple.quarantine SfUi.app` in Terminal); double-click works from the second launch on.
-2. Put it in any folder and double-click (no installer).
-   - Windows SmartScreen may warn because the binary is unsigned — choose *More info* → *Run anyway*.
-3. On first run a `data/` folder is created next to the exe (portable mode).
-4. Pick your org in the top bar and start with a tab, or seed the history with sample SOQL / Apex / commands / REST requests via **Settings → Seed sample history**.
-
 ## Screens & tabs
 
 | Tab | What it does |
@@ -128,53 +193,6 @@ data\
 
 All JSON files are written atomically (`AtomicJsonFile`: temp file → `File.Replace`) and keep a `*.bak` copy for corruption recovery. Copying the `data/` folder along with the exe moves your settings, history and backups.
 
-## Build from source
-
-The build only needs the **free .NET SDK 9.0+** ([dotnet.microsoft.com](https://dotnet.microsoft.com/download)) — no paid Visual Studio is required. With the SDK installed, the `dotnet` CLI alone covers building, running, testing and producing the distributable EXE. There is no `global.json`, so any 9.0+ SDK works (WPF requires building on Windows).
-
-```powershell
-# Requirements: free .NET SDK 9.0+
-dotnet build SfUi.sln -c Debug
-dotnet test  SfUi.sln
-
-# Run the app from source
-dotnet run --project src/SfUi.App
-
-# Produce a self-contained single-file EXE into dist/
-dotnet publish src/SfUi.App/SfUi.App.csproj -c Release -r win-x64 `
-  --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o dist
-```
-
-### macOS / Avalonia build
-
-An Avalonia port lives in `src/SfUi.Avalonia` and shares all logic through `SfUi.Core` + `SfUi.Presentation` (UI-framework-free ViewModels). It builds and runs on both Windows and macOS:
-
-```bash
-# Run the Avalonia shell (any OS)
-dotnet run --project src/SfUi.Avalonia
-
-# On macOS: build SfUi.app + distributable zip into dist/mac/
-bash packaging/make-mac-app.sh osx-arm64   # or osx-x64
-```
-
-The prebuilt macOS app (`SfUi.app`, Apple Silicon) is attached to each [release](../../releases) — it is assembled and smoke-tested (launch / language switch / exit 0) on real macOS runners in CI.
-
-### Project layout
-
-```
-SfUi.sln
-├─ src/SfUi.Core    … WPF-free logic (services, stores, localization dictionaries, tests target)
-│  ├─ Services      … SfCliRunner, OrgService, SalesforceRestClient, DeployService, ToolLauncherService, …
-│  ├─ Storage       … atomic JSON stores (settings / history / favorites / recent)
-│  └─ Localization  … UiText dictionaries (en / ja / zh / ko)
-├─ src/SfUi.Presentation … UI-framework-free ViewModels + UI abstractions (shared by WPF and Avalonia)
-├─ src/SfUi.App     … WPF app (Windows; MVVM, views, localization markup extension)
-├─ src/SfUi.Avalonia … Avalonia 11 app (Windows / macOS; shares Core + Presentation)
-└─ tests/SfUi.Tests … xUnit (398 tests: quoting, JSON parsing, stores, services, org info, org compare, data I/O, backups, org management, localization, …)
-```
-
-Built with C# / .NET 9, CommunityToolkit.Mvvm and AvalonEdit (WPF) / AvaloniaEdit (Avalonia). All business logic is shared through `SfUi.Core` and `SfUi.Presentation`, so fixes apply to both UIs at once.
-
 ## License
 
 MIT — see [LICENSE](LICENSE). You are free to use, modify and redistribute SfUi (including commercially); just keep the copyright notice. Third-party components (Avalonia, AvaloniaEdit, CommunityToolkit.Mvvm, Microsoft Fluent UI icons, …) are used under their respective licenses (mostly MIT).
@@ -202,7 +220,66 @@ SOQL・匿名Apex・デバッグログ・デプロイ・自由コマンド・RES
 - **組織管理ウィンドウ**: 上部バーの「組織管理」から開く独立ウィンドウ。組織タブ = 認証済み組織の一覧（既定 ★ / エイリアス / ユーザー名 / 組織 ID / 種別 / 接続状態 / インスタンス URL / **最終バックアップ** / **ローカルのタグ・メモ**）とワンクリック操作（**既定に設定** / **ブラウザーで開く** / **ログイン追加（ブラウザー）** / **ログアウト**（確認付き）/ **エイリアスを設定** / **疎通テスト（選択 / すべて）**（REST で Organization を 1 件読み、セッションと応答時間を確認。進捗・キャンセル付き））+ 絞り込み（エイリアス・ユーザー名・組織 ID・タグ・メモ。タグ・メモは `data/org-manage.json` に保存され組織側には書き込みません）。ヘルス タブ = 選択中組織の REST `/limits` を取得し、使用量 / 上限 / 使用率をバー付きで表示（80% 以上は赤・使用率順 + 名前絞り込み）。移行棚卸し タブ = Workflow ルール（Tooling API） / プロセスビルダー / フロー（FlowDefinitionView）の一覧（種別 / 名前 / API 名 / オブジェクト / 状態 / サブタイプ / 最終更新）+ 種別フィルタ + 有効のみ + 種別ごとのサマリー + CSV エクスポート + 行ごとの **Setup** ボタン（`sf org open --path` で該当ページをブラウザー表示）。Workflow ルールの有効 / 無効は Metadata API の XML から読み取ります。ヘッダーの組織コンボで切り替えるとヘルスと棚卸しが自動で再取得されます（どちらも読み取り専用）
 - **ブラウザボタン**: 組織ホーム / セットアップは `sf org open --url-only` のセッション付き URL（frontdoor）で開くため、ブラウザーでの再ログインは不要です（取得できない場合は通常 URL にフォールバック）
 - **アイコン ツールバー**: 上部バーのボタンは Fluent UI System Icons のアイコンのみ（マウスオーバーでラベルと説明をツールチップ表示・AI はオン/オフでアイコン切替）
-- 2026-10-04 時点で Phase 0〜16 完了（v0.9.1 / テスト 387 件 / スモーク + UIA E2E 検証済み。AI 接続先の汎用化・組織比較・データ入出力・アクセス権限タブ・レコードのバックアップと復元（比較タブ付き）・組織管理ウィンドウ（組織 / ヘルス / 移行棚卸し。疎通テスト・タグ/メモ・最終バックアップ・Setup リンク付き）・ブラウザのセッション URL・アイコン ツールバーを含む）
+- 2026-10-05 時点で v0.10.0（テスト 398 件 / スモーク + UIA E2E 検証済み。AI 接続先の汎用化・組織比較・データ入出力・アクセス権限タブ・レコードのバックアップと復元（比較タブ付き）・組織管理ウィンドウ（組織 / ヘルス / 移行棚卸し。疎通テスト・タグ/メモ・最終バックアップ・Setup リンク付き）・ブラウザのセッション URL・アイコン ツールバー・ようこそ画面・4 言語 UI を含む）
+
+## 使い方
+
+はじめ方は 2 通り: 下のビルド済みバイナリを使うか、[ソースからビルド](#ビルド)するかです。
+
+### Windows（ビルド済み）
+
+1. [Releases](../../releases) からダウンロード
+   - **`SfUi.exe`**（実行ファイル単体）または
+   - **`SfUi-v0.10.0-portable.zip`**（exe + サンプル履歴 30 件入りの `data/` フォルダ。解凍してそのまま実行）
+2. 任意のフォルダに置いてダブルクリック（インストーラー不要）
+   - 署名なしのため SmartScreen の警告が出たら「詳細情報」→「実行」
+3. 初回起動時に exe 隣に `data/` フォルダ（設定・履歴・ログ）が作成されます。上部バーで組織を選び、各タブから操作を開始（サンプルの SOQL / Apex / コマンド / REST は「設定 → サンプル履歴を投入」で追加できます）
+
+### macOS（Apple Silicon・ビルド済み）
+
+1. [Releases](../../releases) から **`SfUi-0.10.0-osx-arm64.zip`** をダウンロード → 解凍して `SfUi.app` を実行
+2. 未署名のため初回のみ **右クリック →「開く」**、または ターミナルで `xattr -dr com.apple.quarantine SfUi.app` を 1 回実行（2 回目以降はダブルクリックで起動できます）
+3. 以降は Windows 版と同じ（上部バーで組織を選んで開始）
+
+> どちらの場合も **Salesforce CLI（`sf`）** のインストールといずれかの組織へのログイン（`sf org login web`）が必要です（→ [前提条件](#前提条件)）。
+
+## ビルド
+
+ビルドに必要なのは**無料の .NET SDK 9.0+**（[dotnet.microsoft.com](https://dotnet.microsoft.com/download)）だけです（有料の Visual Studio は不要）。SDK をインストールすれば、ビルド・テスト・配布用 EXE の作成まで `dotnet` コマンドだけで完結します。`global.json` が無いため SDK は 9.0 系以降なら OK です。
+
+```bash
+git clone https://github.com/huqian2016/SfUi.git
+cd SfUi
+```
+
+### Windows（WPF 版）
+
+```powershell
+# ビルド + テスト
+dotnet build SfUi.sln -c Debug
+dotnet test  SfUi.sln
+
+# ソースから実行
+dotnet run --project src/SfUi.App
+
+# 配布用の自己完結・単一 EXE を dist/ に作成
+dotnet publish src/SfUi.App/SfUi.App.csproj -c Release -r win-x64 `
+  --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o dist
+```
+
+Avalonia 版（下記）も Windows で実行できます: `dotnet run --project src/SfUi.Avalonia`。
+
+### macOS（Avalonia 版）
+
+```bash
+# Avalonia 版を実行
+dotnet run --project src/SfUi.Avalonia
+
+# macOS 上で SfUi.app + 配布 zip を作成（dist/mac/）
+bash packaging/make-mac-app.sh osx-arm64   # Intel は osx-x64
+```
+
+`src/SfUi.Avalonia` は Avalonia 11 ベースのクロスプラットフォーム版です（ロジックは `SfUi.Core` + `SfUi.Presentation` を WPF 版と共有）。ビルド済みの macOS 版（`SfUi.app`・Apple Silicon）は各 [Release](../../releases) に添付されています（CI の実 macOS ランナーで組立 + 起動スモーク済み）。
 
 ## スクリーンショット
 
@@ -235,17 +312,6 @@ SOQL・匿名Apex・デバッグログ・デプロイ・自由コマンド・RES
 
 ![REST コンソール](docs/screenshots/rest-ja.png)
 *汎用 REST コンソール（JSON 整形表示）*
-
-## 使い方
-
-1. [Releases](../../releases) からダウンロード
-   - **Windows 版** … **`SfUi.exe`**（実行ファイル単体。サンプル履歴は設定画面から後で追加可）または **`SfUi-v0.10.0-portable.zip`**（exe + サンプル履歴 30 件入りの `data/` フォルダ。解凍してそのまま実行）
-   - **macOS 版（Apple Silicon）** … **`SfUi-0.10.0-osx-arm64.zip`**（解凍して `SfUi.app` を実行。未署名のため初回のみ **右クリック →「開く」**、または ターミナルで `xattr -dr com.apple.quarantine SfUi.app` を 1 回実行。2 回目以降はダブルクリックで起動できます）
-2. 任意のフォルダに置いてダブルクリック（インストーラー不要）
-   - 署名なしのため SmartScreen の警告が出たら「詳細情報」→「実行」
-3. 初回起動時に exe 隣に `data/` フォルダ（設定・履歴・ログ）が作成されます（ポータブル動作）
-4. 上部バーで組織を選び、各タブから操作を開始。サンプルの SOQL / Apex / コマンド / REST は
-   「設定 → サンプル履歴を投入」で追加できます
 
 ## 設定・データの保存場所
 
@@ -288,37 +354,6 @@ JSON はすべて原子的書き込み（`AtomicJsonFile`: 一時ファイル �
 - `Enter` … コマンド実行
 - `Ctrl+1..9` … クイックパネルのお気に入りを実行
 - `F5` … 直前の操作を再実行
-
-## ビルド
-
-ビルドに必要なのは**無料の .NET SDK 9.0+**（[dotnet.microsoft.com](https://dotnet.microsoft.com/download)）だけです（有料の Visual Studio は不要）。SDK をインストールすれば、ビルド・テスト・配布用 EXE の作成まで `dotnet` コマンドだけで完結します。`global.json` が無いため SDK は 9.0 系以降なら OK です（WPF のためビルドは Windows のみ）。
-
-```powershell
-# 必要なもの: 無料の .NET SDK 9.0+
-dotnet build SfUi.sln -c Debug
-dotnet test  SfUi.sln
-
-# ソースから実行
-dotnet run --project src/SfUi.App
-
-# 配布用の自己完結・単一 EXE を dist/ に作成
-dotnet publish src/SfUi.App/SfUi.App.csproj -c Release -r win-x64 `
-  --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o dist
-```
-
-### macOS / Avalonia 版
-
-`src/SfUi.Avalonia` は Avalonia 11 ベースのクロスプラットフォーム版です（ロジックは `SfUi.Core` + `SfUi.Presentation` を WPF 版と共有）:
-
-```bash
-# Avalonia 版を実行（Windows / macOS どちらでも）
-dotnet run --project src/SfUi.Avalonia
-
-# macOS 上で SfUi.app + 配布 zip を作成（dist/mac/）
-bash packaging/make-mac-app.sh osx-arm64   # Intel は osx-x64
-```
-
-ビルド済みの macOS 版（`SfUi.app`・Apple Silicon）は各 [Release](../../releases) に添付されています（CI の実 macOS ランナーで組立 + 起動スモーク済み）。
 
 ## ライセンス
 
