@@ -1,6 +1,6 @@
 # SfUi — Salesforce CLI 統合デスクトップツール 実装計画
 
-最終更新: 2026-10-04 / ステータス: Phase 0-16 完了 + AI 接続先の汎用化 + 組織比較 + データ入出力 + アクセス権限タブ + レコードのバックアップ・復元（自動ラベル・比較タブ付き）+ 組織管理ウィンドウ（組織一覧の管理 + ヘルス + 移行棚卸し。疎通テスト・タグ/メモ・最終バックアップ・Setup リンク付き）+ Microsoft Store（MSIX）提出準備完了（v0.9.2 / テスト 395 件 / 実 API スモーク + UIA E2E 検証済み。GitHub Release **v0.9.2 公開済み（Windows + macOS 版 `.app`）**、Microsoft Store は審査準備中）
+最終更新: 2026-10-05 / ステータス: Phase 0-16 完了 + AI 接続先の汎用化 + 組織比較 + データ入出力 + アクセス権限タブ + レコードのバックアップ・復元（自動ラベル・比較タブ付き）+ 組織管理ウィンドウ（組織一覧の管理 + ヘルス + 移行棚卸し。疎通テスト・タグ/メモ・最終バックアップ・Setup リンク付き）+ Avalonia 版（macOS 対応・全ウィンドウ移植 + UI 修正）+ Microsoft Store（MSIX）提出準備完了（v0.9.3 / テスト 396 件 / 実 API スモーク + UIA E2E 検証済み。GitHub Release **v0.9.3 公開済み（Windows + macOS 版 `.app`）**、Microsoft Store は審査準備中）
 
 ## 1. 概要
 
@@ -568,7 +568,8 @@ data/
 - ② DataGrid の列幅 D&D 変更・列並べ替えを有効化（Avalonia の `CanUserResizeColumns` は既定 false = WPF と逆 → `App.axaml` の `DataGrid` スタイルで True。リサイズはヘッダー境界 ±5px のヒット ゾーン方式）
 - ③ データ入出力の対象オブジェクトを AutoCompleteBox（テキスト ボックス風）→ ドロップダウン（ComboBox + `IsTextSearchEnabled`）に変更
 - ④ Record / Object / Field Access タブの初回表示で読み込まれない不具合を修正: Avalonia では `DataContext="{Binding …}"` の継承バインドが attach 時に解決されるため attach ハンドラーの ViewModel が null で `EnsureLoadedAsync` が実行されなかった → attach と DataContextChanged の後勝ちで 1 回だけ実行する `TryEnsureLoaded` 方式に変更（3 ビュー共通）
-- 検証: ビルド 0/0・395 テスト green・`--smoke` exit 0・実 UI でスクリーンショット + ドラッグ検証（境界のカーソル形状スキャンでリサイズ 120px の列幅変化を数値確認 / ユーザー 5 名 + SOQL 自動入力 / ドロップダウンに sObject 一覧表示）  - 2026-10-05: GitHub Release **v0.9.2** 公開（アセット = `SfUi.exe` + `SfUi-v0.9.2-portable.zip` + **`SfUi-0.9.2-osx-arm64.zip`（macOS 版 .app）**）。macOS 版は CI（実 macOS ランナー）で組立 + 起動スモーク済み・アイコン（icns）入り。未署名のため初回のみ右クリック→「開く」が必要（リリース ノートに記載）。ビルド スクリプト / CI は Developer ID 証明書を設定するだけで署名・公証に対応
+- 検証: ビルド 0/0・395 テスト green・`--smoke` exit 0・実 UI でスクリーンショット + ドラッグ検証（境界のカーソル形状スキャンでリサイズ 120px の列幅変化を数値確認 / ユーザー 5 名 + SOQL 自動入力 / ドロップダウンに sObject 一覧表示）
+- 2026-10-05: GitHub Release **v0.9.2** 公開（アセット = `SfUi.exe` + `SfUi-v0.9.2-portable.zip` + **`SfUi-0.9.2-osx-arm64.zip`（macOS 版 .app）**）。macOS 版は CI（実 macOS ランナー）で組立 + 起動スモーク済み・アイコン（icns）入り。未署名のため初回のみ右クリック→「開く」が必要（リリース ノートに記載）。ビルド スクリプト / CI は Developer ID 証明書を設定するだけで署名・公証に対応
 
 ## 15. ツールバー折り返し対応（2026-10-05、WPF + Avalonia 両方）
 - SOQL / 匿名 Apex / REST API タブのツールバーが、AI パネル（+ Quick パネル）表示で幅が狭いとボタンが隠れていた問題を修正
@@ -582,3 +583,4 @@ data/
 - 修正: `Organization` の describe からフィールド一覧を取得（組織単位でキャッシュ）し、存在するフィールドだけで SELECT を組み立てる（describe 取得失敗時は従来どおり全フィールドで試行）。存在しない項目の行は値空欄で表示
 - 変更: `OrgInfoQueryBuilder.BuildSettingsQuery(existingFields)` / `OrgInfoService.FetchSettingsAsync` + `GetOrganizationFieldNamesAsync`（`ConcurrentDictionary` キャッシュ）/ テスト 1 件追加（396 件）
 - 検証: hks4 で WPF / Avalonia 両方の「主な設定」初回取得 + 再取得が成功（20/20 行・エラーなし）
+- 2026-10-05: GitHub Release **v0.9.3** 公開（アセット = `SfUi.exe` + `SfUi-v0.9.3-portable.zip` + `SfUi-0.9.3-osx-arm64.zip`）。§15 のツールバー折り返しと §16 の主な設定修正を反映。README（EN/JA）のダウンロード参照も v0.9.3 に更新
