@@ -8,17 +8,25 @@ namespace SfUi.Tests;
 public class UiTextTests
 {
     [Fact]
-    public void EnglishAndJapanese_HaveSameKeys()
+    public void AllLanguages_HaveSameKeys()
     {
         var english = UiText.EnglishKeys.ToHashSet();
-        var japanese = UiText.JapaneseKeys.ToHashSet();
-
-        var missingInJa = english.Except(japanese).OrderBy(k => k).ToList();
-        var missingInEn = japanese.Except(english).OrderBy(k => k).ToList();
-
-        Assert.Empty(missingInJa);
-        Assert.Empty(missingInEn);
         Assert.NotEmpty(english);
+
+        foreach (var (name, keys) in new (string, IReadOnlyCollection<string>)[]
+        {
+            ("ja", UiText.JapaneseKeys),
+            ("zh", UiText.ChineseKeys),
+            ("ko", UiText.KoreanKeys),
+        })
+        {
+            var set = keys.ToHashSet();
+            var missing = english.Except(set).OrderBy(k => k).ToList();
+            var extra = set.Except(english).OrderBy(k => k).ToList();
+
+            Assert.True(missing.Count == 0, $"missing in {name}: {string.Join(", ", missing.Take(20))}");
+            Assert.True(extra.Count == 0, $"extra in {name}: {string.Join(", ", extra.Take(20))}");
+        }
     }
 
     [Fact]
@@ -31,6 +39,12 @@ public class UiTextTests
 
             UiText.SetLanguage(UiText.Japanese);
             Assert.Equal("準備完了", UiText.T("Common_Ready"));
+
+            UiText.SetLanguage(UiText.Chinese);
+            Assert.Equal("就绪", UiText.T("Common_Ready"));
+
+            UiText.SetLanguage(UiText.Korean);
+            Assert.Equal("준비됨", UiText.T("Common_Ready"));
         }
         finally
         {
@@ -62,12 +76,21 @@ public class UiTextTests
     }
 
     [Fact]
-    public void SetLanguage_AcceptsJapaneseAlias_AndOtherwiseFallsBackToEnglish()
+    public void SetLanguage_AcceptsAliases_AndOtherwiseFallsBackToEnglish()
     {
         try
         {
             UiText.SetLanguage("日本語");
             Assert.Equal(UiText.Japanese, UiText.Language);
+
+            UiText.SetLanguage("简体中文");
+            Assert.Equal(UiText.Chinese, UiText.Language);
+
+            UiText.SetLanguage("한국어");
+            Assert.Equal(UiText.Korean, UiText.Language);
+
+            UiText.SetLanguage("zh");
+            Assert.Equal(UiText.Chinese, UiText.Language);
 
             UiText.SetLanguage("de");
             Assert.Equal(UiText.English, UiText.Language);

@@ -48,12 +48,12 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private bool _isAiPanelVisible = true;
 
-    /// <summary>言語コンボの選択値（English / 日本語）。</summary>
+    /// <summary>言語コンボの選択値（English / 日本語 / 简体中文 / 한국어）。</summary>
     [ObservableProperty]
     private string _languageLabel = "English";
 
     /// <summary>言語コンボの選択肢。</summary>
-    public IReadOnlyList<string> LanguageLabels { get; } = new[] { "English", "日本語" };
+    public IReadOnlyList<string> LanguageLabels { get; } = new[] { "English", "日本語", "简体中文", "한국어" };
 
     /// <summary>ステータスバー表示用（組織・フォルダ）。</summary>
     public string StatusDetail => UiText.T("Main_StatusDetailFmt", SelectedOrg?.DisplayName ?? UiText.T("Main_NotSelected"), SelectedFolder ?? UiText.T("Main_DefaultFolder"));
@@ -153,7 +153,7 @@ public partial class MainViewModel : ObservableObject
         Ai.ApplyRequested += ApplyAiSnippet;
 
         // 保存済みの言語をコンボへ反映（起動時の UiText 適用は App 側で実施済み）
-        _languageLabel = string.Equals(_settings.Current.Language, UiText.Japanese, StringComparison.OrdinalIgnoreCase) ? "日本語" : "English";
+        _languageLabel = LanguageLabelForCode(_settings.Current.Language);
         OnPropertyChanged(nameof(LanguageLabel));
         _isAiPanelVisible = _settings.Current.AiPanelVisible;
         OnPropertyChanged(nameof(IsAiPanelVisible));
@@ -170,7 +170,7 @@ public partial class MainViewModel : ObservableObject
 
     partial void OnLanguageLabelChanged(string value)
     {
-        var code = string.Equals(value, "日本語", StringComparison.Ordinal) ? UiText.Japanese : UiText.English;
+        var code = LanguageCodeForLabel(value);
         if (code == UiText.Language)
         {
             return;
@@ -181,6 +181,24 @@ public partial class MainViewModel : ObservableObject
         _settings.Save();
         StatusMessage = UiText.T("Msg_LanguageFmt", value);
     }
+
+    /// <summary>言語コンボの表示名 → 言語コード。</summary>
+    private static string LanguageCodeForLabel(string label) => label switch
+    {
+        "日本語" => UiText.Japanese,
+        "简体中文" => UiText.Chinese,
+        "한국어" => UiText.Korean,
+        _ => UiText.English,
+    };
+
+    /// <summary>言語コード → 言語コンボの表示名。</summary>
+    private static string LanguageLabelForCode(string? code) => (code ?? UiText.English).Trim().ToLowerInvariant() switch
+    {
+        UiText.Japanese => "日本語",
+        UiText.Chinese => "简体中文",
+        UiText.Korean => "한국어",
+        _ => "English",
+    };
 
     /// <summary>起動時の初期化（前回状態の復元 → 組織一覧の取得）。</summary>
     public async Task InitializeAsync()

@@ -202,7 +202,11 @@ public partial class App : Application
             await Dispatcher.UIThread.InvokeAsync(() => { });
             UiText.SetLanguage(UiText.English);
             await Dispatcher.UIThread.InvokeAsync(() => { });
-            _log?.Info("--smoke: 全タブ OK / 言語切替 OK (ja→en)");
+            UiText.SetLanguage(UiText.Chinese);
+            await Dispatcher.UIThread.InvokeAsync(() => { });
+            UiText.SetLanguage(UiText.Korean);
+            await Dispatcher.UIThread.InvokeAsync(() => { });
+            _log?.Info("--smoke: 全タブ OK / 言語切替 OK (ja→en→zh→ko)");
             _log?.Info("--smoke モード: 正常に終了します");
             (ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.Shutdown(0);
         }

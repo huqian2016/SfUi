@@ -298,9 +298,12 @@ public partial class AiChatViewModel : ObservableObject
 
     private string BuildSystemPrompt()
     {
-        var japanese = UiText.Language == UiText.Japanese;
+        var language = UiText.Language;
+        var japanese = language == UiText.Japanese;
+        var chinese = language == UiText.Chinese;
+        var korean = language == UiText.Korean;
         var org = string.IsNullOrWhiteSpace(CurrentOrg)
-            ? (japanese ? "（未選択）" : "(none)")
+            ? (japanese ? "（未選択）" : chinese ? "（未选择）" : korean ? "(미선택)" : "(none)")
             : CurrentOrg;
 
         var prompt = japanese
@@ -308,10 +311,20 @@ public partial class AiChatViewModel : ObservableObject
               + $"現在の対象組織: {org}。\n"
               + "・SOQL は ```soql、匿名Apex は ```apex、sf コマンドは ```bash（先頭に sf を付ける）のコードブロックで出力してください。\n"
               + "・回答は日本語で簡潔に。"
-            : "You are a Salesforce expert assistant. The user operates the Salesforce CLI (sf) from a Windows desktop tool called SfUi. "
-              + $"Current target org: {org}.\n"
-              + "- Output SOQL in ```soql, anonymous Apex in ```apex, and sf commands in ```bash (prefix with sf).\n"
-              + "- Be concise.";
+            : chinese
+                ? "你是 Salesforce 专家助手。用户正在通过 Windows 桌面工具 SfUi 操作 Salesforce CLI (sf)。"
+                  + $"当前目标组织: {org}。\n"
+                  + "・SOQL 请使用 ```soql、匿名 Apex 使用 ```apex、sf 命令使用 ```bash（以 sf 开头）的代码块输出。\n"
+                  + "・请用简体中文简洁回答。"
+                : korean
+                    ? "당신은 Salesforce 전문 어시스턴트입니다. 사용자는 Windows 데스크톱 도구 SfUi에서 Salesforce CLI (sf)를 사용하고 있습니다. "
+                      + $"현재 대상 조직: {org}.\n"
+                      + "・SOQL은 ```soql, 익명 Apex는 ```apex, sf 명령은 ```bash(sf로 시작) 코드 블록으로 출력하세요.\n"
+                      + "・한국어로 간결하게 답변하세요."
+                    : "You are a Salesforce expert assistant. The user operates the Salesforce CLI (sf) from a Windows desktop tool called SfUi. "
+                      + $"Current target org: {org}.\n"
+                      + "- Output SOQL in ```soql, anonymous Apex in ```apex, and sf commands in ```bash (prefix with sf).\n"
+                      + "- Be concise.";
 
         var extra = ExtraSystemContextProvider?.Invoke();
         return string.IsNullOrWhiteSpace(extra) ? prompt : prompt + "\n" + extra;

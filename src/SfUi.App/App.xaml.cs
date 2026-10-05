@@ -190,7 +190,13 @@ public partial class App : Application
             UiText.SetLanguage(UiText.English);
             await Dispatcher.Yield(DispatcherPriority.Background);
             await Task.Delay(150);
-            _log.Info($"--smoke: 言語切替OK (ja→en, 例外 {_dispatcherExceptionCount} 件)");
+            UiText.SetLanguage(UiText.Chinese);
+            await Dispatcher.Yield(DispatcherPriority.Background);
+            await Task.Delay(150);
+            UiText.SetLanguage(UiText.Korean);
+            await Dispatcher.Yield(DispatcherPriority.Background);
+            await Task.Delay(150);
+            _log.Info($"--smoke: 言語切替OK (ja→en→zh→ko, 例外 {_dispatcherExceptionCount} 件)");
 
             if (!string.IsNullOrWhiteSpace(_smokeOrg))
             {
