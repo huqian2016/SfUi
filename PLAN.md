@@ -585,9 +585,9 @@ data/
 - 検証: hks4 で WPF / Avalonia 両方の「主な設定」初回取得 + 再取得が成功（20/20 行・エラーなし）
 - 2026-10-05: GitHub Release **v0.9.3** 公開（アセット = `SfUi.exe` + `SfUi-v0.9.3-portable.zip` + `SfUi-0.9.3-osx-arm64.zip`）。§15 のツールバー折り返しと §16 の主な設定修正を反映。README（EN/JA）のダウンロード参照も v0.9.3 に更新
 
-## 17. macOS 署名・公証の準備（2026-10-05、証明書発行済み・secrets 登録待ち）
+## 17. macOS 署名・公証の準備（2026-10-06、CI 署名 + 公証に成功・リリース反映待ち）
 - 手順書を作成: `docs/macos-signing-notarization.md`（メンバーシップ更新 → 証明書発行 → 署名 + 公証 + ステープル → 検証（spctl / 隔離再現）→ Release 反映 → CI 配線 → トラブルシューティング → 再開チェックリスト）
-- 状況: **2026-10-05 に Apple Developer Program を更新済み**（Team ID `WSDCSNQC59`・登録タイプ = 個人・**更新日 2027-10-06**・年間登録料 ¥12,980）+ **Developer ID Application 証明書を発行済み**（手順書 §2 方法 A・別の Mac の Xcode。秘密鍵はその Mac のキーチェーンにのみ存在 → `.p12` エクスポートが必要 = §2 A-1）。次は .p12 エクスポート → アプリ用パスワード → GitHub secrets 登録（CI の署名 + 公証ステップは `package-macos` に配線済み・secrets 未登録時は自動スキップ）
+- 状況: **2026-10-06 に CI での署名 + 公証に成功・検証済み**（`package-macos` が署名 ID を自動検出 → codesign + notarytool + stapler → 検証。run `37331822538`: `spctl` = `accepted / source=Notarized Developer ID`・`stapler validate: OK`・artifact `SfUi-macos-app` 43.5MB）。初回 workflow_dispatch 失敗の原因 = ランナーの `base64` オプション差異（exit 64）→ 複数方式フォールバックで解消。残りはリリース反映（公証済み zip の添付 + README / リリースノートの「右クリック → 開く」記載の削除）
 - リポジトリ側は実装済み: `make-mac-app.sh`（codesign hardened runtime + notarytool + stapler）+ `packaging/mac/entitlements.plist`（.NET JIT 許可）。証明書が揃えば手順書 Step 5 を実行するだけで署名・公証済みリリースを作れる
 
 ## 18. 起動時のようこそ画面（Welcome）（2026-10-05）

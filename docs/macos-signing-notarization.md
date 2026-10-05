@@ -1,19 +1,21 @@
 # macOS 署名・公証（Developer ID）手順書
 
-最終更新: 2026-10-06 / ステータス: **secrets 登録済み・CI で署名 + 公証を検証中（2026-10-06: 証明書インポート ステップを堅牢化）**
-→ CI の署名 + 公証ステップは配線済み（`.github/workflows/ci.yml`。secrets 未登録の間は自動スキップ = 従来どおり未署名）。失敗時は Actions の **Annotations** / ログに `::error::` 付きの理由が表示される。
+最終更新: 2026-10-06 / ステータス: **CI での署名 + 公証に成功・検証済み（`spctl` = Notarized Developer ID / `stapler validate` OK）。残りはリリース反映（§7: 公証済み zip の添付 + README の回避策記載の削除）**
+→ CI は secrets 未登録の間は自動スキップ（= 未署名）。失敗時は Actions の **Annotations** / ログに `::error::` 付きの理由が表示される。
 
 ## 0. 目的と現状
 
 - **目的**: `SfUi.app` を **Developer ID 署名 + 公証（notarization）** し、ユーザーがダウンロード後に「右クリック → 開く」なしで（ダブルクリックで）起動できるようにする
-- **現状（未署名）**: ブラウザーでダウンロードした zip は macOS が quarantine（隔離）属性を付けるため、初回のみ Gatekeeper がブロックする
+- **現状（2026-10-06 更新）**: **CI が署名 + 公証済みの zip を生成できるようになった**（検証済み: `spctl` = `accepted / source=Notarized Developer ID`・`stapler validate: OK`）。ただし回避策の記載（右クリック →「開く」）は**公証済み zip を添付したリリースまで有効**（現行 v0.10.0 の zip は未署名）
+  - 背景: 未署名の zip はブラウザーでダウンロードすると macOS が quarantine（隔離）属性を付けるため、初回のみ Gatekeeper がブロックする
   - 回避策（現行リリースに記載済み）: `SfUi.app` を右クリック →「開く」、または `xattr -dr com.apple.quarantine SfUi.app`
   - 参考: `curl` 等のコマンドでダウンロードした場合は quarantine が付かないため初回からダブルクリックで起動できる
 - **費用**: Apple Developer Program 年会費 **¥12,980/年（日本・税込）**。証明書の発行も公証サービスもこの年会費に含まれる（公証のたびの追加課金はなし）
-- **本プロジェクトの状況（2026-10-05 更新）**:
+- **本プロジェクトの状況（2026-10-06 更新）**:
   - **Apple Developer Program の更新（Renew）が完了** — チーム ID `WSDCSNQC59`・プログラム = Apple Developer Program・登録タイプ = 個人・**更新日（有効期限）2027-10-06**・年間登録料 ¥12,980（手順は §1）
-  - **Developer ID Application 証明書を発行済み（方法 A・別の Mac の Xcode）** — 秘密鍵はその Mac のキーチェーンにのみ存在するため、まず **.p12 として書き出す**（§2 A-1）
-  - **次にやること**: ① .p12 エクスポート（§2 A-1）→ ② 公証用のアプリ用パスワード（§4）→ ③ GitHub secrets 登録（§8。CI 配線済みなので登録だけで署名 + 公証ビルドが有効化）または その Mac で §5 を実行
+  - **Developer ID Application 証明書を発行済み（方法 A・別の Mac の Xcode）** — 秘密鍵は .p12 としてバックアップ済み（§2 A-1）
+  - **2026-10-06: .p12 エクスポート + アプリ用パスワード発行 + GitHub secrets 登録（5 つ）を完了し、CI で署名 + 公証に成功**（run `37331822538` / artifact `SfUi-macos-app` 43.5MB / 検証 = `spctl`: Notarized Developer ID・`stapler validate`: OK）。初回 workflow_dispatch の失敗原因 = ランナーの `base64` が `-D` / `--decode` を受け付けないオプション差異（exit 64）→ デコードを複数方式へフォールバックする修正で解消（`b3bb773`）
+  - **次にやること**: リリース反映（§7 — 公証済み `SfUi-<version>-osx-arm64.zip` を Release に添付し、README / リリースノートの「右クリック → 開く」記載を削除）
 - **リポジトリ側の対応は実装済み**（追加作業なしで Step 5 を実行できる）:
   - `packaging/make-mac-app.sh` … 環境変数を設定すると `codesign`（hardened runtime）+ `notarytool` + `stapler` を自動実行（未設定時はスキップ）
   - `packaging/mac/entitlements.plist` … **.NET の JIT 許可**（`allow-jit` / `allow-unsigned-executable-memory`）。hardened runtime 下でこれが無いと署名後に起動クラッシュする（`c0641a7` で配線済み）
@@ -184,10 +186,11 @@ secrets（リポジトリ設定 → Secrets and variables → Actions）:
 - [x] Apple ID の 2FA 有効化（更新手続き時点で有効）
 - [x] メンバーシップ更新（Team ID `WSDCSNQC59`）→ ✅ 2026-10-05 完了（更新日 2027-10-06）
 - [x] Developer ID Application 証明書を発行（§2 方法 A・別の Mac の Xcode）→ ✅ 2026-10-05
-- [ ] 別の Mac から `.p12` をエクスポート + バックアップ（§2 A-1）
-- [ ] アプリ用パスワードを発行（§4）
-- [ ] GitHub secrets を登録（§8 の 5 つ）して署名 + 公証ビルドを実行（またはその Mac で §5）
-- [ ] Step 6 で検証（spctl / stapler / 隔離再現テスト）
+- [x] 別の Mac から `.p12` をエクスポート + バックアップ（§2 A-1）→ ✅ 2026-10-06
+- [x] アプリ用パスワードを発行（§4）→ ✅ 2026-10-06
+- [x] GitHub secrets を登録（§8 の 5 つ）して署名 + 公証ビルドを実行 → ✅ 2026-10-06（CI run 37331822538）
+- [x] Step 6 の検証（spctl / stapler validate）→ ✅ CI で自動 PASS（2026-10-06）
+- [ ] （任意）隔離再現テスト（Mac で quarantine 属性を付けてダブルクリック起動）
 - [ ] Release に公証済み zip を添付し、README / リリースノートの回避策記載を削除
 - [ ] 本手順書と PLAN.md のステータスを「実施済み」に更新
 
