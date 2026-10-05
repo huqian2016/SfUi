@@ -16,7 +16,8 @@
                 <TextBlock Text="{Binding DataRootText}" Foreground="Gray" Margin="0,2,0,4" TextWrapping="Wrap" />
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
                     <Button Content="{loc:Tr Settings_OpenDataFolder}" Padding="10,2" Margin="0,0,6,0" Command="{Binding OpenDataFolderCommand}" />
-                    <Button Content="{loc:Tr Settings_Reload}" Padding="10,2" Command="{Binding ReloadCommand}" ToolTip.Tip="{loc:Tr Settings_ReloadTip}" />
+                    <Button Content="{loc:Tr Settings_Reload}" Padding="10,2" Margin="0,0,6,0" Command="{Binding ReloadCommand}" ToolTip.Tip="{loc:Tr Settings_ReloadTip}" />
+                    <Button Content="{loc:Tr Settings_ShowWelcome}" Padding="10,2" Command="{Binding OpenWelcomeCommand}" />
                 </StackPanel>
 
                 <Border BorderBrush="#DDDDDD" BorderThickness="1" CornerRadius="4" Padding="8">

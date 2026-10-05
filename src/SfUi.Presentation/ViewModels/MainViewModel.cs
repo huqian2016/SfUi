@@ -548,6 +548,23 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
+    /// <summary>設定タブのインデックス（ようこそ画面の「設定を開く」遷移先）。</summary>
+    private const int SettingsTabIndex = 7;
+
+    /// <summary>ようこそ画面をモーダルで表示する（起動時の自動表示と設定タブのボタンから呼ばれる）。</summary>
+    public void ShowWelcome()
+    {
+        try
+        {
+            _windows.OpenWelcome(() => SelectedTabIndex = SettingsTabIndex);
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = UiText.T("Common_FailedFmt", ex.Message);
+            _log.Error("ようこそ画面を開けませんでした", ex);
+        }
+    }
+
     [RelayCommand]
     private async Task BrowseFolderAsync()
     {

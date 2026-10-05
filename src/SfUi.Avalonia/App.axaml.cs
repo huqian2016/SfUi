@@ -29,6 +29,9 @@ public partial class App : Application
             var args = desktop.Args ?? Array.Empty<string>();
             _smokeTest = args.Any(a => string.Equals(a, "--smoke", StringComparison.OrdinalIgnoreCase));
             _smokeCompare = _smokeTest && args.Any(a => string.Equals(a, "--smoke-compare", StringComparison.OrdinalIgnoreCase));
+            var noWelcome = args.Any(a => string.Equals(a, "--no-welcome", StringComparison.OrdinalIgnoreCase));
+            var simulateSfMissing = args.Any(a => string.Equals(a, "--welcome-missing", StringComparison.OrdinalIgnoreCase));
+            var forceWelcome = simulateSfMissing || args.Any(a => string.Equals(a, "--welcome", StringComparison.OrdinalIgnoreCase));
             var dataDir = ReadOption(args, "--data-dir") ?? Environment.GetEnvironmentVariable("SFUI_DATA_DIR");
 
             var paths = AppPaths.Resolve(dataDir);
@@ -69,6 +72,8 @@ public partial class App : Application
             services.AddTransient<OrgManageViewModel>();
             services.AddTransient<OrgHealthViewModel>();
             services.AddTransient<MigrationInventoryViewModel>();
+            services.AddSingleton(new StartupOptions { SimulateSfMissing = simulateSfMissing });
+            services.AddTransient<WelcomeViewModel>();
             services.AddSingleton<MainWindow>();
             Services = services.BuildServiceProvider();
 
@@ -159,6 +164,16 @@ public partial class App : Application
                         _log?.Info("--open orgmanage: 組織管理ウィンドウを開きました");
                     }
                 };
+            }
+
+            // ようこそ画面（毎回表示。--no-welcome / --open / --tab / スモーク時は表示しない）
+            if (!_smokeTest
+                && openTarget is null
+                && ReadOption(args, "--tab") is null
+                && !noWelcome
+                && (forceWelcome || !languageSettings.Current.WelcomeDismissed))
+            {
+                window.Opened += (_, _) => Services.GetRequiredService<MainViewModel>().ShowWelcome();
             }
 
             if (_smokeTest)

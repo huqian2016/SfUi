@@ -28,6 +28,9 @@ public partial class App : Application
     private string? _smokeAccess;
     private string? _smokeBackup;
     private string? _smokeOrgManage;
+    private bool _noWelcome;
+    private bool _forceWelcome;
+    private bool _simulateSfMissing;
     private int _dispatcherExceptionCount;
 
     protected override void OnStartup(StartupEventArgs e)
@@ -44,6 +47,9 @@ public partial class App : Application
         _smokeAccess = _smokeTest ? ReadOption(e.Args, "--smoke-access") : null;
         _smokeBackup = _smokeTest ? ReadOption(e.Args, "--smoke-backup") : null;
         _smokeOrgManage = _smokeTest ? ReadOption(e.Args, "--smoke-orgmanage") : null;
+        _noWelcome = e.Args.Any(a => string.Equals(a, "--no-welcome", StringComparison.OrdinalIgnoreCase));
+        _simulateSfMissing = e.Args.Any(a => string.Equals(a, "--welcome-missing", StringComparison.OrdinalIgnoreCase));
+        _forceWelcome = _simulateSfMissing || e.Args.Any(a => string.Equals(a, "--welcome", StringComparison.OrdinalIgnoreCase));
         var dataDir = ReadOption(e.Args, "--data-dir") ?? Environment.GetEnvironmentVariable("SFUI_DATA_DIR");
 
         var paths = AppPaths.Resolve(dataDir);
@@ -97,6 +103,10 @@ public partial class App : Application
         services.AddTransient<OrgHealthViewModel>();
         services.AddTransient<MigrationInventoryViewModel>();
         services.AddTransient<OrgManageWindow>();
+        services.AddSingleton(new StartupOptions { SimulateSfMissing = _simulateSfMissing });
+        services.AddTransient<WelcomeViewModel>();
+        services.AddSingleton<WelcomeWindowFactory>();
+        services.AddTransient<WelcomeWindow>();
         services.AddSingleton<MainWindow>();
         Services = services.BuildServiceProvider();
 
@@ -125,6 +135,14 @@ public partial class App : Application
 
         var window = Services.GetRequiredService<MainWindow>();
         MainWindow = window;
+
+        // ようこそ画面（毎回表示。「今後表示しない」チェックで抑制。--no-welcome / スモーク時は表示しない）
+        var showWelcome = !_smokeTest && !_noWelcome && (_forceWelcome || !languageSettings.Current.WelcomeDismissed);
+        if (showWelcome)
+        {
+            window.ContentRendered += (_, _) => Services.GetRequiredService<MainViewModel>().ShowWelcome();
+        }
+
         try
         {
             window.Show();

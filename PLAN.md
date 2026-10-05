@@ -589,3 +589,13 @@ data/
 - 手順書を作成: `docs/macos-signing-notarization.md`（メンバーシップ更新 → 証明書発行 → 署名 + 公証 + ステープル → 検証（spctl / 隔離再現）→ Release 反映 → CI 配線 → トラブルシューティング → 再開チェックリスト）
 - 状況: 使用予定の Apple ID は 2015-09-10 で期限切れの個人メンバーシップ（Team ID `WSDCSNQC59`）の Account Holder → 新規登録は不可、**更新（Renew・¥12,980/年）**で再開する（Renew 不可ならサポートへ）
 - リポジトリ側は実装済み: `make-mac-app.sh`（codesign hardened runtime + notarytool + stapler）+ `packaging/mac/entitlements.plist`（.NET JIT 許可）。証明書が揃えば手順書 Step 5 を実行するだけで署名・公証済みリリースを作れる
+
+## 18. 起動時のようこそ画面（Welcome）（2026-10-05）
+- 機能: 起動のたびにモーダルの Welcome ウィンドウを表示（「今後表示しない」チェック `welcomeDismissed` で抑制、設定タブの「ようこそ画面を表示」で再表示）。掲載内容 = 機能一覧（クエリ & 開発 / 組織管理 / 効率化 の 3 グループ + 4 言語対応の案内）/ Salesforce CLI の検出状態（検出時はパス表示、未検出時は公式インストーラーを開く + npm コマンド例 + 再チェック + 再起動の案内）/ 「使い始める」「設定を開く」ボタン
+- 実装: `AppSettings.WelcomeDismissed`（JSON `welcomeDismissed`、既定 false）+ `StartupOptions`（`--welcome-missing` シミュレート）+ `WelcomeViewModel`（共有）+ `IAppWindowService.OpenWelcome`（WPF = `WelcomeWindowFactory` + `ShowDialog` / Avalonia = `AvaloniaAppWindowService` + `ShowDialog`）。「設定を開く」は `MainViewModel` のコールバックで設定タブ（index 7）へ遷移
+- 「再チェック」は `SfCliRunner.ResolveSfPath` → `SetExecutablePath` で再起動なしに以降の sf 実行へ反映
+- 自動化保護: `--smoke` / `--tab` / `--open`（Avalonia）/ `--no-welcome` で自動抑制（抑制時は `welcomeDismissed` を書き換えない）。dev フラグ `--welcome`（強制表示）/ `--welcome-missing`（未検出 UI の検証）
+- 文言: `Welcome_*` + `Settings_ShowWelcome`（23 キー × En/Ja/Zh/Ko、機能名は既存キーを再利用）
+- 検証: ビルド 0/0・テスト 398（WelcomeDismissed の既定値 / 往復 / 旧ファイル互換を追加）・両アプリ `--smoke` exit 0・実 UI（zh/ko/ja/en + 未検出 UI + チェックボックス保存 + 抑制 + 設定ボタン + 設定タブ遷移）をスクリーンショットで確認・UIA 回帰（access-tabs-check 24 項目 PASS、`--no-welcome` 追加後）
+- 外部スクリプト更新: `sfui-avalonia-probe.ps1` に `-NoWelcome`、UIA スクリプト 5 本（dataio-e2e / access-tabs / backup-ui / orgmanage-ui / readme-shots）の起動引数に `--no-welcome`
+- 計画文書: `docs/welcome-window-plan.md`。WPF の注意点: `Run.Text` への `{Binding}` は既定 TwoWay のため読み取り専用プロパティへは `Mode=OneWay` を明示する

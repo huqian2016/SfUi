@@ -20,6 +20,7 @@ public partial class SettingsViewModel : ObservableObject
     private readonly IFilePickerService _filePicker;
     private readonly IUiDispatcher _ui;
     private readonly AppLog _log;
+    private readonly IAppWindowService _windows;
 
     [ObservableProperty]
     private string? _sfPath;
@@ -71,7 +72,8 @@ public partial class SettingsViewModel : ObservableObject
         IDialogService dialogs,
         IFilePickerService filePicker,
         IUiDispatcher ui,
-        AppLog log)
+        AppLog log,
+        IAppWindowService windows)
     {
         _settings = settings;
         _sfRunner = sfRunner;
@@ -83,6 +85,7 @@ public partial class SettingsViewModel : ObservableObject
         _filePicker = filePicker;
         _ui = ui;
         _log = log;
+        _windows = windows;
         UiText.LanguageChanged += OnLanguageChanged;
         BuildPolicyLabels();
         Load();
@@ -243,6 +246,14 @@ public partial class SettingsViewModel : ObservableObject
 
     [RelayCommand]
     private void OpenDataFolder() => _toolLauncher.LaunchExplorer(_paths.DataRoot);
+
+    /// <summary>ようこそ画面を再表示する（「今後表示しない」の切替もこの画面で行える）。</summary>
+    [RelayCommand]
+    private void OpenWelcome()
+    {
+        _log.Info("設定: ようこそ画面を表示");
+        _windows.OpenWelcome(null);
+    }
 
     [RelayCommand]
     private void Save()

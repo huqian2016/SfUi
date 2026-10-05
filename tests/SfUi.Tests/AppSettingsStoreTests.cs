@@ -43,6 +43,7 @@ public class AppSettingsStoreTests : IDisposable
         Assert.Null(store.Current.SfExecutablePath);
         Assert.Null(store.Current.LastFolder);
         Assert.Null(store.Current.LastOrgUsername);
+        Assert.False(store.Current.WelcomeDismissed);
     }
 
     [Fact]
@@ -59,6 +60,29 @@ public class AppSettingsStoreTests : IDisposable
         Assert.Equal(@"C:\work\hks4", reloaded.Current.LastFolder);
         Assert.Equal("ko-cpyg@force.com", reloaded.Current.LastOrgUsername);
         Assert.Equal(500, reloaded.Current.MaxHistoryPerType);
+    }
+
+    [Fact]
+    public void SaveAndReload_RoundTripsWelcomeDismissed()
+    {
+        var store = new AppSettingsStore(Paths, Log);
+        store.Current.WelcomeDismissed = true;
+        store.Save();
+
+        var reloaded = new AppSettingsStore(Paths, Log);
+
+        Assert.True(reloaded.Current.WelcomeDismissed);
+    }
+
+    [Fact]
+    public void Load_LegacyFileWithoutWelcomeDismissed_DefaultsToFalse()
+    {
+        File.WriteAllText(Paths.SettingsFile, "{\"language\":\"ja\"}");
+
+        var store = new AppSettingsStore(Paths, Log);
+
+        Assert.False(store.Current.WelcomeDismissed);
+        Assert.Equal(UiText.Japanese, store.Current.Language);
     }
 
     [Fact]

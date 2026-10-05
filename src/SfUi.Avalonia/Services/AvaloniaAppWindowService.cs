@@ -88,6 +88,27 @@ public sealed class AvaloniaAppWindowService : IAppWindowService
         ShowOwned(new BackupCompareRecordsWindow(viewModel));
     }
 
+    /// <summary>ようこそ画面をモーダルで開く（「設定を開く」が選ばれたら openSettings を呼ぶ）。</summary>
+    public void OpenWelcome(Action? openSettings = null)
+    {
+        _log.Info("ようこそ画面を開きます（モーダル）");
+        var viewModel = _services.GetRequiredService<WelcomeViewModel>();
+        if (openSettings is not null)
+        {
+            viewModel.OpenSettingsRequested += openSettings;
+        }
+
+        var window = new WelcomeWindow(viewModel);
+        if (_top.Current is Window owner && !ReferenceEquals(owner, window))
+        {
+            _ = window.ShowDialog(owner);
+        }
+        else
+        {
+            window.Show();
+        }
+    }
+
     private void NotPortedYet(string feature)
     {
         _log.Info($"Avalonia 版: {feature} ウィンドウは未移植（Phase C–E で実装）");

@@ -1,0 +1,129 @@
+<Window x:Class="SfUi.App.Views.WelcomeWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:SfUi.App"
+        Title="{loc:Tr Welcome_Title}"
+        Icon="pack://application:,,,/SfUi.ico"
+        Width="840" Height="680"
+        ResizeMode="NoResize" ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        FontSize="13">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+    </Window.Resources>
+    <DockPanel>
+
+        <!-- 下部: 「今後表示しない」とアクション -->
+        <Border DockPanel.Dock="Bottom" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="16,10">
+            <DockPanel>
+                <Button DockPanel.Dock="Right" Content="{loc:Tr Welcome_Start}" Padding="20,4" IsDefault="True"
+                        Command="{Binding StartCommand}"
+                        AutomationProperties.Name="{loc:Tr Welcome_Start}" />
+                <Button DockPanel.Dock="Right" Content="{loc:Tr Welcome_OpenSettings}" Padding="14,4" Margin="0,0,8,0"
+                        Command="{Binding OpenSettingsCommand}"
+                        AutomationProperties.Name="{loc:Tr Welcome_OpenSettings}" />
+                <CheckBox Content="{loc:Tr Welcome_DontShowAgain}" VerticalAlignment="Center"
+                          IsChecked="{Binding DontShowAgain, Mode=TwoWay}" />
+            </DockPanel>
+        </Border>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="22,18,22,18">
+
+                <!-- ヘッダー -->
+                <StackPanel Orientation="Horizontal">
+                    <Path Width="36" Height="36" Stretch="Uniform" VerticalAlignment="Center" Fill="#2B6CB0"
+                          Data="{StaticResource IconSparkleFilled}" />
+                    <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="{loc:Tr Welcome_Title}" FontSize="22" FontWeight="Bold" />
+                        <TextBlock Text="{loc:Tr Welcome_Tagline}" Foreground="#555555" TextWrapping="Wrap" Margin="0,3,0,0" />
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- 機能一覧 -->
+                <TextBlock Text="{loc:Tr Welcome_FeaturesHeader}" FontSize="14" FontWeight="SemiBold" Margin="0,20,0,8" />
+
+                <Border BorderBrush="#E2E2E2" BorderThickness="1" CornerRadius="4" Padding="12,9">
+                    <DockPanel>
+                        <Path DockPanel.Dock="Left" Width="20" Height="20" Stretch="Uniform" Fill="#3A6EA5" Margin="0,2,12,0" VerticalAlignment="Top"
+                              Data="{StaticResource IconCode}" />
+                        <StackPanel>
+                            <TextBlock Text="{loc:Tr Welcome_Group_Query}" FontWeight="SemiBold" />
+                            <TextBlock Margin="0,3,0,0">
+                                <Run Text="{loc:Tr Tab_Soql}" /><Run Text=" · " /><Run Text="{loc:Tr Tab_Apex}" /><Run Text=" · " /><Run Text="{loc:Tr Tab_Log}" /><Run Text=" · " /><Run Text="{loc:Tr Tab_History}" />
+                            </TextBlock>
+                            <TextBlock Text="{loc:Tr Welcome_Group_QueryDesc}" Foreground="#666666" TextWrapping="Wrap" Margin="0,3,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <Border BorderBrush="#E2E2E2" BorderThickness="1" CornerRadius="4" Padding="12,9" Margin="0,8,0,0">
+                    <DockPanel>
+                        <Path DockPanel.Dock="Left" Width="20" Height="20" Stretch="Uniform" Fill="#3A6EA5" Margin="0,2,12,0" VerticalAlignment="Top"
+                              Data="{StaticResource IconBuilding}" />
+                        <StackPanel>
+                            <TextBlock Text="{loc:Tr Welcome_Group_Org}" FontWeight="SemiBold" />
+                            <TextBlock Margin="0,3,0,0">
+                                <Run Text="{loc:Tr Main_OrgInfo}" /><Run Text=" · " /><Run Text="{loc:Tr Main_Compare}" /><Run Text=" · " /><Run Text="{loc:Tr Main_DataIo}" /><Run Text=" · " /><Run Text="{loc:Tr Main_Backup}" /><Run Text=" · " /><Run Text="{loc:Tr Main_OrgManage}" />
+                            </TextBlock>
+                            <TextBlock Text="{loc:Tr Welcome_Group_OrgDesc}" Foreground="#666666" TextWrapping="Wrap" Margin="0,3,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <Border BorderBrush="#E2E2E2" BorderThickness="1" CornerRadius="4" Padding="12,9" Margin="0,8,0,0">
+                    <DockPanel>
+                        <Path DockPanel.Dock="Left" Width="20" Height="20" Stretch="Uniform" Fill="#3A6EA5" Margin="0,2,12,0" VerticalAlignment="Top"
+                              Data="{StaticResource IconSparkle}" />
+                        <StackPanel>
+                            <TextBlock Text="{loc:Tr Welcome_Group_Workflow}" FontWeight="SemiBold" />
+                            <TextBlock Margin="0,3,0,0">
+                                <Run Text="{loc:Tr Tab_Ai}" /><Run Text=" · " /><Run Text="{loc:Tr Quick_Title}" /><Run Text=" · " /><Run Text="{loc:Tr Main_Terminal}" /><Run Text=" · " /><Run Text="{loc:Tr Main_VsCode}" /><Run Text=" · " /><Run Text="{loc:Tr Main_Browser}" />
+                            </TextBlock>
+                            <TextBlock Text="{loc:Tr Welcome_Group_WorkflowDesc}" Foreground="#666666" TextWrapping="Wrap" Margin="0,3,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <!-- 言語案内 -->
+                <DockPanel Margin="0,12,0,0">
+                    <Path DockPanel.Dock="Left" Width="18" Height="18" Stretch="Uniform" Fill="#3A6EA5" Margin="0,1,12,0" VerticalAlignment="Top"
+                          Data="{StaticResource IconGlobe}" />
+                    <TextBlock Text="{loc:Tr Welcome_LanguagesLine}" Foreground="#555555" TextWrapping="Wrap" />
+                </DockPanel>
+
+                <!-- Salesforce CLI -->
+                <TextBlock Text="{loc:Tr Welcome_SfHeader}" FontSize="14" FontWeight="SemiBold" Margin="0,20,0,8" />
+
+                <!-- 検出済み -->
+                <Border Background="#EEF7EE" BorderBrush="#C9E2C9" BorderThickness="1" CornerRadius="4" Padding="12,9"
+                        Visibility="{Binding SfFound, Converter={StaticResource BoolToVis}}">
+                    <StackPanel>
+                        <TextBlock TextWrapping="Wrap">
+                            <Run Text="✔" Foreground="#2E7D32" FontWeight="Bold" /><Run Text=" " /><Run Text="{Binding SfFoundText, Mode=OneWay}" />
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+
+                <!-- 未検出 -->
+                <Border Background="#FFF8E1" BorderBrush="#E8D9A0" BorderThickness="1" CornerRadius="4" Padding="12,9"
+                        Visibility="{Binding SfMissing, Converter={StaticResource BoolToVis}}">
+                    <StackPanel>
+                        <TextBlock Text="{loc:Tr Welcome_SfMissingTitle}" FontWeight="SemiBold" Foreground="#8A6D00" />
+                        <TextBlock Text="{loc:Tr Welcome_SfMissingBody}" TextWrapping="Wrap" Margin="0,4,0,0" />
+                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                            <Button Content="{loc:Tr Welcome_SfInstallButton}" Padding="14,3" Command="{Binding OpenInstallPageCommand}"
+                                    AutomationProperties.Name="{loc:Tr Welcome_SfInstallButton}" />
+                            <Button Content="{loc:Tr Welcome_SfRecheck}" Padding="14,3" Margin="8,0,0,0" Command="{Binding RecheckCommand}"
+                                    AutomationProperties.Name="{loc:Tr Welcome_SfRecheck}" />
+                        </StackPanel>
+                        <TextBlock Text="{loc:Tr Welcome_SfInstallNpm}" FontFamily="Consolas" FontSize="12" Foreground="#666666" Margin="0,8,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <!-- 再チェック結果など -->
+                <TextBlock Text="{Binding StatusText}" Foreground="#666666" Margin="0,8,0,0" TextWrapping="Wrap" />
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

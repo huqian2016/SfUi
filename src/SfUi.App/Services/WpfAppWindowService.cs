@@ -14,6 +14,7 @@ public sealed class WpfAppWindowService : IAppWindowService
     private readonly OrgManageWindowFactory _orgManage;
     private readonly BackupRecordsWindowFactory _records;
     private readonly BackupCompareRecordsWindowFactory _compareRecords;
+    private readonly WelcomeWindowFactory _welcome;
 
     public WpfAppWindowService(
         OrgInfoWindowFactory orgInfo,
@@ -22,7 +23,8 @@ public sealed class WpfAppWindowService : IAppWindowService
         BackupWindowFactory backup,
         OrgManageWindowFactory orgManage,
         BackupRecordsWindowFactory records,
-        BackupCompareRecordsWindowFactory compareRecords)
+        BackupCompareRecordsWindowFactory compareRecords,
+        WelcomeWindowFactory welcome)
     {
         _orgInfo = orgInfo;
         _compareOrgs = compareOrgs;
@@ -31,6 +33,7 @@ public sealed class WpfAppWindowService : IAppWindowService
         _orgManage = orgManage;
         _records = records;
         _compareRecords = compareRecords;
+        _welcome = welcome;
     }
 
     public void OpenOrgInfo(OrgInfo org) => _orgInfo.Open(org, ActiveOwner());
@@ -49,6 +52,8 @@ public sealed class WpfAppWindowService : IAppWindowService
 
     public void OpenBackupCompareRecords(string backupIdA, string backupIdB, string objectName, string displayName, OrgInfo? currentOrg) =>
         _compareRecords.Open(backupIdA, backupIdB, objectName, displayName, currentOrg, ActiveOwner());
+
+    public void OpenWelcome(Action? openSettings = null) => _welcome.Show(openSettings, ActiveOwner());
 
     /// <summary>アクティブ ウィンドウ（無ければメイン ウィンドウ）を親として返す。</summary>
     private static Window? ActiveOwner() =>
