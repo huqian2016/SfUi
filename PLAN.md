@@ -599,3 +599,4 @@ data/
 - 検証: ビルド 0/0・テスト 398（WelcomeDismissed の既定値 / 往復 / 旧ファイル互換を追加）・両アプリ `--smoke` exit 0・実 UI（zh/ko/ja/en + 未検出 UI + チェックボックス保存 + 抑制 + 設定ボタン + 設定タブ遷移）をスクリーンショットで確認・UIA 回帰（access-tabs-check 24 項目 PASS、`--no-welcome` 追加後）
 - 外部スクリプト更新: `sfui-avalonia-probe.ps1` に `-NoWelcome`、UIA スクリプト 5 本（dataio-e2e / access-tabs / backup-ui / orgmanage-ui / readme-shots）の起動引数に `--no-welcome`
 - 計画文書: `docs/welcome-window-plan.md`。WPF の注意点: `Run.Text` への `{Binding}` は既定 TwoWay のため読み取り専用プロパティへは `Mode=OneWay` を明示する
+- 2026-10-05 追記: Welcome ヘッダーに言語コンボを追加。`WelcomeViewModel.LanguageLabel` は `MainViewModel` をプロキシ（同じ選択肢・同じ保存先 = `settings.Language`）し、切替時は `UiText.SetLanguage` + 保存 + 動的文言（検出パス / 再チェック結果）の再生成を実施。検証 = 両アプリで UIA によりコンボ操作 → 即時切替 + `language` 保存 + メイン画面の言語コンボ / ステータスバーも同期することを確認

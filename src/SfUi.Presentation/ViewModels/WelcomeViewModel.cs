@@ -15,13 +15,17 @@ public partial class WelcomeViewModel : ObservableObject
     private readonly SfCliRunner _sf;
     private readonly ToolLauncherService _toolLauncher;
     private readonly StartupOptions _options;
+    private readonly MainViewModel _main;
+    private bool _hasRecheck;
+    private bool _recheckOk;
 
-    public WelcomeViewModel(AppSettingsStore settings, SfCliRunner sf, ToolLauncherService toolLauncher, StartupOptions options)
+    public WelcomeViewModel(AppSettingsStore settings, SfCliRunner sf, ToolLauncherService toolLauncher, StartupOptions options, MainViewModel main)
     {
         _settings = settings;
         _sf = sf;
         _toolLauncher = toolLauncher;
         _options = options;
+        _main = main;
 
         _dontShowAgain = settings.Current.WelcomeDismissed;
         RefreshSfState();
@@ -48,6 +52,30 @@ public partial class WelcomeViewModel : ObservableObject
 
     /// <summary>検出済み表示（パス付き）。</summary>
     public string SfFoundText => UiText.T("Welcome_SfFoundFmt", SfPathText);
+
+    /// <summary>言語コンボの選択値（メイン画面と同じ選択肢・同じ保存先を共有する）。</summary>
+    public string LanguageLabel
+    {
+        get => _main.LanguageLabel;
+        set
+        {
+            if (string.Equals(_main.LanguageLabel, value, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _main.LanguageLabel = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(SfFoundText));
+            if (_hasRecheck)
+            {
+                StatusText = BuildRecheckText();
+            }
+        }
+    }
+
+    /// <summary>言語コンボの選択肢。</summary>
+    public IReadOnlyList<string> LanguageLabels => _main.LanguageLabels;
 
     /// <summary>「今後表示しない」（チェックで次回起動から非表示。設定タブからの再表示で外せる）。</summary>
     [ObservableProperty]
@@ -77,10 +105,16 @@ public partial class WelcomeViewModel : ObservableObject
     private void Recheck()
     {
         RefreshSfState();
-        StatusText = SfFound
+        _hasRecheck = true;
+        _recheckOk = SfFound;
+        StatusText = BuildRecheckText();
+    }
+
+    private string BuildRecheckText() => !_hasRecheck
+        ? string.Empty
+        : _recheckOk
             ? UiText.T("Welcome_SfRecheckOkFmt", SfPathText)
             : UiText.T("Welcome_SfRecheckNg");
-    }
 
     /// <summary>「使い始める」: ウィンドウを閉じる。</summary>
     [RelayCommand]

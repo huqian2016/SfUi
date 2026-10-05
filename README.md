@@ -43,7 +43,7 @@ and an **Org Management** window that keeps your orgs in order (default, alias, 
 ## Features
 
 - **Org & folder switching in one click** — the org combo and SF folder combo are always in the top bar; the last selection is restored on startup.
-- **Welcome screen** — shown at every startup until you tick *Don't show this again*: highlights the main features, checks that Salesforce CLI (`sf`) is installed (installer link, `npm` hint and a **Re-check** button when it is missing) and offers *Get started* / *Open settings* buttons. Reopen it anytime from Settings.
+- **Welcome screen** — shown at every startup until you tick *Don't show this again*: highlights the main features, checks that Salesforce CLI (`sf`) is installed (installer link, `npm` hint and a **Re-check** button when it is missing), offers *Get started* / *Open settings* buttons and lets you switch the UI language on the spot. Reopen it anytime from Settings.
 - **SOQL** — AvalonEdit editor with SQL highlighting, REST-first execution (falls back to `sf data query`, with a Tooling API toggle), results in a sortable grid, CSV/TSV export.
 - **Anonymous Apex** — run scripts via `sf apex run`, show compile errors / exceptions / debug logs, open & save `.apex` files, fetch the latest debug log from the org.
 - **Debug logs** — list logs (`sf apex list log`), fetch content by id or number, save locally.
@@ -186,7 +186,7 @@ SOQL・匿名Apex・デバッグログ・デプロイ・自由コマンド・RES
 レコードのバックアップと復元（バックアップ間の比較・レコード単位の差分表示付き）・
 組織管理（組織の既定 / エイリアス / ログイン操作、疎通テスト、タグ・メモ、使用量・移行棚卸しの確認）にも対応しています。
 
-- **ようこそ画面**: 起動のたびに Welcome ウィンドウを表示（「今後表示しない」チェックで次回以降は非表示、設定タブの「ようこそ画面を表示」で再表示）。主な機能の一覧に加え、Salesforce CLI（sf コマンド）が見つからない場合はインストール案内（公式インストーラーを開く + npm コマンド例 + 再チェック）を表示します
+- **ようこそ画面**: 起動のたびに Welcome ウィンドウを表示（「今後表示しない」チェックで次回以降は非表示、設定タブの「ようこそ画面を表示」で再表示）。主な機能の一覧に加え、Salesforce CLI（sf コマンド）が見つからない場合はインストール案内（公式インストーラーを開く + npm コマンド例 + 再チェック）を表示し、UI 言語もウィンドウ内のコンボでその場で切り替えられます
 - UI は **英語（既定）/ 日本語 / 简体中文 / 한국어** に対応（上部バーのコンボで即時切替）
 - **AI チャット（複数プロバイダー対応）**: 自然言語から SOQL / 匿名Apex / sf コマンドを生成、実行結果の分析も可能（右サイドパネル表示・上部バーの「AI」で表示切替。既定の DeepSeek 接続先はすぐ試せるよう評価用キーを同梱。設定 → AI のプリセットから OpenAI / Anthropic（Claude）/ ローカル LLM（Ollama 等、キー不要）など **OpenAI 互換 API** に接続可。自分のキーは 設定 → AI（または環境変数 `SFUI_AI_API_KEY`）で登録）
 - **組織情報ウィンドウ**: 選択中組織の設定・ユーザー・権限・項目などを 20 以上のタブで一覧・検索（非モーダルの別ウィンドウ・複数同時可・「組織情報」ボタンから起動）。初回のみ自動取得してローカルにキャッシュし、以降は手動再取得。オブジェクト項目は遅延取得、Setup ページへのリンク、マイ設定（カタログ 55 項目から作るカスタムタブ）、ウィンドウ単位の AI パネル（表示中タブのデータ添付）付き

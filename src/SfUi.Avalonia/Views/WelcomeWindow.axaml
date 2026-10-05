@@ -27,14 +27,22 @@
             <StackPanel Margin="22,18,22,18">
 
                 <!-- ヘッダー -->
-                <StackPanel Orientation="Horizontal">
-                    <Path Width="36" Height="36" Stretch="Uniform" VerticalAlignment="Center" Fill="#2B6CB0"
-                          Data="{StaticResource IconSparkleFilled}" />
-                    <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
-                        <TextBlock Text="{loc:Tr Welcome_Title}" FontSize="22" FontWeight="Bold" />
-                        <TextBlock Text="{loc:Tr Welcome_Tagline}" Foreground="#555555" TextWrapping="Wrap" Margin="0,3,0,0" />
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top" Margin="12,6,0,0">
+                        <TextBlock Text="{loc:Tr Welcome_LanguageLabel}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                        <ComboBox Width="140" ItemsSource="{Binding LanguageLabels}" SelectedItem="{Binding LanguageLabel, Mode=TwoWay}"
+                                  ToolTip.Tip="{loc:Tr Main_LanguageTip}"
+                                  AutomationProperties.Name="{loc:Tr Welcome_LanguageLabel}" />
                     </StackPanel>
-                </StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Path Width="36" Height="36" Stretch="Uniform" VerticalAlignment="Center" Fill="#2B6CB0"
+                              Data="{StaticResource IconSparkleFilled}" />
+                        <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="{loc:Tr Welcome_Title}" FontSize="22" FontWeight="Bold" />
+                            <TextBlock Text="{loc:Tr Welcome_Tagline}" Foreground="#555555" TextWrapping="Wrap" Margin="0,3,0,0" />
+                        </StackPanel>
+                    </StackPanel>
+                </DockPanel>
 
                 <!-- 機能一覧 -->
                 <TextBlock Text="{loc:Tr Welcome_FeaturesHeader}" FontSize="14" FontWeight="SemiBold" Margin="0,20,0,8" />
