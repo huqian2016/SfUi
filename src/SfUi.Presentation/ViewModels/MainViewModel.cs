@@ -151,6 +151,11 @@ public partial class MainViewModel : ObservableObject
         History.ReplayRequested += OnReplayRequested;
         QuickPanel.ExecuteRequested += ExecuteFavorite;
         Ai.ApplyRequested += ApplyAiSnippet;
+        Soql.AiAssistHandler = async prompt =>
+        {
+            IsAiPanelVisible = true;
+            await Ai.AskAsync(prompt);
+        };
 
         // 保存済みの言語をコンボへ反映（起動時の UiText 適用は App 側で実施済み）
         _languageLabel = LanguageLabelForCode(_settings.Current.Language);

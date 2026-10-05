@@ -150,6 +150,25 @@ public partial class AiChatViewModel : ObservableObject
         StatusText = UiText.T("Ai_AttachedHintFmt", entry.TypeLabel, entry.Summary);
     }
 
+    /// <summary>外部（SOQL 実行など）からプロンプトを送信する（入力欄へ入れてそのまま送信）。</summary>
+    public async Task AskAsync(string prompt)
+    {
+        if (string.IsNullOrWhiteSpace(prompt))
+        {
+            return;
+        }
+
+        InputText = prompt;
+        try
+        {
+            await SendAsync();
+        }
+        catch (Exception ex)
+        {
+            _log.Warn($"AI への自動送信に失敗: {ex.Message}");
+        }
+    }
+
     [RelayCommand]
     private async Task SendAsync()
     {

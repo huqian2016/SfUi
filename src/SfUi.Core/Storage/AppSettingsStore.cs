@@ -55,6 +55,9 @@ public sealed class AppSettings
 
     /// <summary>ようこそ画面を「今後表示しない」にしたか（true の間は起動時に表示しない。設定タブから再表示可能）。</summary>
     public bool WelcomeDismissed { get; set; }
+
+    /// <summary>SOQL 実行後に AI パネルへ自動送信するか（エラー時 = 修正方法、成功時 = 次の候補）。</summary>
+    public bool SoqlAiAssist { get; set; } = true;
 }
 
 /// <summary>設定の読み書き（settings.json）。</summary>

@@ -18,7 +18,11 @@ public partial class SoqlViewModel : ObservableObject
     private readonly FavoritesStore _favorites;
     private readonly IFilePickerService _filePicker;
     private readonly IClipboardService _clipboard;
+    private readonly SObjectDescribeService _describes;
+    private readonly AppSettingsStore _settings;
     private readonly AppLog _log;
+    private readonly UiDebouncer _liveCountDebouncer;
+    private CancellationTokenSource? _liveCountCts;
 
     [ObservableProperty]
     private string _soqlText = "SELECT Id, Name FROM Account LIMIT 10";
@@ -49,14 +53,18 @@ public partial class SoqlViewModel : ObservableObject
 
     public ObservableCollection<HistoryEntry> HistoryItems { get; } = new();
 
-    public SoqlViewModel(SoqlService service, HistoryStore history, FavoritesStore favorites, IFilePickerService filePicker, IClipboardService clipboard, AppLog log)
+    public SoqlViewModel(SoqlService service, HistoryStore history, FavoritesStore favorites, IFilePickerService filePicker, IClipboardService clipboard, SObjectDescribeService describes, AppSettingsStore settings, IUiDispatcher ui, AppLog log)
     {
         _service = service;
         _history = history;
         _favorites = favorites;
         _filePicker = filePicker;
         _clipboard = clipboard;
+        _describes = describes;
+        _settings = settings;
         _log = log;
+        _aiAssistEnabled = settings.Current.SoqlAiAssist;
+        _liveCountDebouncer = new UiDebouncer(1200, ui);
         RefreshHistory();
     }
 
@@ -75,6 +83,189 @@ public partial class SoqlViewModel : ObservableObject
         if (value?.Params is { Length: > 0 } text)
         {
             SoqlText = text;
+        }
+    }
+
+    // ---- 補完（エディターからの問い合わせ） ----
+
+    /// <summary>
+    /// カーソル位置の補完候補を返す（SoqlView のエディターから呼ばれる）。
+    /// 候補がない / 対象外の句 / 組織未選択のときは null。
+    /// </summary>
+    public async Task<SoqlCompletionResult?> QueryCompletionAsync(string text, int caret, CancellationToken cancellationToken = default)
+    {
+        var context = SoqlCompletionParser.Parse(text, caret);
+        if (context.InsideString || context.Clause is SoqlClause.None or SoqlClause.Other or SoqlClause.Limit or SoqlClause.Offset)
+        {
+            return null;
+        }
+
+        if (string.IsNullOrWhiteSpace(CurrentOrg))
+        {
+            return null;
+        }
+
+        try
+        {
+            if (context.Clause == SoqlClause.From)
+            {
+                var objects = await _describes.ListObjectsAsync(CurrentOrg!, cancellationToken: cancellationToken).ConfigureAwait(true);
+                var objectItems = SoqlCompletionEngine.ObjectItems(objects, context.Prefix);
+                return objectItems.Count == 0 ? null : new SoqlCompletionResult(context, objectItems);
+            }
+
+            var target = await ResolveCompletionTargetAsync(context, cancellationToken).ConfigureAwait(true);
+            if (target is null)
+            {
+                return null;
+            }
+
+            var describe = await _describes.DescribeAsync(CurrentOrg!, target, cancellationToken: cancellationToken).ConfigureAwait(true);
+            var includeFunctions = context.IncludeFunctions && context.Path.Count == 0;
+            var fieldItems = SoqlCompletionEngine.FieldItems(describe, context.Prefix, includeFunctions);
+            return fieldItems.Count == 0 ? null : new SoqlCompletionResult(context, fieldItems);
+        }
+        catch (OperationCanceledException)
+        {
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _log.Warn($"SOQL 補完候補の取得に失敗: {ex.Message}");
+            return null;
+        }
+    }
+
+    /// <summary>項目候補の対象オブジェクトを解決する（エイリアス / 別オブジェクト / 参照関係の連鎖）。</summary>
+    private async Task<string?> ResolveCompletionTargetAsync(SoqlCompletionContext context, CancellationToken cancellationToken)
+    {
+        var org = CurrentOrg!;
+        string? target = context.FromObjects.FirstOrDefault();
+
+        for (var i = 0; i < context.Path.Count; i++)
+        {
+            var segment = context.Path[i];
+
+            if (i == 0)
+            {
+                if (context.Aliases.TryGetValue(segment, out var aliased))
+                {
+                    target = aliased;
+                    continue;
+                }
+
+                var fromMatch = context.FromObjects.FirstOrDefault(o => string.Equals(o, segment, StringComparison.OrdinalIgnoreCase));
+                if (fromMatch is not null)
+                {
+                    target = fromMatch;
+                    continue;
+                }
+            }
+
+            if (target is null)
+            {
+                return null;
+            }
+
+            var describe = await _describes.DescribeAsync(org, target, cancellationToken: cancellationToken).ConfigureAwait(true);
+            var relationship = SoqlCompletionEngine.ResolveRelationship(describe, segment);
+            if (relationship is null)
+            {
+                return null;
+            }
+
+            target = relationship;
+        }
+
+        return target;
+    }
+
+    // ---- 件数のライブ表示（入力停止後に自動更新） ----
+
+    /// <summary>件数の表示テキスト。</summary>
+    [ObservableProperty]
+    private string _liveCountText = string.Empty;
+
+    partial void OnSoqlTextChanged(string value) => _liveCountDebouncer.Debounce(() => _ = RunLiveCountAsync());
+
+    private async Task RunLiveCountAsync()
+    {
+        _liveCountCts?.Cancel();
+        _liveCountCts?.Dispose();
+        _liveCountCts = null;
+
+        var countQuery = SoqlCountQueryBuilder.Build(SoqlText);
+        if (countQuery is null || string.IsNullOrWhiteSpace(CurrentOrg) || IsRunning)
+        {
+            LiveCountText = string.Empty;
+            return;
+        }
+
+        var cts = new CancellationTokenSource();
+        _liveCountCts = cts;
+        LiveCountText = UiText.T("Soql_LiveCountBusy");
+        try
+        {
+            var execution = await _service.ExecuteSoqlAsync(CurrentOrg, countQuery, useToolingApi: false, PreferRest, CurrentFolder, cts.Token);
+            if (!cts.IsCancellationRequested)
+            {
+                LiveCountText = UiText.T("Soql_LiveCountFmt", execution.Result.TotalSize);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // 入力の続きで破棄された
+        }
+        catch (Exception ex)
+        {
+            if (!cts.IsCancellationRequested)
+            {
+                LiveCountText = string.Empty;
+                _log.Warn($"SOQL 件数の取得に失敗: {ex.Message}");
+            }
+        }
+    }
+
+    // ---- 実行後の AI 支援 ----
+
+    /// <summary>実行後に AI パネルへ自動送信するハンドラー（MainViewModel が設定する）。</summary>
+    public Func<string, Task>? AiAssistHandler { get; set; }
+
+    /// <summary>実行後に AI へ質問するか（settings.json の soqlAiAssist に保存）。</summary>
+    [ObservableProperty]
+    private bool _aiAssistEnabled;
+
+    partial void OnAiAssistEnabledChanged(bool value)
+    {
+        if (_settings.Current.SoqlAiAssist != value)
+        {
+            _settings.Current.SoqlAiAssist = value;
+            _settings.Save();
+        }
+    }
+
+    private void NotifyAiAfterRun(bool success, string soql, string? error, int? totalSize)
+    {
+        if (!AiAssistEnabled || AiAssistHandler is not { } handler)
+        {
+            return;
+        }
+
+        var prompt = success
+            ? UiText.T("Soql_AiPromptSuccessFmt", soql, totalSize ?? 0)
+            : UiText.T("Soql_AiPromptErrorFmt", soql, error ?? string.Empty);
+        _ = DispatchAiAssistAsync(handler, prompt);
+    }
+
+    private async Task DispatchAiAssistAsync(Func<string, Task> handler, string prompt)
+    {
+        try
+        {
+            await handler(prompt);
+        }
+        catch (Exception ex)
+        {
+            _log.Warn($"AI への自動送信に失敗: {ex.Message}");
         }
     }
 
@@ -122,6 +313,7 @@ public partial class SoqlViewModel : ObservableObject
                 result: execution.Result.RawJson);
 
             _log.Info($"SOQL 実行: {StatusText}");
+            NotifyAiAfterRun(success: true, soql, error: null, totalSize: execution.Result.TotalSize);
         }
         catch (Exception ex)
         {
@@ -140,6 +332,7 @@ public partial class SoqlViewModel : ObservableObject
                 },
                 result: $"ERROR: {ex.Message}");
             _log.Error("SOQL 実行に失敗", ex);
+            NotifyAiAfterRun(success: false, soql, error: ex.Message, totalSize: null);
         }
         finally
         {

@@ -120,7 +120,8 @@ public sealed class SObjectDescribeService
                     GetBool(field, "defaultedOnCreate"),
                     GetBool(field, "externalId"),
                     GetBool(field, "custom"),
-                    referenceTo));
+                    referenceTo,
+                    GetString(field, "relationshipName")));
             }
         }
 
