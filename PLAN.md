@@ -569,3 +569,9 @@ data/
 - ③ データ入出力の対象オブジェクトを AutoCompleteBox（テキスト ボックス風）→ ドロップダウン（ComboBox + `IsTextSearchEnabled`）に変更
 - ④ Record / Object / Field Access タブの初回表示で読み込まれない不具合を修正: Avalonia では `DataContext="{Binding …}"` の継承バインドが attach 時に解決されるため attach ハンドラーの ViewModel が null で `EnsureLoadedAsync` が実行されなかった → attach と DataContextChanged の後勝ちで 1 回だけ実行する `TryEnsureLoaded` 方式に変更（3 ビュー共通）
 - 検証: ビルド 0/0・395 テスト green・`--smoke` exit 0・実 UI でスクリーンショット + ドラッグ検証（境界のカーソル形状スキャンでリサイズ 120px の列幅変化を数値確認 / ユーザー 5 名 + SOQL 自動入力 / ドロップダウンに sObject 一覧表示）  - 2026-10-05: GitHub Release **v0.9.2** 公開（アセット = `SfUi.exe` + `SfUi-v0.9.2-portable.zip` + **`SfUi-0.9.2-osx-arm64.zip`（macOS 版 .app）**）。macOS 版は CI（実 macOS ランナー）で組立 + 起動スモーク済み・アイコン（icns）入り。未署名のため初回のみ右クリック→「開く」が必要（リリース ノートに記載）。ビルド スクリプト / CI は Developer ID 証明書を設定するだけで署名・公証に対応
+
+## 15. ツールバー折り返し対応（2026-10-05、WPF + Avalonia 両方）
+- SOQL / 匿名 Apex / REST API タブのツールバーが、AI パネル（+ Quick パネル）表示で幅が狭いとボタンが隠れていた問題を修正
+- 3 タブ × 両アプリ（計 6 ファイル）のツールバーを `StackPanel`（横一列固定）→ `WrapPanel`（折り返し）に変更。区切り線は `Height=20` + `VerticalAlignment=Center` 固定で折り返し行でも正しく表示。余白を上下 2px に調整
+- 修正ファイル: `src/SfUi.App/Views/{SoqlView,ApexView,ApiConsoleView}.xaml` / `src/SfUi.Avalonia/Views/{SoqlView,ApexView,ApiConsoleView}.axaml`
+- 検証: ビルド 0/0・395 テスト green・Avalonia `--smoke` exit 0・両アプリで Quick + AI パネル表示の狭幅スクリーンショット（3 タブすべて 2 行折り返しで全ボタン表示を確認）

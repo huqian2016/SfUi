@@ -5,16 +5,16 @@
              x:Class="SfUi.Avalonia.Views.SoqlView">
     <DockPanel>
 
-        <!-- ツールバー -->
-        <Border DockPanel.Dock="Top" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
-            <StackPanel Orientation="Horizontal">
-                <Button Content="{loc:Tr Soql_Run}" Padding="10,2" Margin="0,0,12,0" Command="{Binding ExecuteCommand}" />
-                <CheckBox Content="{loc:Tr Soql_PreferRest}" IsChecked="{Binding PreferRest}" VerticalAlignment="Center" Margin="0,0,10,0"
+        <!-- ツールバー（幅が狭いときは折り返して全ボタンを表示） -->
+        <Border DockPanel.Dock="Top" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,4">
+            <WrapPanel Orientation="Horizontal">
+                <Button Content="{loc:Tr Soql_Run}" Padding="10,2" Margin="0,2,12,2" Command="{Binding ExecuteCommand}" />
+                <CheckBox Content="{loc:Tr Soql_PreferRest}" IsChecked="{Binding PreferRest}" VerticalAlignment="Center" Margin="0,2,10,2"
                           ToolTip.Tip="{loc:Tr Soql_PreferRestTip}" />
-                <CheckBox Content="{loc:Tr Soql_ToolingApi}" IsChecked="{Binding UseToolingApi}" VerticalAlignment="Center" Margin="0,0,12,0" />
-                <Border Width="1" Background="#CCCCCC" Margin="0,2,12,2" />
-                <TextBlock Text="{loc:Tr Common_HistoryLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
-                <ComboBox Width="260" ItemsSource="{Binding HistoryItems}" SelectedItem="{Binding SelectedHistoryItem, Mode=TwoWay}"
+                <CheckBox Content="{loc:Tr Soql_ToolingApi}" IsChecked="{Binding UseToolingApi}" VerticalAlignment="Center" Margin="0,2,12,2" />
+                <Border Width="1" Height="20" VerticalAlignment="Center" Background="#CCCCCC" Margin="0,2,12,2" />
+                <TextBlock Text="{loc:Tr Common_HistoryLabel}" VerticalAlignment="Center" Margin="0,2,4,2" />
+                <ComboBox Width="260" VerticalAlignment="Center" ItemsSource="{Binding HistoryItems}" SelectedItem="{Binding SelectedHistoryItem, Mode=TwoWay}"
                           ToolTip.Tip="{loc:Tr Soql_HistoryTip}">
                     <ComboBox.ItemTemplate>
                         <DataTemplate>
@@ -22,13 +22,13 @@
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
                 </ComboBox>
-                <Button Content="⟳" Padding="8,2" Margin="0,0,12,0" Command="{Binding RefreshHistoryCommand}"
+                <Button Content="⟳" Padding="8,2" Margin="0,2,12,2" Command="{Binding RefreshHistoryCommand}"
                         ToolTip.Tip="{loc:Tr Common_RefreshTip}" />
-                <Border Width="1" Background="#CCCCCC" Margin="0,2,12,2" />
-                <Button Content="{loc:Tr Common_AddFavorite}" Padding="10,2" Margin="0,0,6,0" Command="{Binding AddFavoriteCommand}" />
-                <Button Content="{loc:Tr Soql_ExportCsv}" Padding="10,2" Margin="0,0,6,0" Command="{Binding ExportCsvCommand}" />
-                <Button Content="{loc:Tr Soql_CopyResults}" Padding="10,2" Command="{Binding CopyResultsCommand}" />
-            </StackPanel>
+                <Border Width="1" Height="20" VerticalAlignment="Center" Background="#CCCCCC" Margin="0,2,12,2" />
+                <Button Content="{loc:Tr Common_AddFavorite}" Padding="10,2" Margin="0,2,6,2" Command="{Binding AddFavoriteCommand}" />
+                <Button Content="{loc:Tr Soql_ExportCsv}" Padding="10,2" Margin="0,2,6,2" Command="{Binding ExportCsvCommand}" />
+                <Button Content="{loc:Tr Soql_CopyResults}" Padding="10,2" Margin="0,2,0,2" Command="{Binding CopyResultsCommand}" />
+            </WrapPanel>
         </Border>
 
         <!-- ステータス -->

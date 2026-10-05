@@ -4,20 +4,20 @@
              xmlns:loc="clr-namespace:SfUi.App">
     <DockPanel>
 
-        <!-- ツールバー -->
-        <Border DockPanel.Dock="Top" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
-            <StackPanel Orientation="Horizontal">
-                <ComboBox Width="90" ItemsSource="{Binding Methods}" SelectedItem="{Binding Method, Mode=TwoWay}" />
-                <TextBox Width="400" Margin="6,0,6,0" VerticalContentAlignment="Center" FontFamily="Consolas"
+        <!-- ツールバー（幅が狭いときは折り返して全ボタンを表示） -->
+        <Border DockPanel.Dock="Top" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,4">
+            <WrapPanel Orientation="Horizontal">
+                <ComboBox Width="90" VerticalAlignment="Center" Margin="0,2,0,2" ItemsSource="{Binding Methods}" SelectedItem="{Binding Method, Mode=TwoWay}" />
+                <TextBox Width="400" Margin="6,2,6,2" VerticalContentAlignment="Center" FontFamily="Consolas"
                          Text="{Binding Path, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          ToolTip="{loc:Tr Api_PathTip}" />
-                <Button Content="{loc:Tr Api_Send}" Padding="10,2" Margin="0,0,12,0" Command="{Binding SendCommand}" />
-                <TextBlock Text="{loc:Tr Common_HistoryLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
-                <ComboBox Width="220" ItemsSource="{Binding HistoryItems}" SelectedItem="{Binding SelectedHistoryItem, Mode=TwoWay}"
+                <Button Content="{loc:Tr Api_Send}" Padding="10,2" Margin="0,2,12,2" Command="{Binding SendCommand}" />
+                <TextBlock Text="{loc:Tr Common_HistoryLabel}" VerticalAlignment="Center" Margin="0,2,4,2" />
+                <ComboBox Width="220" VerticalAlignment="Center" Margin="0,2,0,2" ItemsSource="{Binding HistoryItems}" SelectedItem="{Binding SelectedHistoryItem, Mode=TwoWay}"
                           DisplayMemberPath="Summary" ToolTip="{loc:Tr Api_HistoryTip}" />
-                <Button Content="⟳" Padding="8,2" Margin="0,0,12,0" Command="{Binding RefreshHistoryCommand}" />
-                <Button Content="{loc:Tr Common_AddFavorite}" Padding="10,2" Command="{Binding AddFavoriteCommand}" />
-            </StackPanel>
+                <Button Content="⟳" Padding="8,2" Margin="6,2,12,2" Command="{Binding RefreshHistoryCommand}" />
+                <Button Content="{loc:Tr Common_AddFavorite}" Padding="10,2" Margin="0,2,0,2" Command="{Binding AddFavoriteCommand}" />
+            </WrapPanel>
         </Border>
 
         <!-- ステータス -->
