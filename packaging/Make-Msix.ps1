@@ -138,6 +138,12 @@ if (Test-Path $pfx) {
         & $signtool sign /fd SHA256 /f $pfx /p 'sfui-test' /tr http://timestamp.digicert.com /td SHA256 $out | Out-Null
         if ($LASTEXITCODE -ne 0) { throw 'signtool sign failed.' }
         Write-Host 'MSIX signed (local temporary key).'
+
+        # Export the public certificate for users (install to Trusted People before the MSIX)
+        $cer = Join-Path $dist ('SfUi_{0}_x64.cer' -f $Version)
+        $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($pfx, 'sfui-test')
+        Export-Certificate -Cert $cert -FilePath $cer -Force | Out-Null
+        Write-Host "Public certificate exported: $cer"
     } else {
         Write-Warning 'signtool.exe not found - MSIX left unsigned.'
     }
