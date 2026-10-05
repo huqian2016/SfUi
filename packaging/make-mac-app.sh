@@ -42,7 +42,12 @@ sed "s/__VERSION__/$VERSION/g" "$ROOT/packaging/mac/Info.plist" > "$APP/Contents
 # ---- 任意: 署名 / 公証 ----
 if [ -n "${SFUI_CODESIGN_IDENTITY:-}" ]; then
     echo "== codesign: $SFUI_CODESIGN_IDENTITY =="
-    codesign --force --deep --options runtime --sign "$SFUI_CODESIGN_IDENTITY" "$APP"
+    ENTITLEMENTS="$ROOT/packaging/mac/entitlements.plist"
+    if [ -f "$ENTITLEMENTS" ]; then
+        codesign --force --deep --options runtime --entitlements "$ENTITLEMENTS" --sign "$SFUI_CODESIGN_IDENTITY" "$APP"
+    else
+        codesign --force --deep --options runtime --sign "$SFUI_CODESIGN_IDENTITY" "$APP"
+    fi
     codesign --verify --deep --strict --verbose=2 "$APP"
 fi
 
