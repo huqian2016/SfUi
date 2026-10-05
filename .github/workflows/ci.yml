@@ -82,22 +82,47 @@ jobs:
       - name: Import signing certificate
         if: ${{ env.MACOS_CERT_P12 != '' }}
         run: |
+          set -euo pipefail
+          fail() { echo "::error::$1"; exit 1; }
+
+          echo "MACOS_CERT_P12 length: ${#MACOS_CERT_P12}"
           printf '%s' "$MACOS_CERT_P12" > cert.b64
-          if ! base64 --decode cert.b64 > cert.p12 2>/dev/null; then base64 -D cert.b64 > cert.p12; fi
-          rm -f cert.b64
-          security create-keychain -p actions build.keychain
-          security default-keychain -s build.keychain
-          security unlock-keychain -p actions build.keychain
-          security import cert.p12 -k build.keychain -P "$MACOS_CERT_PASSWORD" -T /usr/bin/codesign
-          security set-key-partition-list -S apple-tool:,apple: -s -k actions build.keychain
-          rm -f cert.p12
-          IDENTITY="$(security find-identity -v -p codesigning build.keychain | awk -F'"' '/Developer ID Application/ { print $2; exit }')"
-          if [ -z "$IDENTITY" ]; then
-            echo "::error::Developer ID Application identity not found in the imported certificate"
-            exit 1
+
+          # macOS の base64 はバージョンで受け付けるデコード オプションが異なるため順に試す
+          decode_ok=0
+          for variant in -d -D --decode; do
+            if base64 "$variant" < cert.b64 > cert.p12 2>/dev/null && [ -s cert.p12 ]; then
+              decode_ok=1
+              echo "decoded with: base64 $variant"
+              break
+            fi
+          done
+          if [ "$decode_ok" = "0" ]; then
+            if openssl base64 -d -A -in cert.b64 -out cert.p12 2>/dev/null && [ -s cert.p12 ]; then
+              decode_ok=1
+              echo "decoded with: openssl base64"
+            fi
           fi
+          [ "$decode_ok" = "1" ] || fail "cert.p12 decode failed - check the MACOS_CERT_P12 secret (base64 of the exported .p12)"
+          rm -f cert.b64
+          size=$(wc -c < cert.p12 | tr -d ' ')
+          echo "cert.p12 size: $size bytes"
+          [ "$size" -gt 1000 ] || fail "cert.p12 is only $size bytes - the MACOS_CERT_P12 secret looks truncated"
+
+          security create-keychain -p actions build.keychain || fail "security create-keychain failed (rc=$?)"
+          security default-keychain -s build.keychain || fail "security default-keychain failed (rc=$?)"
+          security unlock-keychain -p actions build.keychain || fail "security unlock-keychain failed (rc=$?)"
+          security import cert.p12 -k build.keychain -P "$MACOS_CERT_PASSWORD" -T /usr/bin/codesign || fail "security import failed - check MACOS_CERT_PASSWORD (rc=$?)"
+          security set-key-partition-list -S apple-tool:,apple: -s -k actions build.keychain >/dev/null || fail "security set-key-partition-list failed (rc=$?)"
+          rm -f cert.p12
+
+          IDENTITIES="$(security find-identity -v -p codesigning build.keychain || true)"
+          echo "$IDENTITIES"
+          IDENTITY="$(printf '%s' "$IDENTITIES" | awk -F'"' '/Developer ID Application/ { print $2; exit }')"
+          [ -n "$IDENTITY" ] || fail "Developer ID Application identity not found in the imported certificate"
           echo "SFUI_CODESIGN_IDENTITY=$IDENTITY" >> "$GITHUB_ENV"
           echo "Signing identity: $IDENTITY"
+          echo "::notice::Developer ID signing enabled: $IDENTITY"
       - name: Build .app bundle (packaging/make-mac-app.sh)
         env:
           SFUI_NOTARIZE_APPLE_ID: ${{ env.NOTARIZE_APPLE_ID }}

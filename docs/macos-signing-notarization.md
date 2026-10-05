@@ -1,7 +1,7 @@
 # macOS 署名・公証（Developer ID）手順書
 
-最終更新: 2026-10-05 / ステータス: **証明書発行済み（方法 A・別の Mac の Xcode）。次の作業 = .p12 エクスポート（§2 A-1）→ 公証用パスワード（§4）→ GitHub secrets 登録（§8）または別の Mac で §5 実行**
-→ CI の署名 + 公証ステップは配線済み（`.github/workflows/ci.yml`。secrets 未登録の間は自動スキップ = 従来どおり未署名）。
+最終更新: 2026-10-06 / ステータス: **secrets 登録済み・CI で署名 + 公証を検証中（2026-10-06: 証明書インポート ステップを堅牢化）**
+→ CI の署名 + 公証ステップは配線済み（`.github/workflows/ci.yml`。secrets 未登録の間は自動スキップ = 従来どおり未署名）。失敗時は Actions の **Annotations** / ログに `::error::` 付きの理由が表示される。
 
 ## 0. 目的と現状
 
@@ -171,6 +171,7 @@ secrets（リポジトリ設定 → Secrets and variables → Actions）:
 
 | 症状 | 対処 |
 |---|---|
+| `Import signing certificate` が失敗（例: exit code 64） | 失敗した行の直後に `::error::` で理由を表示（デコード失敗 / `.p12` サイズ異常 = secret 切り詰め / import 失敗 = パスワード不一致 / ID 未検出）。base64 のデコードは `-d` → `-D` → `--decode` → openssl の順に自動試行（macOS バージョン差を吸収。2026-10-06 修正） |
 | 署名後に起動クラッシュ（`Killed: 9` 等） | entitlements 不足。`packaging/mac/entitlements.plist`（`allow-jit`）が付与されているか確認（スクリプトは自動で付与） |
 | 公証が `Invalid` | `xcrun notarytool log <submission-id> --apple-id … --team-id … --password …` で理由を確認。`--deep` の限界が原因なら、内側の `*.dylib` と apphost を個別に `codesign` → 最後に `SfUi.app` の順へ切替 |
 | 外部由来のネイティブ ライブラリを読み込む場合のみ | `com.apple.security.cs.disable-library-validation` を entitlements に追加（同チーム署名なら通常不要） |
