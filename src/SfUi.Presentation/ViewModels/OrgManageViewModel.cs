@@ -119,6 +119,99 @@ public sealed partial class OrgManageViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _aliasInput = string.Empty;
 
+    // ---- 新規組織の登録（パネル） ----
+
+    /// <summary>登録パネルが開いているか。</summary>
+    [ObservableProperty]
+    private bool _isRegisterPanelOpen;
+
+    /// <summary>登録方法: 0 = ブラウザー / 1 = SFDX 認証 URL / 2 = アクセス トークン。</summary>
+    [ObservableProperty]
+    private int _registerMethod;
+
+    /// <summary>登録する組織のエイリアス（任意）。</summary>
+    [ObservableProperty]
+    private string _registerAlias = string.Empty;
+
+    /// <summary>登録する組織のインスタンス URL（ブラウザーでは任意 / アクセス トークンでは必須）。</summary>
+    [ObservableProperty]
+    private string _registerInstanceUrl = string.Empty;
+
+    /// <summary>SFDX 認証 URL（force://… または org display の JSON）。</summary>
+    [ObservableProperty]
+    private string _registerSfdxUrl = string.Empty;
+
+    /// <summary>アクセス トークン（SF_ACCESS_TOKEN で sf に渡す）。</summary>
+    [ObservableProperty]
+    private string _registerAccessToken = string.Empty;
+
+    /// <summary>登録した組織を既定（target-org）に設定するか。</summary>
+    [ObservableProperty]
+    private bool _registerSetDefault;
+
+    /// <summary>登録方法: ブラウザー ログイン。</summary>
+    public bool RegisterUseWeb
+    {
+        get => RegisterMethod == 0;
+        set
+        {
+            if (value)
+            {
+                RegisterMethod = 0;
+            }
+        }
+    }
+
+    /// <summary>登録方法: SFDX 認証 URL。</summary>
+    public bool RegisterUseSfdxUrl
+    {
+        get => RegisterMethod == 1;
+        set
+        {
+            if (value)
+            {
+                RegisterMethod = 1;
+            }
+        }
+    }
+
+    /// <summary>登録方法: アクセス トークン。</summary>
+    public bool RegisterUseAccessToken
+    {
+        get => RegisterMethod == 2;
+        set
+        {
+            if (value)
+            {
+                RegisterMethod = 2;
+            }
+        }
+    }
+
+    /// <summary>インスタンス URL 行の表示（ブラウザー / アクセス トークンのとき）。</summary>
+    public bool ShowRegisterInstanceUrl => RegisterMethod != 1;
+
+    /// <summary>SFDX 認証 URL 行の表示。</summary>
+    public bool ShowRegisterSfdxUrl => RegisterMethod == 1;
+
+    /// <summary>アクセス トークン行の表示。</summary>
+    public bool ShowRegisterAccessToken => RegisterMethod == 2;
+
+    /// <summary>インスタンス URL のヒント（登録方法で切り替え）。</summary>
+    public string RegisterInstanceUrlHint => UiText.T(
+        RegisterMethod == 2 ? "OrgManage_RegisterInstanceUrlHintToken" : "OrgManage_RegisterInstanceUrlHintWeb");
+
+    partial void OnRegisterMethodChanged(int value)
+    {
+        OnPropertyChanged(nameof(RegisterUseWeb));
+        OnPropertyChanged(nameof(RegisterUseSfdxUrl));
+        OnPropertyChanged(nameof(RegisterUseAccessToken));
+        OnPropertyChanged(nameof(ShowRegisterInstanceUrl));
+        OnPropertyChanged(nameof(ShowRegisterSfdxUrl));
+        OnPropertyChanged(nameof(ShowRegisterAccessToken));
+        OnPropertyChanged(nameof(RegisterInstanceUrlHint));
+    }
+
     [ObservableProperty]
     private bool _isBusy;
 
@@ -296,6 +389,75 @@ public sealed partial class OrgManageViewModel : ObservableObject, IDisposable
             keepUsername: null);
     }
 
+    /// <summary>新規組織の登録パネルを開閉する。</summary>
+    [RelayCommand]
+    private void ToggleRegisterPanel() => IsRegisterPanelOpen = !IsRegisterPanelOpen;
+
+    /// <summary>選択した方法で新しい組織を登録する。</summary>
+    [RelayCommand]
+    private async Task RegisterOrgAsync()
+    {
+        var alias = RegisterAlias.Trim();
+        switch (RegisterMethod)
+        {
+            case 1:
+            {
+                var sfdxUrl = OrgManageService.ExtractSfdxAuthUrl(RegisterSfdxUrl);
+                if (sfdxUrl is null)
+                {
+                    StatusMessage = string.IsNullOrWhiteSpace(RegisterSfdxUrl)
+                        ? UiText.T("OrgManage_RegisterNeedSfdxUrl")
+                        : UiText.T("OrgManage_RegisterInvalidSfdxUrl");
+                    return;
+                }
+
+                await RegisterAsync(
+                    () => _manage.LoginSfdxUrlAsync(sfdxUrl, alias, RegisterSetDefault, CurrentToken()));
+                break;
+            }
+
+            case 2:
+            {
+                var instanceUrl = RegisterInstanceUrl.Trim();
+                if (instanceUrl.Length == 0)
+                {
+                    StatusMessage = UiText.T("OrgManage_RegisterNeedInstanceUrl");
+                    return;
+                }
+
+                var token = RegisterAccessToken.Trim();
+                if (token.Length == 0)
+                {
+                    StatusMessage = UiText.T("OrgManage_RegisterNeedToken");
+                    return;
+                }
+
+                await RegisterAsync(
+                    () => _manage.LoginAccessTokenAsync(instanceUrl, token, alias, RegisterSetDefault, CurrentToken()));
+                break;
+            }
+
+            default:
+                await RegisterAsync(
+                    () => _manage.LoginWebAsync(RegisterInstanceUrl.Trim(), alias, RegisterSetDefault, CurrentToken()));
+                break;
+        }
+    }
+
+    /// <summary>登録を実行し、成功したらパネルを閉じる（組織一覧は再読み込みし、エイリアスで選択を復元）。</summary>
+    private async Task RegisterAsync(Func<Task<OrgCommandResult>> action)
+    {
+        var alias = RegisterAlias.Trim();
+        if (await RunOrgCommandAsync(
+                action,
+                UiText.T("OrgManage_RegisterDoneFmt"),
+                reloadOrgs: true,
+                keepUsername: alias.Length > 0 ? alias : null))
+        {
+            IsRegisterPanelOpen = false;
+        }
+    }
+
     /// <summary>選択中の組織からログアウトする。</summary>
     [RelayCommand]
     private async Task LogoutAsync()
@@ -469,7 +631,11 @@ public sealed partial class OrgManageViewModel : ObservableObject, IDisposable
         Inventory.CancelBackgroundWork();
     }
 
-    private void OnLanguageChanged() => Title = UiText.T("OrgManage_Title");
+    private void OnLanguageChanged()
+    {
+        Title = UiText.T("OrgManage_Title");
+        OnPropertyChanged(nameof(RegisterInstanceUrlHint));
+    }
 
     private CancellationToken CurrentToken()
     {
@@ -539,7 +705,10 @@ public sealed partial class OrgManageViewModel : ObservableObject, IDisposable
                 Orgs.Add(row);
             }
 
-            SelectedOrgRow = Orgs.FirstOrDefault(o => string.Equals(o.Username, keepUsername, StringComparison.OrdinalIgnoreCase))
+            SelectedOrgRow = Orgs.FirstOrDefault(o =>
+                    string.Equals(o.Username, keepUsername, StringComparison.OrdinalIgnoreCase)
+                    || (!string.IsNullOrWhiteSpace(o.Org.Alias)
+                        && string.Equals(o.Org.Alias, keepUsername, StringComparison.OrdinalIgnoreCase)))
                 ?? (previous is null ? null : Orgs.FirstOrDefault(o => string.Equals(o.Username, previous, StringComparison.OrdinalIgnoreCase)))
                 ?? Orgs.FirstOrDefault(o => o.Org.IsDefault)
                 ?? Orgs.FirstOrDefault();
@@ -597,13 +766,13 @@ public sealed partial class OrgManageViewModel : ObservableObject, IDisposable
     private static bool MatchesText(string? value, string text) =>
         value is { Length: > 0 } && value.Contains(text, StringComparison.OrdinalIgnoreCase);
 
-    /// <summary>sf コマンドを実行し、結果をステータスへ反映する（必要なら組織一覧を再読み込み）。</summary>
-    private async Task RunOrgCommandAsync(
+    /// <summary>sf コマンドを実行し、結果をステータスへ反映する（必要なら組織一覧を再読み込み）。成功したら true。</summary>
+    private async Task<bool> RunOrgCommandAsync(
         Func<Task<OrgCommandResult>> action, string successMessage, bool reloadOrgs, string? keepUsername)
     {
         if (IsBusy)
         {
-            return;
+            return false;
         }
 
         IsBusy = true;
@@ -619,17 +788,19 @@ public sealed partial class OrgManageViewModel : ObservableObject, IDisposable
                     RebuildRows(orgs, keepUsername);
                     ApplyTarget();
                 }
+
+                return true;
             }
-            else
-            {
-                StatusMessage = UiText.T("Common_FailedFmt", result.Message);
-                _log.Warn($"組織管理: コマンドに失敗しました: {result.CommandLine}");
-            }
+
+            StatusMessage = UiText.T("Common_FailedFmt", result.Message);
+            _log.Warn($"組織管理: コマンドに失敗しました: {result.CommandLine}");
+            return false;
         }
         catch (Exception ex)
         {
             StatusMessage = UiText.T("Common_FailedFmt", ex.Message);
             _log.Error("組織管理: コマンド実行で例外が発生しました", ex);
+            return false;
         }
         finally
         {

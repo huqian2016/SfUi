@@ -59,7 +59,55 @@ public sealed class OrgManageTests
         Assert.Equal(
             new[] { "org", "login", "web", "--instance-url", "https://test.salesforce.com" },
             OrgManageService.BuildLoginArgs("https://test.salesforce.com"));
+        Assert.Equal(
+            new[] { "org", "login", "web", "--alias", "acc", "--set-default" },
+            OrgManageService.BuildLoginArgs(null, "acc", true));
+        Assert.Equal(
+            new[]
+            {
+                "org", "login", "web", "--instance-url", "https://test.salesforce.com",
+                "--alias", "acc", "--set-default",
+            },
+            OrgManageService.BuildLoginArgs("https://test.salesforce.com", "acc", true));
+        Assert.Equal(
+            new[] { "org", "login", "sfdx-url", "--sfdx-url-file", @"C:\tmp\auth.txt" },
+            OrgManageService.BuildLoginSfdxUrlArgs(@"C:\tmp\auth.txt"));
+        Assert.Equal(
+            new[] { "org", "login", "sfdx-url", "--sfdx-url-file", @"C:\tmp\auth.txt", "--alias", "acc", "--set-default" },
+            OrgManageService.BuildLoginSfdxUrlArgs(@"C:\tmp\auth.txt", "acc", true));
+        Assert.Equal(
+            new[] { "org", "login", "access-token", "--instance-url", "https://login.salesforce.com", "--no-prompt" },
+            OrgManageService.BuildLoginAccessTokenArgs("https://login.salesforce.com"));
+        Assert.Equal(
+            new[]
+            {
+                "org", "login", "access-token", "--instance-url", "https://login.salesforce.com", "--no-prompt",
+                "--alias", "acc", "--set-default",
+            },
+            OrgManageService.BuildLoginAccessTokenArgs("https://login.salesforce.com", "acc", true));
         Assert.Contains("FROM Organization", OrgManageService.ConnectionTestSoql);
+    }
+
+    // ---- SFDX 認証 URL の抽出 ----
+
+    [Fact]
+    public void OrgManageService_ExtractsSfdxAuthUrl()
+    {
+        const string url = "force://Secret123:abc@example.my.salesforce.com";
+
+        Assert.Equal(url, OrgManageService.ExtractSfdxAuthUrl(url));
+        Assert.Equal(url, OrgManageService.ExtractSfdxAuthUrl("  " + url + "\r\n"));
+        Assert.Equal(url, OrgManageService.ExtractSfdxAuthUrl($"{{\"sfdxAuthUrl\":\"{url}\"}}"));
+        Assert.Equal(
+            url,
+            OrgManageService.ExtractSfdxAuthUrl($"{{\"status\":0,\"result\":{{\"sfdxAuthUrl\":\"{url}\"}}}}"));
+
+        Assert.Null(OrgManageService.ExtractSfdxAuthUrl(null));
+        Assert.Null(OrgManageService.ExtractSfdxAuthUrl("   "));
+        Assert.Null(OrgManageService.ExtractSfdxAuthUrl("not-a-url"));
+        Assert.Null(OrgManageService.ExtractSfdxAuthUrl("{\"foo\": 1}"));
+        Assert.Null(OrgManageService.ExtractSfdxAuthUrl("{\"sfdxAuthUrl\":\"https://example.com\"}"));
+        Assert.Null(OrgManageService.ExtractSfdxAuthUrl("{invalid json"));
     }
 
     // ---- 組織のタグ・メモ（ローカル保存） ----

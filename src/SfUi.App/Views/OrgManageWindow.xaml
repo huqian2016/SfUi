@@ -42,7 +42,11 @@
                 <DockPanel Margin="4">
                     <StackPanel DockPanel.Dock="Top" Margin="0,0,0,6">
                         <StackPanel Orientation="Horizontal">
-                            <Button Content="{loc:Tr OrgManage_SetDefault}" Padding="10,2"
+                            <Button Content="{loc:Tr OrgManage_Register}" Padding="10,2"
+                                    Command="{Binding ToggleRegisterPanelCommand}"
+                                    ToolTip="{loc:Tr OrgManage_RegisterTip}"
+                                    AutomationProperties.Name="{loc:Tr OrgManage_Register}" />
+                            <Button Content="{loc:Tr OrgManage_SetDefault}" Margin="8,0,0,0" Padding="10,2"
                                     Command="{Binding SetDefaultCommand}"
                                     IsEnabled="{Binding CanInteract}"
                                     ToolTip="{loc:Tr OrgManage_SetDefaultTip}"
@@ -74,6 +78,68 @@
                                     AutomationProperties.Name="{loc:Tr OrgManage_TestAll}" />
                             <TextBlock Text="{Binding TestProgress}" Foreground="#555555" Margin="10,0,0,0" VerticalAlignment="Center" />
                         </StackPanel>
+                        <!-- 新規組織の登録パネル -->
+                        <Border Margin="0,6,0,0" Padding="8" Background="#F2F6FA" BorderBrush="#B9CCE0" BorderThickness="1"
+                                Visibility="{Binding IsRegisterPanelOpen, Converter={StaticResource BoolToVis}}">
+                            <StackPanel>
+                                <TextBlock Text="{loc:Tr OrgManage_RegisterTitle}" FontWeight="SemiBold" />
+                                <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                    <TextBlock Text="{loc:Tr OrgManage_RegisterMethod}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                                    <RadioButton Content="{loc:Tr OrgManage_RegisterMethodWeb}" GroupName="RegisterMethod"
+                                                 IsChecked="{Binding RegisterUseWeb, Mode=TwoWay}" VerticalAlignment="Center"
+                                                 AutomationProperties.Name="{loc:Tr OrgManage_RegisterMethodWeb}" />
+                                    <RadioButton Content="{loc:Tr OrgManage_RegisterMethodSfdxUrl}" GroupName="RegisterMethod" Margin="12,0,0,0"
+                                                 IsChecked="{Binding RegisterUseSfdxUrl, Mode=TwoWay}" VerticalAlignment="Center"
+                                                 AutomationProperties.Name="{loc:Tr OrgManage_RegisterMethodSfdxUrl}" />
+                                    <RadioButton Content="{loc:Tr OrgManage_RegisterMethodToken}" GroupName="RegisterMethod" Margin="12,0,0,0"
+                                                 IsChecked="{Binding RegisterUseAccessToken, Mode=TwoWay}" VerticalAlignment="Center"
+                                                 AutomationProperties.Name="{loc:Tr OrgManage_RegisterMethodToken}" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                    <TextBlock Text="{loc:Tr OrgManage_AliasLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                                    <TextBox Width="180" VerticalAlignment="Center"
+                                             Text="{Binding RegisterAlias, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             AutomationProperties.Name="{loc:Tr OrgManage_RegisterTitle}" />
+                                    <CheckBox Content="{loc:Tr OrgManage_RegisterSetDefault}" Margin="16,0,0,0" VerticalAlignment="Center"
+                                              IsChecked="{Binding RegisterSetDefault, Mode=TwoWay}"
+                                              AutomationProperties.Name="{loc:Tr OrgManage_RegisterSetDefault}" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,6,0,0"
+                                            Visibility="{Binding ShowRegisterInstanceUrl, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="{loc:Tr OrgManage_RegisterInstanceUrl}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                                    <TextBox Width="340" VerticalAlignment="Center"
+                                             Text="{Binding RegisterInstanceUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             AutomationProperties.Name="{loc:Tr OrgManage_RegisterInstanceUrl}" />
+                                    <TextBlock Text="{Binding RegisterInstanceUrlHint}" Foreground="#666666" Margin="8,0,0,0" VerticalAlignment="Center" />
+                                </StackPanel>
+                                <StackPanel Margin="0,6,0,0"
+                                            Visibility="{Binding ShowRegisterSfdxUrl, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="{loc:Tr OrgManage_RegisterSfdxUrl}" />
+                                    <TextBox Margin="0,2,0,0" Height="54" AcceptsReturn="True" TextWrapping="Wrap"
+                                             VerticalScrollBarVisibility="Auto"
+                                             Text="{Binding RegisterSfdxUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             AutomationProperties.Name="{loc:Tr OrgManage_RegisterSfdxUrl}" />
+                                    <TextBlock Text="{loc:Tr OrgManage_RegisterSfdxUrlHint}" Foreground="#666666" Margin="0,2,0,0" TextWrapping="Wrap" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,6,0,0"
+                                            Visibility="{Binding ShowRegisterAccessToken, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="{loc:Tr OrgManage_RegisterToken}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                                    <PasswordBox x:Name="RegisterTokenBox" Width="320" VerticalAlignment="Center" PasswordChar="●"
+                                                 PasswordChanged="RegisterTokenBox_PasswordChanged"
+                                                 AutomationProperties.Name="{loc:Tr OrgManage_RegisterToken}" />
+                                    <TextBlock Text="{loc:Tr OrgManage_RegisterTokenHint}" Foreground="#666666" Margin="8,0,0,0" VerticalAlignment="Center" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                    <Button Content="{loc:Tr OrgManage_RegisterRun}" Padding="10,2"
+                                            Command="{Binding RegisterOrgCommand}"
+                                            IsEnabled="{Binding CanInteract}"
+                                            AutomationProperties.Name="{loc:Tr OrgManage_RegisterRun}" />
+                                    <Button Content="{loc:Tr OrgManage_RegisterClose}" Margin="8,0,0,0" Padding="10,2"
+                                            Command="{Binding ToggleRegisterPanelCommand}"
+                                            AutomationProperties.Name="{loc:Tr OrgManage_RegisterClose}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
                         <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
                             <TextBlock Text="{loc:Tr OrgManage_AliasLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
                             <TextBox Width="180" VerticalAlignment="Center"

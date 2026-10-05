@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Controls;
 using SfUi.App.ViewModels;
 
 namespace SfUi.App.Views;
@@ -29,5 +30,14 @@ public partial class OrgManageWindow : Window
 
         _loaded = true;
         await _viewModel.LoadAsync();
+    }
+
+    /// <summary>アクセス トークン（PasswordBox は直接バインドできないため手動同期）。</summary>
+    private void RegisterTokenBox_PasswordChanged(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is OrgManageViewModel viewModel && sender is PasswordBox box)
+        {
+            viewModel.RegisterAccessToken = box.Password;
+        }
     }
 }

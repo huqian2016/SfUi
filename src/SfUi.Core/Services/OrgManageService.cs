@@ -37,7 +37,54 @@ public sealed class OrgManageService
 
     /// <summary>ブラウザー ログイン（sf org login web）を実行する。</summary>
     public Task<OrgCommandResult> LoginWebAsync(string? instanceUrl, CancellationToken cancellationToken) =>
-        RunAsync(BuildLoginArgs(instanceUrl), LoginTimeout, cancellationToken);
+        LoginWebAsync(instanceUrl, alias: null, setDefault: false, cancellationToken);
+
+    /// <summary>ブラウザー ログイン（エイリアス / 既定組織のオプション付き）。</summary>
+    public Task<OrgCommandResult> LoginWebAsync(
+        string? instanceUrl, string? alias, bool setDefault, CancellationToken cancellationToken) =>
+        RunAsync(BuildLoginArgs(instanceUrl, alias, setDefault), LoginTimeout, cancellationToken);
+
+    /// <summary>
+    /// SFDX 認証 URL でのログイン（sf org login sfdx-url）。
+    /// URL は一時ファイル（プレーン テキスト）経由で渡し、実行後に削除する。
+    /// </summary>
+    public async Task<OrgCommandResult> LoginSfdxUrlAsync(
+        string sfdxAuthUrl, string? alias, bool setDefault, CancellationToken cancellationToken)
+    {
+        var file = Path.Combine(Path.GetTempPath(), $"sfui-sfdx-url-{Guid.NewGuid():N}.txt");
+        try
+        {
+            await File.WriteAllTextAsync(file, sfdxAuthUrl.Trim(), cancellationToken).ConfigureAwait(false);
+            return await RunAsync(BuildLoginSfdxUrlArgs(file, alias, setDefault), LoginTimeout, cancellationToken)
+                .ConfigureAwait(false);
+        }
+        finally
+        {
+            try
+            {
+                if (File.Exists(file))
+                {
+                    File.Delete(file);
+                }
+            }
+            catch
+            {
+                // 一時ファイルの削除失敗は無視（内容は URL のみ・一時フォルダー）
+            }
+        }
+    }
+
+    /// <summary>
+    /// アクセス トークンでのログイン（sf org login access-token）。
+    /// トークンは引数ではなく環境変数 SF_ACCESS_TOKEN で渡す（--no-prompt と併用）。
+    /// </summary>
+    public Task<OrgCommandResult> LoginAccessTokenAsync(
+        string instanceUrl, string accessToken, string? alias, bool setDefault, CancellationToken cancellationToken) =>
+        RunAsync(
+            BuildLoginAccessTokenArgs(instanceUrl, alias, setDefault),
+            LoginTimeout,
+            cancellationToken,
+            new Dictionary<string, string> { ["SF_ACCESS_TOKEN"] = accessToken });
 
     /// <summary>組織からログアウトする。</summary>
     public Task<OrgCommandResult> LogoutAsync(string target, CancellationToken cancellationToken) =>
@@ -111,17 +158,121 @@ public sealed class OrgManageService
     public static IReadOnlyList<string> BuildOpenPathArgs(string target, string path) =>
         new[] { "org", "open", "--target-org", target, "--path", path };
 
-    public static IReadOnlyList<string> BuildLoginArgs(string? instanceUrl) =>
-        string.IsNullOrWhiteSpace(instanceUrl)
-            ? new[] { "org", "login", "web" }
-            : new[] { "org", "login", "web", "--instance-url", instanceUrl! };
+    public static IReadOnlyList<string> BuildLoginArgs(string? instanceUrl, string? alias = null, bool setDefault = false)
+    {
+        var args = new List<string> { "org", "login", "web" };
+        if (!string.IsNullOrWhiteSpace(instanceUrl))
+        {
+            args.Add("--instance-url");
+            args.Add(instanceUrl!);
+        }
+
+        if (!string.IsNullOrWhiteSpace(alias))
+        {
+            args.Add("--alias");
+            args.Add(alias!);
+        }
+
+        if (setDefault)
+        {
+            args.Add("--set-default");
+        }
+
+        return args;
+    }
+
+    public static IReadOnlyList<string> BuildLoginSfdxUrlArgs(
+        string sfdxUrlFilePath, string? alias = null, bool setDefault = false)
+    {
+        var args = new List<string> { "org", "login", "sfdx-url", "--sfdx-url-file", sfdxUrlFilePath };
+        if (!string.IsNullOrWhiteSpace(alias))
+        {
+            args.Add("--alias");
+            args.Add(alias!);
+        }
+
+        if (setDefault)
+        {
+            args.Add("--set-default");
+        }
+
+        return args;
+    }
+
+    public static IReadOnlyList<string> BuildLoginAccessTokenArgs(
+        string instanceUrl, string? alias = null, bool setDefault = false)
+    {
+        var args = new List<string> { "org", "login", "access-token", "--instance-url", instanceUrl, "--no-prompt" };
+        if (!string.IsNullOrWhiteSpace(alias))
+        {
+            args.Add("--alias");
+            args.Add(alias!);
+        }
+
+        if (setDefault)
+        {
+            args.Add("--set-default");
+        }
+
+        return args;
+    }
+
+    /// <summary>
+    /// 貼り付けられたテキストから SFDX 認証 URL（force://…）を抽出する。
+    /// 対応形式: URL のみ / <c>{"sfdxAuthUrl":"force://…"}</c> / <c>sf org display --verbose --json</c> の出力（result 配下）。
+    /// 抽出できない場合は null。
+    /// </summary>
+    public static string? ExtractSfdxAuthUrl(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return null;
+        }
+
+        var trimmed = text.Trim();
+        if (trimmed.StartsWith('{'))
+        {
+            try
+            {
+                using var document = System.Text.Json.JsonDocument.Parse(trimmed);
+                return TryReadSfdxAuthUrl(document.RootElement, out var fromJson) ? fromJson : null;
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                return null;
+            }
+        }
+
+        return IsSfdxAuthUrl(trimmed) ? trimmed : null;
+    }
+
+    private static bool TryReadSfdxAuthUrl(System.Text.Json.JsonElement element, out string? url)
+    {
+        url = null;
+        if (element.TryGetProperty("sfdxAuthUrl", out var top)
+            && top.ValueKind == System.Text.Json.JsonValueKind.String
+            && IsSfdxAuthUrl(top.GetString()?.Trim()))
+        {
+            url = top.GetString()!.Trim();
+            return true;
+        }
+
+        return element.TryGetProperty("result", out var result)
+            && result.ValueKind == System.Text.Json.JsonValueKind.Object
+            && TryReadSfdxAuthUrl(result, out url);
+    }
+
+    private static bool IsSfdxAuthUrl(string? value) =>
+        value is { Length: > 0 } && value.StartsWith("force://", StringComparison.OrdinalIgnoreCase);
 
     private async Task<OrgCommandResult> RunAsync(
-        IReadOnlyList<string> arguments, TimeSpan timeout, CancellationToken cancellationToken)
+        IReadOnlyList<string> arguments, TimeSpan timeout, CancellationToken cancellationToken,
+        IReadOnlyDictionary<string, string>? environment = null)
     {
         try
         {
-            var result = await _runner.RunAsync(arguments, timeout: timeout, cancellationToken: cancellationToken);
+            var result = await _runner.RunAsync(
+                arguments, timeout: timeout, cancellationToken: cancellationToken, environment: environment);
             var message = result.Success
                 ? result.StdOut.Trim()
                 : (string.IsNullOrWhiteSpace(result.StdErr) ? result.StdOut.Trim() : result.StdErr.Trim());

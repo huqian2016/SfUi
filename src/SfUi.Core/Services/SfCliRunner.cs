@@ -103,11 +103,13 @@ public sealed class SfCliRunner
     /// <param name="workingDirectory">カレントディレクトリ（SF 実行フォルダ）。null ならプロセス既定。</param>
     /// <param name="timeout">タイムアウト（既定 120 秒）。null で既定値。</param>
     /// <param name="cancellationToken">キャンセル用トークン。</param>
+    /// <param name="environment">子プロセスに追加する環境変数（例: SF_ACCESS_TOKEN）。null なら追加なし。</param>
     public async Task<SfCliResult> RunAsync(
         IReadOnlyList<string> arguments,
         string? workingDirectory = null,
         TimeSpan? timeout = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        IReadOnlyDictionary<string, string>? environment = null)
     {
         if (_sfExecutablePath is null)
         {
@@ -125,6 +127,14 @@ public sealed class SfCliRunner
 
         startInfo.Environment["SF_DISABLE_TELEMETRY"] = "true";
         startInfo.Environment["SF_AUTOUPDATE_DISABLE"] = "true";
+
+        if (environment is not null)
+        {
+            foreach (var pair in environment)
+            {
+                startInfo.Environment[pair.Key] = pair.Value;
+            }
+        }
 
         var stopwatch = Stopwatch.StartNew();
         using var process = new Process { StartInfo = startInfo };
