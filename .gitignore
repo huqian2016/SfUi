@@ -26,3 +26,9 @@ packaging/layout/
 packaging/tools/
 packaging/priconfig.xml
 packaging/sign/
+
+# Signing credentials (Developer ID identity — leaking them lets third parties sign as us)
+docs/Certificates/
+*.p12
+*.pfx
+*.key
