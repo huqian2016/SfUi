@@ -74,8 +74,8 @@ and an **Org Management** window that keeps your orgs in order (default, alias, 
 ## Getting started
 
 1. Download from the [Releases](../../releases) page:
-   - **Windows** — **`SfUi.exe`** (the portable single executable), or **`SfUi-v0.9.3-portable.zip`** — the executable **plus a ready-to-use `data/` folder with 30 sample SOQL / Apex / commands / REST requests already in the history** (just extract and run).
-   - **macOS (Apple Silicon)** — **`SfUi-0.9.3-osx-arm64.zip`** — extract the zip and run `SfUi.app`. The app is not notarized yet, so on the first launch **right-click the app → Open** once (or run `xattr -dr com.apple.quarantine SfUi.app` in Terminal); double-click works from the second launch on.
+   - **Windows** — **`SfUi.exe`** (the portable single executable), or **`SfUi-v0.10.0-portable.zip`** — the executable **plus a ready-to-use `data/` folder with 30 sample SOQL / Apex / commands / REST requests already in the history** (just extract and run).
+   - **macOS (Apple Silicon)** — **`SfUi-0.10.0-osx-arm64.zip`** — extract the zip and run `SfUi.app`. The app is not notarized yet, so on the first launch **right-click the app → Open** once (or run `xattr -dr com.apple.quarantine SfUi.app` in Terminal); double-click works from the second launch on.
 2. Put it in any folder and double-click (no installer).
    - Windows SmartScreen may warn because the binary is unsigned — choose *More info* → *Run anyway*.
 3. On first run a `data/` folder is created next to the exe (portable mode).
@@ -235,8 +235,8 @@ SOQL・匿名Apex・デバッグログ・デプロイ・自由コマンド・RES
 ## 使い方
 
 1. [Releases](../../releases) からダウンロード
-   - **Windows 版** … **`SfUi.exe`**（実行ファイル単体。サンプル履歴は設定画面から後で追加可）または **`SfUi-v0.9.3-portable.zip`**（exe + サンプル履歴 30 件入りの `data/` フォルダ。解凍してそのまま実行）
-   - **macOS 版（Apple Silicon）** … **`SfUi-0.9.3-osx-arm64.zip`**（解凍して `SfUi.app` を実行。未署名のため初回のみ **右クリック →「開く」**、または ターミナルで `xattr -dr com.apple.quarantine SfUi.app` を 1 回実行。2 回目以降はダブルクリックで起動できます）
+   - **Windows 版** … **`SfUi.exe`**（実行ファイル単体。サンプル履歴は設定画面から後で追加可）または **`SfUi-v0.10.0-portable.zip`**（exe + サンプル履歴 30 件入りの `data/` フォルダ。解凍してそのまま実行）
+   - **macOS 版（Apple Silicon）** … **`SfUi-0.10.0-osx-arm64.zip`**（解凍して `SfUi.app` を実行。未署名のため初回のみ **右クリック →「開く」**、または ターミナルで `xattr -dr com.apple.quarantine SfUi.app` を 1 回実行。2 回目以降はダブルクリックで起動できます）
 2. 任意のフォルダに置いてダブルクリック（インストーラー不要）
    - 署名なしのため SmartScreen の警告が出たら「詳細情報」→「実行」
 3. 初回起動時に exe 隣に `data/` フォルダ（設定・履歴・ログ）が作成されます（ポータブル動作）

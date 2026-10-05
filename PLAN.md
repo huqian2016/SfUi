@@ -600,3 +600,4 @@ data/
 - 外部スクリプト更新: `sfui-avalonia-probe.ps1` に `-NoWelcome`、UIA スクリプト 5 本（dataio-e2e / access-tabs / backup-ui / orgmanage-ui / readme-shots）の起動引数に `--no-welcome`
 - 計画文書: `docs/welcome-window-plan.md`。WPF の注意点: `Run.Text` への `{Binding}` は既定 TwoWay のため読み取り専用プロパティへは `Mode=OneWay` を明示する
 - 2026-10-05 追記: Welcome ヘッダーに言語コンボを追加。`WelcomeViewModel.LanguageLabel` は `MainViewModel` をプロキシ（同じ選択肢・同じ保存先 = `settings.Language`）し、切替時は `UiText.SetLanguage` + 保存 + 動的文言（検出パス / 再チェック結果）の再生成を実施。検証 = 両アプリで UIA によりコンボ操作 → 即時切替 + `language` 保存 + メイン画面の言語コンボ / ステータスバーも同期することを確認
+- 2026-10-05: GitHub Release **v0.10.0** 公開（アセット = `SfUi.exe` 165.6MB + `SfUi-v0.10.0-portable.zip` 65.9MB + `SfUi-0.10.0-osx-arm64.zip` 42.7MB）。§18 のようこそ画面 + 4 言語 UI + Welcome 内言語切替を反映。README（EN/JA）のダウンロード参照も v0.10.0 に更新。**注意**: リリース用 single-file exe は `-p:IncludeNativeLibrariesForSelfExtract=true` 必須（付けないと WPF の native DLL（wpfgfx 等）が exe 隣に展開され、exe 単体コピーで DllNotFoundException クラッシュ）
