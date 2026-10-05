@@ -417,6 +417,7 @@ data/
   - セキュリティ: API キーは settings.json（gitignore 対象）→ 環境変数 → 内蔵（評価用）の順で解決。評価用キーは XOR+Base64 難読化で同梱するためダウンロード直後でも AI を試せる（難読化のみで暗号学的保護ではない。README / MD にはキー値を記載しない）
 
 - ✅ **Microsoft Store 配布準備（2026-10-03）**: `packaging/` 一式（AppxManifest / Make-Msix.ps1 / New-Icon.ps1 / Assets / README）と EXE・ウィンドウ アイコンを追加。`dist/SfUi_0.2.0.0_x64.msix`（MinVersion 10.0.17763.0）を生成・一時キー署名・検証済み。Partner Center 提出のための登録情報・`runFullTrust` 用途申請・プライバシー ポリシーを準備（審査準備中）。知見: Identity の Version 更新は XML で行う（文字列 regex だと `MinVersion` の末尾に誤マッチして破壊する）
+- 2026-10-06: **ストア審査の指摘対応（10.1.1.3 Inaccurate Representation）** — 「スクリーンショットがアイコン画像のみ・実 UI キャプチャでない（英語リスティング）」→ 現行 v0.10.1 の実 UI キャプチャ（EN/JA 各 8 枚、モック データ・アイコン/ロゴなし）を再生成し、提出用 ZIP `dist\SfUi-Store-Screenshots-20261006.zip`（`en/` + `ja/` に 01〜08 番号付き + アップロード手順 README.txt。全画像 1366x768 以上）を作成。キャプチャは `C:\huqian\sfui-readme-shots.ps1`（全ウィンドウ）+ `C:\huqian\sfui-store-addon.ps1`（SOQL 実行結果付きメイン画面。エディターをクリック → SendKeys でクエリ入力 → Ctrl+Enter）。`docs/screenshots` も v0.10.1 で更新。旧提出画像（`dist\SfUi-Store-Screenshots-20261003.zip`）は v0.2.0 時代の古いキャプチャだった
 
 - ✅ **Phase 10（2026-10-03 完了）**: 組織情報ウィンドウ（設計: `docs/org-info-window-plan.md`）
   - Step 1（Core 基盤: モデル/キャッシュ/クエリ/URL/概要・ユーザ・プロファイル・権限セット・ロール・オブジェクト・OWD）/ Step 2（ウィンドウ UI: 複数ウィンドウ・タブ・初回のみ自動取得・再取得・タブ内検索）/ Step 3（オブジェクト項目の遅延取得・全タブ検索・Setup リンク・権限エラー）/ Step 4（主な設定・追加候補 10 タブ・マイ設定のカスタムタブ・AI 連携）を実装
