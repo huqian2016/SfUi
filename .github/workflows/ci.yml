@@ -129,6 +129,25 @@ jobs:
           SFUI_NOTARIZE_TEAM_ID: ${{ env.NOTARIZE_TEAM_ID }}
           SFUI_NOTARIZE_PASSWORD: ${{ env.NOTARIZE_PASSWORD }}
         run: bash packaging/make-mac-app.sh osx-arm64
+      # 署名 / 公証の検証（手順書 §6 の spctl / stapler validate を CI でも自動実行）
+      - name: Verify signature and notarization (when signing is enabled)
+        if: ${{ env.MACOS_CERT_P12 != '' }}
+        run: |
+          set -euo pipefail
+          codesign --verify --deep --strict --verbose=2 dist/mac/SfUi.app
+          SPCTL_OUT="$(spctl -a -vvv -t exec dist/mac/SfUi.app 2>&1 || true)"
+          echo "$SPCTL_OUT"
+          SOURCE="$(printf '%s' "$SPCTL_OUT" | awk -F'=' '/^source=/ { print $2; exit }' | tr -d ' ')"
+          if [ "${SOURCE:-}" = "NotarizedDeveloperID" ]; then
+            echo "::notice::verification: accepted / source=Notarized Developer ID"
+          else
+            echo "::warning::verification: spctl source is '${SOURCE:-unknown}' - notarization may have been skipped"
+          fi
+          if xcrun stapler validate dist/mac/SfUi.app >/dev/null; then
+            echo "::notice::stapler validate: OK"
+          else
+            echo "::warning::stapler validate: failed"
+          fi
       - name: Smoke run the packaged app (--smoke)
         shell: bash
         run: |

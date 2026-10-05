@@ -163,6 +163,7 @@ secrets（リポジトリ設定 → Secrets and variables → Actions）:
 
 - 登録後は **Actions → CI → Run workflow**（`workflow_dispatch`）で署名 + 公証ビルドを実行できる（main への push でも実行される）
 - 署名 ID はワークフローが `security find-identity` で証明書から自動検出するため、名前の登録は不要
+- 署名有効時は §6 の検証（`codesign --verify` / `spctl` / `stapler validate`）も CI で自動実行し、結果を Annotations に表示（`::notice::` = OK / `::warning::` = 未公証など）
 - 失敗時は Actions ログ（`Signing identity: …` / notarytool の出力）→ §9 のトラブルシューティング参照
 
 > base64 化: `base64 -i sfui-developerid.p12 | pbcopy`（macOS）。Windows は §2 A-1 の PowerShell 版。
