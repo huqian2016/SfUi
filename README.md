@@ -166,14 +166,18 @@ SfUi.sln
 ├─ src/SfUi.Core    … WPF-free logic (services, stores, localization dictionaries, tests target)
 │  ├─ Services      … SfCliRunner, OrgService, SalesforceRestClient, DeployService, ToolLauncherService, …
 │  ├─ Storage       … atomic JSON stores (settings / history / favorites / recent)
-│  └─ Localization  … UiText dictionaries (en / ja)
+│  └─ Localization  … UiText dictionaries (en / ja / zh / ko)
 ├─ src/SfUi.Presentation … UI-framework-free ViewModels + UI abstractions (shared by WPF and Avalonia)
 ├─ src/SfUi.App     … WPF app (Windows; MVVM, views, localization markup extension)
 ├─ src/SfUi.Avalonia … Avalonia 11 app (Windows / macOS; shares Core + Presentation)
-└─ tests/SfUi.Tests … xUnit (395 tests: quoting, JSON parsing, stores, services, org info, org compare, data I/O, backups, org management, localization, …)
+└─ tests/SfUi.Tests … xUnit (398 tests: quoting, JSON parsing, stores, services, org info, org compare, data I/O, backups, org management, localization, …)
 ```
 
 Built with C# / .NET 9, CommunityToolkit.Mvvm and AvalonEdit (WPF) / AvaloniaEdit (Avalonia). All business logic is shared through `SfUi.Core` and `SfUi.Presentation`, so fixes apply to both UIs at once.
+
+## License
+
+MIT — see [LICENSE](LICENSE). You are free to use, modify and redistribute SfUi (including commercially); just keep the copyright notice. Third-party components (Avalonia, AvaloniaEdit, CommunityToolkit.Mvvm, Microsoft Fluent UI icons, …) are used under their respective licenses (mostly MIT).
 
 ---
 
@@ -315,3 +319,7 @@ bash packaging/make-mac-app.sh osx-arm64   # Intel は osx-x64
 ```
 
 ビルド済みの macOS 版（`SfUi.app`・Apple Silicon）は各 [Release](../../releases) に添付されています（CI の実 macOS ランナーで組立 + 起動スモーク済み）。
+
+## ライセンス
+
+**MIT**（[LICENSE](LICENSE) 参照）。商用を含め、使用・改変・再配布は自由です（著作権表示の維持のみ必要）。同梱のサードパーティ製コンポーネント（Avalonia / AvaloniaEdit / CommunityToolkit.Mvvm / Microsoft Fluent UI アイコン等）は、それぞれのライセンス（主に MIT）に従います。
