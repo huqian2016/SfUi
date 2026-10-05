@@ -133,6 +133,30 @@ public class OrgInfoQueryBuilderTests
     }
 
     [Fact]
+    public void SettingsQuery_ExcludesFieldsMissingFromTheOrg()
+    {
+        // hks4 のように Transaction Security 未導入の組織では PreferencesTransactionSecurityPolicy が存在しない
+        var existing = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "Id",
+            "PreferencesLightningLoginEnabled",
+            "PreferencesOnlyLLPermUserAllowed",
+            "PreferencesConsentManagementEnabled",
+            "UiSkin",
+            "IsReadOnly",
+        };
+
+        var query = OrgInfoQueryBuilder.BuildSettingsQuery(existing);
+
+        Assert.Contains("PreferencesLightningLoginEnabled", query);
+        Assert.Contains("PreferencesConsentManagementEnabled", query);
+        Assert.Contains("UiSkin", query);
+        Assert.Contains("IsReadOnly", query);
+        Assert.DoesNotContain("PreferencesTransactionSecurityPolicy", query);
+        Assert.EndsWith("FROM Organization", query);
+    }
+
+    [Fact]
     public void ApexQueries_SelectStatusAndValid()
     {
         var classes = OrgInfoQueryBuilder.BuildApexClassQuery();

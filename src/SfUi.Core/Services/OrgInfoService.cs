@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text.Json;
@@ -22,6 +23,9 @@ public sealed class OrgInfoService
     private readonly OrgService _orgs;
     private readonly OrgInfoCacheStore _cache;
     private readonly AppLog _log;
+
+    /// <summary>組織（ターゲット org 文字列）→ Organization のフィールド名集合（describe 結果のキャッシュ）。</summary>
+    private readonly ConcurrentDictionary<string, HashSet<string>> _organizationFields = new(StringComparer.OrdinalIgnoreCase);
 
     public OrgInfoService(SalesforceRestClient rest, OrgService orgs, OrgInfoCacheStore cache, AppLog log)
     {
@@ -175,14 +179,58 @@ public sealed class OrgInfoService
         var target = TargetOrg(org);
         var stopwatch = Stopwatch.StartNew();
 
+        // 組織によって存在しない設定フィールド（例: Transaction Security 未導入）を SELECT から除外する。
+        // describe が取れないときは null = 全フィールドで試行（従来動作）。
+        var existingFields = await GetOrganizationFieldNamesAsync(target, cancellationToken).ConfigureAwait(false);
+
         JsonElement organization;
-        using (var document = await _rest.QueryAsync(target, OrgInfoQueryBuilder.BuildSettingsQuery(), useToolingApi: false, cancellationToken: cancellationToken).ConfigureAwait(false))
+        using (var document = await _rest.QueryAsync(target, OrgInfoQueryBuilder.BuildSettingsQuery(existingFields), useToolingApi: false, cancellationToken: cancellationToken).ConfigureAwait(false))
         {
             organization = FirstRecord(document.RootElement) ?? default;
         }
 
         var rows = ParseSettingsRows(organization, InstanceUrl(org));
         return OrgInfoSection.Create(OrgInfoSections.Settings, OrgInfoSections.SettingsColumns, rows, DateTimeOffset.Now, stopwatch.ElapsedMilliseconds);
+    }
+
+    /// <summary>
+    /// Organization の describe からフィールド名集合を取得する（組織単位でキャッシュ）。
+    /// 取得に失敗したときは null を返し、呼び出し側は全フィールドで試行する。
+    /// </summary>
+    private async Task<ISet<string>?> GetOrganizationFieldNamesAsync(string targetOrg, CancellationToken cancellationToken)
+    {
+        if (_organizationFields.TryGetValue(targetOrg, out var cached))
+        {
+            return cached;
+        }
+
+        try
+        {
+            using var document = await _rest.DescribeAsync(targetOrg, "Organization", cancellationToken).ConfigureAwait(false);
+            if (document.RootElement.TryGetProperty("fields", out var fields) && fields.ValueKind == JsonValueKind.Array)
+            {
+                var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var field in fields.EnumerateArray())
+                {
+                    if (field.TryGetProperty("name", out var name) && name.ValueKind == JsonValueKind.String)
+                    {
+                        names.Add(name.GetString()!);
+                    }
+                }
+
+                if (names.Count > 0)
+                {
+                    _organizationFields[targetOrg] = names;
+                    return names;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _log.Error($"Organization describe の取得に失敗（主な設定は全フィールドで試行）: {targetOrg}", ex);
+        }
+
+        return null;
     }
 
     /// <summary>Apex クラス一覧を取得する。</summary>

@@ -47,15 +47,44 @@ public static class OrgInfoQueryBuilder
         + "RelationshipName, ReferenceTo, Description "
         + $"FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName = '{EscapeSoqlString(objectApiName)}' ORDER BY Label";
 
-    // ---- 主な設定（Step 4・describe で存在確認済みのフィールドのみ使用）----
+    // ---- 主な設定（describe で存在確認したフィールドのみ使用）----
 
-    public static string BuildSettingsQuery() =>
-        "SELECT Id, PreferencesLightningLoginEnabled, PreferencesOnlyLLPermUserAllowed, "
-        + "PreferencesTransactionSecurityPolicy, PreferencesConsentManagementEnabled, "
-        + "PreferencesRequireOpportunityProducts, PreferencesAutoSelectIndividualOnMerge, "
-        + "ReceivesInfoEmails, ReceivesAdminInfoEmails, ComplianceBccEmail, UiSkin, WebToCaseDefaultOrigin, "
-        + "TrialExpirationDate, IsReadOnly "
-        + "FROM Organization";
+    /// <summary>「主な設定」で取得を試みる Organization フィールド（組織の機能によっては未提供のものがある）。</summary>
+    public static IReadOnlyList<string> SettingsFields { get; } = new[]
+    {
+        "PreferencesLightningLoginEnabled",
+        "PreferencesOnlyLLPermUserAllowed",
+        "PreferencesTransactionSecurityPolicy",
+        "PreferencesConsentManagementEnabled",
+        "PreferencesRequireOpportunityProducts",
+        "PreferencesAutoSelectIndividualOnMerge",
+        "ReceivesInfoEmails",
+        "ReceivesAdminInfoEmails",
+        "ComplianceBccEmail",
+        "UiSkin",
+        "WebToCaseDefaultOrigin",
+        "TrialExpirationDate",
+        "IsReadOnly",
+    };
+
+    /// <summary>
+    /// 主な設定のクエリ。existingFields を渡すと、その組織に存在しないフィールドを除外する。
+    /// 例: Transaction Security 未導入の組織には PreferencesTransactionSecurityPolicy が無く、
+    /// 含めたままだと SOQL 全体が INVALID_FIELD で失敗する（hks4 で実測）。
+    /// </summary>
+    public static string BuildSettingsQuery(ISet<string>? existingFields = null)
+    {
+        var fields = new List<string> { "Id" };
+        foreach (var field in SettingsFields)
+        {
+            if (existingFields is null || existingFields.Contains(field))
+            {
+                fields.Add(field);
+            }
+        }
+
+        return "SELECT " + string.Join(", ", fields) + " FROM Organization";
+    }
 
     // ---- 追加候補セクション（Step 4）----
 

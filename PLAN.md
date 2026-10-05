@@ -575,3 +575,10 @@ data/
 - 3 タブ × 両アプリ（計 6 ファイル）のツールバーを `StackPanel`（横一列固定）→ `WrapPanel`（折り返し）に変更。区切り線は `Height=20` + `VerticalAlignment=Center` 固定で折り返し行でも正しく表示。余白を上下 2px に調整
 - 修正ファイル: `src/SfUi.App/Views/{SoqlView,ApexView,ApiConsoleView}.xaml` / `src/SfUi.Avalonia/Views/{SoqlView,ApexView,ApiConsoleView}.axaml`
 - 検証: ビルド 0/0・395 テスト green・Avalonia `--smoke` exit 0・両アプリで Quick + AI パネル表示の狭幅スクリーンショット（3 タブすべて 2 行折り返しで全ボタン表示を確認）
+
+## 16. 組織情報「主な設定」の INVALID_FIELD 修正（2026-10-05）
+- 症状: hks4（本番組織）で組織情報ウィンドウの「主な設定」を再取得すると `No such column 'PreferencesTransactionSecurityPolicy' on entity 'Organization'`（ERROR at Row:1:Column:80）でセクション全体が失敗
+- 原因: 設定クエリのフィールドが固定で、Transaction Security 未導入の組織にはこの項目自体が存在しない（describe で確認: hks4 の Organization は 56 項目でこの 1 項目のみ欠落）
+- 修正: `Organization` の describe からフィールド一覧を取得（組織単位でキャッシュ）し、存在するフィールドだけで SELECT を組み立てる（describe 取得失敗時は従来どおり全フィールドで試行）。存在しない項目の行は値空欄で表示
+- 変更: `OrgInfoQueryBuilder.BuildSettingsQuery(existingFields)` / `OrgInfoService.FetchSettingsAsync` + `GetOrganizationFieldNamesAsync`（`ConcurrentDictionary` キャッシュ）/ テスト 1 件追加（396 件）
+- 検証: hks4 で WPF / Avalonia 両方の「主な設定」初回取得 + 再取得が成功（20/20 行・エラーなし）
