@@ -585,9 +585,9 @@ data/
 - 検証: hks4 で WPF / Avalonia 両方の「主な設定」初回取得 + 再取得が成功（20/20 行・エラーなし）
 - 2026-10-05: GitHub Release **v0.9.3** 公開（アセット = `SfUi.exe` + `SfUi-v0.9.3-portable.zip` + `SfUi-0.9.3-osx-arm64.zip`）。§15 のツールバー折り返しと §16 の主な設定修正を反映。README（EN/JA）のダウンロード参照も v0.9.3 に更新
 
-## 17. macOS 署名・公証の準備（2026-10-05、メンバーシップ更新済み・証明書待ち）
+## 17. macOS 署名・公証の準備（2026-10-05、証明書発行済み・secrets 登録待ち）
 - 手順書を作成: `docs/macos-signing-notarization.md`（メンバーシップ更新 → 証明書発行 → 署名 + 公証 + ステープル → 検証（spctl / 隔離再現）→ Release 反映 → CI 配線 → トラブルシューティング → 再開チェックリスト）
-- 状況: **2026-10-05 に Apple Developer Program を更新済み**（Team ID `WSDCSNQC59`・登録タイプ = 個人・**更新日 2027-10-06**・年間登録料 ¥12,980）。次は Developer ID Application 証明書の発行 → 公証用のアプリ用パスワード → 署名 + 公証（Mac が無ければ手順書 §2 方法 C = Windows + OpenSSL で CSR / .p12 を作成し、CI `package-macos` に署名ステップを配線 = 手順書 §8）
+- 状況: **2026-10-05 に Apple Developer Program を更新済み**（Team ID `WSDCSNQC59`・登録タイプ = 個人・**更新日 2027-10-06**・年間登録料 ¥12,980）+ **Developer ID Application 証明書を発行済み**（手順書 §2 方法 A・別の Mac の Xcode。秘密鍵はその Mac のキーチェーンにのみ存在 → `.p12` エクスポートが必要 = §2 A-1）。次は .p12 エクスポート → アプリ用パスワード → GitHub secrets 登録（CI の署名 + 公証ステップは `package-macos` に配線済み・secrets 未登録時は自動スキップ）
 - リポジトリ側は実装済み: `make-mac-app.sh`（codesign hardened runtime + notarytool + stapler）+ `packaging/mac/entitlements.plist`（.NET JIT 許可）。証明書が揃えば手順書 Step 5 を実行するだけで署名・公証済みリリースを作れる
 
 ## 18. 起動時のようこそ画面（Welcome）（2026-10-05）

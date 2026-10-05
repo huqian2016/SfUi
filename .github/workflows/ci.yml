@@ -67,12 +67,42 @@ jobs:
   package-macos:
     name: Package .app (macos-latest)
     runs-on: macos-latest
+    env:
+      MACOS_CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
+      MACOS_CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+      NOTARIZE_APPLE_ID: ${{ secrets.NOTARIZE_APPLE_ID }}
+      NOTARIZE_TEAM_ID: ${{ secrets.NOTARIZE_TEAM_ID }}
+      NOTARIZE_PASSWORD: ${{ secrets.NOTARIZE_PASSWORD }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '9.0.x'
+      # Developer ID 署名（secrets 未登録の間は自動スキップ = 従来どおり未署名ビルド）
+      - name: Import signing certificate
+        if: ${{ env.MACOS_CERT_P12 != '' }}
+        run: |
+          printf '%s' "$MACOS_CERT_P12" > cert.b64
+          if ! base64 --decode cert.b64 > cert.p12 2>/dev/null; then base64 -D cert.b64 > cert.p12; fi
+          rm -f cert.b64
+          security create-keychain -p actions build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p actions build.keychain
+          security import cert.p12 -k build.keychain -P "$MACOS_CERT_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k actions build.keychain
+          rm -f cert.p12
+          IDENTITY="$(security find-identity -v -p codesigning build.keychain | awk -F'"' '/Developer ID Application/ { print $2; exit }')"
+          if [ -z "$IDENTITY" ]; then
+            echo "::error::Developer ID Application identity not found in the imported certificate"
+            exit 1
+          fi
+          echo "SFUI_CODESIGN_IDENTITY=$IDENTITY" >> "$GITHUB_ENV"
+          echo "Signing identity: $IDENTITY"
       - name: Build .app bundle (packaging/make-mac-app.sh)
+        env:
+          SFUI_NOTARIZE_APPLE_ID: ${{ env.NOTARIZE_APPLE_ID }}
+          SFUI_NOTARIZE_TEAM_ID: ${{ env.NOTARIZE_TEAM_ID }}
+          SFUI_NOTARIZE_PASSWORD: ${{ env.NOTARIZE_PASSWORD }}
         run: bash packaging/make-mac-app.sh osx-arm64
       - name: Smoke run the packaged app (--smoke)
         shell: bash
