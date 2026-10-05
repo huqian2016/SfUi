@@ -78,7 +78,14 @@
 
 証明書の**秘密鍵は発行した Mac のキーチェーンにしか無い**。CI（§8）で署名する場合やバックアップのために必ず `.p12` を書き出す。
 
-1. 発行した Mac で**キーチェーンアクセス**を開く → 「ログイン」→「自分の証明書」→ `Developer ID Application: <名前> (WSDCSNQC59)` を右クリック →「書き出す…」→ ファイル形式 **.p12** → `sfui-developerid.p12` として保存（**書き出し用パスワード**を設定 = `MACOS_CERT_PASSWORD` に使う）
+1. 発行した Mac で**キーチェーンアクセス**を開く（下記「開き方」参照）→ サイドバーの「ログイン」→ カテゴリ「自分の証明書」→ `Developer ID Application: <名前> (WSDCSNQC59)` を右クリック →「書き出す…」→ ファイル形式 **.p12** → `sfui-developerid.p12` として保存（**書き出し用パスワード**を設定 = `MACOS_CERT_PASSWORD` に使う）
+
+    キーチェーンアクセスの開き方（いずれか）:
+    - **Spotlight**: `⌘ + Space` → 「キーチェーンアクセス」と入力 → Enter
+    - **Finder**: アプリケーション → ユーティリティ → キーチェーンアクセス
+    - **Launchpad**: その他 → キーチェーンアクセス
+    - **ターミナル**: `open -a "Keychain Access"`
+
 2. 確認: `security find-identity -v -p codesigning`（§3）に `Developer ID Application: … (WSDCSNQC59)` が表示されること
 3. GitHub secrets（`MACOS_CERT_P12`）用に base64 化
    - Mac: `base64 -i sfui-developerid.p12 | pbcopy`
