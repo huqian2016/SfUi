@@ -73,6 +73,7 @@ bash packaging/make-mac-app.sh osx-x64
 - 署名 / 公証は環境変数を設定した場合のみ実行（`SFUI_CODESIGN_IDENTITY` / `SFUI_NOTARIZE_APPLE_ID` / `SFUI_NOTARIZE_TEAM_ID` / `SFUI_NOTARIZE_PASSWORD`）。署名時は `packaging/mac/entitlements.plist`（.NET の JIT 許可 = hardened runtime 下での起動に必要）を付与
 - データ フォルダは実行ファイル隣接を優先し、書込不可時は `~/Library/Application Support/SfUi` にフォールバック
 - GitHub Release には CI の macos-latest で組み立てた `SfUi-<version>-osx-arm64.zip`（`.app`・アイコン入り・起動スモーク済み）を添付する（例: v0.9.3）
+- 署名・公証の詳細手順（メンバーシップ更新 → 証明書 → 実行 → 検証 → CI 配線）: `docs/macos-signing-notarization.md`
 
 ## CI（GitHub Actions）
 

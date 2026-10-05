@@ -584,3 +584,8 @@ data/
 - 変更: `OrgInfoQueryBuilder.BuildSettingsQuery(existingFields)` / `OrgInfoService.FetchSettingsAsync` + `GetOrganizationFieldNamesAsync`（`ConcurrentDictionary` キャッシュ）/ テスト 1 件追加（396 件）
 - 検証: hks4 で WPF / Avalonia 両方の「主な設定」初回取得 + 再取得が成功（20/20 行・エラーなし）
 - 2026-10-05: GitHub Release **v0.9.3** 公開（アセット = `SfUi.exe` + `SfUi-v0.9.3-portable.zip` + `SfUi-0.9.3-osx-arm64.zip`）。§15 のツールバー折り返しと §16 の主な設定修正を反映。README（EN/JA）のダウンロード参照も v0.9.3 に更新
+
+## 17. macOS 署名・公証の準備（2026-10-05、実施は保留中）
+- 手順書を作成: `docs/macos-signing-notarization.md`（メンバーシップ更新 → 証明書発行 → 署名 + 公証 + ステープル → 検証（spctl / 隔離再現）→ Release 反映 → CI 配線 → トラブルシューティング → 再開チェックリスト）
+- 状況: 使用予定の Apple ID は 2015-09-10 で期限切れの個人メンバーシップ（Team ID `WSDCSNQC59`）の Account Holder → 新規登録は不可、**更新（Renew・¥12,980/年）**で再開する（Renew 不可ならサポートへ）
+- リポジトリ側は実装済み: `make-mac-app.sh`（codesign hardened runtime + notarytool + stapler）+ `packaging/mac/entitlements.plist`（.NET JIT 許可）。証明書が揃えば手順書 Step 5 を実行するだけで署名・公証済みリリースを作れる
