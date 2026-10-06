@@ -86,54 +86,114 @@ public partial class SoqlViewModel : ObservableObject
         }
     }
 
-    // ---- 補完（エディターからの問い合わせ） ----
+    // ---- 候補エリア（エディターからの問い合わせ） ----
+
+    /// <summary>候補エリアへ表示する候補一覧。</summary>
+    public ObservableCollection<SoqlCompletionItem> Suggestions { get; } = new();
+
+    /// <summary>候補エリアの見出し（例: 「Contact の項目候補:」）。</summary>
+    [ObservableProperty]
+    private string _suggestionsHeader = string.Empty;
+
+    /// <summary>候補エリアを表示するか。</summary>
+    [ObservableProperty]
+    private bool _isSuggestionsVisible;
+
+    /// <summary>候補を取得中か（「項目取得中…」の表示）。</summary>
+    [ObservableProperty]
+    private bool _isFetchingSuggestions;
+
+    private CancellationTokenSource? _suggestCts;
 
     /// <summary>
-    /// カーソル位置の補完候補を返す（SoqlView のエディターから呼ばれる）。
-    /// 候補がない / 対象外の句 / 組織未選択のときは null。
+    /// カーソル位置の候補を候補エリアへ反映する（SoqlView のエディターから呼ばれる）。
+    /// 入力停止・カーソル移動のたびに呼ばれ、古い取得はキャンセルされる。
     /// </summary>
-    public async Task<SoqlCompletionResult?> QueryCompletionAsync(string text, int caret, CancellationToken cancellationToken = default)
+    public async Task UpdateSuggestionsAsync(string text, int caret)
     {
         var context = SoqlCompletionParser.Parse(text, caret);
-        if (context.InsideString || context.Clause is SoqlClause.None or SoqlClause.Other or SoqlClause.Limit or SoqlClause.Offset)
+
+        _suggestCts?.Cancel();
+        _suggestCts?.Dispose();
+        _suggestCts = null;
+
+        if (context.InsideString
+            || context.Clause is SoqlClause.None or SoqlClause.Other or SoqlClause.Limit or SoqlClause.Offset
+            || string.IsNullOrWhiteSpace(CurrentOrg))
         {
-            return null;
+            HideSuggestions();
+            return;
         }
 
-        if (string.IsNullOrWhiteSpace(CurrentOrg))
-        {
-            return null;
-        }
+        var cts = new CancellationTokenSource();
+        _suggestCts = cts;
+        IsSuggestionsVisible = true;
+        IsFetchingSuggestions = true;
 
         try
         {
+            IReadOnlyList<SoqlCompletionItem> items;
+            string header;
+
             if (context.Clause == SoqlClause.From)
             {
-                var objects = await _describes.ListObjectsAsync(CurrentOrg!, cancellationToken: cancellationToken).ConfigureAwait(true);
-                var objectItems = SoqlCompletionEngine.ObjectItems(objects, context.Prefix);
-                return objectItems.Count == 0 ? null : new SoqlCompletionResult(context, objectItems);
+                header = UiText.T("Soql_SuggestObjects");
+                var objects = await _describes.ListObjectsAsync(CurrentOrg!, cancellationToken: cts.Token).ConfigureAwait(true);
+                items = SoqlCompletionEngine.ObjectItems(objects, context.Prefix);
             }
-
-            var target = await ResolveCompletionTargetAsync(context, cancellationToken).ConfigureAwait(true);
-            if (target is null)
+            else
             {
-                return null;
+                var target = await ResolveCompletionTargetAsync(context, cts.Token).ConfigureAwait(true);
+                if (target is null)
+                {
+                    if (!cts.IsCancellationRequested)
+                    {
+                        HideSuggestions();
+                    }
+
+                    return;
+                }
+
+                header = UiText.T("Soql_SuggestFieldsFmt", target);
+                var describe = await _describes.DescribeAsync(CurrentOrg!, target, cancellationToken: cts.Token).ConfigureAwait(true);
+                var includeFunctions = context.IncludeFunctions && context.Path.Count == 0;
+                items = SoqlCompletionEngine.FieldItems(describe, context.Prefix, includeFunctions);
             }
 
-            var describe = await _describes.DescribeAsync(CurrentOrg!, target, cancellationToken: cancellationToken).ConfigureAwait(true);
-            var includeFunctions = context.IncludeFunctions && context.Path.Count == 0;
-            var fieldItems = SoqlCompletionEngine.FieldItems(describe, context.Prefix, includeFunctions);
-            return fieldItems.Count == 0 ? null : new SoqlCompletionResult(context, fieldItems);
+            if (cts.IsCancellationRequested)
+            {
+                return;
+            }
+
+            SuggestionsHeader = header;
+            Suggestions.Clear();
+            foreach (var item in items)
+            {
+                Suggestions.Add(item);
+            }
+
+            IsFetchingSuggestions = false;
+            IsSuggestionsVisible = items.Count > 0;
         }
         catch (OperationCanceledException)
         {
-            return null;
+            // 次の入力・カーソル移動で破棄された
         }
         catch (Exception ex)
         {
-            _log.Warn($"SOQL 補完候補の取得に失敗: {ex.Message}");
-            return null;
+            if (!cts.IsCancellationRequested)
+            {
+                HideSuggestions();
+                _log.Warn($"SOQL 候補の取得に失敗: {ex.Message}");
+            }
         }
+    }
+
+    private void HideSuggestions()
+    {
+        IsFetchingSuggestions = false;
+        IsSuggestionsVisible = false;
+        Suggestions.Clear();
     }
 
     /// <summary>項目候補の対象オブジェクトを解決する（エイリアス / 別オブジェクト / 参照関係の連鎖）。</summary>

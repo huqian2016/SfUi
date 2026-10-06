@@ -34,9 +34,6 @@ public sealed record SoqlCompletionContext(
 /// <summary>補完候補 1 件。</summary>
 public sealed record SoqlCompletionItem(string Text, string? Description = null, int CaretOffsetDelta = 0);
 
-/// <summary>補完候補一式（エディター表示用）。</summary>
-public sealed record SoqlCompletionResult(SoqlCompletionContext Context, IReadOnlyList<SoqlCompletionItem> Items);
-
 /// <summary>SOQL 補完のコンテキスト解析（純関数・テスト対象）。</summary>
 public static class SoqlCompletionParser
 {

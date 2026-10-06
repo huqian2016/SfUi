@@ -150,7 +150,10 @@ public partial class AiChatViewModel : ObservableObject
         StatusText = UiText.T("Ai_AttachedHintFmt", entry.TypeLabel, entry.Summary);
     }
 
-    /// <summary>外部（SOQL 実行など）からプロンプトを送信する（入力欄へ入れてそのまま送信）。</summary>
+    /// <summary>
+    /// 外部（SOQL 実行など）から実行結果のみを送信する。
+    /// 履歴の添付や入力欄の内容には触れない（直前の実行結果だけを渡す）。
+    /// </summary>
     public async Task AskAsync(string prompt)
     {
         if (string.IsNullOrWhiteSpace(prompt))
@@ -158,10 +161,9 @@ public partial class AiChatViewModel : ObservableObject
             return;
         }
 
-        InputText = prompt;
         try
         {
-            await SendAsync();
+            await SendCoreAsync(prompt.Trim(), attachContext: false);
         }
         catch (Exception ex)
         {
@@ -184,29 +186,44 @@ public partial class AiChatViewModel : ObservableObject
             return;
         }
 
-        var userContent = text;
-        if (_tabAttachment is { } tabData)
+        await SendCoreAsync(text, attachContext: true);
+    }
+
+    /// <summary>メッセージを送信する（attachContext: true = 添付設定を消費して送信）。</summary>
+    private async Task SendCoreAsync(string text, bool attachContext)
+    {
+        if (IsBusy)
         {
-            // 組織情報ウィンドウの「表示中タブのデータを添付」分を優先して含める
-            userContent = UiText.T("OrgInfo_Ai_AttachHeaderFmt", _tabAttachmentName ?? string.Empty)
-                          + "\n```\n" + tabData + "\n```\n\n" + text;
-            _tabAttachment = null;
-            _tabAttachmentName = null;
+            return;
         }
-        else if (AttachContext && SelectedContextEntry is { } context)
+
+        var userContent = text;
+        if (attachContext)
         {
-            var result = _history.ReadResult(context);
-            if (!string.IsNullOrEmpty(result))
+            if (_tabAttachment is { } tabData)
             {
-                var trimmed = result.Length > MaxAttachedResultChars ? result[..MaxAttachedResultChars] + "\n…(truncated)" : result;
-                userContent = UiText.T("Ai_AttachHeaderFmt", context.TypeLabel, context.Summary)
-                              + "\n```\n" + trimmed + "\n```\n\n" + text;
+                // 組織情報ウィンドウの「表示中タブのデータを添付」分を優先して含める
+                userContent = UiText.T("OrgInfo_Ai_AttachHeaderFmt", _tabAttachmentName ?? string.Empty)
+                              + "\n```\n" + tabData + "\n```\n\n" + text;
+                _tabAttachment = null;
+                _tabAttachmentName = null;
             }
+            else if (AttachContext && SelectedContextEntry is { } context)
+            {
+                var result = _history.ReadResult(context);
+                if (!string.IsNullOrEmpty(result))
+                {
+                    var trimmed = result.Length > MaxAttachedResultChars ? result[..MaxAttachedResultChars] + "\n…(truncated)" : result;
+                    userContent = UiText.T("Ai_AttachHeaderFmt", context.TypeLabel, context.Summary)
+                                  + "\n```\n" + trimmed + "\n```\n\n" + text;
+                }
+            }
+
+            InputText = string.Empty;
+            AttachContext = false;
         }
 
         Messages.Add(new AiChatMessage { IsUser = true, Role = "user", Content = userContent });
-        InputText = string.Empty;
-        AttachContext = false;
 
         IsBusy = true;
         StatusText = UiText.T("Ai_Thinking");
