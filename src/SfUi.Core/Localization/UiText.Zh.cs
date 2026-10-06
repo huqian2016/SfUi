@@ -105,6 +105,7 @@ public static partial class UiText
         ["Ai_NoApiKey"] = "未设置 AI API 密钥（设置 → AI，或环境变量 SFUI_AI_API_KEY）",
         ["Ai_RequestFailedFmt"] = "AI 请求失败：{0}",
         ["Ai_ServerErrorFmt"] = "AI API 错误：{0}",
+        ["Ai_BuiltInKeyUnavailableFmt"] = "内置的试用 API 密钥当前不可用（可能已达上限或已失效）。请在设置 → AI 中注册自己的密钥（自己的密钥优先）。详细信息：{0}",
         ["Ai_Timeout"] = "AI 请求超时",
         ["Ai_ApplySoql"] = "在 SOQL 中打开",
         ["Ai_ApplyApex"] = "在 Apex 中打开",
@@ -377,7 +378,7 @@ public static partial class UiText
         // ---- 設定: AI ----
         ["Settings_AiGroup"] = "AI",
         ["Settings_ApiKey"] = "API 密钥：",
-        ["Settings_ApiKeyTip"] = "保存在本地 settings.json 中（不会提交到仓库）。环境变量 SFUI_AI_API_KEY（或旧的 DEEPSEEK_API_KEY）将作为回退使用；内置密钥仅适用于默认的 DeepSeek 端点。",
+        ["Settings_ApiKeyTip"] = "以混淆值（enc1:…）保存在本地 settings.json 中（不会提交到仓库；也可直接粘贴明文）。环境变量 SFUI_AI_API_KEY（或旧的 DEEPSEEK_API_KEY）将作为回退；内置密钥仅适用于默认的 DeepSeek / OpenAI 端点。",
         ["Settings_Model"] = "模型：",
         ["Settings_Test"] = "测试连接",
         ["Settings_TestOkFmt"] = "AI 连接正常（{0}）",

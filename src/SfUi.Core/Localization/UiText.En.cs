@@ -105,6 +105,7 @@ public static partial class UiText
         ["Ai_NoApiKey"] = "AI API key is not set (Settings → AI, or the SFUI_AI_API_KEY environment variable)",
         ["Ai_RequestFailedFmt"] = "AI request failed: {0}",
         ["Ai_ServerErrorFmt"] = "AI API error: {0}",
+        ["Ai_BuiltInKeyUnavailableFmt"] = "The bundled evaluation API key is currently unavailable (limit reached or expired). Register your own key in Settings → AI (your key takes priority). Details: {0}",
         ["Ai_Timeout"] = "The AI request timed out",
         ["Ai_ApplySoql"] = "Open in SOQL",
         ["Ai_ApplyApex"] = "Open in Apex",
@@ -377,7 +378,7 @@ public static partial class UiText
         // ---- 設定: AI ----
         ["Settings_AiGroup"] = "AI",
         ["Settings_ApiKey"] = "API key:",
-        ["Settings_ApiKeyTip"] = "Stored locally in settings.json (never committed). The SFUI_AI_API_KEY (or legacy DEEPSEEK_API_KEY) environment variable is used as a fallback; the bundled key applies to the default DeepSeek endpoint only.",
+        ["Settings_ApiKeyTip"] = "Stored locally in settings.json as an obfuscated value (enc1:…; never committed — plaintext input is also accepted). The SFUI_AI_API_KEY (or legacy DEEPSEEK_API_KEY) environment variable is used as a fallback; the bundled key applies to the default DeepSeek / OpenAI endpoints only.",
         ["Settings_Model"] = "Model:",
         ["Settings_Test"] = "Test connection",
         ["Settings_TestOkFmt"] = "AI connection OK ({0})",

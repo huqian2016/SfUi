@@ -13,18 +13,23 @@
 | AI キーの同梱 | **お試し用として継続する**（機能アピール優先）。DeepSeek は**上限設定済み**でコストリスクは限定的。OpenAI キーも今後**上限付きで同梱予定** |
 | ターゲット | Salesforce 開発者・管理者（Windows 中心、macOS は Apple Silicon） |
 | ライセンス | MIT（OSS・無償） |
-| 配布チャネル | GitHub Releases（済）／ Microsoft Store（予定）／ winget ・ Homebrew Cask（予定）／ コミュニティ告知 |
+| 配布チャネル | GitHub Releases（済）／ **Microsoft Store（公開済み 2026-10-06: v0.10.1 / product ID `9NX0BFFHF7B1`）**／ winget ・ Homebrew Cask（予定）／ コミュニティ告知 |
 | 非公式性 | Salesforce, Inc. とは無関係の非公式ツール（README・About・Store 説明に明記する） |
 
 ### 1.1 お試し AI キーの運用方針（重要）
 
 - 同梱キーは「評価用」と位置づけ、**上限・失効は予告なく行う**旨を README / 設定画面の説明に明記する
-- **上限到達・失効時の UX**: AI 応答が失敗したら「同梱の評価用キーは現在利用できません。設定 → AI で自分のキーを登録してください」と案内できるようにする（自キー設定フローは実装済み）
-- **キーのローテーション手順（漏洩・異常使用時）**:
-  1. プロバイダ（DeepSeek / OpenAI）の管理画面で該当キーを**失効**
-  2. 新しいキーを発行し `src/SfUi.Core/DefaultAiKey.cs` を更新
-  3. パッチリリース（例: v0.11.1）として配布
-  - ※ キーは git 履歴にも残るため、**漏洩時は必ず失効が先**（履歴の書き換えより失効・再発行が現実的）
+- **上限到達・失効時の UX（実装済み）**: 内蔵キー利用中の 401 / 402 / 403 / 429 では「同梱の評価用キーは現在利用できません。設定 → AI で自分のキーを登録してください（自分のキーが優先されます）」と案内する（`AiChatClient.ShouldSuggestOwnKey` / `Ai_BuiltInKeyUnavailableFmt`）
+- **キー値の難読化（実装済み）**: settings.json と同梱キーは `enc1:` 形式（XOR + Base64。`AiKeyObfuscation`）で保持し、設定画面にも enc1 のまま表示する（アプリ内部で復元して使用。平文の直貼り付けも受け付ける）。**難読化のみで、デコンパイル・通信傍受には無力**＝「うっかりコピー防止」までが目的
+- **ローテーションは二段切替**:
+  1. 新しいキーを発行し `src/SfUi.Core/DefaultAiKey.cs`（DeepSeek）/ `DefaultOpenAiKey.cs`（OpenAI）を更新して**先にパッチリリース**（旧バージョンの移行期間を確保）
+  2. 数日後に旧キーを**失効**
+  - ※ キーは git 履歴にも残るため、**漏洩時は失効が先**（履歴の書き換えより失効・再発行が現実的）
+- **プロバイダ側の防衛線（必須）**: モデル制限（必要なモデルのみ）/ レート制限 / 使用量アラート / 2FA を設定。DeepSeek にキー単位の上限が無い場合は**残高が実質上限** → 専用アカウント・小額残高で運用
+- **OpenAI 内蔵キーの追加手順**: 上限付きキーを発行 → `enc1:` 値を生成（下記）→ `src/SfUi.Core/DefaultOpenAiKey.cs` の `Encoded` に貼り付け → パッチリリース
+  ```powershell
+  $mask=[Text.Encoding]::UTF8.GetBytes('SfUi-AiKey-2026'); $p=[Text.Encoding]::UTF8.GetBytes('<APIキー>'); $b=[byte[]]$p.Clone(); for($i=0;$i -lt $b.Length;$i++){$b[$i]=$b[$i] -bxor $mask[$i%$mask.Length]}; 'enc1:'+[Convert]::ToBase64String($b)
+  ```
 - 使用量の定期確認（プロバイダのダッシュボードで上限・アラートを設定）
 
 ---
@@ -78,6 +83,7 @@
 ### 3.2 Microsoft Store（Windows の主導線）
 
 - Partner Center: **HKS.SfUi / HKSテック株式会社**（予約済み ID と完全一致のマニフェスト）
+- **公開済み（2026-10-06）**: v0.10.1 — [SfUi on Microsoft Store](https://apps.microsoft.com/store/detail/9NX0BFFHF7B1)（Product ID `9NX0BFFHF7B1`）
 - 提出物: MSIX（`dist\SfUi_x.y.z.0_x64.msix`）、説明（日英）、スクリーンショット 1 枚以上（1366×768+）、カテゴリ = 開発者ツール、年齢レーティング（IARC）、サポート URL = GitHub、**プライバシー URL**
 - 説明文に「Salesforce CLI (sf) のインストールと組織の認証が必要」「非公式ツール」を明記
 - 審査は通常 1〜3 営業日。公開時は Microsoft が再署名（警告ゼロ）
@@ -117,7 +123,7 @@ Phase 1: ソフトローンチ（1〜2 週間）
   └─ ゲート: 致命バグ 0・Issue の初動対応が回っている
 
 Phase 2: パブリックベータ（2〜4 週間）
-  ├─ Microsoft Store 提出 → 公開
+  ├─ Microsoft Store 提出 → 公開 ✅（2026-10-06 完了）
   ├─ Homebrew Cask 追加
   ├─ 英語圏へ告知（Reddit 等）＋ README EN 充実版
   └─ ゲート: ストア審査通過・レビュー対応が回っている
@@ -137,7 +143,7 @@ Phase 3: 一般公開・拡大
 - [ ] Windows コード署名証明書（OV / EV）を直配布用に購入するか（Store 一本化なら不要）
 - [ ] Intel Mac（osx-x64）対応の有無
 - [ ] アップデート通知・リリース自動化の実装時期
-- [ ] Store の新規提出タイミング（Phase 0 完了後の v0.11.1 / v0.12.0 で提出）
+- [ ] Store の次回提出タイミング（公開済み 0.10.1 → 次回リリース時に 4 桁バージョンを上げて更新提出。掲載説明文も現行機能（マルチプロバイダー AI・4 言語 UI 等）に更新）
 - [ ] OpenAI プリセット + 上限付きキーの追加時期
 
 ---

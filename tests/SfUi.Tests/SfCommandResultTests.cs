@@ -3,6 +3,8 @@ using Xunit;
 
 namespace SfUi.Tests;
 
+/// <summary>グローバルな言語状態に依存する文字列を検証するため、言語切替テストと直列実行する。</summary>
+[Collection("Localization")]
 public class SfCommandResultTests
 {
     private static SfCliResult Raw(string stdout, int exitCode = 0, bool timedOut = false, string stderr = "")

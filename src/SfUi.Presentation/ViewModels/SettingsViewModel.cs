@@ -235,7 +235,7 @@ public partial class SettingsViewModel : ObservableObject
     private async Task TestConnectionAsync()
     {
         _settings.Current.AiEndpoint = NullIfEmpty(ApiEndpoint);
-        _settings.Current.AiApiKey = NullIfEmpty(ApiKey);
+        _settings.Current.AiApiKey = AiKeyObfuscation.Protect(ApiKey);
         _settings.Current.AiModel = string.IsNullOrWhiteSpace(AiModel) ? null : AiModel.Trim();
         StatusText = UiText.T("Ai_Thinking");
         var result = await _ai.ChatAsync(new[] { new AiChatClient.ChatMessage("user", "Reply with the single word: OK") });
@@ -281,6 +281,7 @@ public partial class SettingsViewModel : ObservableObject
         s.AiApiKey = NullIfEmpty(ApiKey);
         s.AiModel = string.IsNullOrWhiteSpace(AiModel) ? null : AiModel.Trim();
         _settings.Save();
+        ApiKey = s.AiApiKey; // 保存後の値（難読化済み enc1:）を画面へ反映
 
         var resolved = _sfRunner.SetExecutablePath(s.SfExecutablePath);
         RefreshDetectedSummary();

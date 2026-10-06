@@ -97,8 +97,22 @@ public class AppSettingsStoreTests : IDisposable
         var reloaded = new AppSettingsStore(Paths, Log);
 
         Assert.Equal("https://api.openai.com/v1/chat/completions", reloaded.Current.AiEndpoint);
-        Assert.Equal("sk-test", reloaded.Current.AiApiKey);
         Assert.Equal("gpt-4o-mini", reloaded.Current.AiModel);
+        // キーは保存時に難読化（enc1:）され、使用時に復元される
+        Assert.NotNull(reloaded.Current.AiApiKey);
+        Assert.StartsWith(AiKeyObfuscation.Prefix, reloaded.Current.AiApiKey);
+        Assert.Equal("sk-test", AiKeyObfuscation.Normalize(reloaded.Current.AiApiKey));
+    }
+
+    [Fact]
+    public void Save_ObfuscatesAiApiKey_OnDisk()
+    {
+        var store = new AppSettingsStore(Paths, Log);
+        store.Current.AiApiKey = "sk-plain";
+        store.Save();
+
+        Assert.StartsWith(AiKeyObfuscation.Prefix, store.Current.AiApiKey);
+        Assert.DoesNotContain("sk-plain", File.ReadAllText(Paths.SettingsFile));
     }
 
     [Fact]

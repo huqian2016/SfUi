@@ -105,6 +105,7 @@ public static partial class UiText
         ["Ai_NoApiKey"] = "AI の API キーが未設定です（設定 → AI、または環境変数 SFUI_AI_API_KEY）",
         ["Ai_RequestFailedFmt"] = "AI リクエストに失敗: {0}",
         ["Ai_ServerErrorFmt"] = "AI API エラー: {0}",
+        ["Ai_BuiltInKeyUnavailableFmt"] = "同梱の評価用キーは現在利用できません（上限到達・失効など）。設定 → AI で自分のキーを登録してください（自分のキーが優先されます）。詳細: {0}",
         ["Ai_Timeout"] = "AI リクエストがタイムアウトしました",
         ["Ai_ApplySoql"] = "SOQL タブへ",
         ["Ai_ApplyApex"] = "匿名Apex タブへ",
@@ -377,7 +378,7 @@ public static partial class UiText
         // ---- 設定: AI ----
         ["Settings_AiGroup"] = "AI",
         ["Settings_ApiKey"] = "API キー:",
-        ["Settings_ApiKeyTip"] = "settings.json にローカル保存されます（リポジトリには含まれません）。環境変数 SFUI_AI_API_KEY（旧 DEEPSEEK_API_KEY）でも指定可。内蔵キーは DeepSeek の既定接続先のときのみ使用します。",
+        ["Settings_ApiKeyTip"] = "settings.json に難読化した値（enc1:…）でローカル保存されます（リポジトリには含まれません。平文の入力も可）。環境変数 SFUI_AI_API_KEY（旧 DEEPSEEK_API_KEY）でも指定可。内蔵キーは既定の DeepSeek / OpenAI 接続先のときのみ使用します。",
         ["Settings_Model"] = "モデル:",
         ["Settings_Test"] = "接続テスト",
         ["Settings_TestOkFmt"] = "AI 接続OK（{0}）",

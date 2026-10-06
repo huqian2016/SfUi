@@ -100,6 +100,8 @@ public sealed class AppSettingsStore
 
     public void Save()
     {
+        // AI キーは平文のままファイルへ書かず、難読化した値（enc1:）で保存する（冪等）
+        Current.AiApiKey = AiKeyObfuscation.Protect(Current.AiApiKey);
         AtomicJsonFile.Save(_filePath, Current, _log);
         Changed?.Invoke();
     }
