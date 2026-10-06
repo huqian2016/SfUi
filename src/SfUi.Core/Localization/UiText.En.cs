@@ -181,6 +181,7 @@ public static partial class UiText
         ["Apex_AiPromptErrorFmt"] = "The anonymous Apex below failed. Explain the cause, suggest a fix, and show the corrected Apex in a code block.\n\nApex:\n```\n{0}\n```\nError: {1}\nDebug log (tail):\n```\n{2}\n```",
         ["Apex_SuggestMembersFmt"] = "{0} members:",
         ["Apex_SuggestSnippets"] = "Apex snippets and types:",
+        ["Apex_SuggestVariables"] = "Apex variables:",
         ["Apex_FetchLatestLog"] = "Show latest log",
         ["Apex_FetchLatestLogTip"] = "Fetch the latest debug log stored in the org",
         ["Apex_LogsTip"] = "Debug log (sf apex run output / log fetched from the org)",

@@ -37,11 +37,78 @@ public class ApexCompletionTests
     }
 
     [Fact]
-    public void Parser_IgnoresDottedChains()
+    public void Parser_DetectsVariableMemberChain()
     {
-        var context = ApexCompletionParser.Parse("record.Owner.Na", 15);
+        var simpleText = "Account a = new Account();\na.Ow";
+        var simple = ApexCompletionParser.Parse(simpleText, simpleText.Length);
+        Assert.Equal(ApexCompletionKind.Members, simple.Kind);
+        Assert.Equal("a", simple.Root);
+        Assert.Equal("Ow", simple.Prefix);
+        Assert.Null(simple.Path);
 
-        Assert.Equal(ApexCompletionKind.None, context.Kind);
+        var chainText = "Account a = new Account();\na.Owner.Na";
+        var chain = ApexCompletionParser.Parse(chainText, chainText.Length);
+        Assert.Equal(ApexCompletionKind.Members, chain.Kind);
+        Assert.Equal("a", chain.Root);
+        Assert.Equal(new[] { "Owner" }, chain.Path);
+        Assert.Equal("Na", chain.Prefix);
+    }
+
+    [Fact]
+    public void Parser_DetectsNewObjectContext()
+    {
+        var text = "Account a = new Acc";
+        var context = ApexCompletionParser.Parse(text, text.Length);
+        Assert.Equal(ApexCompletionKind.Objects, context.Kind);
+        Assert.Equal("Acc", context.Prefix);
+        Assert.Equal(16, context.SegmentStart);
+
+        var emptyText = "Account a = new ";
+        var empty = ApexCompletionParser.Parse(emptyText, emptyText.Length);
+        Assert.Equal(ApexCompletionKind.Objects, empty.Kind);
+        Assert.Equal(string.Empty, empty.Prefix);
+    }
+
+    [Fact]
+    public void Parser_DetectsGenericAngleObjectContext()
+    {
+        var list = ApexCompletionParser.Parse("List<Con", 8);
+        Assert.Equal(ApexCompletionKind.Objects, list.Kind);
+        Assert.Equal("Con", list.Prefix);
+
+        var map = ApexCompletionParser.Parse("Map<Id, Con", 11);
+        Assert.Equal(ApexCompletionKind.Objects, map.Kind);
+        Assert.Equal("Con", map.Prefix);
+    }
+
+    [Fact]
+    public void Parser_DetectsDmlVariableContext()
+    {
+        var context = ApexCompletionParser.Parse("insert acc", 10);
+        Assert.Equal(ApexCompletionKind.Variables, context.Kind);
+        Assert.Equal("acc", context.Prefix);
+
+        var empty = ApexCompletionParser.Parse("update ", 7);
+        Assert.Equal(ApexCompletionKind.Variables, empty.Kind);
+        Assert.Equal(string.Empty, empty.Prefix);
+    }
+
+    [Fact]
+    public void Parser_ScanDeclarations_FindsVariablesAndSkipsKeywords()
+    {
+        var text = "Account a = new Account();\n"
+                   + "List<Contact> cs = null;\n"
+                   + "String s = 'Account fake = new Account();';\n"
+                   + "insert cs;\n"
+                   + "for (Contact c : cs) { }";
+        var map = ApexCompletionParser.ScanDeclarations(text);
+
+        Assert.Equal("Account", map["a"]);
+        Assert.Equal("List<Contact>", map["cs"]);
+        Assert.Equal("String", map["s"]);
+        Assert.Equal("Contact", map["c"]);
+        Assert.False(map.ContainsKey("fake"));
+        Assert.False(map.ContainsKey("insert"));
     }
 
     [Fact]
@@ -143,5 +210,45 @@ public class ApexCompletionTests
     public void Engine_StaticMembers_IsCaseInsensitive()
     {
         Assert.Equal("debug()", ApexCompletionEngine.StaticMembers("system", "DE").Single().Text);
+    }
+
+    // ---- Phase 2: sObject / 変数 / コレクション ----
+
+    [Fact]
+    public void Engine_TryParseCollectionType()
+    {
+        Assert.True(ApexCompletionEngine.TryParseCollectionType("List<Account>", out var listKind, out var listElement));
+        Assert.Equal("List", listKind);
+        Assert.Equal("Account", listElement);
+
+        Assert.True(ApexCompletionEngine.TryParseCollectionType("Map<Id, Account>", out var mapKind, out var mapElement));
+        Assert.Equal("Map", mapKind);
+        Assert.Equal("Account", mapElement);
+
+        Assert.False(ApexCompletionEngine.TryParseCollectionType("Account", out _, out _));
+    }
+
+    [Fact]
+    public void Engine_HasStaticClassAndSObjectMethods()
+    {
+        Assert.True(ApexCompletionEngine.HasStaticClass("system"));
+        Assert.True(ApexCompletionEngine.HasStaticClass("Database"));
+        Assert.False(ApexCompletionEngine.HasStaticClass("Account"));
+
+        Assert.Equal("addError()", ApexCompletionEngine.SObjectMethods("ad").Single().Text);
+    }
+
+    [Fact]
+    public void Engine_CollectionMethods_FilterByPrefix()
+    {
+        Assert.Equal(
+            new[] { "add()", "addAll()" },
+            ApexCompletionEngine.CollectionMethods("List", "ad").Select(i => i.Text));
+
+        Assert.Equal(
+            new[] { "put()", "putAll()" },
+            ApexCompletionEngine.CollectionMethods("Map", "pu").Select(i => i.Text));
+
+        Assert.Empty(ApexCompletionEngine.CollectionMethods("Set", "zzz"));
     }
 }

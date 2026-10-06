@@ -181,6 +181,7 @@ public static partial class UiText
         ["Apex_AiPromptErrorFmt"] = "아래 익명 Apex 실행 중 오류가 발생했습니다. 원인을 설명하고 수정 방법과 수정된 Apex를 코드 블록으로 보여 주세요.\n\nApex:\n```\n{0}\n```\n오류: {1}\n디버그 로그(끝부분):\n```\n{2}\n```",
         ["Apex_SuggestMembersFmt"] = "{0} 멤버:",
         ["Apex_SuggestSnippets"] = "Apex 코드 조각 및 유형:",
+        ["Apex_SuggestVariables"] = "Apex 변수:",
         ["Apex_FetchLatestLog"] = "최신 로그 표시",
         ["Apex_FetchLatestLogTip"] = "조직에 저장된 최신 디버그 로그 가져오기",
         ["Apex_LogsTip"] = "디버그 로그(sf apex run 출력 / 조직에서 가져온 로그)",

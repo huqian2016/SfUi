@@ -181,6 +181,7 @@ public static partial class UiText
         ["Apex_AiPromptErrorFmt"] = "次の匿名Apexでエラーが発生しました。原因を説明し、修正方法と修正済みの Apex をコードブロックで示してください。\n\nApex:\n```\n{0}\n```\nエラー: {1}\nデバッグログ（末尾）:\n```\n{2}\n```",
         ["Apex_SuggestMembersFmt"] = "{0} のメンバー:",
         ["Apex_SuggestSnippets"] = "Apex スニペット・型:",
+        ["Apex_SuggestVariables"] = "Apex の変数:",
         ["Apex_FetchLatestLog"] = "最新ログを表示",
         ["Apex_FetchLatestLogTip"] = "org に保存されている最新のデバッグログを取得",
         ["Apex_LogsTip"] = "デバッグログ（sf apex run の実行ログ / org から取得したログ）",

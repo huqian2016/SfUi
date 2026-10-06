@@ -181,6 +181,7 @@ public static partial class UiText
         ["Apex_AiPromptErrorFmt"] = "以下匿名 Apex 执行出错。请说明原因、给出修正方法，并用代码块展示修正后的 Apex。\n\nApex：\n```\n{0}\n```\n错误：{1}\n调试日志（末尾）：\n```\n{2}\n```",
         ["Apex_SuggestMembersFmt"] = "{0} 的成员：",
         ["Apex_SuggestSnippets"] = "Apex 代码片段与类型：",
+        ["Apex_SuggestVariables"] = "Apex 变量：",
         ["Apex_FetchLatestLog"] = "显示最新日志",
         ["Apex_FetchLatestLogTip"] = "获取组织中保存的最新调试日志",
         ["Apex_LogsTip"] = "调试日志（sf apex run 输出 / 从组织获取的日志）",

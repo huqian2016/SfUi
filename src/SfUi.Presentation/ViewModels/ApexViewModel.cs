@@ -370,10 +370,45 @@ public partial class ApexViewModel : ObservableObject
 
                     break;
 
-                case ApexCompletionKind.Members:
-                    header = UiText.T("Apex_SuggestMembersFmt", context.Root ?? string.Empty);
-                    items = ApexCompletionEngine.StaticMembers(context.Root ?? string.Empty, context.Prefix);
+                case ApexCompletionKind.Objects:
+                    if (string.IsNullOrWhiteSpace(CurrentOrg))
+                    {
+                        HideSuggestions();
+                        return;
+                    }
+
+                    header = UiText.T("Soql_SuggestObjects");
+                    var objectList = await _describes.ListObjectsAsync(CurrentOrg!, cancellationToken: cts.Token).ConfigureAwait(true);
+                    items = SoqlCompletionEngine.ObjectItems(objectList, context.Prefix);
                     break;
+
+                case ApexCompletionKind.Variables:
+                    if (string.IsNullOrWhiteSpace(CurrentOrg))
+                    {
+                        HideSuggestions();
+                        return;
+                    }
+
+                    header = UiText.T("Apex_SuggestVariables");
+                    items = await ResolveVariableItemsAsync(text, caret, context.Prefix, cts.Token).ConfigureAwait(true);
+                    break;
+
+                case ApexCompletionKind.Members:
+                {
+                    var resolved = await ResolveMemberItemsAsync(text, caret, context, cts.Token).ConfigureAwait(true);
+                    if (resolved is null)
+                    {
+                        if (!cts.IsCancellationRequested)
+                        {
+                            HideSuggestions();
+                        }
+
+                        return;
+                    }
+
+                    (header, items) = resolved.Value;
+                    break;
+                }
 
                 default:
                     header = UiText.T("Apex_SuggestSnippets");
@@ -415,6 +450,94 @@ public partial class ApexViewModel : ObservableObject
         IsFetchingSuggestions = false;
         IsSuggestionsVisible = false;
         Suggestions.Clear();
+    }
+
+    /// <summary>DML（insert / update …）の直後: 宣言済みの sObject / コレクション変数を候補にする。</summary>
+    private async Task<IReadOnlyList<SoqlCompletionItem>> ResolveVariableItemsAsync(
+        string text, int caret, string prefix, CancellationToken cancellationToken)
+    {
+        var objects = await _describes.ListObjectsAsync(CurrentOrg!, cancellationToken: cancellationToken).ConfigureAwait(true);
+        var names = objects.Select(o => o.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var declarations = ApexCompletionParser.ScanDeclarations(text[..caret]);
+
+        var items = new List<SoqlCompletionItem>();
+        foreach (var (name, declaredType) in declarations.OrderBy(d => d.Key, StringComparer.Ordinal))
+        {
+            if (prefix.Length > 0 && !name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var isSObject = names.Contains(declaredType)
+                || (ApexCompletionEngine.TryParseCollectionType(declaredType, out _, out var element) && names.Contains(element));
+            if (isSObject)
+            {
+                items.Add(new SoqlCompletionItem(name, declaredType));
+            }
+        }
+
+        return items.Take(ApexCompletionEngine.MaxItems).ToList();
+    }
+
+    /// <summary>メンバーアクセス（X. / a.Owner.）: 静的クラス / コレクション変数 / sObject 変数の候補を解決する。</summary>
+    private async Task<(string Header, IReadOnlyList<SoqlCompletionItem> Items)?> ResolveMemberItemsAsync(
+        string text, int caret, ApexCompletionContext context, CancellationToken cancellationToken)
+    {
+        var root = context.Root ?? string.Empty;
+        var parentPath = context.Path ?? Array.Empty<string>();
+
+        // 1) 静的クラス（System / Database …）
+        if (ApexCompletionEngine.HasStaticClass(root))
+        {
+            return parentPath.Count == 0
+                ? (UiText.T("Apex_SuggestMembersFmt", root), ApexCompletionEngine.StaticMembers(root, context.Prefix))
+                : null;
+        }
+
+        // 2) 宣言から型を推定した変数
+        var declarations = ApexCompletionParser.ScanDeclarations(text[..caret]);
+        if (!declarations.TryGetValue(root, out var declaredType))
+        {
+            return null;
+        }
+
+        if (ApexCompletionEngine.TryParseCollectionType(declaredType, out var kind, out _))
+        {
+            return parentPath.Count == 0
+                ? (UiText.T("Apex_SuggestMembersFmt", kind), ApexCompletionEngine.CollectionMethods(kind, context.Prefix))
+                : null;
+        }
+
+        if (string.IsNullOrWhiteSpace(CurrentOrg))
+        {
+            return null;
+        }
+
+        var objects = await _describes.ListObjectsAsync(CurrentOrg!, cancellationToken: cancellationToken).ConfigureAwait(true);
+        if (!objects.Any(o => string.Equals(o.Name, declaredType, StringComparison.OrdinalIgnoreCase)))
+        {
+            return null;   // sObject 以外の型は対象外
+        }
+
+        // 参照の連鎖（a.Owner.）を describe で解決する
+        var target = declaredType;
+        foreach (var segment in parentPath)
+        {
+            var describe = await _describes.DescribeAsync(CurrentOrg!, target, cancellationToken: cancellationToken).ConfigureAwait(true);
+            var relationship = SoqlCompletionEngine.ResolveRelationship(describe, segment);
+            if (relationship is null)
+            {
+                return null;
+            }
+
+            target = relationship;
+        }
+
+        var targetDescribe = await _describes.DescribeAsync(CurrentOrg!, target, cancellationToken: cancellationToken).ConfigureAwait(true);
+        var items = new List<SoqlCompletionItem>();
+        items.AddRange(SoqlCompletionEngine.FieldItems(targetDescribe, context.Prefix, includeFunctions: false));
+        items.AddRange(ApexCompletionEngine.SObjectMethods(context.Prefix));
+        return (UiText.T("Soql_SuggestFieldsFmt", target), items);
     }
 
     // ---- 実行後の AI 支援 ----

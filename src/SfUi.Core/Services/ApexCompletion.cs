@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 namespace SfUi.Core;
 
 /// <summary>Apex 補完候補の種類。</summary>
@@ -9,11 +11,17 @@ public enum ApexCompletionKind
     /// <summary>単語入力（構文・スニペット・型・静的クラス）。</summary>
     Snippets,
 
-    /// <summary>静的クラスのメンバー（例: System. / Database.）。</summary>
+    /// <summary>静的クラス・変数のメンバー（例: System. / a.Owner.）。</summary>
     Members,
 
     /// <summary>インライン SOQL（[SELECT ...]）の内部。SOQL 候補を流用する。</summary>
     Soql,
+
+    /// <summary>sObject 名候補（new / List< / Map<... の直後）。</summary>
+    Objects,
+
+    /// <summary>DML 対象の変数候補（insert / update / … の直後）。</summary>
+    Variables,
 }
 
 /// <summary>カーソル位置から解析した Apex 補完コンテキスト。</summary>
@@ -22,6 +30,7 @@ public sealed record ApexCompletionContext(
     string Prefix,
     int SegmentStart,
     string? Root = null,
+    IReadOnlyList<string>? Path = null,
     SoqlCompletionContext? Soql = null);
 
 /// <summary>匿名Apex 補完のコンテキスト解析（純関数・テスト対象）。</summary>
@@ -66,11 +75,34 @@ public static class ApexCompletionParser
         var lastDot = word.LastIndexOf('.');
         if (lastDot >= 0)
         {
-            var root = word[..lastDot];
+            var parent = word[..lastDot];
             var prefix = word[(lastDot + 1)..];
-            return root.Length == 0 || root.Contains('.')
-                ? new ApexCompletionContext(ApexCompletionKind.None, prefix, caret - prefix.Length)
-                : new ApexCompletionContext(ApexCompletionKind.Members, prefix, caret - prefix.Length, Root: root);
+            var segments = parent.Split('.', StringSplitOptions.RemoveEmptyEntries);
+            if (segments.Length == 0)
+            {
+                return new ApexCompletionContext(ApexCompletionKind.None, prefix, caret - prefix.Length);
+            }
+
+            var path = segments.Length > 1 ? segments[1..] : null;
+            return new ApexCompletionContext(
+                ApexCompletionKind.Members, prefix, caret - prefix.Length, Root: segments[0], Path: path);
+        }
+
+        // キーワード・コレクション型の直後は語が空でも候補を出す
+        var before = text[..start];
+        if (EndsWithKeyword(before, DmlKeywords))
+        {
+            return new ApexCompletionContext(ApexCompletionKind.Variables, word, start);
+        }
+
+        if (EndsWithKeyword(before, "new"))
+        {
+            return new ApexCompletionContext(ApexCompletionKind.Objects, word, start);
+        }
+
+        if (IsInsideGenericAngle(text, start))
+        {
+            return new ApexCompletionContext(ApexCompletionKind.Objects, word, start);
         }
 
         return word.Length == 0
@@ -252,6 +284,114 @@ public static class ApexCompletionParser
     }
 
     private static bool IsWordChar(char c) => char.IsLetterOrDigit(c) || c == '_';
+
+    private static readonly string[] DmlKeywords = { "insert", "update", "upsert", "delete", "undelete" };
+
+    /// <summary>カーソル前テキストが指定キーワード（単語境界）で終わるか。</summary>
+    private static bool EndsWithKeyword(string beforeText, string keyword)
+    {
+        var i = beforeText.Length - 1;
+        while (i >= 0 && char.IsWhiteSpace(beforeText[i]))
+        {
+            i--;
+        }
+
+        var end = i + 1;
+        var start = end - keyword.Length;
+        if (start < 0)
+        {
+            return false;
+        }
+
+        if (string.Compare(beforeText, start, keyword, 0, keyword.Length, StringComparison.OrdinalIgnoreCase) != 0)
+        {
+            return false;
+        }
+
+        var prev = start - 1;
+        return prev < 0 || (!IsWordChar(beforeText[prev]) && beforeText[prev] != '.');
+    }
+
+    private static bool EndsWithKeyword(string beforeText, string[] keywords)
+    {
+        foreach (var keyword in keywords)
+        {
+            if (EndsWithKeyword(beforeText, keyword))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>カーソル位置が List&lt;…&gt; / Map&lt;…&gt; などの山括弧の中か。</summary>
+    private static bool IsInsideGenericAngle(string text, int position)
+    {
+        var i = position - 1;
+        while (i >= 0 && text[i] == ' ')
+        {
+            i--;
+        }
+
+        if (i < 0)
+        {
+            return false;
+        }
+
+        if (text[i] == '<')
+        {
+            return true;
+        }
+
+        if (text[i] != ',')
+        {
+            return false;
+        }
+
+        // Map<Id, | のような 2 つ目の引数
+        var j = i - 1;
+        while (j >= 0 && text[j] != '<' && text[j] != ';' && text[j] != '=' && text[j] != '\n' && text[j] != '(' && text[j] != '{')
+        {
+            j--;
+        }
+
+        return j >= 0 && text[j] == '<';
+    }
+
+    /// <summary>
+    /// コード中の変数宣言（Type name / Type&lt;…&gt; name / for-each / メソッド引数）を走査し、
+    /// 変数名 → 宣言された型（例: Account, List&lt;Contact&gt;）のマップを返す（純関数・テスト対象）。
+    /// </summary>
+    public static IReadOnlyDictionary<string, string> ScanDeclarations(string text)
+    {
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (Match match in DeclarationPattern.Matches(StripLiterals(text)))
+        {
+            var type = match.Groups["type"].Value.Trim();
+            var name = match.Groups["name"].Value.Trim();
+            if (NonTypeKeywords.Contains(type) || NonTypeKeywords.Contains(name) || type.Length == 0)
+            {
+                continue;
+            }
+
+            result[name] = type;   // 後勝ち = カーソルに近い宣言を優先
+        }
+
+        return result;
+    }
+
+    private static readonly Regex DeclarationPattern = new(
+        @"(?<type>[A-Za-z_][A-Za-z0-9_\.]*(?:\s*<[^<>;=]*>)?)\s+(?<name>[A-Za-z_][A-Za-z0-9_]*)\s*(?=[=;,:)])",
+        RegexOptions.Compiled);
+
+    private static readonly HashSet<string> NonTypeKeywords = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "if", "else", "for", "while", "do", "return", "new", "throw", "try", "catch", "finally", "switch", "when",
+        "insert", "update", "upsert", "delete", "undelete", "merge", "break", "continue", "instanceof",
+        "static", "final", "public", "private", "protected", "global", "abstract", "virtual", "override", "transient",
+        "this", "super", "class", "interface", "enum", "extends", "implements",
+    };
 }
 
 /// <summary>匿名Apex の補完候補を組み立てる（純関数・テスト対象）。</summary>
@@ -303,6 +443,12 @@ public static class ApexCompletionEngine
         T("break|", "Keyword"),
         T("continue|", "Keyword"),
         T("throw|", "Keyword"),
+        T("insert|", "DML"),
+        T("update|", "DML"),
+        T("upsert|", "DML"),
+        T("delete|", "DML"),
+        T("undelete|", "DML"),
+        T("merge|", "DML"),
         T("new|", "Keyword"),
         T("true|", "Keyword"),
         T("false|", "Keyword"),
@@ -523,6 +669,126 @@ public static class ApexCompletionEngine
             .Select(m => new SoqlCompletionItem(m.Text, m.Description))
             .ToList();
     }
+
+    /// <summary>静的クラス名として既知か（System / Database …）。</summary>
+    public static bool HasStaticClass(string root) => Members.ContainsKey(root);
+
+    /// <summary>sObject 変数のインスタンスメソッド候補を返す。</summary>
+    public static IReadOnlyList<SoqlCompletionItem> SObjectMethods(string prefix) =>
+        SObjectInstanceMembers
+            .Where(m => StartsWith(m.Text, prefix))
+            .Take(MaxItems)
+            .Select(m => new SoqlCompletionItem(m.Text, m.Description))
+            .ToList();
+
+    /// <summary>
+    /// 宣言された型からコレクション種別を取り出す（List&lt;Account&gt; → List / Account、Map&lt;Id, Account&gt; → Map / Account）。
+    /// </summary>
+    public static bool TryParseCollectionType(string declaredType, out string kind, out string elementType)
+    {
+        kind = string.Empty;
+        elementType = string.Empty;
+
+        var text = declaredType.Trim();
+        var lt = text.IndexOf('<');
+        if (lt < 0 || !text.EndsWith('>'))
+        {
+            return false;
+        }
+
+        var kindName = text[..lt].Trim();
+        if (kindName.Equals("List", StringComparison.OrdinalIgnoreCase))
+        {
+            kind = "List";
+        }
+        else if (kindName.Equals("Set", StringComparison.OrdinalIgnoreCase))
+        {
+            kind = "Set";
+        }
+        else if (kindName.Equals("Map", StringComparison.OrdinalIgnoreCase))
+        {
+            kind = "Map";
+        }
+        else
+        {
+            return false;
+        }
+
+        var inner = text[(lt + 1)..^1].Trim();
+        var comma = inner.LastIndexOf(',');
+        elementType = (comma >= 0 ? inner[(comma + 1)..] : inner).Trim();
+        return elementType.Length > 0;
+    }
+
+    /// <summary>コレクション変数のメソッド候補を返す。</summary>
+    public static IReadOnlyList<SoqlCompletionItem> CollectionMethods(string kind, string prefix)
+    {
+        var source = kind.Equals("Set", StringComparison.OrdinalIgnoreCase) ? SetMethods
+            : kind.Equals("Map", StringComparison.OrdinalIgnoreCase) ? MapMethods
+            : ListMethods;
+
+        return source
+            .Where(m => StartsWith(m.Text, prefix))
+            .Take(MaxItems)
+            .Select(m => new SoqlCompletionItem(m.Text, m.Description))
+            .ToList();
+    }
+
+    private static readonly IReadOnlyList<(string Text, string Description)> SObjectInstanceMembers = new[]
+    {
+        ("addError()", "void"),
+        ("get()", "Object"),
+        ("put()", "Object"),
+        ("clone()", "SObject"),
+        ("getSObjectType()", "SObjectType"),
+    };
+
+    private static readonly IReadOnlyList<(string Text, string Description)> ListMethods = new[]
+    {
+        ("add()", "void"),
+        ("addAll()", "void"),
+        ("size()", "Integer"),
+        ("get()", "SObject"),
+        ("set()", "void"),
+        ("remove()", "SObject"),
+        ("isEmpty()", "Boolean"),
+        ("clear()", "void"),
+        ("sort()", "void"),
+        ("contains()", "Boolean"),
+        ("indexOf()", "Integer"),
+        ("clone()", "List"),
+        ("iterator()", "Iterator"),
+    };
+
+    private static readonly IReadOnlyList<(string Text, string Description)> SetMethods = new[]
+    {
+        ("add()", "Boolean"),
+        ("addAll()", "Boolean"),
+        ("size()", "Integer"),
+        ("contains()", "Boolean"),
+        ("containsAll()", "Boolean"),
+        ("remove()", "Boolean"),
+        ("removeAll()", "Boolean"),
+        ("isEmpty()", "Boolean"),
+        ("clear()", "void"),
+        ("clone()", "Set"),
+        ("iterator()", "Iterator"),
+    };
+
+    private static readonly IReadOnlyList<(string Text, string Description)> MapMethods = new[]
+    {
+        ("get()", "Object"),
+        ("put()", "Object"),
+        ("putAll()", "void"),
+        ("containsKey()", "Boolean"),
+        ("remove()", "Object"),
+        ("keySet()", "Set"),
+        ("values()", "List"),
+        ("size()", "Integer"),
+        ("isEmpty()", "Boolean"),
+        ("clear()", "void"),
+        ("clone()", "Map"),
+    };
 
     private static void AddPlain(List<SoqlCompletionItem> items, IReadOnlyList<(string Text, string Description, int Cursor)> source, string prefix)
     {
