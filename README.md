@@ -16,15 +16,15 @@ Two ways to get going: use a prebuilt binary below, or [build from source](#buil
 
 1. Download from the [Releases](../../releases) page:
    - **`SfUi.exe`** — the portable single executable, or
-   - **`SfUi-v0.10.1-portable.zip`** — the executable **plus a ready-to-use `data/` folder with 30 sample SOQL / Apex / commands / REST requests already in the history** (just extract and run).
-   - **`SfUi-0.10.1-x64.msix`** — Windows installer (MSIX). Trust the bundled certificate first: double-click **`SfUi-0.10.1-x64.cer`** → *Install Certificate* → **Local Machine** → **Trusted People** (admin required), then double-click the `.msix` to install.
+   - **`SfUi-v0.11.0-portable.zip`** — the executable **plus a ready-to-use `data/` folder with 30 sample SOQL / Apex / commands / REST requests already in the history** (just extract and run).
+   - **`SfUi-0.11.0-x64.msix`** — Windows installer (MSIX). Trust the bundled certificate first: double-click **`SfUi-0.11.0-x64.cer`** → *Install Certificate* → **Local Machine** → **Trusted People** (admin required), then double-click the `.msix` to install.
 2. Put it in any folder and double-click (no installer).
    - Windows SmartScreen may warn because the binary is unsigned — choose *More info* → *Run anyway*.
 3. On first run a `data/` folder is created next to the exe (portable mode). Pick your org in the top bar and start with a tab — or add the sample history via **Settings → Seed sample history**.
 
 ### macOS (Apple Silicon, prebuilt)
 
-1. Download **`SfUi-0.10.1-osx-arm64.zip`** from [Releases](../../releases), extract it and run `SfUi.app`.
+1. Download **`SfUi-0.11.0-osx-arm64.zip`** from [Releases](../../releases), extract it and run `SfUi.app`.
 2. The app is signed with a Developer ID certificate and **notarized by Apple**, so it opens with a normal double-click — including the very first launch.
 3. Same as Windows from there: pick your org in the top bar and start with a tab.
 
@@ -120,8 +120,8 @@ Built with C# / .NET 9, CommunityToolkit.Mvvm and AvalonEdit (WPF) / AvaloniaEdi
 
 - **Org & folder switching in one click** — the org combo and SF folder combo are always in the top bar; the last selection is restored on startup.
 - **Welcome screen** — shown at every startup until you tick *Don't show this again*: highlights the main features, checks that Salesforce CLI (`sf`) is installed (installer link, `npm` hint and a **Re-check** button when it is missing), offers *Get started* / *Open settings* buttons and lets you switch the UI language on the spot. Reopen it anytime from Settings.
-- **SOQL** — AvalonEdit editor with SQL highlighting, REST-first execution (falls back to `sf data query`, with a Tooling API toggle), results in a sortable grid, CSV/TSV export.
-- **Anonymous Apex** — run scripts via `sf apex run`, show compile errors / exceptions / debug logs, open & save `.apex` files, fetch the latest debug log from the org.
+- **SOQL** — AvalonEdit editor with SQL highlighting and an inline **suggestion area** (fields, relationships and functions as clickable chips), REST-first execution (falls back to `sf data query`, with a Tooling API toggle), a live row count, results in a sortable grid, CSV/TSV export, and an AI assist that sends the run result (candidate queries + *Open in SOQL*).
+- **Anonymous Apex** — run scripts via `sf apex run`, show compile errors / exceptions / debug logs, open & save `.apex` files, fetch the latest debug log from the org. The editor offers **completion** (snippets, static members, inline SOQL, sObject names / fields / relationships, variables & collections, org Apex classes, `System.Label.*` and custom metadata types), and after a run an AI assist can answer automatically (errors) or suggest the next lines (*AI: continue code*).
 - **Debug logs** — list logs (`sf apex list log`), fetch content by id or number, save locally.
 - **Deploy** — deploy / validate / quick deploy / report / retrieve with source dir or manifest, test level, wait time, live command preview, and result summaries (auto-fills the job id).
 - **Free-form commands** — run any `sf` arguments; dangerous operations (delete/logout/deploy …) ask for confirmation.
@@ -137,6 +137,7 @@ Built with C# / .NET 9, CommunityToolkit.Mvvm and AvalonEdit (WPF) / AvaloniaEdi
 - **Backup compare tab** — the same window compares two backups: pick a base (A) and a target (B), and every object is matched record by record (by Id; values are normalized across REST JSON and Bulk CSV). Objects with differences are highlighted by color (diff / only in A / only in B / error) with an optional *Diff only* filter, and the ↗ button opens a separate window with the record-level result (kind, Id, name and `Field: A → B` changes; searchable, paged, and with a leading column to open each record's Salesforce page).
 - **Org Management window** — a separate window (open from **Org Management** in the top bar) with three tabs. *Orgs*: the authenticated orgs (default ★, alias, username, org ID, type, status, instance URL, **last backup** from your local backups, **local tag / note**) with one-click actions — **Set as default**, **Open in browser**, **Add login (web)**, **Register org...** (register a new org via browser login, SFDX auth URL or access token — paste a `force://` URL or the JSON from `sf org display --verbose --json` of the source machine, with optional alias and *set as default*), **Logout** (confirmation), **Set alias** (set an alias on the selected org), **Test connection** / **Test all orgs** (read-only `Organization` query that verifies each session and shows the duration) and a search box that filters by alias, username, org ID, tag or note (tags / notes live in `data/org-manage.json` and are never written to the org). *Health*: reads REST `/limits` for the selected org and shows used / max / usage % with a bar (green → red at 80%+), sorted by usage with a name filter. *Migration Inventory*: lists Workflow rules (Tooling API), Process Builder processes and flows (FlowDefinitionView) with kind / name / API name / object / active / subtype / last modified, plus kind and *active only* filters, a per-kind summary, CSV export, real Workflow-rule active state (read from the rule metadata) and a **Setup** button per row that opens the component's Setup page — handy when planning a workflow/flow migration. Read-only for Health and Inventory, so it is safe to leave open while inspecting several orgs (switch the org in the header combo).
 - **Tool launcher** — open Terminal (wt / PowerShell / cmd / WSL), Explorer, VS Code, or the org in a browser. **Home / Setup open with a session URL** (`sf org open --url-only` frontdoor) so no browser login is needed (falls back to the plain URL if the session URL can't be fetched); login page and recent URLs are also available.
+- **About window** — click the **?** button in the top bar for the tool name, overview, version, and one-click links: GitHub repository, bug reports (Issues) and the author's contact e-mail.
 - **Keyboard shortcuts** — `Ctrl+Enter` run (SOQL/Apex), `Enter` run (command), `Ctrl+1..9` favorites, `F5` re-run the last operation.
 - **Portable** — a `data/` folder (settings, history, logs, results) is created next to the exe; falls back to `%APPDATA%\SfUi` when not writable.
 
@@ -221,7 +222,10 @@ SOQL・匿名Apex・デバッグログ・デプロイ・自由コマンド・RES
 - **組織管理ウィンドウ**: 上部バーの「組織管理」から開く独立ウィンドウ。組織タブ = 認証済み組織の一覧（既定 ★ / エイリアス / ユーザー名 / 組織 ID / 種別 / 接続状態 / インスタンス URL / **最終バックアップ** / **ローカルのタグ・メモ**）とワンクリック操作（**既定に設定** / **ブラウザーで開く** / **ログイン追加（ブラウザー）** / **組織を登録…**（ブラウザー ログイン / SFDX 認証 URL / アクセス トークンの 3 方法。他マシンの `sf org display --verbose --json` の JSON をそのまま貼り付け可。エイリアス・既定組織への設定付き）/ **ログアウト**（確認付き）/ **エイリアスを設定** / **疎通テスト（選択 / すべて）**（REST で Organization を 1 件読み、セッションと応答時間を確認。進捗・キャンセル付き））+ 絞り込み（エイリアス・ユーザー名・組織 ID・タグ・メモ。タグ・メモは `data/org-manage.json` に保存され組織側には書き込みません）。ヘルス タブ = 選択中組織の REST `/limits` を取得し、使用量 / 上限 / 使用率をバー付きで表示（80% 以上は赤・使用率順 + 名前絞り込み）。移行棚卸し タブ = Workflow ルール（Tooling API） / プロセスビルダー / フロー（FlowDefinitionView）の一覧（種別 / 名前 / API 名 / オブジェクト / 状態 / サブタイプ / 最終更新）+ 種別フィルタ + 有効のみ + 種別ごとのサマリー + CSV エクスポート + 行ごとの **Setup** ボタン（`sf org open --path` で該当ページをブラウザー表示）。Workflow ルールの有効 / 無効は Metadata API の XML から読み取ります。ヘッダーの組織コンボで切り替えるとヘルスと棚卸しが自動で再取得されます（どちらも読み取り専用）
 - **ブラウザボタン**: 組織ホーム / セットアップは `sf org open --url-only` のセッション付き URL（frontdoor）で開くため、ブラウザーでの再ログインは不要です（取得できない場合は通常 URL にフォールバック）
 - **アイコン ツールバー**: 上部バーのボタンは Fluent UI System Icons のアイコンのみ（マウスオーバーでラベルと説明をツールチップ表示・AI はオン/オフでアイコン切替）
-- 2026-10-06 時点で v0.10.1（テスト 399 件 / スモーク + UIA E2E 検証済み。AI 接続先の汎用化・組織比較・データ入出力・アクセス権限タブ・レコードのバックアップと復元（比較タブ付き）・組織管理ウィンドウ（組織 / ヘルス / 移行棚卸し。新規組織の登録（ブラウザー / SFDX 認証 URL / アクセス トークン）・疎通テスト・タグ/メモ・最終バックアップ・Setup リンク付き）・ブラウザのセッション URL・アイコン ツールバー・ようこそ画面・4 言語 UI・macOS 署名 + 公証済みビルドを含む）
+- **SOQL タブの強化**: シンタックスハイライト・インライン候補エリア（項目 / リレーション / 関数をクリックで挿入）・ライブ件数（並行して `SELECT COUNT()`）・実行結果を AI へ送っての質問（候補クエリ + 「SOQL で開く」付き）
+- **匿名 Apex の補完と AI 連携**: スニペット / 静的メンバー / インライン SOQL / sObject 名・項目・リレーション / 変数・コレクション / 組織の Apex クラス / `System.Label.*` / カスタム メタデータ型の候補を表示。実行後にエラーは AI へ自動質問、成功時は「AI: continue code」で続きのコードを提案
+- **About ウィンドウ**: 上部バーの「?」ボタンからツール情報・バージョン・GitHub リポジトリ / 不具合登録（Issues）/ 作者への連絡先へのリンクを表示（4 言語対応）
+- 2026-10-06 時点で v0.11.0（テスト 443 件 / スモーク + UIA E2E 検証済み。SOQL・匿名 Apex のコード補完と AI 連携強化・About ウィンドウ（GitHub / Issues / 連絡先リンク）・GitHub Issue テンプレート・アクセス トークン取得の sf CLI 新旧両対応を含む。従来の機能: AI 接続先の汎用化・組織比較・データ入出力・アクセス権限タブ・レコードのバックアップと復元（比較タブ付き）・組織管理ウィンドウ（組織 / ヘルス / 移行棚卸し。新規組織の登録（ブラウザー / SFDX 認証 URL / アクセス トークン）・疎通テスト・タグ/メモ・最終バックアップ・Setup リンク付き）・ブラウザのセッション URL・アイコン ツールバー・ようこそ画面・4 言語 UI・macOS 署名 + 公証済みビルド）
 
 ## 使い方
 
@@ -231,15 +235,15 @@ SOQL・匿名Apex・デバッグログ・デプロイ・自由コマンド・RES
 
 1. [Releases](../../releases) からダウンロード
    - **`SfUi.exe`**（実行ファイル単体）または
-   - **`SfUi-v0.10.1-portable.zip`**（exe + サンプル履歴 30 件入りの `data/` フォルダ。解凍してそのまま実行）
-   - **`SfUi-0.10.1-x64.msix`** — Windows インストーラー（MSIX）。先に同梱の **`SfUi-0.10.1-x64.cer`** を信頼させる（証明書のインストール → ローカル コンピューター → 信頼されたユーザー。管理者権限が必要）→ `.msix` をダブルクリックでインストール
+   - **`SfUi-v0.11.0-portable.zip`**（exe + サンプル履歴 30 件入りの `data/` フォルダ。解凍してそのまま実行）
+   - **`SfUi-0.11.0-x64.msix`** — Windows インストーラー（MSIX）。先に同梱の **`SfUi-0.11.0-x64.cer`** を信頼させる（証明書のインストール → ローカル コンピューター → 信頼されたユーザー。管理者権限が必要）→ `.msix` をダブルクリックでインストール
 2. 任意のフォルダに置いてダブルクリック（インストーラー不要）
    - 署名なしのため SmartScreen の警告が出たら「詳細情報」→「実行」
 3. 初回起動時に exe 隣に `data/` フォルダ（設定・履歴・ログ）が作成されます。上部バーで組織を選び、各タブから操作を開始（サンプルの SOQL / Apex / コマンド / REST は「設定 → サンプル履歴を投入」で追加できます）
 
 ### macOS（Apple Silicon・ビルド済み）
 
-1. [Releases](../../releases) から **`SfUi-0.10.1-osx-arm64.zip`** をダウンロード → 解凍して `SfUi.app` を実行
+1. [Releases](../../releases) から **`SfUi-0.11.0-osx-arm64.zip`** をダウンロード → 解凍して `SfUi.app` を実行
 2. Developer ID 署名 + **Apple の公証（ステープル込み）** 済みのため、初回からダブルクリックで起動できます（「右クリック →「開く」」の回避策は不要）
 3. 以降は Windows 版と同じ（上部バーで組織を選んで開始）
 

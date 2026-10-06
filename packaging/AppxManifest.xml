@@ -6,7 +6,7 @@
 
   <!-- Identity must match the values reserved in Partner Center (HKS.SfUi) exactly. -->
   <Identity Name="HKS.SfUi"
-            Version="0.10.1.0"
+            Version="0.11.0.0"
             Publisher="CN=F23B2630-3909-43D6-9071-F53B9E511923"
             ProcessorArchitecture="x64" />
 
