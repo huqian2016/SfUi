@@ -64,7 +64,7 @@ public static partial class UiText
         ["Main_BrowserInput"] = "URL を入力…",
         ["Main_BrowserRecent"] = "最近の URL",
         ["Main_QuickToggle"] = "クイック",
-        ["Main_QuickToggleTip"] = "お気に入りパネルの表示/非表示（Ctrl+1..9 で実行）",
+        ["Main_QuickToggleTip"] = "お気に入りパネルの表示/非表示（{mod}+1..9 で実行）",
         ["Main_AiToggleTip"] = "AI チャットパネルの表示/非表示",
         ["Main_LanguageTip"] = "UI の言語",
         ["Tab_Soql"] = "SOQL",
@@ -78,10 +78,10 @@ public static partial class UiText
         ["Tab_Ai"] = "AI",
 
         // ---- AI チャット ----
-        ["Ai_Send"] = "送信 (Ctrl+Enter)",
+        ["Ai_Send"] = "送信 ({mod}+Enter)",
         ["Ai_Clear"] = "新しい会話",
         ["Ai_Cleared"] = "会話をクリアしました",
-        ["Ai_InputTip"] = "SOQL / Apex / sf コマンドの生成依頼や、結果の分析を入力（Ctrl+Enter で送信）",
+        ["Ai_InputTip"] = "SOQL / Apex / sf コマンドの生成依頼や、結果の分析を入力（{mod}+Enter で送信）",
         ["Ai_ContextLabel"] = "コンテキスト:",
         ["Ai_ContextTip"] = "次のメッセージに結果を添付する履歴",
         ["Ai_AttachContext"] = "次の送信に添付",
@@ -101,8 +101,8 @@ public static partial class UiText
         ["Ai_ApplySoql"] = "SOQL タブへ",
         ["Ai_ApplyApex"] = "匿名Apex タブへ",
         ["Ai_ApplyCommand"] = "コマンドタブへ",
-        ["Ai_AppliedSoql"] = "SOQL タブに読み込みました（Ctrl+Enter で実行）",
-        ["Ai_AppliedApex"] = "匿名Apex タブに読み込みました（Ctrl+Enter で実行）",
+        ["Ai_AppliedSoql"] = "SOQL タブに読み込みました（{mod}+Enter で実行）",
+        ["Ai_AppliedApex"] = "匿名Apex タブに読み込みました（{mod}+Enter で実行）",
         ["Ai_AppliedCommand"] = "コマンドタブに読み込みました（Enter で実行）",
         ["Ai_AttachHeaderFmt"] = "分析対象: [{0}] {1}",
 
@@ -112,13 +112,13 @@ public static partial class UiText
         ["Msg_OrgCountFmt"] = "組織 {0} 件を取得しました",
         ["Msg_OrgLoadFailedFmt"] = "組織一覧の取得に失敗: {0}",
         ["Msg_ReplaySoql"] = "履歴から SOQL を再実行します",
-        ["Msg_ReplayApex"] = "履歴から匿名Apex を読み込みました（Ctrl+Enter で実行）",
+        ["Msg_ReplayApex"] = "履歴から匿名Apex を読み込みました（{mod}+Enter で実行）",
         ["Msg_ReplayCommand"] = "履歴からコマンドを読み込みました（実行ボタンで再実行）",
         ["Msg_ReplayApi"] = "履歴から REST リクエストを読み込みました（送信ボタンで再実行）",
         ["Msg_ReplayDeploy"] = "履歴からデプロイ設定を読み込みました（実行ボタンで再実行）",
         ["Msg_ReplayUnsupportedFmt"] = "「{0}」の再実行には対応していません",
         ["Msg_FavoriteRunFmt"] = "お気に入りを実行: {0}",
-        ["Msg_FavoriteLoadedApexFmt"] = "お気に入りを読み込みました（Ctrl+Enter で実行）: {0}",
+        ["Msg_FavoriteLoadedApexFmt"] = "お気に入りを読み込みました（{mod}+Enter で実行）: {0}",
         ["Msg_FavoriteLoadedCommandFmt"] = "お気に入りを読み込みました（実行ボタンで再実行）: {0}",
         ["Msg_FavoriteLoadedApiFmt"] = "お気に入りを読み込みました（送信ボタンで再実行）: {0}",
         ["Msg_FavoriteLoadedDeployFmt"] = "お気に入りを読み込みました（実行ボタンで再実行）: {0}",
@@ -142,7 +142,7 @@ public static partial class UiText
         ["Dlg_BrowseFolderTitle"] = "SF 実行フォルダを選択",
 
         // ---- SOQL ----
-        ["Soql_Run"] = "▶ 実行 (Ctrl+Enter)",
+        ["Soql_Run"] = "▶ 実行 ({mod}+Enter)",
         ["Soql_PreferRest"] = "REST優先",
         ["Soql_PreferRestTip"] = "REST API（アクセストークン）で実行し、失敗時は sf data query にフォールバック",
         ["Soql_ToolingApi"] = "Tooling API",
@@ -171,7 +171,7 @@ public static partial class UiText
         ["Soql_NoQueryFavorite"] = "お気に入りに追加する SOQL がありません",
 
         // ---- 匿名Apex ----
-        ["Apex_Run"] = "▶ 実行 (Ctrl+Enter)",
+        ["Apex_Run"] = "▶ 実行 ({mod}+Enter)",
         ["Apex_LoadFile"] = "読込…",
         ["Apex_SaveFile"] = "保存…",
         ["Apex_HistoryTip"] = "最近実行した匿名Apex を読み込み",
@@ -312,9 +312,9 @@ public static partial class UiText
         ["Op_Retrieve"] = "メタデータ取得 (retrieve)",
 
         // ---- クイックパネル ----
-        ["Quick_Title"] = "クイックパネル（Ctrl+1..9）",
-        ["Quick_TitleTip"] = "お気に入りを登録した順に表示。Ctrl+数字で即実行できます",
-        ["Quick_Hint"] = "ダブルクリック / Ctrl+数字 で実行、右クリックで削除",
+        ["Quick_Title"] = "クイックパネル（{mod}+1..9）",
+        ["Quick_TitleTip"] = "お気に入りを登録した順に表示。{mod}+数字で即実行できます",
+        ["Quick_Hint"] = "ダブルクリック / {mod}+数字 で実行、右クリックで削除",
         ["Quick_Run"] = "実行",
         ["Quick_Remove"] = "お気に入りから削除",
         ["Quick_ConfirmRemoveFmt"] = "お気に入りから削除しますか？{0}[{1}] {2}",
@@ -1124,7 +1124,7 @@ public static partial class UiText
         ["Welcome_Group_Org"] = "組織管理",
         ["Welcome_Group_OrgDesc"] = "組織情報の閲覧、最大 4 組織の比較、データの入出力、レコードのバックアップと復元、組織の管理。",
         ["Welcome_Group_Workflow"] = "効率化",
-        ["Welcome_Group_WorkflowDesc"] = "SOQL/Apex を書いてくれる AI チャット、Ctrl+1..9 のクイックパネル、ターミナル / VS Code / ブラウザのワンクリック起動。",
+        ["Welcome_Group_WorkflowDesc"] = "SOQL/Apex を書いてくれる AI チャット、{mod}+1..9 のクイックパネル、ターミナル / VS Code / ブラウザのワンクリック起動。",
         ["Welcome_LanguagesLine"] = "UI は英語・日本語・简体中文・한국어 に対応。",
         ["Welcome_LanguageLabel"] = "言語:",
         ["Welcome_SfHeader"] = "Salesforce CLI",

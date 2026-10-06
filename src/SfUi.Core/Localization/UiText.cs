@@ -102,7 +102,7 @@ public static partial class UiText
             Korean => Ko,
             _ => En,
         };
-        return dictionary.TryGetValue(key, out var text) ? text : key;
+        return dictionary.TryGetValue(key, out var text) ? text.Replace("{mod}", PlatformInfo.ShortcutModifierLabel) : key;
     }
 
     /// <summary>書式付きで取得する（例: T("Msg_CountFmt", 5)）。</summary>

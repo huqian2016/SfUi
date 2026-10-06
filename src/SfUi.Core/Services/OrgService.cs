@@ -85,7 +85,8 @@ public sealed class OrgService
 
     /// <summary>
     /// 対象組織のアクセストークン等を取得する（既定 30 分キャッシュ、forceRefresh で再取得）。
-    /// インストール済みの sf v2.94.6 には org auth show-access-token が無いため org display を使用する。
+    /// アクセストークンは sf 2.152+ で <c>org display</c> の出力から隠されるため、
+    /// <c>org auth show-access-token --json</c> で取得し、instanceUrl / apiVersion は <c>org display</c> から得る。
     /// </summary>
     public async Task<OrgAuthInfo> GetAuthAsync(string targetOrg, bool forceRefresh = false, CancellationToken cancellationToken = default)
     {
@@ -104,10 +105,19 @@ public sealed class OrgService
             .ConfigureAwait(false);
 
         var command = SfCommandResult.From(raw);
-        var accessToken = command.GetResultString("accessToken");
-        if (!command.IsSuccess || string.IsNullOrWhiteSpace(accessToken))
+
+        // sf org display はシークレットを隠す（accessToken が "[REDACTED]..." になる）ため、
+        // トークンは専用コマンド org auth show-access-token --json で取得する（--json で確認プロンプトをスキップ）。
+        var tokenRaw = await _runner
+            .RunAsync(new[] { "org", "auth", "show-access-token", "--target-org", targetOrg, "--json" }, cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+        var tokenCommand = SfCommandResult.From(tokenRaw);
+        var accessToken = tokenCommand.GetResultString("accessToken");
+
+        if (!command.IsSuccess || !tokenCommand.IsSuccess || string.IsNullOrWhiteSpace(accessToken))
         {
-            throw new SfCliException(UiText.T("Core_TokenFailedFmt", targetOrg, command.ErrorMessage), raw);
+            var error = !command.IsSuccess ? command.ErrorMessage : tokenCommand.ErrorMessage;
+            throw new SfCliException(UiText.T("Core_TokenFailedFmt", targetOrg, error), raw);
         }
 
         var auth = new OrgAuthInfo(

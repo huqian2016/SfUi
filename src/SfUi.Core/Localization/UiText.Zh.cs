@@ -64,7 +64,7 @@ public static partial class UiText
         ["Main_BrowserInput"] = "输入 URL…",
         ["Main_BrowserRecent"] = "最近的 URL",
         ["Main_QuickToggle"] = "快捷",
-        ["Main_QuickToggleTip"] = "显示/隐藏收藏面板（Ctrl+1..9 运行）",
+        ["Main_QuickToggleTip"] = "显示/隐藏收藏面板（{mod}+1..9 运行）",
         ["Main_AiToggleTip"] = "显示/隐藏 AI 聊天面板",
         ["Main_LanguageTip"] = "界面语言",
         ["Tab_Soql"] = "SOQL",
@@ -78,10 +78,10 @@ public static partial class UiText
         ["Tab_Ai"] = "AI",
 
         // ---- AI チャット ----
-        ["Ai_Send"] = "发送（Ctrl+Enter）",
+        ["Ai_Send"] = "发送（{mod}+Enter）",
         ["Ai_Clear"] = "新对话",
         ["Ai_Cleared"] = "已清空对话",
-        ["Ai_InputTip"] = "让 AI 生成 SOQL / Apex / sf 命令，或分析结果（Ctrl+Enter 发送）",
+        ["Ai_InputTip"] = "让 AI 生成 SOQL / Apex / sf 命令，或分析结果（{mod}+Enter 发送）",
         ["Ai_ContextLabel"] = "上下文：",
         ["Ai_ContextTip"] = "附加到下一条消息的历史记录",
         ["Ai_AttachContext"] = "附加到下一条消息",
@@ -101,8 +101,8 @@ public static partial class UiText
         ["Ai_ApplySoql"] = "在 SOQL 中打开",
         ["Ai_ApplyApex"] = "在 Apex 中打开",
         ["Ai_ApplyCommand"] = "在命令中打开",
-        ["Ai_AppliedSoql"] = "已加载到 SOQL 选项卡（Ctrl+Enter 运行）",
-        ["Ai_AppliedApex"] = "已加载到 Apex 选项卡（Ctrl+Enter 运行）",
+        ["Ai_AppliedSoql"] = "已加载到 SOQL 选项卡（{mod}+Enter 运行）",
+        ["Ai_AppliedApex"] = "已加载到 Apex 选项卡（{mod}+Enter 运行）",
         ["Ai_AppliedCommand"] = "已加载到命令选项卡（Enter 运行）",
         ["Ai_AttachHeaderFmt"] = "分析目标：[{0}] {1}",
 
@@ -112,13 +112,13 @@ public static partial class UiText
         ["Msg_OrgCountFmt"] = "已获取 {0} 个组织",
         ["Msg_OrgLoadFailedFmt"] = "加载组织失败：{0}",
         ["Msg_ReplaySoql"] = "正在从历史记录重新运行 SOQL",
-        ["Msg_ReplayApex"] = "已从历史记录加载 Apex（按 Ctrl+Enter 运行）",
+        ["Msg_ReplayApex"] = "已从历史记录加载 Apex（按 {mod}+Enter 运行）",
         ["Msg_ReplayCommand"] = "已从历史记录加载命令（点击运行执行）",
         ["Msg_ReplayApi"] = "已从历史记录加载 REST 请求（点击发送执行）",
         ["Msg_ReplayDeploy"] = "已从历史记录加载部署设置（点击运行执行）",
         ["Msg_ReplayUnsupportedFmt"] = "“{0}”无法从历史记录重新运行",
         ["Msg_FavoriteRunFmt"] = "正在运行收藏：{0}",
-        ["Msg_FavoriteLoadedApexFmt"] = "已加载收藏（Ctrl+Enter 运行）：{0}",
+        ["Msg_FavoriteLoadedApexFmt"] = "已加载收藏（{mod}+Enter 运行）：{0}",
         ["Msg_FavoriteLoadedCommandFmt"] = "已加载收藏（点击运行执行）：{0}",
         ["Msg_FavoriteLoadedApiFmt"] = "已加载收藏（点击发送执行）：{0}",
         ["Msg_FavoriteLoadedDeployFmt"] = "已加载收藏（点击运行执行）：{0}",
@@ -142,7 +142,7 @@ public static partial class UiText
         ["Dlg_BrowseFolderTitle"] = "选择 sf 工作文件夹",
 
         // ---- SOQL ----
-        ["Soql_Run"] = "▶ 运行（Ctrl+Enter）",
+        ["Soql_Run"] = "▶ 运行（{mod}+Enter）",
         ["Soql_PreferRest"] = "优先使用 REST",
         ["Soql_PreferRestTip"] = "通过 REST API（访问令牌）运行；失败时回退到 sf data query",
         ["Soql_ToolingApi"] = "Tooling API",
@@ -171,7 +171,7 @@ public static partial class UiText
         ["Soql_NoQueryFavorite"] = "没有可添加到收藏的 SOQL",
 
         // ---- 匿名Apex ----
-        ["Apex_Run"] = "▶ 运行（Ctrl+Enter）",
+        ["Apex_Run"] = "▶ 运行（{mod}+Enter）",
         ["Apex_LoadFile"] = "打开…",
         ["Apex_SaveFile"] = "保存…",
         ["Apex_HistoryTip"] = "加载最近执行的 Apex 脚本",
@@ -312,9 +312,9 @@ public static partial class UiText
         ["Op_Retrieve"] = "检索元数据（retrieve）",
 
         // ---- クイックパネル ----
-        ["Quick_Title"] = "快捷面板（Ctrl+1..9）",
-        ["Quick_TitleTip"] = "按注册顺序显示收藏。按 Ctrl+<数字> 可立即运行。",
-        ["Quick_Hint"] = "双击 / Ctrl+<数字> 运行，右键删除",
+        ["Quick_Title"] = "快捷面板（{mod}+1..9）",
+        ["Quick_TitleTip"] = "按注册顺序显示收藏。按 {mod}+<数字> 可立即运行。",
+        ["Quick_Hint"] = "双击 / {mod}+<数字> 运行，右键删除",
         ["Quick_Run"] = "运行",
         ["Quick_Remove"] = "从收藏中移除",
         ["Quick_ConfirmRemoveFmt"] = "从收藏中移除？{0}[{1}] {2}",
@@ -1125,7 +1125,7 @@ public static partial class UiText
         ["Welcome_Group_Org"] = "组织管理",
         ["Welcome_Group_OrgDesc"] = "查看组织信息、最多比较 4 个组织、数据导入导出、记录备份与恢复、组织管理。",
         ["Welcome_Group_Workflow"] = "效率提升",
-        ["Welcome_Group_WorkflowDesc"] = "帮你编写 SOQL/Apex 的 AI 聊天、Ctrl+1..9 快捷面板，以及终端 / VS Code / 浏览器一键启动。",
+        ["Welcome_Group_WorkflowDesc"] = "帮你编写 SOQL/Apex 的 AI 聊天、{mod}+1..9 快捷面板，以及终端 / VS Code / 浏览器一键启动。",
         ["Welcome_LanguagesLine"] = "界面支持英语、日语、简体中文和韩语。",
         ["Welcome_LanguageLabel"] = "语言：",
         ["Welcome_SfHeader"] = "Salesforce CLI",
