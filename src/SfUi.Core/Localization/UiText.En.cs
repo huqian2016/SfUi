@@ -75,6 +75,7 @@ public static partial class UiText
         ["About_IssuesLink"] = "Report a bug (Issues)",
         ["About_ContactLink"] = "Contact the author",
         ["About_Close"] = "Close",
+        ["About_Disclaimer"] = "SfUi is an independent tool and is not affiliated with, endorsed by, or sponsored by Salesforce, Inc. Salesforce is a trademark of Salesforce, Inc.",
         ["Tab_Soql"] = "SOQL",
         ["Tab_Apex"] = "Apex",
         ["Tab_Log"] = "Debug Logs",
@@ -378,7 +379,7 @@ public static partial class UiText
         // ---- 設定: AI ----
         ["Settings_AiGroup"] = "AI",
         ["Settings_ApiKey"] = "API key:",
-        ["Settings_ApiKeyTip"] = "Stored locally in settings.json as an obfuscated value (enc1:…; never committed — plaintext input is also accepted). The SFUI_AI_API_KEY (or legacy DEEPSEEK_API_KEY) environment variable is used as a fallback; the bundled key applies to the default DeepSeek / OpenAI endpoints only.",
+        ["Settings_ApiKeyTip"] = "Stored locally in settings.json as an obfuscated value (enc1:…; never committed — plaintext input is also accepted). The SFUI_AI_API_KEY (or legacy DEEPSEEK_API_KEY) environment variable is used as a fallback; the bundled key applies to the default DeepSeek / OpenAI endpoints only. The bundled evaluation key has usage limits and may stop without notice (your own key takes priority).",
         ["Settings_Model"] = "Model:",
         ["Settings_Test"] = "Test connection",
         ["Settings_TestOkFmt"] = "AI connection OK ({0})",

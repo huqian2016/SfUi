@@ -17,15 +17,15 @@ Two ways to get going: use a prebuilt binary below, or [build from source](#buil
 1. **Microsoft Store (recommended):** install from [SfUi on the Microsoft Store](https://apps.microsoft.com/store/detail/9NX0BFFHF7B1) — signed by Microsoft, so there is no SmartScreen warning (the Store version may lag a little behind the GitHub builds).
 2. **Or download from the [Releases](../../releases) page:**
    - **`SfUi.exe`** — the portable single executable, or
-   - **`SfUi-v0.11.0-portable.zip`** — the executable **plus a ready-to-use `data/` folder with 30 sample SOQL / Apex / commands / REST requests already in the history** (just extract and run).
-   - **`SfUi-0.11.0-x64.msix`** — Windows installer (MSIX). Trust the bundled certificate first: double-click **`SfUi-0.11.0-x64.cer`** → *Install Certificate* → **Local Machine** → **Trusted People** (admin required), then double-click the `.msix` to install.
+   - **`SfUi-v0.11.1-portable.zip`** — the executable **plus a ready-to-use `data/` folder with 30 sample SOQL / Apex / commands / REST requests already in the history** (just extract and run).
+   - **`SfUi-0.11.1-x64.msix`** — Windows installer (MSIX). Trust the bundled certificate first: double-click **`SfUi-0.11.1-x64.cer`** → *Install Certificate* → **Local Machine** → **Trusted People** (admin required), then double-click the `.msix` to install.
 3. Put it in any folder and double-click (no installer).
    - Windows SmartScreen may warn on the GitHub builds because the executable is unsigned (the Store version is signed) — choose *More info* → *Run anyway*.
 4. On first run a `data/` folder is created next to the exe (portable mode). Pick your org in the top bar and start with a tab — or add the sample history via **Settings → Seed sample history**.
 
 ### macOS (Apple Silicon, prebuilt)
 
-1. Download **`SfUi-0.11.0-osx-arm64.zip`** from [Releases](../../releases), extract it and run `SfUi.app`.
+1. Download **`SfUi-0.11.1-osx-arm64.zip`** from [Releases](../../releases), extract it and run `SfUi.app`.
 2. The app is signed with a Developer ID certificate and **notarized by Apple**, so it opens with a normal double-click — including the very first launch.
 3. Same as Windows from there: pick your org in the top bar and start with a tab.
 
@@ -129,7 +129,7 @@ Built with C# / .NET 9, CommunityToolkit.Mvvm and AvalonEdit (WPF) / AvaloniaEdi
 - **REST console** — GET/POST/PATCH/DELETE against the org's instance URL using the access token (`sf org display`), with pretty-printed responses and 401 auto-refresh.
 - **History** — every operation is recorded per type (org, folder, params, result), searchable, re-runnable by double-click.
 - **Favorites & quick panel** — pin SOQL / Apex / commands / REST requests / URLs / folders; run the first nine with `Ctrl+1..9`.
-- **AI chat (multi-provider)** — generate SOQL / Apex / sf commands from natural language and analyze execution results; apply generated code to the matching tab with one click. Shown in a right-side panel (toggle with the **AI** button in the top bar). Works out of the box — an evaluation API key for the default DeepSeek endpoint is bundled. Settings → AI offers presets for **OpenAI-compatible APIs** (OpenAI, Anthropic via its OpenAI-compatibility layer, or a local LLM such as Ollama / LM Studio — no key needed there); set your own key in Settings → AI (or via the `SFUI_AI_API_KEY` environment variable).
+- **AI chat (multi-provider)** — generate SOQL / Apex / sf commands from natural language and analyze execution results; apply generated code to the matching tab with one click. Shown in a right-side panel (toggle with the **AI** button in the top bar). Works out of the box — an evaluation API key for the default DeepSeek endpoint is bundled. Settings → AI offers presets for **OpenAI-compatible APIs** (OpenAI, Anthropic via its OpenAI-compatibility layer, or a local LLM such as Ollama / LM Studio — no key needed there); set your own key in Settings → AI (or via the `SFUI_AI_API_KEY` environment variable). The bundled evaluation key is provided as-is **with usage limits** and may stop without notice — register your own key for uninterrupted use.
 - **Org Info window** — a separate non-modal window per org (click **Org Info** next to the org combo) with 20+ tabs: overview, org settings (values + setup links), users, profiles, permission sets, roles, objects, sharing/OWD, Apex classes & triggers, flows, scheduled jobs, connected apps, installed packages, login history, setup audit trail, record types, currencies, object fields (lazy-loaded) and your own **My Settings** tabs built from a 55-item catalog. Search across all tabs, refresh per tab or all at once, jump straight to Setup pages. Data is cached locally and fetched only on first open (manual refresh after that), so reopening is instant — and each window has its own AI panel with *Attach current tab data* + quick prompts.
 - **Org comparison** — open the **Compare Orgs** window from the top bar and compare 2–4 orgs side by side: org settings, OWD, counts, users, profiles, permission sets, roles, objects, Apex classes/triggers, flows and record types are matched **by API name**, with rows that exist in only some orgs (or differ in value) highlighted. Includes a *Diff only* filter, cache-first loading (shared with the Org Info window — missing sections are fetched automatically) and CSV export.
 - **Data Import / Export window** — a separate window (open from **Data I/O** in the top bar, or from the **Data I/O** button on the Objects tab of the Org Info window, which pre-fills the selected object) with two tabs. *Export*: run SOQL directly or build it from field checkboxes, via REST or Bulk API, browse the result grid and save as CSV / JSON / TSV. *Import*: load a CSV (UTF-8 / Shift-JIS auto-detected), auto-map columns to fields (editable, with per-column include toggles), and run Insert / Update / Upsert / Delete via REST (`composite/sobjects`, 200 records per batch) or Bulk API — with a confirmation prompt, live progress and a per-row result grid (export failed rows to CSV). Runs are recorded in History as `data` and re-run by double-click.
@@ -196,6 +196,10 @@ data\
 
 All JSON files are written atomically (`AtomicJsonFile`: temp file → `File.Replace`) and keep a `*.bak` copy for corruption recovery. Copying the `data/` folder along with the exe moves your settings, history and backups.
 
+## Disclaimer
+
+SfUi is an **independent tool and is not affiliated with, endorsed by, or sponsored by Salesforce, Inc.** Salesforce is a trademark of Salesforce, Inc.
+
 ## License
 
 MIT — see [LICENSE](LICENSE). You are free to use, modify and redistribute SfUi (including commercially); just keep the copyright notice. Third-party components (Avalonia, AvaloniaEdit, CommunityToolkit.Mvvm, Microsoft Fluent UI icons, …) are used under their respective licenses (mostly MIT).
@@ -213,7 +217,7 @@ SOQL・匿名Apex・デバッグログ・デプロイ・自由コマンド・RES
 
 - **ようこそ画面**: 起動のたびに Welcome ウィンドウを表示（「今後表示しない」チェックで次回以降は非表示、設定タブの「ようこそ画面を表示」で再表示）。主な機能の一覧に加え、Salesforce CLI（sf コマンド）が見つからない場合はインストール案内（公式インストーラーを開く + npm コマンド例 + 再チェック）を表示し、UI 言語もウィンドウ内のコンボでその場で切り替えられます
 - UI は **英語（既定）/ 日本語 / 简体中文 / 한국어** に対応（上部バーのコンボで即時切替）
-- **AI チャット（複数プロバイダー対応）**: 自然言語から SOQL / 匿名Apex / sf コマンドを生成、実行結果の分析も可能（右サイドパネル表示・上部バーの「AI」で表示切替。既定の DeepSeek 接続先はすぐ試せるよう評価用キーを同梱。設定 → AI のプリセットから OpenAI / Anthropic（Claude）/ ローカル LLM（Ollama 等、キー不要）など **OpenAI 互換 API** に接続可。自分のキーは 設定 → AI（または環境変数 `SFUI_AI_API_KEY`）で登録）
+- **AI チャット（複数プロバイダー対応）**: 自然言語から SOQL / 匿名Apex / sf コマンドを生成、実行結果の分析も可能（右サイドパネル表示・上部バーの「AI」で表示切替。既定の DeepSeek 接続先はすぐ試せるよう評価用キーを同梱。設定 → AI のプリセットから OpenAI / Anthropic（Claude）/ ローカル LLM（Ollama 等、キー不要）など **OpenAI 互換 API** に接続可。自分のキーは 設定 → AI（または環境変数 `SFUI_AI_API_KEY`）で登録）。同梱の評価用キーは**上限があり、予告なく停止することがあります**（継続利用には自分のキーの登録を推奨）
 - **組織情報ウィンドウ**: 選択中組織の設定・ユーザー・権限・項目などを 20 以上のタブで一覧・検索（非モーダルの別ウィンドウ・複数同時可・「組織情報」ボタンから起動）。初回のみ自動取得してローカルにキャッシュし、以降は手動再取得。オブジェクト項目は遅延取得、Setup ページへのリンク、マイ設定（カタログ 55 項目から作るカスタムタブ）、ウィンドウ単位の AI パネル（表示中タブのデータ添付）付き
 - **組織比較**: 上部バーの「組織比較」から 2〜4 組織を横並び比較（組織設定・OWD・統計・ユーザー・プロファイル・権限セット・ロール・オブジェクト・Apex クラス/トリガ・フロー・レコードタイプを **API 名で突合**。「片方にのみ存在」「値が異なる」行をハイライトし、差分のみ表示フィルタ・組織情報と共有のキャッシュ優先取得（未取得分は自動取得）・CSV 出力付き）
 - **データ入出力**: 上部バーの「データ入出力」、または組織情報ウィンドウのオブジェクトタブの「データ入出力」から（選択中オブジェクトを引き継いで）開く独立ウィンドウ。エクスポート = SOQL 直接入力 / 項目選択ビルダー × REST / Bulk API → 結果グリッド + CSV / JSON / TSV 保存。インポート = CSV 読込（UTF-8 / Shift-JIS 自動判定）→ 自動マッピング（変更・使用可否可）→ 挿入 / 更新 / アップサート / 削除 × REST（composite・200 件/バッチ）/ Bulk API（確認ダイアログ・進捗・行別結果・失敗行 CSV 出力）。履歴「データ」からダブルクリックで再実行可
@@ -226,7 +230,7 @@ SOQL・匿名Apex・デバッグログ・デプロイ・自由コマンド・RES
 - **SOQL タブの強化**: シンタックスハイライト・インライン候補エリア（項目 / リレーション / 関数をクリックで挿入）・ライブ件数（並行して `SELECT COUNT()`）・実行結果を AI へ送っての質問（候補クエリ + 「SOQL で開く」付き）
 - **匿名 Apex の補完と AI 連携**: スニペット / 静的メンバー / インライン SOQL / sObject 名・項目・リレーション / 変数・コレクション / 組織の Apex クラス / `System.Label.*` / カスタム メタデータ型の候補を表示。実行後にエラーは AI へ自動質問、成功時は「AI: continue code」で続きのコードを提案
 - **About ウィンドウ**: 上部バーの「?」ボタンからツール情報・バージョン・GitHub リポジトリ / 不具合登録（Issues）/ 作者への連絡先へのリンクを表示（4 言語対応）
-- 2026-10-06 時点で v0.11.0（テスト 443 件 / スモーク + UIA E2E 検証済み。SOQL・匿名 Apex のコード補完と AI 連携強化・About ウィンドウ（GitHub / Issues / 連絡先リンク）・GitHub Issue テンプレート・アクセス トークン取得の sf CLI 新旧両対応を含む。従来の機能: AI 接続先の汎用化・組織比較・データ入出力・アクセス権限タブ・レコードのバックアップと復元（比較タブ付き）・組織管理ウィンドウ（組織 / ヘルス / 移行棚卸し。新規組織の登録（ブラウザー / SFDX 認証 URL / アクセス トークン）・疎通テスト・タグ/メモ・最終バックアップ・Setup リンク付き）・ブラウザのセッション URL・アイコン ツールバー・ようこそ画面・4 言語 UI・macOS 署名 + 公証済みビルド）
+- 2026-10-06 時点で v0.11.1（テスト 482 件 / スモーク + UIA E2E 検証済み。AI キーの難読化（enc1）と新しい OpenAI モデルへの自動対応・公開準備（非公式の免責事項、プライバシー / セキュリティ ポリシー、About ウィンドウへの免責表示）・SOQL・匿名 Apex のコード補完と AI 連携強化・About ウィンドウ（GitHub / Issues / 連絡先リンク）・GitHub Issue テンプレート・アクセス トークン取得の sf CLI 新旧両対応を含む。従来の機能: AI 接続先の汎用化・組織比較・データ入出力・アクセス権限タブ・レコードのバックアップと復元（比較タブ付き）・組織管理ウィンドウ（組織 / ヘルス / 移行棚卸し。新規組織の登録（ブラウザー / SFDX 認証 URL / アクセス トークン）・疎通テスト・タグ/メモ・最終バックアップ・Setup リンク付き）・ブラウザのセッション URL・アイコン ツールバー・ようこそ画面・4 言語 UI・macOS 署名 + 公証済みビルド）
 
 ## 使い方
 
@@ -237,15 +241,15 @@ SOQL・匿名Apex・デバッグログ・デプロイ・自由コマンド・RES
 1. **Microsoft Store（推奨）:** [SfUi on the Microsoft Store](https://apps.microsoft.com/store/detail/9NX0BFFHF7B1) からインストール（Microsoft 署名済みのため SmartScreen 警告なし。ストア版は GitHub 版より少し遅れることがあります）
 2. **または [Releases](../../releases) からダウンロード**
    - **`SfUi.exe`**（実行ファイル単体）または
-   - **`SfUi-v0.11.0-portable.zip`**（exe + サンプル履歴 30 件入りの `data/` フォルダ。解凍してそのまま実行）
-   - **`SfUi-0.11.0-x64.msix`** — Windows インストーラー（MSIX）。先に同梱の **`SfUi-0.11.0-x64.cer`** を信頼させる（証明書のインストール → ローカル コンピューター → 信頼されたユーザー。管理者権限が必要）→ `.msix` をダブルクリックでインストール
+   - **`SfUi-v0.11.1-portable.zip`**（exe + サンプル履歴 30 件入りの `data/` フォルダ。解凍してそのまま実行）
+   - **`SfUi-0.11.1-x64.msix`** — Windows インストーラー（MSIX）。先に同梱の **`SfUi-0.11.1-x64.cer`** を信頼させる（証明書のインストール → ローカル コンピューター → 信頼されたユーザー。管理者権限が必要）→ `.msix` をダブルクリックでインストール
 3. 任意のフォルダに置いてダブルクリック（インストーラー不要）
    - GitHub 版は署名なしのため SmartScreen の警告が出たら「詳細情報」→「実行」（ストア版は署名済みで警告なし）
 4. 初回起動時に exe 隣に `data/` フォルダ（設定・履歴・ログ）が作成されます。上部バーで組織を選び、各タブから操作を開始（サンプルの SOQL / Apex / コマンド / REST は「設定 → サンプル履歴を投入」で追加できます）
 
 ### macOS（Apple Silicon・ビルド済み）
 
-1. [Releases](../../releases) から **`SfUi-0.11.0-osx-arm64.zip`** をダウンロード → 解凍して `SfUi.app` を実行
+1. [Releases](../../releases) から **`SfUi-0.11.1-osx-arm64.zip`** をダウンロード → 解凍して `SfUi.app` を実行
 2. Developer ID 署名 + **Apple の公証（ステープル込み）** 済みのため、初回からダブルクリックで起動できます（「右クリック →「開く」」の回避策は不要）
 3. 以降は Windows 版と同じ（上部バーで組織を選んで開始）
 
@@ -362,6 +366,10 @@ JSON はすべて原子的書き込み（`AtomicJsonFile`: 一時ファイル �
 - `Enter` … コマンド実行
 - `Ctrl+1..9` … クイックパネルのお気に入りを実行
 - `F5` … 直前の操作を再実行
+
+## 免責事項
+
+本ツールは **Salesforce, Inc. とは無関係の非公式ツールです**（非提携・非承認・非スポンサー）。Salesforce は Salesforce, Inc. の商標です。
 
 ## ライセンス
 

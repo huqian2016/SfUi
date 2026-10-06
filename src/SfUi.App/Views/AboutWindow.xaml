@@ -51,6 +51,9 @@
             </TextBlock>
         </StackPanel>
 
+        <!-- 非公式・商標の免責事項 -->
+        <TextBlock Text="{loc:Tr About_Disclaimer}" TextWrapping="Wrap" Foreground="#777777" FontSize="11" Margin="0,16,0,0" />
+
         <!-- 閉じる -->
         <Button Content="{loc:Tr About_Close}" IsCancel="True" Click="OnCloseClick"
                 Padding="20,4" HorizontalAlignment="Right" Margin="0,18,0,0" />

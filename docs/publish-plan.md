@@ -1,6 +1,6 @@
 # SfUi 公開（Publish）計画
 
-> 対象: SfUi v0.11.0（2026-10-06 時点）
+> 対象: SfUi v0.11.1（2026-10-06 時点）
 > 目的: このツールを多くのユーザー（主に Salesforce 開発者・管理者）に届けるための計画をまとめる
 > 関連: `packaging/README.md`（MSIX / Store 提出）、`docs/macos-signing-notarization.md`（mac 署名・公証）、`.github/ISSUE_TEMPLATE/`（不具合報告）
 
@@ -38,25 +38,25 @@
 
 ### 2.1 必須（ブロッカー級）
 
-- [x] 単体テスト 443 件 / CI 6 ジョブ green（Windows・macOS）
+- [x] 単体テスト 482 件 / CI green（Windows・macOS）
 - [x] macOS: Developer ID 署名 + 公証（CI で自動）
-- [ ] **非公式・商標 Disclaimer** を追加
+- [x] **非公式・商標 Disclaimer** を追加（2026-10-06: README EN/JA + About ウィンドウ（WPF/Avalonia）+ Store 説明文ドラフト）
   - README（EN / JA）、About ウィンドウ、Microsoft Store の説明欄
   - 文言例: 「本ツールは Salesforce, Inc. とは無関係の非公式ツールです。Salesforce は Salesforce, Inc. の商標です。」
-- [ ] **プライバシーポリシー**（`PRIVACY.md` + 公開 URL）
+- [x] **プライバシーポリシー**（`PRIVACY.md` 作成済み 2026-10-06。Store 用 URL: https://github.com/huqian2016/SfUi/blob/main/PRIVACY.md）
   - 内容: アプリ本体はテレメトリ送信なし／データはローカル保存（`data/`・`%APPDATA%\SfUi`・`~/Library/Application Support/SfUi`）／外部送信は AI チャット利用時のみ（入力内容が設定先 API へ送信される）／sf CLI テレメトリは無効化（`SF_DISABLE_TELEMETRY`）／削除方法
   - Store 提出にはプライバシー URL が必須
-- [ ] **Windows 配布の整理**
+- [x] **Windows 配布の整理**（2026-10-06: Store 公開済み・README を「Microsoft Store 推奨」導線に更新）
   - 主導線は Microsoft Store（Store 再署名 = SmartScreen 警告なし）
   - GitHub 直配布（exe / portable / MSIX）は「署名なし・警告の出し方」を README に明記（既存の記載を維持）
-- [ ] **お試しキーの説明**を README / 設定に追加（§1.1 の方針）
+- [x] **お試しキーの説明**を README / 設定に追加（2026-10-06。上限・予告なく停止を明記）
 
 ### 2.2 強く推奨
 
 - [ ] README の**英語セクション拡充**（機能一覧・スクリーンショットを JA と同水準に）
 - [ ] スクリーンショット更新（About・SOQL / Apex 補完など v0.11 の新機能）
-- [ ] **Dependabot**（`.github/dependabot.yml`）+ **CodeQL**（Actions）を有効化
-- [ ] **SECURITY.md**（脆弱性の報告先: ko@hks-tech-kk.com / GitHub Security Advisories）
+- [x] **Dependabot**（`.github/dependabot.yml`）+ **CodeQL**（`.github/workflows/codeql.yml`）を有効化（2026-10-06 追加）
+- [x] **SECURITY.md**（脆弱性の報告先: ko@hks-tech-kk.com / GitHub Security Advisories）（2026-10-06 追加）
 - [ ] **CHANGELOG.md**（Releases に加えてリポジトリ内でも履歴を辿れるように）
 - [ ] Intel Mac 対応の判断（対応=CI に `osx-x64` 追加／非対応=README に「Apple Silicon 専用」を明記）
 - [ ] GitHub 版向けの**アップデート通知**（Releases API を照会して「新バージョンあり」を表示）
@@ -65,7 +65,7 @@
 
 - [ ] デモ GIF / 短尺動画（機能アピール用）
 - [ ] リリース自動化（tag push で 5 アセットを CI が添付）
-- [ ] Store 掲載用スクリーンショットの再撮影（最新 UI）
+- [x] Store 掲載用スクリーンショットの再撮影（最新 UI）（2026-10-06: `dist\SfUi-Store-Screenshots-v0.11.1.zip` / en・ja 01..08）
 
 ---
 
@@ -150,9 +150,11 @@ Phase 3: 一般公開・拡大
 
 ## 6. 直近の ToDo（Phase 0）
 
-1. [ ] README（EN / JA）+ About に非公式・商標 Disclaimer を追加
-2. [ ] `PRIVACY.md` 作成（Store 用 URL も確保: GitHub のファイル URL で可）
-3. [ ] README / 設定画面の説明に「お試しキー（上限あり）」の文言を追加
-4. [ ] `.github/dependabot.yml` + CodeQL + `SECURITY.md` を追加
+1. [x] README（EN / JA）+ About に非公式・商標 Disclaimer を追加
+2. [x] `PRIVACY.md` 作成（Store 用 URL: https://github.com/huqian2016/SfUi/blob/main/PRIVACY.md）
+3. [x] README / 設定画面の説明に「お試しキー（上限あり）」の文言を追加
+4. [x] `.github/dependabot.yml` + CodeQL + `SECURITY.md` を追加
 5. [ ] README EN セクションの拡充
 6. [ ] 上記をまとめて v0.11.1 としてリリース → Store 再提出
+
+> 2026-10-06 進捗: 1〜4 完了（About/README/設定の文言 + PRIVACY/SECURITY/Dependabot/CodeQL）。v0.11.1 はバージョン更新（csproj 0.11.1 / AppxManifest 0.11.1.0）・`dist\SfUi.exe` publish・Store スクショ（`dist\SfUi-Store-Screenshots-v0.11.1.zip`）・掲載文ドラフト（`dist\store-listing-0.11.1.md`）まで準備済み。残り = 5（README EN 拡充）と 6（リリース + Store 再提出）。

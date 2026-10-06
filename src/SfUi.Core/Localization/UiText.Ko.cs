@@ -75,6 +75,7 @@ public static partial class UiText
         ["About_IssuesLink"] = "버그 신고 (Issues)",
         ["About_ContactLink"] = "작성자에게 문의",
         ["About_Close"] = "닫기",
+        ["About_Disclaimer"] = "SfUi는 독립 도구이며 Salesforce, Inc.와 제휴, 승인 또는 후원 관계가 없습니다. Salesforce는 Salesforce, Inc.의 상표입니다.",
         ["Tab_Soql"] = "SOQL",
         ["Tab_Apex"] = "Apex",
         ["Tab_Log"] = "디버그 로그",
@@ -378,7 +379,7 @@ public static partial class UiText
         // ---- 設定: AI ----
         ["Settings_AiGroup"] = "AI",
         ["Settings_ApiKey"] = "API 키:",
-        ["Settings_ApiKeyTip"] = "settings.json에 난독화된 값(enc1:…)으로 로컬 저장됩니다(커밋되지 않음; 평문 입력도 가능). SFUI_AI_API_KEY(또는 이전 DEEPSEEK_API_KEY) 환경 변수가 대체로 사용되며, 내장 키는 기본 DeepSeek / OpenAI 엔드포인트에만 적용됩니다.",
+        ["Settings_ApiKeyTip"] = "settings.json에 난독화된 값(enc1:…)으로 로컬 저장됩니다(커밋되지 않음; 평문 입력도 가능). SFUI_AI_API_KEY(또는 이전 DEEPSEEK_API_KEY) 환경 변수가 대체로 사용되며, 내장 키는 기본 DeepSeek / OpenAI 엔드포인트에만 적용됩니다. 내장 평가용 키는 사용 상한이 있으며 예고 없이 중단될 수 있습니다(자신의 키가 우선).",
         ["Settings_Model"] = "모델:",
         ["Settings_Test"] = "연결 테스트",
         ["Settings_TestOkFmt"] = "AI 연결 정상({0})",

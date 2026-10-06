@@ -75,6 +75,7 @@ public static partial class UiText
         ["About_IssuesLink"] = "不具合の登録 (Issues)",
         ["About_ContactLink"] = "作者へのご連絡",
         ["About_Close"] = "閉じる",
+        ["About_Disclaimer"] = "SfUi は Salesforce, Inc. とは無関係の非公式ツールです（非提携・非承認・非スポンサー）。Salesforce は Salesforce, Inc. の商標です。",
         ["Tab_Soql"] = "SOQL",
         ["Tab_Apex"] = "匿名Apex",
         ["Tab_Log"] = "デバッグログ",
@@ -378,7 +379,7 @@ public static partial class UiText
         // ---- 設定: AI ----
         ["Settings_AiGroup"] = "AI",
         ["Settings_ApiKey"] = "API キー:",
-        ["Settings_ApiKeyTip"] = "settings.json に難読化した値（enc1:…）でローカル保存されます（リポジトリには含まれません。平文の入力も可）。環境変数 SFUI_AI_API_KEY（旧 DEEPSEEK_API_KEY）でも指定可。内蔵キーは既定の DeepSeek / OpenAI 接続先のときのみ使用します。",
+        ["Settings_ApiKeyTip"] = "settings.json に難読化した値（enc1:…）でローカル保存されます（リポジトリには含まれません。平文の入力も可）。環境変数 SFUI_AI_API_KEY（旧 DEEPSEEK_API_KEY）でも指定可。内蔵キーは既定の DeepSeek / OpenAI 接続先のときのみ使用します。内蔵（評価用）キーは上限があり、予告なく停止することがあります（自分のキーが優先されます）。",
         ["Settings_Model"] = "モデル:",
         ["Settings_Test"] = "接続テスト",
         ["Settings_TestOkFmt"] = "AI 接続OK（{0}）",

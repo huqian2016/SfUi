@@ -75,6 +75,7 @@ public static partial class UiText
         ["About_IssuesLink"] = "报告问题 (Issues)",
         ["About_ContactLink"] = "联系作者",
         ["About_Close"] = "关闭",
+        ["About_Disclaimer"] = "SfUi 是独立工具，与 Salesforce, Inc. 无关联，未获其认可或赞助。Salesforce 是 Salesforce, Inc. 的商标。",
         ["Tab_Soql"] = "SOQL",
         ["Tab_Apex"] = "Apex",
         ["Tab_Log"] = "调试日志",
@@ -378,7 +379,7 @@ public static partial class UiText
         // ---- 設定: AI ----
         ["Settings_AiGroup"] = "AI",
         ["Settings_ApiKey"] = "API 密钥：",
-        ["Settings_ApiKeyTip"] = "以混淆值（enc1:…）保存在本地 settings.json 中（不会提交到仓库；也可直接粘贴明文）。环境变量 SFUI_AI_API_KEY（或旧的 DEEPSEEK_API_KEY）将作为回退；内置密钥仅适用于默认的 DeepSeek / OpenAI 端点。",
+        ["Settings_ApiKeyTip"] = "以混淆值（enc1:…）保存在本地 settings.json 中（不会提交到仓库；也可直接粘贴明文）。环境变量 SFUI_AI_API_KEY（或旧的 DEEPSEEK_API_KEY）将作为回退；内置密钥仅适用于默认的 DeepSeek / OpenAI 端点。内置试用密钥有使用上限，可能会未经通知停止使用（自己的密钥优先）。",
         ["Settings_Model"] = "模型：",
         ["Settings_Test"] = "测试连接",
         ["Settings_TestOkFmt"] = "AI 连接正常（{0}）",
