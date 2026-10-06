@@ -55,7 +55,15 @@ public partial class ApexView : UserControl
 
         // 入力・カーソル移動のたびに候補エリアを更新（少し待ってからまとめて）
         ApexEditor.TextArea.TextEntered += (_, _) => ScheduleSuggestions();
-        ApexEditor.TextArea.Caret.PositionChanged += (_, _) => ScheduleSuggestions();
+        ApexEditor.TextArea.Caret.PositionChanged += (_, _) =>
+        {
+            if (ViewModel is { } caretOwner)
+            {
+                caretOwner.CaretOffset = ApexEditor.CaretOffset;
+            }
+
+            ScheduleSuggestions();
+        };
         ApexEditor.TextChanged += (_, _) => ScheduleSuggestions();
 
         _suggestionsTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };

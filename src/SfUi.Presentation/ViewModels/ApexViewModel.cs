@@ -18,6 +18,7 @@ public partial class ApexViewModel : ObservableObject
     private readonly IFilePickerService _filePicker;
     private readonly AppSettingsStore _settings;
     private readonly SObjectDescribeService _describes;
+    private readonly OrgMetadataService _metadata;
     private readonly AppLog _log;
 
     [ObservableProperty]
@@ -46,7 +47,7 @@ public partial class ApexViewModel : ObservableObject
 
     public ObservableCollection<HistoryEntry> HistoryItems { get; } = new();
 
-    public ApexViewModel(ApexService service, HistoryStore history, FavoritesStore favorites, IFilePickerService filePicker, AppSettingsStore settings, SObjectDescribeService describes, AppLog log)
+    public ApexViewModel(ApexService service, HistoryStore history, FavoritesStore favorites, IFilePickerService filePicker, AppSettingsStore settings, SObjectDescribeService describes, OrgMetadataService metadata, AppLog log)
     {
         _service = service;
         _history = history;
@@ -54,6 +55,7 @@ public partial class ApexViewModel : ObservableObject
         _filePicker = filePicker;
         _settings = settings;
         _describes = describes;
+        _metadata = metadata;
         _log = log;
         _aiAssistEnabled = settings.Current.ApexAiAssist;
         RefreshHistory();
@@ -379,7 +381,12 @@ public partial class ApexViewModel : ObservableObject
 
                     header = UiText.T("Soql_SuggestObjects");
                     var objectList = await _describes.ListObjectsAsync(CurrentOrg!, cancellationToken: cts.Token).ConfigureAwait(true);
-                    items = SoqlCompletionEngine.ObjectItems(objectList, context.Prefix);
+                    var objectItems = new List<SoqlCompletionItem>(SoqlCompletionEngine.ObjectItems(objectList, context.Prefix));
+                    var metadataTypes = await _metadata.ListCustomMetadataTypesAsync(CurrentOrg!, cancellationToken: cts.Token).ConfigureAwait(true);
+                    objectItems.AddRange(ApexCompletionEngine.NameItems(metadataTypes, context.Prefix, "Custom metadata"));
+                    var classNames = await _metadata.ListApexClassesAsync(CurrentOrg!, cancellationToken: cts.Token).ConfigureAwait(true);
+                    objectItems.AddRange(ApexCompletionEngine.NameItems(classNames, context.Prefix, "Apex class"));
+                    items = objectItems.Take(ApexCompletionEngine.MaxItems).ToList();
                     break;
 
                 case ApexCompletionKind.Variables:
@@ -412,7 +419,14 @@ public partial class ApexViewModel : ObservableObject
 
                 default:
                     header = UiText.T("Apex_SuggestSnippets");
-                    items = ApexCompletionEngine.Snippets(context.Prefix);
+                    var snippetItems = new List<SoqlCompletionItem>(ApexCompletionEngine.Snippets(context.Prefix));
+                    if (!string.IsNullOrWhiteSpace(CurrentOrg))
+                    {
+                        var orgClasses = await _metadata.ListApexClassesAsync(CurrentOrg!, cancellationToken: cts.Token).ConfigureAwait(true);
+                        snippetItems.AddRange(ApexCompletionEngine.NameItems(orgClasses, context.Prefix, "Apex class"));
+                    }
+
+                    items = snippetItems.Take(ApexCompletionEngine.MaxItems).ToList();
                     break;
             }
 
@@ -486,6 +500,25 @@ public partial class ApexViewModel : ObservableObject
         var root = context.Root ?? string.Empty;
         var parentPath = context.Path ?? Array.Empty<string>();
 
+        // System.Label.<名前> はカスタムラベル候補
+        if (root.Equals("System", StringComparison.OrdinalIgnoreCase)
+            && parentPath.Count == 1
+            && parentPath[0].Equals("Label", StringComparison.OrdinalIgnoreCase))
+        {
+            if (string.IsNullOrWhiteSpace(CurrentOrg))
+            {
+                return null;
+            }
+
+            var labels = await _metadata.ListCustomLabelsAsync(CurrentOrg!, cancellationToken: cancellationToken).ConfigureAwait(true);
+            var labelItems = labels
+                .Where(p => context.Prefix.Length == 0 || p.Name.StartsWith(context.Prefix, StringComparison.OrdinalIgnoreCase))
+                .Take(ApexCompletionEngine.MaxItems)
+                .Select(p => new SoqlCompletionItem(p.Name, string.IsNullOrEmpty(p.Label) ? "Label" : p.Label))
+                .ToList();
+            return (UiText.T("Apex_SuggestLabels"), labelItems);
+        }
+
         // 1) 静的クラス（System / Database …）
         if (ApexCompletionEngine.HasStaticClass(root))
         {
@@ -514,9 +547,16 @@ public partial class ApexViewModel : ObservableObject
         }
 
         var objects = await _describes.ListObjectsAsync(CurrentOrg!, cancellationToken: cancellationToken).ConfigureAwait(true);
-        if (!objects.Any(o => string.Equals(o.Name, declaredType, StringComparison.OrdinalIgnoreCase)))
+        var isKnownType = objects.Any(o => string.Equals(o.Name, declaredType, StringComparison.OrdinalIgnoreCase));
+        if (!isKnownType)
         {
-            return null;   // sObject 以外の型は対象外
+            var metadataTypes = await _metadata.ListCustomMetadataTypesAsync(CurrentOrg!, cancellationToken: cancellationToken).ConfigureAwait(true);
+            isKnownType = metadataTypes.Any(n => string.Equals(n, declaredType, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (!isKnownType)
+        {
+            return null;   // sObject / カスタムメタデータ型以外は対象外
         }
 
         // 参照の連鎖（a.Owner.）を describe で解決する
@@ -592,6 +632,39 @@ public partial class ApexViewModel : ObservableObject
 
     private static string? TruncateTail(string? text, int max) =>
         text is null || text.Length <= max ? text : "…(truncated)\n" + text[^max..];
+
+    /// <summary>エディターのカーソル位置（ApexView が更新する）。</summary>
+    public int CaretOffset { get; set; }
+
+    /// <summary>カーソル行を手がかりに、AI パネルへ続きの実装を依頼する。</summary>
+    [RelayCommand]
+    private async Task AiCompleteAsync()
+    {
+        if (AiAssistHandler is not { } handler)
+        {
+            return;
+        }
+
+        var code = ApexCode;
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            StatusText = UiText.T("Apex_EnterCode");
+            return;
+        }
+
+        var caret = Math.Clamp(CaretOffset, 0, code.Length);
+        var lineStart = code.LastIndexOf('\n', Math.Max(caret - 1, 0));
+        var lineEnd = code.IndexOf('\n', caret);
+        if (lineEnd < 0)
+        {
+            lineEnd = code.Length;
+        }
+
+        var lineText = code[(lineStart + 1)..lineEnd].Trim();
+        var prompt = UiText.T("Apex_AiCompletePromptFmt", Truncate(code, MaxPromptCodeChars), lineText);
+        StatusText = UiText.T("Ai_Thinking");
+        await DispatchAiAssistAsync(handler, prompt);
+    }
 
     private void AppendHistory(string code, string status, int durationMs, string? summary, string resultExtension = "json", string? result = null)
     {

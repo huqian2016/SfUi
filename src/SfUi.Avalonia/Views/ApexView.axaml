@@ -27,8 +27,10 @@
                         ToolTip.Tip="{loc:Tr Common_RefreshTip}" />
                 <Border Width="1" Height="20" VerticalAlignment="Center" Background="#CCCCCC" Margin="0,2,12,2" />
                 <Button Content="{loc:Tr Common_AddFavorite}" Padding="10,2" Margin="0,2,6,2" Command="{Binding AddFavoriteCommand}" />
-                <Button Content="{loc:Tr Apex_FetchLatestLog}" Padding="10,2" Margin="0,2,0,2" Command="{Binding FetchLatestLogCommand}"
+                <Button Content="{loc:Tr Apex_FetchLatestLog}" Padding="10,2" Margin="0,2,6,2" Command="{Binding FetchLatestLogCommand}"
                         ToolTip.Tip="{loc:Tr Apex_FetchLatestLogTip}" />
+                <Button Content="{loc:Tr Apex_AiComplete}" Padding="10,2" Margin="0,2,0,2" Command="{Binding AiCompleteCommand}"
+                        ToolTip.Tip="{loc:Tr Apex_AiCompleteTip}" />
             </WrapPanel>
         </Border>
 

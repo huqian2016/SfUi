@@ -82,6 +82,18 @@ public class ApexCompletionTests
     }
 
     [Fact]
+    public void Parser_DetectsSystemLabelPath()
+    {
+        var text = "System.debug(System.Label.Wel";
+        var context = ApexCompletionParser.Parse(text, text.Length);
+
+        Assert.Equal(ApexCompletionKind.Members, context.Kind);
+        Assert.Equal("System", context.Root);
+        Assert.Equal(new[] { "Label" }, context.Path);
+        Assert.Equal("Wel", context.Prefix);
+    }
+
+    [Fact]
     public void Parser_DetectsDmlVariableContext()
     {
         var context = ApexCompletionParser.Parse("insert acc", 10);
@@ -250,5 +262,15 @@ public class ApexCompletionTests
             ApexCompletionEngine.CollectionMethods("Map", "pu").Select(i => i.Text));
 
         Assert.Empty(ApexCompletionEngine.CollectionMethods("Set", "zzz"));
+    }
+
+    [Fact]
+    public void Engine_NameItems_FiltersByPrefix()
+    {
+        var names = new[] { "AccountHelper", "OrderService", "RetryQueueJob" };
+        var items = ApexCompletionEngine.NameItems(names, "ord", "Apex class");
+
+        Assert.Equal("OrderService", items.Single().Text);
+        Assert.Equal("Apex class", items.Single().Description);
     }
 }

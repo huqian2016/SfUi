@@ -673,6 +673,14 @@ public static class ApexCompletionEngine
     /// <summary>静的クラス名として既知か（System / Database …）。</summary>
     public static bool HasStaticClass(string root) => Members.ContainsKey(root);
 
+    /// <summary>名前リスト（Apex クラス・カスタムメタデータ型など）から候補を生成する。</summary>
+    public static IReadOnlyList<SoqlCompletionItem> NameItems(IEnumerable<string> names, string prefix, string description) =>
+        names
+            .Where(n => StartsWith(n, prefix))
+            .Take(MaxItems)
+            .Select(n => new SoqlCompletionItem(n, description))
+            .ToList();
+
     /// <summary>sObject 変数のインスタンスメソッド候補を返す。</summary>
     public static IReadOnlyList<SoqlCompletionItem> SObjectMethods(string prefix) =>
         SObjectInstanceMembers
