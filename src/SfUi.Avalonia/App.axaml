@@ -20,12 +20,23 @@
             <Setter Property="FontSize" Value="13" />
         </Style>
 
-        <!-- 列幅のドラッグ変更・列の並べ替えを有効化（Avalonia の DataGrid は CanUserResizeColumns が既定 false のため、WPF 版と挙動が違う）
-             テーブル本文は 1 サイズ小さめにして、行内に収まる情報量を増やす -->
+        <!-- 列幅のドラッグ変更・列の並べ替えを有効化（Avalonia の DataGrid は CanUserResizeColumns が既定 false のため、WPF 版と挙動が違う） -->
         <Style Selector="DataGrid">
             <Setter Property="FontSize" Value="12" />
             <Setter Property="CanUserResizeColumns" Value="True" />
             <Setter Property="CanUserReorderColumns" Value="True" />
+        </Style>
+
+        <!-- テーブル本文は Fluent テーマの既定（セル 15px / MinHeight 32）では本文より大きく見えるため、
+             セル 12px・行高 26 に詰める。セル/ヘッダーはテーマが直接 FontSize を設定しているため、
+             DataGrid 側の FontSize では効かない（個別スタイルで上書きする） -->
+        <Style Selector="DataGridCell">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="MinHeight" Value="26" />
+        </Style>
+        <Style Selector="DataGridColumnHeader">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="MinHeight" Value="28" />
         </Style>
     </Application.Styles>
 </Application>
