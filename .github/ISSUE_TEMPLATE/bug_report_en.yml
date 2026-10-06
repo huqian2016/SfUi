@@ -1,0 +1,129 @@
+name: Bug report (English)
+description: Report a bug including the reproduction environment, steps and actual results
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug! Please fill in the fields below.
+        Optional fields can be left blank if not applicable.
+
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: Describe the bug in one line
+      placeholder: "e.g. Running a query in the SOQL tab fails with \"Failed to get the access token\""
+    validations:
+      required: true
+
+  - type: dropdown
+    id: app
+    attributes:
+      label: App
+      description: Which app are you using?
+      options:
+        - Windows build (SfUi.exe)
+        - Avalonia build (SfUi.Avalonia)
+        - Both / Not sure
+    validations:
+      required: true
+
+  - type: input
+    id: app-version
+    attributes:
+      label: App version
+      description: Shown in the About window or the status bar
+      placeholder: "e.g. v0.10.1"
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: OS
+      description: OS and version
+      placeholder: "e.g. Windows 11 24H2 / macOS 15.3 (Apple Silicon)"
+    validations:
+      required: true
+
+  - type: input
+    id: sf-cli
+    attributes:
+      label: Salesforce CLI (sf) version
+      description: Output of `sf --version`
+      placeholder: "e.g. @salesforce/cli/2.94.6 win32-x64 node-v22.16.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: org-type
+    attributes:
+      label: Target org
+      description: The type of org where you saw the bug
+      options:
+        - Production
+        - Sandbox
+        - Developer Edition
+        - Scratch org
+        - Demo mock environment
+        - N/A
+        - Other
+    validations:
+      required: false
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Numbered steps that reproduce the issue
+      value: |
+        1. 
+        2. 
+        3. 
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+      description: What you expected to happen
+      placeholder: "e.g. The query results are shown in the result table"
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+      description: What actually happened (the full error message helps a lot)
+      placeholder: "e.g. \"Failed to get the access token (...)\" is shown and the results stay empty"
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / screenshots
+      description: Attach the app log (logs\app-*.log in the data folder) or screenshots if available
+      render: text
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Anything else (workarounds, frequency, the first version where it appeared, ...)
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I confirmed the issue reproduces on the latest version
+        - label: I searched existing issues and found no duplicates
