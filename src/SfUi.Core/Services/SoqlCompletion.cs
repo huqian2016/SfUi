@@ -399,6 +399,52 @@ public static class SoqlCompletionEngine
         return null;
     }
 
+    /// <summary>
+    /// 項目候補の対象オブジェクトを解決する（エイリアス / 別オブジェクト / 参照関係の連鎖）。
+    /// </summary>
+    public static async Task<string?> ResolveTargetAsync(
+        SObjectDescribeService describes, string org, SoqlCompletionContext context, CancellationToken cancellationToken = default)
+    {
+        string? target = context.FromObjects.FirstOrDefault();
+
+        for (var i = 0; i < context.Path.Count; i++)
+        {
+            var segment = context.Path[i];
+
+            if (i == 0)
+            {
+                if (context.Aliases.TryGetValue(segment, out var aliased))
+                {
+                    target = aliased;
+                    continue;
+                }
+
+                var fromMatch = context.FromObjects.FirstOrDefault(o => string.Equals(o, segment, StringComparison.OrdinalIgnoreCase));
+                if (fromMatch is not null)
+                {
+                    target = fromMatch;
+                    continue;
+                }
+            }
+
+            if (target is null)
+            {
+                return null;
+            }
+
+            var describe = await describes.DescribeAsync(org, target, cancellationToken: cancellationToken).ConfigureAwait(false);
+            var relationship = ResolveRelationship(describe, segment);
+            if (relationship is null)
+            {
+                return null;
+            }
+
+            target = relationship;
+        }
+
+        return target;
+    }
+
     private static string FieldDescription(DataIoField field)
     {
         var type = string.IsNullOrEmpty(field.Type) ? "string" : field.Type;

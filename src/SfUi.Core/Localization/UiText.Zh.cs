@@ -179,6 +179,8 @@ public static partial class UiText
         ["Apex_AiAssistTip"] = "每次运行后自动向 AI 面板发送请求（出错时请其给出修正方案，成功时请其建议下一步验证）",
         ["Apex_AiPromptSuccessFmt"] = "以下匿名 Apex 执行成功。请根据调试日志，建议接下来值得确认或尝试的 3 项内容；如有需要请用 Apex 代码块展示，并各附一行说明。\n\n已执行的 Apex：\n```\n{0}\n```\n调试日志（末尾）：\n```\n{1}\n```",
         ["Apex_AiPromptErrorFmt"] = "以下匿名 Apex 执行出错。请说明原因、给出修正方法，并用代码块展示修正后的 Apex。\n\nApex：\n```\n{0}\n```\n错误：{1}\n调试日志（末尾）：\n```\n{2}\n```",
+        ["Apex_SuggestMembersFmt"] = "{0} 的成员：",
+        ["Apex_SuggestSnippets"] = "Apex 代码片段与类型：",
         ["Apex_FetchLatestLog"] = "显示最新日志",
         ["Apex_FetchLatestLogTip"] = "获取组织中保存的最新调试日志",
         ["Apex_LogsTip"] = "调试日志（sf apex run 输出 / 从组织获取的日志）",

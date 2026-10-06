@@ -143,7 +143,7 @@ public partial class SoqlViewModel : ObservableObject
             }
             else
             {
-                var target = await ResolveCompletionTargetAsync(context, cts.Token).ConfigureAwait(true);
+                var target = await SoqlCompletionEngine.ResolveTargetAsync(_describes, CurrentOrg!, context, cts.Token).ConfigureAwait(true);
                 if (target is null)
                 {
                     if (!cts.IsCancellationRequested)
@@ -194,50 +194,6 @@ public partial class SoqlViewModel : ObservableObject
         IsFetchingSuggestions = false;
         IsSuggestionsVisible = false;
         Suggestions.Clear();
-    }
-
-    /// <summary>項目候補の対象オブジェクトを解決する（エイリアス / 別オブジェクト / 参照関係の連鎖）。</summary>
-    private async Task<string?> ResolveCompletionTargetAsync(SoqlCompletionContext context, CancellationToken cancellationToken)
-    {
-        var org = CurrentOrg!;
-        string? target = context.FromObjects.FirstOrDefault();
-
-        for (var i = 0; i < context.Path.Count; i++)
-        {
-            var segment = context.Path[i];
-
-            if (i == 0)
-            {
-                if (context.Aliases.TryGetValue(segment, out var aliased))
-                {
-                    target = aliased;
-                    continue;
-                }
-
-                var fromMatch = context.FromObjects.FirstOrDefault(o => string.Equals(o, segment, StringComparison.OrdinalIgnoreCase));
-                if (fromMatch is not null)
-                {
-                    target = fromMatch;
-                    continue;
-                }
-            }
-
-            if (target is null)
-            {
-                return null;
-            }
-
-            var describe = await _describes.DescribeAsync(org, target, cancellationToken: cancellationToken).ConfigureAwait(true);
-            var relationship = SoqlCompletionEngine.ResolveRelationship(describe, segment);
-            if (relationship is null)
-            {
-                return null;
-            }
-
-            target = relationship;
-        }
-
-        return target;
     }
 
     // ---- 件数のライブ表示（入力停止後に自動更新） ----

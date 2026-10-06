@@ -3,15 +3,18 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
+using Avalonia.Threading;
 using AvaloniaEdit;
 using AvaloniaEdit.Highlighting;
 using SfUi.App.ViewModels;
+using SfUi.Core;
 
 namespace SfUi.Avalonia.Views;
 
 public partial class ApexView : UserControl
 {
     private ApexViewModel? _subscribed;
+    private readonly DispatcherTimer _suggestionsTimer;
 
     private ApexViewModel? ViewModel => DataContext as ApexViewModel;
 
@@ -40,6 +43,18 @@ public partial class ApexView : UserControl
                 e.Handled = true;
             }
         }, RoutingStrategies.Tunnel);
+
+        // 入力・カーソル移動のたびに候補エリアを更新（少し待ってからまとめて）
+        editor.TextArea.TextEntered += (_, _) => ScheduleSuggestions();
+        editor.TextArea.Caret.PositionChanged += (_, _) => ScheduleSuggestions();
+        editor.TextChanged += (_, _) => ScheduleSuggestions();
+
+        _suggestionsTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
+        _suggestionsTimer.Tick += (_, _) =>
+        {
+            _suggestionsTimer.Stop();
+            _ = RefreshSuggestionsAsync();
+        };
 
         DataContextChanged += (_, _) => Subscribe();
         Subscribe();
@@ -70,5 +85,50 @@ public partial class ApexView : UserControl
         {
             editor.Text = viewModel.ApexCode;
         }
+    }
+
+    // ---- 候補エリア ----
+
+    private void ScheduleSuggestions()
+    {
+        _suggestionsTimer.Stop();
+        _suggestionsTimer.Start();
+    }
+
+    private async Task RefreshSuggestionsAsync()
+    {
+        if (ViewModel is not { } viewModel)
+        {
+            return;
+        }
+
+        var editor = this.FindControl<TextEditor>("ApexEditor")!;
+        try
+        {
+            await viewModel.UpdateSuggestionsAsync(editor.Text, editor.CaretOffset);
+        }
+        catch (Exception)
+        {
+            // 候補更新の失敗は通常の操作を妨げない
+        }
+    }
+
+    /// <summary>候補チップのクリックで、カーソル位置の語を候補で置き換える。</summary>
+    private void OnSuggestionClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { DataContext: SoqlCompletionItem item })
+        {
+            return;
+        }
+
+        var editor = this.FindControl<TextEditor>("ApexEditor")!;
+        var caret = editor.CaretOffset;
+        var context = ApexCompletionParser.Parse(editor.Text, caret);
+        var segmentStart = caret - context.Prefix.Length;
+
+        editor.Document.Replace(segmentStart, caret - segmentStart, item.Text);
+        editor.CaretOffset = segmentStart + item.Text.Length + item.CaretOffsetDelta;
+        editor.Focus();
+        ScheduleSuggestions();
     }
 }

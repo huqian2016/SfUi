@@ -17,6 +17,7 @@ public partial class ApexViewModel : ObservableObject
     private readonly FavoritesStore _favorites;
     private readonly IFilePickerService _filePicker;
     private readonly AppSettingsStore _settings;
+    private readonly SObjectDescribeService _describes;
     private readonly AppLog _log;
 
     [ObservableProperty]
@@ -45,13 +46,14 @@ public partial class ApexViewModel : ObservableObject
 
     public ObservableCollection<HistoryEntry> HistoryItems { get; } = new();
 
-    public ApexViewModel(ApexService service, HistoryStore history, FavoritesStore favorites, IFilePickerService filePicker, AppSettingsStore settings, AppLog log)
+    public ApexViewModel(ApexService service, HistoryStore history, FavoritesStore favorites, IFilePickerService filePicker, AppSettingsStore settings, SObjectDescribeService describes, AppLog log)
     {
         _service = service;
         _history = history;
         _favorites = favorites;
         _filePicker = filePicker;
         _settings = settings;
+        _describes = describes;
         _log = log;
         _aiAssistEnabled = settings.Current.ApexAiAssist;
         RefreshHistory();
@@ -281,6 +283,138 @@ public partial class ApexViewModel : ObservableObject
         {
             _ = ExecuteAsync();
         }
+    }
+
+    // ---- 候補エリア（エディターからの問い合わせ） ----
+
+    /// <summary>候補エリアへ表示する候補一覧。</summary>
+    public ObservableCollection<SoqlCompletionItem> Suggestions { get; } = new();
+
+    /// <summary>候補エリアの見出し（例: 「System のメンバー:」）。</summary>
+    [ObservableProperty]
+    private string _suggestionsHeader = string.Empty;
+
+    /// <summary>候補エリアを表示するか。</summary>
+    [ObservableProperty]
+    private bool _isSuggestionsVisible;
+
+    /// <summary>候補を取得中か（「項目取得中…」の表示）。</summary>
+    [ObservableProperty]
+    private bool _isFetchingSuggestions;
+
+    private CancellationTokenSource? _suggestCts;
+
+    /// <summary>
+    /// カーソル位置の候補を候補エリアへ反映する（ApexView のエディターから呼ばれる）。
+    /// インライン SOQL / 静的クラスのメンバー / スニペットを入力に合わせて切り替える。
+    /// </summary>
+    public async Task UpdateSuggestionsAsync(string text, int caret)
+    {
+        var context = ApexCompletionParser.Parse(text, caret);
+
+        _suggestCts?.Cancel();
+        _suggestCts?.Dispose();
+        _suggestCts = null;
+
+        if (context.Kind == ApexCompletionKind.None)
+        {
+            HideSuggestions();
+            return;
+        }
+
+        var cts = new CancellationTokenSource();
+        _suggestCts = cts;
+        IsSuggestionsVisible = true;
+        IsFetchingSuggestions = true;
+
+        try
+        {
+            IReadOnlyList<SoqlCompletionItem> items;
+            string header;
+
+            switch (context.Kind)
+            {
+                case ApexCompletionKind.Soql when context.Soql is { } soql:
+                    if (string.IsNullOrWhiteSpace(CurrentOrg)
+                        || soql.InsideString
+                        || soql.Clause is SoqlClause.None or SoqlClause.Other or SoqlClause.Limit or SoqlClause.Offset)
+                    {
+                        HideSuggestions();
+                        return;
+                    }
+
+                    if (soql.Clause == SoqlClause.From)
+                    {
+                        header = UiText.T("Soql_SuggestObjects");
+                        var objects = await _describes.ListObjectsAsync(CurrentOrg!, cancellationToken: cts.Token).ConfigureAwait(true);
+                        items = SoqlCompletionEngine.ObjectItems(objects, soql.Prefix);
+                    }
+                    else
+                    {
+                        var target = await SoqlCompletionEngine.ResolveTargetAsync(_describes, CurrentOrg!, soql, cts.Token).ConfigureAwait(true);
+                        if (target is null)
+                        {
+                            if (!cts.IsCancellationRequested)
+                            {
+                                HideSuggestions();
+                            }
+
+                            return;
+                        }
+
+                        header = UiText.T("Soql_SuggestFieldsFmt", target);
+                        var describe = await _describes.DescribeAsync(CurrentOrg!, target, cancellationToken: cts.Token).ConfigureAwait(true);
+                        var includeFunctions = soql.IncludeFunctions && soql.Path.Count == 0;
+                        items = SoqlCompletionEngine.FieldItems(describe, soql.Prefix, includeFunctions);
+                    }
+
+                    break;
+
+                case ApexCompletionKind.Members:
+                    header = UiText.T("Apex_SuggestMembersFmt", context.Root ?? string.Empty);
+                    items = ApexCompletionEngine.StaticMembers(context.Root ?? string.Empty, context.Prefix);
+                    break;
+
+                default:
+                    header = UiText.T("Apex_SuggestSnippets");
+                    items = ApexCompletionEngine.Snippets(context.Prefix);
+                    break;
+            }
+
+            if (cts.IsCancellationRequested)
+            {
+                return;
+            }
+
+            SuggestionsHeader = header;
+            Suggestions.Clear();
+            foreach (var item in items)
+            {
+                Suggestions.Add(item);
+            }
+
+            IsFetchingSuggestions = false;
+            IsSuggestionsVisible = items.Count > 0;
+        }
+        catch (OperationCanceledException)
+        {
+            // 次の入力・カーソル移動で破棄された
+        }
+        catch (Exception ex)
+        {
+            if (!cts.IsCancellationRequested)
+            {
+                HideSuggestions();
+                _log.Warn($"Apex 候補の取得に失敗: {ex.Message}");
+            }
+        }
+    }
+
+    private void HideSuggestions()
+    {
+        IsFetchingSuggestions = false;
+        IsSuggestionsVisible = false;
+        Suggestions.Clear();
     }
 
     // ---- 実行後の AI 支援 ----

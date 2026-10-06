@@ -179,6 +179,8 @@ public static partial class UiText
         ["Apex_AiAssistTip"] = "Automatically ask the AI panel after each run: how to fix errors, or what to verify next on success",
         ["Apex_AiPromptSuccessFmt"] = "The anonymous Apex below ran successfully. Based on the debug log, suggest three next steps or checks to try. Show Apex code blocks where useful, each with a one-line explanation.\n\nExecuted Apex:\n```\n{0}\n```\nDebug log (tail):\n```\n{1}\n```",
         ["Apex_AiPromptErrorFmt"] = "The anonymous Apex below failed. Explain the cause, suggest a fix, and show the corrected Apex in a code block.\n\nApex:\n```\n{0}\n```\nError: {1}\nDebug log (tail):\n```\n{2}\n```",
+        ["Apex_SuggestMembersFmt"] = "{0} members:",
+        ["Apex_SuggestSnippets"] = "Apex snippets and types:",
         ["Apex_FetchLatestLog"] = "Show latest log",
         ["Apex_FetchLatestLogTip"] = "Fetch the latest debug log stored in the org",
         ["Apex_LogsTip"] = "Debug log (sf apex run output / log fetched from the org)",

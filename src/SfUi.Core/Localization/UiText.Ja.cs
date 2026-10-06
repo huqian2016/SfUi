@@ -179,6 +179,8 @@ public static partial class UiText
         ["Apex_AiAssistTip"] = "実行後、AI パネルへ自動送信します（エラー時 = 修正方法、成功時 = 動作確認・次のステップの提案を依頼）",
         ["Apex_AiPromptSuccessFmt"] = "次の匿名Apexが実行に成功しました。デバッグログを踏まえ、次に確認・試すと良さそうなことを 3 つ提案してください。必要なら Apex のコードブロックで示し、それぞれ 1 行の説明を付けてください。\n\n実行したApex:\n```\n{0}\n```\nデバッグログ（末尾）:\n```\n{1}\n```",
         ["Apex_AiPromptErrorFmt"] = "次の匿名Apexでエラーが発生しました。原因を説明し、修正方法と修正済みの Apex をコードブロックで示してください。\n\nApex:\n```\n{0}\n```\nエラー: {1}\nデバッグログ（末尾）:\n```\n{2}\n```",
+        ["Apex_SuggestMembersFmt"] = "{0} のメンバー:",
+        ["Apex_SuggestSnippets"] = "Apex スニペット・型:",
         ["Apex_FetchLatestLog"] = "最新ログを表示",
         ["Apex_FetchLatestLogTip"] = "org に保存されている最新のデバッグログを取得",
         ["Apex_LogsTip"] = "デバッグログ（sf apex run の実行ログ / org から取得したログ）",
