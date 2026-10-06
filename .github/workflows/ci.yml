@@ -177,7 +177,7 @@ jobs:
           find dist/mac/SfUi.app -maxdepth 2 -type d | head -10 || true
           ls -lh dist/mac/*.zip
       - name: Upload .app zip
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: SfUi-macos-app
           path: dist/mac/SfUi-*-osx-arm64.zip
