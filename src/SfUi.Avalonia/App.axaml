@@ -20,8 +20,10 @@
             <Setter Property="FontSize" Value="13" />
         </Style>
 
-        <!-- 列幅のドラッグ変更・列の並べ替えを有効化（Avalonia の DataGrid は CanUserResizeColumns が既定 false のため、WPF 版と挙動が違う） -->
+        <!-- 列幅のドラッグ変更・列の並べ替えを有効化（Avalonia の DataGrid は CanUserResizeColumns が既定 false のため、WPF 版と挙動が違う）
+             テーブル本文は 1 サイズ小さめにして、行内に収まる情報量を増やす -->
         <Style Selector="DataGrid">
+            <Setter Property="FontSize" Value="12" />
             <Setter Property="CanUserResizeColumns" Value="True" />
             <Setter Property="CanUserReorderColumns" Value="True" />
         </Style>

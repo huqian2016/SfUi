@@ -85,8 +85,9 @@ public sealed class OrgService
 
     /// <summary>
     /// 対象組織のアクセストークン等を取得する（既定 30 分キャッシュ、forceRefresh で再取得）。
-    /// アクセストークンは sf 2.152+ で <c>org display</c> の出力から隠されるため、
-    /// <c>org auth show-access-token --json</c> で取得し、instanceUrl / apiVersion は <c>org display</c> から得る。
+    /// <c>org display</c> の accessToken がそのまま使える場合はそれを使い、
+    /// sf 2.152+ のように伏せ字（"[REDACTED]..."）の場合のみ <c>org auth show-access-token --json</c> で取得する。
+    /// （古い CLI・sf 2.94.6 などには show-access-token コマンドが存在しないための両対応）
     /// </summary>
     public async Task<OrgAuthInfo> GetAuthAsync(string targetOrg, bool forceRefresh = false, CancellationToken cancellationToken = default)
     {
@@ -103,20 +104,25 @@ public sealed class OrgService
         var raw = await _runner
             .RunAsync(new[] { "org", "display", "--target-org", targetOrg, "--json" }, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
-
         var command = SfCommandResult.From(raw);
 
-        // sf org display はシークレットを隠す（accessToken が "[REDACTED]..." になる）ため、
-        // トークンは専用コマンド org auth show-access-token --json で取得する（--json で確認プロンプトをスキップ）。
-        var tokenRaw = await _runner
-            .RunAsync(new[] { "org", "auth", "show-access-token", "--target-org", targetOrg, "--json" }, cancellationToken: cancellationToken)
-            .ConfigureAwait(false);
-        var tokenCommand = SfCommandResult.From(tokenRaw);
-        var accessToken = tokenCommand.GetResultString("accessToken");
-
-        if (!command.IsSuccess || !tokenCommand.IsSuccess || string.IsNullOrWhiteSpace(accessToken))
+        var accessToken = UsableAccessToken(command.GetResultString("accessToken"));
+        string? tokenErrorMessage = null;
+        if (command.IsSuccess && accessToken is null)
         {
-            var error = !command.IsSuccess ? command.ErrorMessage : tokenCommand.ErrorMessage;
+            // sf 2.152+ の org display は accessToken を伏せるため、専用コマンドで取得する
+            // （--json で確認プロンプトをスキップ）。古い CLI は display の値をそのまま返すためこの分岐には入らない。
+            var tokenRaw = await _runner
+                .RunAsync(new[] { "org", "auth", "show-access-token", "--target-org", targetOrg, "--json" }, cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
+            var tokenCommand = SfCommandResult.From(tokenRaw);
+            accessToken = UsableAccessToken(tokenCommand.GetResultString("accessToken"));
+            tokenErrorMessage = tokenCommand.ErrorMessage;
+        }
+
+        if (!command.IsSuccess || string.IsNullOrWhiteSpace(accessToken))
+        {
+            var error = !command.IsSuccess ? command.ErrorMessage : tokenErrorMessage;
             throw new SfCliException(UiText.T("Core_TokenFailedFmt", targetOrg, error), raw);
         }
 
@@ -130,6 +136,20 @@ public sealed class OrgService
 
         _authCache[targetOrg] = auth;
         return auth;
+    }
+
+    /// <summary>
+    /// accessToken としてそのまま利用できる値か判定する。
+    /// 空・null・伏せ字（"[REDACTED]..."）は利用不可として null を返す。
+    /// </summary>
+    public static string? UsableAccessToken(string? token)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            return null;
+        }
+
+        return token.StartsWith("[REDACTED", StringComparison.OrdinalIgnoreCase) ? null : token;
     }
 
     /// <summary>トークンキャッシュを破棄する（401 時の再取得などに使用）。</summary>
