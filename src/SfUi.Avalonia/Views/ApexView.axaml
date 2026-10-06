@@ -9,6 +9,8 @@
         <Border DockPanel.Dock="Top" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,4">
             <WrapPanel Orientation="Horizontal">
                 <Button Content="{loc:Tr Apex_Run}" Padding="10,2" Margin="0,2,12,2" Command="{Binding ExecuteCommand}" />
+                <CheckBox Content="{loc:Tr Apex_AiAssist}" IsChecked="{Binding AiAssistEnabled, Mode=TwoWay}" VerticalAlignment="Center" Margin="0,2,12,2"
+                          ToolTip.Tip="{loc:Tr Apex_AiAssistTip}" />
                 <Button Content="{loc:Tr Apex_LoadFile}" Padding="10,2" Margin="0,2,6,2" Command="{Binding LoadFileCommand}" />
                 <Button Content="{loc:Tr Apex_SaveFile}" Padding="10,2" Margin="0,2,12,2" Command="{Binding SaveFileCommand}" />
                 <Border Width="1" Height="20" VerticalAlignment="Center" Background="#CCCCCC" Margin="0,2,12,2" />

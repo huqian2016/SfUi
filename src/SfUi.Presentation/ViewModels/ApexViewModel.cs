@@ -16,6 +16,7 @@ public partial class ApexViewModel : ObservableObject
     private readonly HistoryStore _history;
     private readonly FavoritesStore _favorites;
     private readonly IFilePickerService _filePicker;
+    private readonly AppSettingsStore _settings;
     private readonly AppLog _log;
 
     [ObservableProperty]
@@ -44,13 +45,15 @@ public partial class ApexViewModel : ObservableObject
 
     public ObservableCollection<HistoryEntry> HistoryItems { get; } = new();
 
-    public ApexViewModel(ApexService service, HistoryStore history, FavoritesStore favorites, IFilePickerService filePicker, AppLog log)
+    public ApexViewModel(ApexService service, HistoryStore history, FavoritesStore favorites, IFilePickerService filePicker, AppSettingsStore settings, AppLog log)
     {
         _service = service;
         _history = history;
         _favorites = favorites;
         _filePicker = filePicker;
+        _settings = settings;
         _log = log;
+        _aiAssistEnabled = settings.Current.ApexAiAssist;
         RefreshHistory();
     }
 
@@ -107,6 +110,7 @@ public partial class ApexViewModel : ObservableObject
                 StatusText = UiText.T("Apex_CompileError");
                 ResultSummary = UiText.T("Apex_CompileErrorFmt", compileProblem);
                 AppendHistory(code, "error", (int)result.Duration.TotalMilliseconds, ResultSummary);
+                NotifyAiAfterRun(success: false, code, ResultSummary, logs: null);
             }
             else if (result.ExceptionMessage is { Length: > 0 } exceptionMessage)
             {
@@ -114,6 +118,7 @@ public partial class ApexViewModel : ObservableObject
                 ResultSummary = UiText.T("Apex_ExceptionFmt", result.Line, result.Column, exceptionMessage, Environment.NewLine + result.ExceptionStackTrace);
                 ResultLogs = result.Logs;
                 AppendHistory(code, "error", (int)result.Duration.TotalMilliseconds, ResultSummary, "log", result.Logs);
+                NotifyAiAfterRun(success: false, code, ResultSummary, result.Logs);
             }
             else if (result.Success && result.Compiled)
             {
@@ -121,6 +126,7 @@ public partial class ApexViewModel : ObservableObject
                 ResultSummary = result.Logs is { Length: > 0 } ? UiText.T("Apex_SuccessWithLogs") : UiText.T("Apex_Success");
                 ResultLogs = result.Logs;
                 AppendHistory(code, "success", (int)result.Duration.TotalMilliseconds, ResultSummary, "log", result.Logs);
+                NotifyAiAfterRun(success: true, code, error: null, logs: result.Logs);
             }
             else
             {
@@ -128,6 +134,7 @@ public partial class ApexViewModel : ObservableObject
                 StatusText = UiText.T("Common_FailedFmt", message);
                 ResultSummary = message;
                 AppendHistory(code, "error", (int)result.Duration.TotalMilliseconds, ResultSummary);
+                NotifyAiAfterRun(success: false, code, ResultSummary, result.Logs);
             }
 
             _log.Info($"匿名Apex 実行: {StatusText}");
@@ -137,6 +144,7 @@ public partial class ApexViewModel : ObservableObject
             StatusText = UiText.T("Common_FailedFmt", ex.Message);
             ResultSummary = ex.Message;
             AppendHistory(code, "error", (int)stopwatch.Elapsed.TotalMilliseconds, ResultSummary);
+            NotifyAiAfterRun(success: false, code, ResultSummary, logs: null);
             _log.Error("匿名Apex 実行に失敗", ex);
         }
         finally
@@ -274,6 +282,59 @@ public partial class ApexViewModel : ObservableObject
             _ = ExecuteAsync();
         }
     }
+
+    // ---- 実行後の AI 支援 ----
+
+    /// <summary>実行後に AI パネルへ自動送信するハンドラー（MainViewModel が設定する）。</summary>
+    public Func<string, Task>? AiAssistHandler { get; set; }
+
+    /// <summary>実行後に AI へ質問するか（settings.json の apexAiAssist に保存）。</summary>
+    [ObservableProperty]
+    private bool _aiAssistEnabled;
+
+    partial void OnAiAssistEnabledChanged(bool value)
+    {
+        if (_settings.Current.ApexAiAssist != value)
+        {
+            _settings.Current.ApexAiAssist = value;
+            _settings.Save();
+        }
+    }
+
+    private const int MaxPromptCodeChars = 4000;
+    private const int MaxPromptLogChars = 4000;
+    private const int MaxPromptErrorChars = 2000;
+
+    private void NotifyAiAfterRun(bool success, string code, string? error, string? logs)
+    {
+        if (!AiAssistEnabled || AiAssistHandler is not { } handler)
+        {
+            return;
+        }
+
+        var prompt = success
+            ? UiText.T("Apex_AiPromptSuccessFmt", Truncate(code, MaxPromptCodeChars), TruncateTail(logs, MaxPromptLogChars) ?? string.Empty)
+            : UiText.T("Apex_AiPromptErrorFmt", Truncate(code, MaxPromptCodeChars), Truncate(error ?? string.Empty, MaxPromptErrorChars), TruncateTail(logs, MaxPromptLogChars) ?? string.Empty);
+        _ = DispatchAiAssistAsync(handler, prompt);
+    }
+
+    private async Task DispatchAiAssistAsync(Func<string, Task> handler, string prompt)
+    {
+        try
+        {
+            await handler(prompt);
+        }
+        catch (Exception ex)
+        {
+            _log.Warn($"AI への自動送信に失敗: {ex.Message}");
+        }
+    }
+
+    private static string Truncate(string text, int max) =>
+        text.Length <= max ? text : text[..max] + "\n…(truncated)";
+
+    private static string? TruncateTail(string? text, int max) =>
+        text is null || text.Length <= max ? text : "…(truncated)\n" + text[^max..];
 
     private void AppendHistory(string code, string status, int durationMs, string? summary, string resultExtension = "json", string? result = null)
     {
