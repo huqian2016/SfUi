@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: GitHub リポジトリ (SfUi)
+    url: https://github.com/huqian2016/SfUi
+    about: ソースコード・リリース・README
+  - name: 作者へのご連絡 (メール)
+    url: mailto:ko@hks-tech-kk.com
+    about: Issue にするほどでない質問・ご相談など

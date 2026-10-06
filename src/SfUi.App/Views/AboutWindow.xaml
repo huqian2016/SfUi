@@ -1,0 +1,58 @@
+<Window x:Class="SfUi.App.Views.AboutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:SfUi.App"
+        Title="{loc:Tr Main_About}"
+        Icon="pack://application:,,,/SfUi.ico"
+        Width="560" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        FontSize="13">
+    <StackPanel Margin="20">
+
+        <!-- ヘッダー: ツール名とバージョン -->
+        <StackPanel Orientation="Horizontal">
+            <Path Width="36" Height="36" Stretch="Uniform" Fill="#0078D4" VerticalAlignment="Top"
+                  Data="{StaticResource IconQuestion}" />
+            <StackPanel Margin="12,0,0,0">
+                <TextBlock Text="{loc:Tr App_Title}" FontSize="16" FontWeight="SemiBold" />
+                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                    <TextBlock Text="{loc:Tr About_VersionLabel}" Foreground="#555555" />
+                    <TextBlock x:Name="VersionText" Margin="6,0,0,0" Foreground="#555555" FontWeight="SemiBold" Text="v0.0.0" />
+                </StackPanel>
+            </StackPanel>
+        </StackPanel>
+
+        <!-- 概要 -->
+        <TextBlock Text="{loc:Tr About_Overview}" TextWrapping="Wrap" Foreground="#444444" Margin="0,14,0,0" />
+
+        <Separator Margin="0,16,0,12" />
+
+        <!-- GitHub リポジトリ -->
+        <StackPanel>
+            <TextBlock Text="{loc:Tr About_GithubLink}" FontWeight="SemiBold" />
+            <TextBlock Margin="0,2,0,0">
+                <Hyperlink RequestNavigate="OnRequestNavigate" NavigateUri="https://github.com/huqian2016/SfUi">https://github.com/huqian2016/SfUi</Hyperlink>
+            </TextBlock>
+        </StackPanel>
+
+        <!-- 不具合の登録 -->
+        <StackPanel Margin="0,10,0,0">
+            <TextBlock Text="{loc:Tr About_IssuesLink}" FontWeight="SemiBold" />
+            <TextBlock Margin="0,2,0,0">
+                <Hyperlink RequestNavigate="OnRequestNavigate" NavigateUri="https://github.com/huqian2016/SfUi/issues">https://github.com/huqian2016/SfUi/issues</Hyperlink>
+            </TextBlock>
+        </StackPanel>
+
+        <!-- 作者へのご連絡 -->
+        <StackPanel Margin="0,10,0,0">
+            <TextBlock Text="{loc:Tr About_ContactLink}" FontWeight="SemiBold" />
+            <TextBlock Margin="0,2,0,0">
+                <Hyperlink RequestNavigate="OnRequestNavigate" NavigateUri="mailto:ko@hks-tech-kk.com">ko@hks-tech-kk.com</Hyperlink>
+            </TextBlock>
+        </StackPanel>
+
+        <!-- 閉じる -->
+        <Button Content="{loc:Tr About_Close}" IsCancel="True" Click="OnCloseClick"
+                Padding="20,4" HorizontalAlignment="Right" Margin="0,18,0,0" />
+    </StackPanel>
+</Window>

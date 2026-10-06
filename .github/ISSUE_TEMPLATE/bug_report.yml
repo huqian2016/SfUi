@@ -1,0 +1,129 @@
+name: 不具合報告 (Bug report)
+description: 不具合の「再現環境・再現手順・実際結果」を報告するテンプレートです
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        不具合の報告ありがとうございます。下記の項目をご記入ください。
+        分かる範囲で構いません（空欄可の項目もあります）。
+
+  - type: input
+    id: summary
+    attributes:
+      label: 概要
+      description: 不具合の内容を 1 行でまとめてください
+      placeholder: 例）SOQL タブでクエリを実行すると「アクセストークンの取得に失敗しました」と表示され実行できない
+    validations:
+      required: true
+
+  - type: dropdown
+    id: app
+    attributes:
+      label: アプリ
+      description: 利用しているアプリを選択してください
+      options:
+        - Windows 版 (SfUi.exe)
+        - Avalonia 版 (SfUi.Avalonia)
+        - 両方 / 不明
+    validations:
+      required: true
+
+  - type: input
+    id: app-version
+    attributes:
+      label: アプリのバージョン
+      description: About ウィンドウまたはステータスバーに表示されます
+      placeholder: 例）v0.10.1
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: OS
+      description: OS とバージョン
+      placeholder: 例）Windows 11 24H2 / macOS 15.3 (Apple Silicon)
+    validations:
+      required: true
+
+  - type: input
+    id: sf-cli
+    attributes:
+      label: Salesforce CLI (sf) のバージョン
+      description: コマンド `sf --version` の出力
+      placeholder: 例）@salesforce/cli/2.94.6 win32-x64 node-v22.16.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: org-type
+    attributes:
+      label: 接続先の組織
+      description: 不具合を確認した組織の種類
+      options:
+        - 本番組織 (Production)
+        - サンドボックス (Sandbox)
+        - Developer Edition
+        - スクラッチ組織 (Scratch)
+        - デモ用モック環境
+        - 該当なし
+        - その他
+    validations:
+      required: false
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 再現手順
+      description: 同じ現象を再現できる手順を番号付きで記入してください
+      value: |
+        1. 
+        2. 
+        3. 
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待する結果
+      description: 本来どうなるはずだったか
+      placeholder: 例）クエリ結果の一覧が表示される
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 実際の結果
+      description: 実際に起きたこと（エラー メッセージは全文があると助かります）
+      placeholder: 例）「アクセストークンの取得に失敗しました (...)」と表示され、結果が空になる
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: ログ・スクリーンショット
+      description: アプリのログ（データ フォルダの logs\app-*.log）やスクリーンショットがあれば貼り付けてください
+      render: text
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: 補足情報
+      description: その他に伝えたいこと（回避策、発生頻度、初めて起きたバージョンなど）
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: 確認事項
+      options:
+        - label: 最新バージョンで再現することを確認した
+        - label: 既存の Issue を検索し、同じ内容がないことを確認した

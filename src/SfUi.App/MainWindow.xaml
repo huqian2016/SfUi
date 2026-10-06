@@ -259,6 +259,17 @@
                           ItemsSource="{Binding LanguageLabels}"
                           SelectedItem="{Binding LanguageLabel, Mode=TwoWay}"
                           ToolTip="{loc:Tr Main_LanguageTip}" />
+
+                <Button Style="{StaticResource IconButton}" Margin="8,0,0,0" Click="AboutButton_Click"
+                        AutomationProperties.Name="{loc:Tr Main_About}">
+                    <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconQuestion}" />
+                    <Button.ToolTip>
+                        <StackPanel MaxWidth="360">
+                            <TextBlock Text="{loc:Tr Main_About}" FontWeight="SemiBold" />
+                            <TextBlock Text="{loc:Tr Main_AboutTip}" TextWrapping="Wrap" Foreground="#555555" Margin="0,2,0,0" />
+                        </StackPanel>
+                    </Button.ToolTip>
+                </Button>
             </StackPanel>
         </Border>
 

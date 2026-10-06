@@ -189,6 +189,12 @@
                           ItemsSource="{Binding LanguageLabels}"
                           SelectedItem="{Binding LanguageLabel, Mode=TwoWay}"
                           ToolTip.Tip="{loc:Tr Main_LanguageTip}" />
+
+                <Button Classes="icon" Margin="8,0,0,0" Click="AboutButton_Click"
+                        ToolTip.Tip="{loc:Tr Main_AboutTip}"
+                        AutomationProperties.Name="{loc:Tr Main_About}">
+                    <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconQuestion}" />
+                </Button>
             </StackPanel>
         </Border>
 

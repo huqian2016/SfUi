@@ -79,4 +79,9 @@ public partial class MainWindow : Window
     {
         _viewModel.CommitFolder(_viewModel.SelectedFolder);
     }
+
+    private void AboutButton_Click(object sender, RoutedEventArgs e)
+    {
+        new Views.AboutWindow { Owner = this }.ShowDialog();
+    }
 }

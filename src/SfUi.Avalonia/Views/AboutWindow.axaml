@@ -1,0 +1,68 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:SfUi.Avalonia"
+        x:Class="SfUi.Avalonia.Views.AboutWindow"
+        Title="{loc:Tr Main_About}"
+        Width="560" SizeToContent="Height" CanResize="False"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        FontSize="13">
+    <Window.Styles>
+        <!-- リンク風ボタン -->
+        <Style Selector="Button.link">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Foreground" Value="#0066CC" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+        </Style>
+        <Style Selector="Button.link:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+    </Window.Styles>
+    <StackPanel Margin="20">
+
+        <!-- ヘッダー: ツール名とバージョン -->
+        <StackPanel Orientation="Horizontal">
+            <Path Width="36" Height="36" Stretch="Uniform" Fill="#0078D4" VerticalAlignment="Top"
+                  Data="{StaticResource IconQuestion}" />
+            <StackPanel Margin="12,0,0,0">
+                <TextBlock Text="{loc:Tr App_Title}" FontSize="16" FontWeight="SemiBold" />
+                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                    <TextBlock Text="{loc:Tr About_VersionLabel}" Foreground="#555555" />
+                    <TextBlock x:Name="VersionText" Margin="6,0,0,0" Foreground="#555555" FontWeight="SemiBold" Text="v0.0.0" />
+                </StackPanel>
+            </StackPanel>
+        </StackPanel>
+
+        <!-- 概要 -->
+        <TextBlock Text="{loc:Tr About_Overview}" TextWrapping="Wrap" Foreground="#444444" Margin="0,14,0,0" />
+
+        <Separator Margin="0,16,0,12" />
+
+        <!-- GitHub リポジトリ -->
+        <StackPanel>
+            <TextBlock Text="{loc:Tr About_GithubLink}" FontWeight="SemiBold" />
+            <Button Classes="link" Margin="0,2,0,0" Click="OnRepoClick"
+                    Content="https://github.com/huqian2016/SfUi" />
+        </StackPanel>
+
+        <!-- 不具合の登録 -->
+        <StackPanel Margin="0,10,0,0">
+            <TextBlock Text="{loc:Tr About_IssuesLink}" FontWeight="SemiBold" />
+            <Button Classes="link" Margin="0,2,0,0" Click="OnIssuesClick"
+                    Content="https://github.com/huqian2016/SfUi/issues" />
+        </StackPanel>
+
+        <!-- 作者へのご連絡 -->
+        <StackPanel Margin="0,10,0,0">
+            <TextBlock Text="{loc:Tr About_ContactLink}" FontWeight="SemiBold" />
+            <Button Classes="link" Margin="0,2,0,0" Click="OnContactClick"
+                    Content="ko@hks-tech-kk.com" />
+        </StackPanel>
+
+        <!-- 閉じる -->
+        <Button Content="{loc:Tr About_Close}" Click="OnCloseClick"
+                Padding="20,4" HorizontalAlignment="Right" Margin="0,18,0,0" />
+    </StackPanel>
+</Window>
