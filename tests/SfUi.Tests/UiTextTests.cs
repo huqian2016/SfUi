@@ -76,6 +76,14 @@ public class UiTextTests
     }
 
     [Fact]
+    public void T_ShortcutModifier_UsesPlatformLabel()
+    {
+        // Quick_Hint の {mod} が OS 別の修飾キー名（Windows: Ctrl / macOS: Cmd）に置換される。
+        Assert.Equal($"Double-click / {PlatformInfo.ShortcutModifierLabel}+<number> to run, right-click to remove",
+            UiText.T("Quick_Hint"));
+    }
+
+    [Fact]
     public void SetLanguage_AcceptsAliases_AndOtherwiseFallsBackToEnglish()
     {
         try

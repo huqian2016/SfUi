@@ -64,7 +64,7 @@ public static partial class UiText
         ["Main_BrowserInput"] = "Enter URL…",
         ["Main_BrowserRecent"] = "Recent URLs",
         ["Main_QuickToggle"] = "Quick",
-        ["Main_QuickToggleTip"] = "Show/hide the favorites panel (Ctrl+1..9 to run)",
+        ["Main_QuickToggleTip"] = "Show/hide the favorites panel ({mod}+1..9 to run)",
         ["Main_AiToggleTip"] = "Show/hide the AI chat panel",
         ["Main_LanguageTip"] = "UI language",
         ["Tab_Soql"] = "SOQL",
@@ -78,10 +78,10 @@ public static partial class UiText
         ["Tab_Ai"] = "AI",
 
         // ---- AI チャット ----
-        ["Ai_Send"] = "Send (Ctrl+Enter)",
+        ["Ai_Send"] = "Send ({mod}+Enter)",
         ["Ai_Clear"] = "New chat",
         ["Ai_Cleared"] = "Conversation cleared",
-        ["Ai_InputTip"] = "Ask to generate SOQL / Apex / sf commands, or to analyze a result (Ctrl+Enter to send)",
+        ["Ai_InputTip"] = "Ask to generate SOQL / Apex / sf commands, or to analyze a result ({mod}+Enter to send)",
         ["Ai_ContextLabel"] = "Context:",
         ["Ai_ContextTip"] = "History entry whose result is attached to the next message",
         ["Ai_AttachContext"] = "Attach to next send",
@@ -101,8 +101,8 @@ public static partial class UiText
         ["Ai_ApplySoql"] = "Open in SOQL",
         ["Ai_ApplyApex"] = "Open in Apex",
         ["Ai_ApplyCommand"] = "Open in Command",
-        ["Ai_AppliedSoql"] = "Loaded into the SOQL tab (Ctrl+Enter to run)",
-        ["Ai_AppliedApex"] = "Loaded into the Apex tab (Ctrl+Enter to run)",
+        ["Ai_AppliedSoql"] = "Loaded into the SOQL tab ({mod}+Enter to run)",
+        ["Ai_AppliedApex"] = "Loaded into the Apex tab ({mod}+Enter to run)",
         ["Ai_AppliedCommand"] = "Loaded into the Command tab (Enter to run)",
         ["Ai_AttachHeaderFmt"] = "Analysis target: [{0}] {1}",
 
@@ -112,13 +112,13 @@ public static partial class UiText
         ["Msg_OrgCountFmt"] = "Loaded {0} org(s)",
         ["Msg_OrgLoadFailedFmt"] = "Failed to load orgs: {0}",
         ["Msg_ReplaySoql"] = "Re-running SOQL from history",
-        ["Msg_ReplayApex"] = "Apex loaded from history (press Ctrl+Enter to run)",
+        ["Msg_ReplayApex"] = "Apex loaded from history (press {mod}+Enter to run)",
         ["Msg_ReplayCommand"] = "Command loaded from history (click Run to execute)",
         ["Msg_ReplayApi"] = "REST request loaded from history (click Send to execute)",
         ["Msg_ReplayDeploy"] = "Deploy settings loaded from history (click Run to execute)",
         ["Msg_ReplayUnsupportedFmt"] = "'{0}' cannot be re-run from history",
         ["Msg_FavoriteRunFmt"] = "Running favorite: {0}",
-        ["Msg_FavoriteLoadedApexFmt"] = "Favorite loaded (Ctrl+Enter to run): {0}",
+        ["Msg_FavoriteLoadedApexFmt"] = "Favorite loaded ({mod}+Enter to run): {0}",
         ["Msg_FavoriteLoadedCommandFmt"] = "Favorite loaded (click Run to execute): {0}",
         ["Msg_FavoriteLoadedApiFmt"] = "Favorite loaded (click Send to execute): {0}",
         ["Msg_FavoriteLoadedDeployFmt"] = "Favorite loaded (click Run to execute): {0}",
@@ -142,7 +142,7 @@ public static partial class UiText
         ["Dlg_BrowseFolderTitle"] = "Select sf working folder",
 
         // ---- SOQL ----
-        ["Soql_Run"] = "▶ Run (Ctrl+Enter)",
+        ["Soql_Run"] = "▶ Run ({mod}+Enter)",
         ["Soql_PreferRest"] = "Prefer REST",
         ["Soql_PreferRestTip"] = "Run via REST API (access token); falls back to sf data query on failure",
         ["Soql_ToolingApi"] = "Tooling API",
@@ -161,7 +161,7 @@ public static partial class UiText
         ["Soql_NoQueryFavorite"] = "No SOQL to add to favorites",
 
         // ---- 匿名Apex ----
-        ["Apex_Run"] = "▶ Run (Ctrl+Enter)",
+        ["Apex_Run"] = "▶ Run ({mod}+Enter)",
         ["Apex_LoadFile"] = "Open…",
         ["Apex_SaveFile"] = "Save…",
         ["Apex_HistoryTip"] = "Load a recently executed Apex script",
@@ -291,9 +291,9 @@ public static partial class UiText
         ["Op_Retrieve"] = "Retrieve metadata (retrieve)",
 
         // ---- クイックパネル ----
-        ["Quick_Title"] = "Quick Panel (Ctrl+1..9)",
-        ["Quick_TitleTip"] = "Favorites in registration order. Press Ctrl+<number> to run instantly.",
-        ["Quick_Hint"] = "Double-click / Ctrl+<number> to run, right-click to remove",
+        ["Quick_Title"] = "Quick Panel ({mod}+1..9)",
+        ["Quick_TitleTip"] = "Favorites in registration order. Press {mod}+<number> to run instantly.",
+        ["Quick_Hint"] = "Double-click / {mod}+<number> to run, right-click to remove",
         ["Quick_Run"] = "Run",
         ["Quick_Remove"] = "Remove from favorites",
         ["Quick_ConfirmRemoveFmt"] = "Remove from favorites?{0}[{1}] {2}",
@@ -1103,7 +1103,7 @@ public static partial class UiText
         ["Welcome_Group_Org"] = "Org management",
         ["Welcome_Group_OrgDesc"] = "Inspect org info, compare up to 4 orgs, export/import data, back up and restore records, and manage every connected org.",
         ["Welcome_Group_Workflow"] = "Work faster",
-        ["Welcome_Group_WorkflowDesc"] = "AI chat that writes SOQL/Apex for you, the Ctrl+1..9 quick panel, and one-click terminal / VS Code / browser launch.",
+        ["Welcome_Group_WorkflowDesc"] = "AI chat that writes SOQL/Apex for you, the {mod}+1..9 quick panel, and one-click terminal / VS Code / browser launch.",
         ["Welcome_LanguagesLine"] = "UI available in English, Japanese, Simplified Chinese and Korean.",
         ["Welcome_LanguageLabel"] = "Language:",
         ["Welcome_SfHeader"] = "Salesforce CLI",
