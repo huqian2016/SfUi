@@ -150,4 +150,67 @@ public class OrgRecordCompareServiceTests
         Assert.Equal(OrgCompareCellState.Failed, table.Rows[0].Cells[1].State);
         Assert.False(table.Rows[0].IsDiff);
     }
+
+    [Fact]
+    public void BuildDetail_creates_field_rows_with_empty_value_text_and_diff()
+    {
+        var fields = new[]
+        {
+            new OrgRecordCompareField("Industry", "業種"),
+            new OrgRecordCompareField("Type", "種別"),
+        };
+        var results = new[]
+        {
+            new OrgRecordQueryResult("keyA", OrgCompareCellState.Value, new[] { Record("001A1", "Acme", "Tech", null) }),
+            new OrgRecordQueryResult("keyB", OrgCompareCellState.Value, new[] { Record("001B1", "Acme", "Tech", "Customer") }),
+        };
+        var table = OrgRecordCompareService.BuildTable(
+            OrgCompareCategories.CreateRecords("Account"),
+            new[] { OrgA, OrgB },
+            results,
+            Request with { Fields = fields });
+
+        var detail = OrgRecordCompareService.BuildDetail("Account", "ACME", table.Orgs, fields, table.Rows);
+
+        Assert.NotNull(detail);
+        Assert.Equal("Acme", detail!.KeyValue);
+        Assert.Equal(2, detail.Rows.Count);
+
+        // 行 = 比較項目（一致は差分なし・リンク維持）
+        var industry = detail.Rows[0];
+        Assert.Equal("Industry", industry.Key);
+        Assert.Equal("業種", industry.Label);
+        Assert.False(industry.IsDiff);
+        Assert.Equal("Tech", industry.Cells[0].Text);
+        Assert.Equal("https://a.my.salesforce.com/lightning/r/Account/001A1/view", industry.Cells[0].Link);
+
+        // 片方空値は差分。空値は（空）表示（レコードなしの — と区別）
+        var type = detail.Rows[1];
+        Assert.True(type.IsDiff);
+        Assert.Equal(UiText.T("Compare_EmptyValue"), type.Cells[0].Text);
+        Assert.Equal("Customer", type.Cells[1].Text);
+    }
+
+    [Fact]
+    public void BuildDetail_preserves_missing_cells_and_returns_null_for_unknown_key()
+    {
+        var results = new[]
+        {
+            new OrgRecordQueryResult("keyA", OrgCompareCellState.Value, new[] { Record("001A1", "Acme", "Tech", "Customer") }),
+            new OrgRecordQueryResult("keyB", OrgCompareCellState.Value, Array.Empty<OrgRecordValue>()),
+        };
+        var table = OrgRecordCompareService.BuildTable(
+            OrgCompareCategories.CreateRecords("Account"),
+            new[] { OrgA, OrgB },
+            results,
+            Request);
+
+        var detail = OrgRecordCompareService.BuildDetail("Account", "Acme", table.Orgs, Request.Fields, table.Rows);
+
+        Assert.NotNull(detail);
+        Assert.True(detail!.Rows[0].IsDiff);
+        Assert.Equal(OrgCompareCellState.Missing, detail.Rows[0].Cells[1].State);
+
+        Assert.Null(OrgRecordCompareService.BuildDetail("Account", "no-such-record", table.Orgs, Request.Fields, table.Rows));
+    }
 }

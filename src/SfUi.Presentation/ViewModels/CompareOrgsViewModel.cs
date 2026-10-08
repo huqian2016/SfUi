@@ -17,6 +17,7 @@ public partial class CompareOrgsViewModel : ObservableObject, IDisposable
     private readonly OrgCompareStateStore _state;
     private readonly IFilePickerService _filePicker;
     private readonly ToolLauncherService _toolLauncher;
+    private readonly IAppWindowService _appWindows;
     private readonly AppLog _log;
     private readonly List<OrgInfo> _allOrgs = new();
     private readonly List<CompareObjectCandidate> _objectCandidates = new();
@@ -26,13 +27,14 @@ public partial class CompareOrgsViewModel : ObservableObject, IDisposable
     private bool _suspendRefresh;
     private bool _disposed;
 
-    public CompareOrgsViewModel(OrgCompareService compare, OrgRecordCompareService recordCompare, OrgCompareStateStore state, IFilePickerService filePicker, ToolLauncherService toolLauncher, AppLog log)
+    public CompareOrgsViewModel(OrgCompareService compare, OrgRecordCompareService recordCompare, OrgCompareStateStore state, IFilePickerService filePicker, ToolLauncherService toolLauncher, IAppWindowService appWindows, AppLog log)
     {
         _compare = compare;
         _recordCompare = recordCompare;
         _state = state;
         _filePicker = filePicker;
         _toolLauncher = toolLauncher;
+        _appWindows = appWindows;
         _log = log;
         _title = UiText.T("Compare_Title");
 
@@ -235,6 +237,7 @@ public partial class CompareOrgsViewModel : ObservableObject, IDisposable
             _recordsTab.ObjectSelectionChanged -= OnRecordsObjectChanged;
             _recordsTab.OpenLinkRequested -= OnOpenLinkRequested;
             _recordsTab.RunRequested -= OnRecordsRunRequested;
+            _recordsTab.DetailRequested -= OnRecordDetailRequested;
             Categories.Remove(_recordsTab);
         }
 
@@ -242,6 +245,7 @@ public partial class CompareOrgsViewModel : ObservableObject, IDisposable
         tab.ObjectSelectionChanged += OnRecordsObjectChanged;
         tab.OpenLinkRequested += OnOpenLinkRequested;
         tab.RunRequested += OnRecordsRunRequested;
+        tab.DetailRequested += OnRecordDetailRequested;
         if (_objectCandidates.Count > 0)
         {
             tab.SetCandidates(_objectCandidates);
@@ -274,6 +278,16 @@ public partial class CompareOrgsViewModel : ObservableObject, IDisposable
         if (tab is not null)
         {
             _ = LoadRecordsTabAsync(tab, forceRefresh: false);
+        }
+    }
+
+    /// <summary>「詳細を表示」（行のダブルクリック含む）でレコード差分詳細ウィンドウを開く。</summary>
+    private void OnRecordDetailRequested(CompareRowViewModel row)
+    {
+        var detail = _recordsTab?.BuildDetail(row);
+        if (detail is not null)
+        {
+            _appWindows.OpenCompareRecordDetail(detail);
         }
     }
 
@@ -332,7 +346,7 @@ public partial class CompareOrgsViewModel : ObservableObject, IDisposable
                 .Select(o => new OrgCompareOrgColumn(OrgInfoCacheStore.GetOrgKey(o), o.DisplayName, o.Username, o.InstanceUrl))
                 .ToList();
             var table = OrgRecordCompareService.BuildTable(tab.Category, columns, results, request);
-            tab.Apply(table, DiffOnly);
+            tab.ApplyTable(table, request, DiffOnly);
             tab.IsLoaded = true;
             StatusMessage = UiText.T("Compare_SummaryFmt", table.DiffCount, table.Rows.Count);
         }
@@ -469,6 +483,7 @@ public partial class CompareOrgsViewModel : ObservableObject, IDisposable
         {
             _recordsTab.ObjectSelectionChanged -= OnRecordsObjectChanged;
             _recordsTab.RunRequested -= OnRecordsRunRequested;
+            _recordsTab.DetailRequested -= OnRecordDetailRequested;
         }
 
         foreach (var item in Orgs)
@@ -605,7 +620,7 @@ public partial class CompareOrgsViewModel : ObservableObject, IDisposable
                 FieldsObject = _fieldsTab?.ObjectApiName,
                 RecordObject = _recordsTab?.ObjectApiName,
                 RecordKeyField = _recordsTab?.SelectedKeyField?.ApiName,
-                RecordFields = _recordsTab?.Fields.Where(f => f.IsSelected).Select(f => f.ApiName).ToList(),
+                RecordFields = _recordsTab?.Fields.Where(f => f.IsSelected).Select(f => f.ApiName).ToList() ?? new List<string>(),
                 RecordLimit = _recordsTab?.Limit ?? 0,
             });
         }

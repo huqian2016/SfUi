@@ -26,7 +26,8 @@
             <DataGrid x:Name="RowsGrid" ItemsSource="{Binding Rows}"
                       AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" CanUserSortColumns="False"
                       HeadersVisibility="Column" RowHeaderWidth="0" GridLinesVisibility="Horizontal"
-                      EnableRowVirtualization="True" EnableColumnVirtualization="True">
+                      EnableRowVirtualization="True" EnableColumnVirtualization="True"
+                      SelectedItem="{Binding SelectedRow, Mode=TwoWay}">
                 <DataGrid.RowStyle>
                     <Style TargetType="DataGridRow">
                         <Style.Triggers>

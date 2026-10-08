@@ -1,0 +1,28 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:conv="clr-namespace:SfUi.Avalonia.Converters"
+        x:Class="SfUi.Avalonia.Views.CompareRecordDetailWindow"
+        Title="{Binding Title}"
+        Height="640" Width="1000" MinWidth="720" MinHeight="420"
+        WindowStartupLocation="CenterOwner"
+        FontSize="13">
+    <Window.Resources>
+        <conv:DiffRowBrushConverter x:Key="DiffBrush" />
+        <!-- 差分のある項目のみ黄色でハイライトする -->
+        <ControlTheme x:Key="DetailRowTheme" TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
+            <Setter Property="Background" Value="{Binding IsDiff, Converter={StaticResource DiffBrush}}" />
+        </ControlTheme>
+    </Window.Resources>
+    <DockPanel>
+
+        <!-- 上部: 対象オブジェクト / 項目数 / 差分件数 -->
+        <Border DockPanel.Dock="Top" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
+            <TextBlock Text="{Binding HeaderText}" Foreground="#555555" TextTrimming="CharacterEllipsis" />
+        </Border>
+
+        <DataGrid x:Name="RowsGrid" ItemsSource="{Binding Rows}"
+                  AutoGenerateColumns="False" IsReadOnly="True" CanUserSortColumns="False"
+                  HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                  RowTheme="{StaticResource DetailRowTheme}" />
+    </DockPanel>
+</Window>

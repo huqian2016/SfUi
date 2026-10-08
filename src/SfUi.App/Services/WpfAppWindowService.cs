@@ -9,6 +9,7 @@ public sealed class WpfAppWindowService : IAppWindowService
 {
     private readonly OrgInfoWindowFactory _orgInfo;
     private readonly CompareOrgsWindowFactory _compareOrgs;
+    private readonly CompareRecordDetailWindowFactory _compareRecordDetail;
     private readonly DataIoWindowFactory _dataIo;
     private readonly BackupWindowFactory _backup;
     private readonly OrgManageWindowFactory _orgManage;
@@ -19,6 +20,7 @@ public sealed class WpfAppWindowService : IAppWindowService
     public WpfAppWindowService(
         OrgInfoWindowFactory orgInfo,
         CompareOrgsWindowFactory compareOrgs,
+        CompareRecordDetailWindowFactory compareRecordDetail,
         DataIoWindowFactory dataIo,
         BackupWindowFactory backup,
         OrgManageWindowFactory orgManage,
@@ -28,6 +30,7 @@ public sealed class WpfAppWindowService : IAppWindowService
     {
         _orgInfo = orgInfo;
         _compareOrgs = compareOrgs;
+        _compareRecordDetail = compareRecordDetail;
         _dataIo = dataIo;
         _backup = backup;
         _orgManage = orgManage;
@@ -39,6 +42,8 @@ public sealed class WpfAppWindowService : IAppWindowService
     public void OpenOrgInfo(OrgInfo org) => _orgInfo.Open(org, ActiveOwner());
 
     public void OpenCompareOrgs(IReadOnlyList<OrgInfo> orgs) => _compareOrgs.Open(orgs, ActiveOwner());
+
+    public void OpenCompareRecordDetail(CompareRecordDetailModel detail) => _compareRecordDetail.Open(detail, ActiveOwner());
 
     public void OpenDataIo(OrgInfo org, string? objectName = null, string? initialSoql = null) =>
         _dataIo.Open(org, objectName, initialSoql, ActiveOwner());

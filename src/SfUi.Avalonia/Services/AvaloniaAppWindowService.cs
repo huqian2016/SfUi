@@ -41,6 +41,14 @@ public sealed class AvaloniaAppWindowService : IAppWindowService
         ShowOwned(new CompareOrgsWindow(viewModel));
     }
 
+    /// <summary>組織比較: 1 レコード分の項目別詳細ウィンドウを開く（非モーダル）。</summary>
+    public void OpenCompareRecordDetail(CompareRecordDetailModel detail)
+    {
+        var viewModel = _services.GetRequiredService<CompareRecordDetailViewModel>();
+        viewModel.Initialize(detail);
+        ShowOwned(new CompareRecordDetailWindow(viewModel));
+    }
+
     private void ShowOwned(Window window)
     {
         if (_top.Current is Window owner && !ReferenceEquals(owner, window))

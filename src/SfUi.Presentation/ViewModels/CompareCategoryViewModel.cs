@@ -71,6 +71,18 @@ public partial class CompareCategoryViewModel : ObservableObject
 
     public void RequestOpenLink(string url) => OpenLinkRequested?.Invoke(url);
 
+    /// <summary>選択中の表示行（レコード比較の詳細表示などに使う）。</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasSelectedRow))]
+    private CompareRowViewModel? _selectedRow;
+
+    public bool HasSelectedRow => SelectedRow is not null;
+
+    /// <summary>行が開かれた（ダブルクリックなど）。既定は何もしない（レコード比較タブが詳細を開く）。</summary>
+    public virtual void OnRowActivated(CompareRowViewModel row)
+    {
+    }
+
     /// <summary>比較表を適用する（列構成の変更を通知）。</summary>
     public void Apply(OrgCompareTable table, bool diffOnly)
     {

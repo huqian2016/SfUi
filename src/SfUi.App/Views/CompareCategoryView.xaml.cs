@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
+using System.Windows.Input;
 using System.Windows.Markup;
 using System.Windows.Media;
 using SfUi.App.ViewModels;
@@ -20,9 +21,20 @@ public partial class CompareCategoryView : UserControl
     {
         InitializeComponent();
         RowsGrid.AddHandler(ButtonBase.ClickEvent, new RoutedEventHandler(OnCellLinkClick));
+        RowsGrid.MouseDoubleClick += OnRowDoubleClick;
         DataContextChanged += OnDataContextChanged;
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
+    }
+
+    /// <summary>行のダブルクリックで開く（レコード比較タブは詳細ウィンドウを開く。他は何もしない）。</summary>
+    private void OnRowDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (RowsGrid.SelectedItem is CompareRowViewModel row)
+        {
+            _viewModel?.OnRowActivated(row);
+            e.Handled = true;
+        }
     }
 
     private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)

@@ -32,6 +32,7 @@
             <DataGrid x:Name="RowsGrid" ItemsSource="{Binding Rows}"
                       AutoGenerateColumns="False" IsReadOnly="True" CanUserSortColumns="False"
                       HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                      SelectedItem="{Binding SelectedRow, Mode=TwoWay}"
                       RowTheme="{StaticResource CompareRowTheme}" />
             <TextBlock Text="{Binding EmptyMessage}" Foreground="#888888"
                        IsVisible="{Binding EmptyMessage, Converter={StaticResource IsNotNull}}"

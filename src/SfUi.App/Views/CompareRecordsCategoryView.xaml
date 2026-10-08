@@ -23,6 +23,9 @@
                          Text="{Binding LimitText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                 <Button Content="{loc:Tr Compare_RunButton}" Padding="10,2" Margin="8,0,0,0" VerticalAlignment="Top"
                         Command="{Binding RunCommand}" Click="OnRunClick" />
+                <Button Content="{loc:Tr Compare_DetailButton}" Padding="10,2" Margin="6,0,0,0" VerticalAlignment="Top"
+                        Command="{Binding ShowDetailCommand}" IsEnabled="{Binding HasSelectedRow}"
+                        ToolTip="{loc:Tr Compare_DetailTip}" />
                 <Expander x:Name="FieldsExpander" Header="{loc:Tr Compare_CompareFieldsLabel}" Margin="12,0,0,0" VerticalAlignment="Top">
                     <Border Background="White" BorderBrush="#DDDDDD" BorderThickness="1" Width="280" MaxHeight="250">
                         <ScrollViewer VerticalScrollBarVisibility="Auto">

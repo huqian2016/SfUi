@@ -16,6 +16,7 @@ public partial class CompareRecordsCategoryViewModel : CompareCategoryViewModel
     private readonly List<(string Label, string Key)> _fieldColumns = new();
     private readonly string? _initialKeyField;
     private readonly IReadOnlyList<string> _initialFields;
+    private IReadOnlyList<OrgRecordCompareField> _appliedFields = Array.Empty<OrgRecordCompareField>();
     private bool _metadataLoaded;
 
     public CompareRecordsCategoryViewModel(string objectApiName, string? keyField = null, IReadOnlyList<string>? fields = null, int limit = 0)
@@ -50,6 +51,9 @@ public partial class CompareRecordsCategoryViewModel : CompareCategoryViewModel
     /// <summary>「比較実行」ボタンが押された（親 VM が再クエリする）。</summary>
     public event Action? RunRequested;
 
+    /// <summary>詳細ウィンドウの表示要求（親 VM がウィンドウを開く）。</summary>
+    public event Action<CompareRowViewModel>? DetailRequested;
+
     [ObservableProperty]
     private CompareObjectCandidate? _selectedCandidate;
 
@@ -79,6 +83,36 @@ public partial class CompareRecordsCategoryViewModel : CompareCategoryViewModel
 
     [RelayCommand]
     private void Run() => RunRequested?.Invoke();
+
+    [RelayCommand]
+    private void ShowDetail()
+    {
+        if (SelectedRow is not null)
+        {
+            DetailRequested?.Invoke(SelectedRow);
+        }
+    }
+
+    public override void OnRowActivated(CompareRowViewModel row) => DetailRequested?.Invoke(row);
+
+    /// <summary>適用済みの比較表を設定する（詳細表示に使う条件と表示列を保持する）。</summary>
+    public void ApplyTable(OrgCompareTable table, OrgRecordCompareRequest request, bool diffOnly)
+    {
+        _appliedFields = request.Fields.ToList();
+        Apply(table, diffOnly);
+    }
+
+    /// <summary>表示行 1 件分の項目別詳細を組み立てる（未適用・対象なしは null）。</summary>
+    public CompareRecordDetailModel? BuildDetail(CompareRowViewModel row)
+    {
+        var table = Table;
+        if (table is null || _appliedFields.Count == 0)
+        {
+            return null;
+        }
+
+        return OrgRecordCompareService.BuildDetail(ObjectApiName, row.Key, table.Orgs, _appliedFields, table.Rows);
+    }
 
     /// <summary>候補一覧（objects セクション）を差し替える（現在のオブジェクトと同じ候補があれば選択状態を維持）。</summary>
     public void SetCandidates(IReadOnlyList<CompareObjectCandidate> candidates)

@@ -25,6 +25,13 @@ public sealed record OrgRecordValue(string Id, string Key, IReadOnlyList<string?
 /// <summary>1 組織 × 1 クエリの結果（State = Value / Failed）。</summary>
 public sealed record OrgRecordQueryResult(string OrgKey, OrgCompareCellState State, IReadOnlyList<OrgRecordValue> Records);
 
+/// <summary>1 レコード分の項目別詳細（行 = 比較項目、列 = 組織）。差分行は IsDiff で判定済み。</summary>
+public sealed record CompareRecordDetailModel(
+    string ObjectApiName,
+    string KeyValue,
+    IReadOnlyList<OrgCompareOrgColumn> Orgs,
+    IReadOnlyList<OrgCompareRow> Rows);
+
 /// <summary>
 /// レコード比較（Phase 3）。オブジェクト・照合キー・比較項目を指定して各組織で REST SOQL を実行し、
 /// キーで突合した比較表を組み立てる。結果はキャッシュしない（実行のたびに最新を取得。1 ページ目のみ・上限あり）。
@@ -202,6 +209,47 @@ public sealed class OrgRecordCompareService
         }
 
         return new OrgCompareTable(category.Id, orgs, rows);
+    }
+
+    /// <summary>
+    /// 1 レコード分の項目別詳細（行 = 比較項目、列 = 組織）を組み立てる（純関数・テスト対象）。
+    /// 対象レコードが表に無いときは null。空値は「（空）」表示（レコードなしの — と区別する）。
+    /// </summary>
+    public static CompareRecordDetailModel? BuildDetail(
+        string objectApiName,
+        string keyValue,
+        IReadOnlyList<OrgCompareOrgColumn> orgs,
+        IReadOnlyList<OrgRecordCompareField> fields,
+        IReadOnlyList<OrgCompareRow> rows)
+    {
+        var source = rows.FirstOrDefault(r => string.Equals(r.Key, keyValue, StringComparison.OrdinalIgnoreCase));
+        if (source is null || fields.Count == 0)
+        {
+            return null;
+        }
+
+        var detailRows = new List<OrgCompareRow>(fields.Count);
+        for (var i = 0; i < fields.Count; i++)
+        {
+            var cells = new List<OrgCompareCell>(source.Cells.Count);
+            foreach (var cell in source.Cells)
+            {
+                if (cell.State != OrgCompareCellState.Value)
+                {
+                    cells.Add(cell);
+                    continue;
+                }
+
+                var raw = i < cell.RawValues.Count ? cell.RawValues[i] : null;
+                var text = string.IsNullOrEmpty(raw) ? UiText.T("Compare_EmptyValue") : raw;
+                cells.Add(new OrgCompareCell(OrgCompareCellState.Value, text, cell.Link, new[] { raw }));
+            }
+
+            var label = string.IsNullOrEmpty(fields[i].Label) ? fields[i].ApiName : fields[i].Label;
+            detailRows.Add(new OrgCompareRow(fields[i].ApiName, label, OrgCompareService.IsRowDiff(cells), cells));
+        }
+
+        return new CompareRecordDetailModel(objectApiName, source.Key, orgs, detailRows);
     }
 
     /// <summary>セルテキスト（「ラベル: 値」を ・ で連結。空値の項目は省略）。</summary>

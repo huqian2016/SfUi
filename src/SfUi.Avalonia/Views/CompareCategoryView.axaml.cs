@@ -44,6 +44,17 @@ public partial class CompareCategoryView : UserControl
         };
 
         HookViewModel();
+
+        if (this.FindControl<DataGrid>("RowsGrid") is { } grid)
+        {
+            grid.DoubleTapped += (_, _) =>
+            {
+                if (grid.SelectedItem is CompareRowViewModel row)
+                {
+                    _viewModel?.OnRowActivated(row);
+                }
+            };
+        }
     }
 
     private void HookViewModel()

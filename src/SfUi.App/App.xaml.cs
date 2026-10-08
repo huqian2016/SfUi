@@ -80,6 +80,9 @@ public partial class App : Application
         services.AddSingleton<CompareOrgsWindowFactory>();
         services.AddTransient<CompareOrgsViewModel>();
         services.AddTransient<CompareOrgsWindow>();
+        services.AddSingleton<CompareRecordDetailWindowFactory>();
+        services.AddTransient<CompareRecordDetailViewModel>();
+        services.AddTransient<CompareRecordDetailWindow>();
         services.AddSingleton<DataIoWindowFactory>();
         services.AddTransient<DataIoViewModel>();
         services.AddTransient<DataExportViewModel>();

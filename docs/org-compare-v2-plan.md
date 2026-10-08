@@ -1,6 +1,6 @@
 # 複数組織比較ウィンドウ拡張 設計書（v2）
 
-最終更新: 2026-10-09 / ステータス: **Phase 3 完了**
+最終更新: 2026-10-08 / ステータス: **Phase 4 完了**
 対象: 既存「組織比較」ウィンドウ（`CompareOrgsWindow`）の拡張 — ユーザー確定（2026-10-08）により**新規ウィンドウは作らない**
 
 ---
@@ -26,7 +26,7 @@
 | 2 | 最大 8 組織 | `OrgCompareStateStore.MaxOrgs` 4 → **8**（超過時はチェックが戻りメッセージ表示・既存ガード） |
 | 3 | URL リンク（変更しやすいように） | 各セルに **↗ ボタン**: 行の `OrgInfoRow.Link`（ユーザー / プロファイル / オブジェクト等）を優先し、無ければ**その組織のセクション Setup URL**（`OrgInfoUrlBuilder.ForSection`）にフォールバック。通貨は新規に Setup URL を追加 |
 | 4 | 再取得 | 既存「このタブを再取得」+ **「すべて再取得」** を追加（全タブを順に強制再取得） |
-| 5 | レコードの比較 | ✅ レコード比較タブ（Phase 3 完了）+ 差分詳細ウィンドウ（Phase 4、後述） |
+| 5 | レコードの比較 | ✅ レコード比較タブ（Phase 3）+ 差分詳細ウィンドウ（Phase 4）完了 |
 | 6 | ほかに有用な機能 | タブの差分件数バッジ（≠N）・組織列ヘッダー · 既存の差分のみフィルタ / タブ内検索 / CSV / 状態保存を全カテゴリで利用可 |
 
 ## 4. フェーズ計画
@@ -34,7 +34,7 @@
 - **Phase 1（本コミット）**: 8 組織 / 追加セクション 6 種（スケジュール済みジョブ・接続アプリ・インストール済みパッケージ・通貨・ログイン履歴・設定変更履歴）/ セル URL リンク + Currencies Setup URL / すべて再取得 / 差分バッジ / テスト更新
 - ✅ **Phase 2（完了）**: オブジェクト項目タブ — 動的カテゴリ `fields:<Object>` + オブジェクト選択（objects セクションから候補取得・選択を状態保存・選択で再比較。カテゴリは不変のためタブを差し替える方式）
 - ✅ **Phase 3（完了）**: レコード比較タブ — 対象オブジェクト / 照合キー（Id・Name・任意項目）/ 比較項目（複数選択）/ 件数上限（既定 200・最大 2000）。各組織で REST SOQL 実行 → キーで突合（大文字小文字無視）。セル = 項目値（`ラベル: 値` ・ 連結）、↗ = レコードページ（`{instanceUrl}/lightning/r/{Object}/{Id}/view`）。差分カウントはバッジに表示。`--smoke-compare-records` で実組織検証（hks4sand1 2 件 / acc 15 件 / 17 行・17 差分）
-- **Phase 4**: レコード差分詳細ウィンドウ（WPF / Avalonia）— 行 = 項目、列 = 組織、差異セルをハイライト（1 レコード分）
+- ✅ **Phase 4（完了）**: レコード差分詳細ウィンドウ（WPF / Avalonia）— 行 = 項目、列 = 組織、差異セルをハイライト（1 レコード分）。行のダブルクリックまたは「詳細を表示」ボタンで開く。空値は「（空）」表示（レコードなしの — と区別）
 - **Phase 5**: 実組織 E2E（UIA）+ 両 UI スクリーンショット + リリース（v0.13.0 候補）
 
 ## 5. 実装メモ（Phase 1）
@@ -70,7 +70,16 @@
 - UiText 追加 12 キー ×4 言語（OrgInfo_Tab_Records / Compare_RecordsTabFmt / Compare_KeyFieldLabel / Compare_LimitLabel / Compare_CompareFieldsLabel / Compare_RunButton / Compare_RecordsSelectObject / Compare_RecordsNoFields / Compare_RecordsNoMetadataFmt / Compare_RecordsFetchingFmt / Compare_RecordKeyHeader(Fmt)）
 - テスト +8 = **518 件グリーン**。UIA 検証（`C:\SfUiDemo\sfui-compare-records-check.ps1` → `compare-records.png`）: タブ選択・17 行/17 差分・チェックボックス 62 件・Type を外して「Compare」再実行でセルから `Type:` が消えることを確認
 
-## 8. リスク・注意
+## 8. 実装メモ（Phase 4）
+
+- Core `OrgRecordCompareService.BuildDetail`（純関数）: 行 = 比較項目（ラベル・API 名）、列 = 組織。空値は「（空）」表示（レコードなしの — と区別）。レコードなし / 取得失敗のセルはそのまま引き継ぎ、`IsRowDiff` で差分行を判定。対象キーが表に無ければ null。`CompareRecordDetailModel` を返す
+- Presentation `CompareRecordDetailViewModel`: タイトル「レコード詳細: {キー}」/ 要約「{object} / {n} 項目 / 差分 {m} 件」。行は `CompareRowViewModel` を再利用
+- 起動経路: ①行のダブルクリック（`CompareCategoryViewModel.OnRowActivated` 仮想メソッド → レコード比較タブが `DetailRequested` → 親 VM が `IAppWindowService.OpenCompareRecordDetail`）②「詳細を表示」ボタン（`SelectedRow` 選択時のみ有効）。既存の比較表から組み立てるため再クエリなし
+- ウィンドウ: WPF `CompareRecordDetailWindow`（+ `CompareRecordDetailWindowFactory`・DI 登録）/ Avalonia `CompareRecordDetailWindow`（`AvaloniaAppWindowService` から開く）。列は組織数に応じて動的生成・差分行は黄色ハイライト・セルツールチップに全文
+- UiText 5 キー ×4（Compare_DetailTitleFmt / Compare_DetailHeaderFmt / Compare_DetailButton / Compare_DetailTip / Compare_EmptyValue）
+- テスト +2 = **520 件グリーン**。UIA 検証（`sfui-compare-records-check.ps1` → `compare-records-detail.png`）: 行選択 →「Record detail: 456」/「Account / 3 fields / 3 diffs」/(empty) と — の区別を確認
+
+## 9. リスク・注意
 
 - 8 組織 × 全タブの比較はキャッシュ（組織情報と共有）の分だけディスクが増えるが、セクション単位の JSON のため許容
 - ログイン履歴 / 設定変更履歴は「同じでないのが正常」なデータのため、差分だらけになる（必要なら差分のみフィルタやタブ内検索で絞る）

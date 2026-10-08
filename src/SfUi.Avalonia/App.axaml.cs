@@ -56,6 +56,7 @@ public partial class App : Application
             services.AddSingleton<SettingsViewModel>();
             services.AddSingleton<QuickPanelViewModel>();
             services.AddTransient<CompareOrgsViewModel>();
+            services.AddTransient<CompareRecordDetailViewModel>();
             services.AddTransient<OrgInfoViewModel>();
             services.AddTransient<DataIoViewModel>();
             services.AddTransient<DataExportViewModel>();

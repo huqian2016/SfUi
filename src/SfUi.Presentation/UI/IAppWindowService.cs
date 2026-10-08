@@ -14,6 +14,9 @@ public interface IAppWindowService
     /// <summary>組織比較ウィンドウを開く。</summary>
     void OpenCompareOrgs(IReadOnlyList<OrgInfo> orgs);
 
+    /// <summary>組織比較: 1 レコード分の項目別詳細ウィンドウを開く。</summary>
+    void OpenCompareRecordDetail(CompareRecordDetailModel detail);
+
     /// <summary>データ入出力ウィンドウを開く（オブジェクト名 / 初期 SOQL は任意）。</summary>
     void OpenDataIo(OrgInfo org, string? objectName = null, string? initialSoql = null);
 
