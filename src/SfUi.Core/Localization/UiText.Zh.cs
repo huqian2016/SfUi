@@ -75,6 +75,7 @@ public static partial class UiText
         ["About_VersionLabel"] = "版本",
         ["About_Overview"] = "通过图形界面完成 Salesforce CLI (sf) 日常操作的桌面工具：组织管理、SOQL、匿名 Apex、数据导入/导出、备份等。",
         ["About_GithubLink"] = "GitHub 仓库",
+        ["About_ManualLink"] = "用户手册",
         ["About_IssuesLink"] = "报告问题 (Issues)",
         ["About_ContactLink"] = "联系作者",
         ["About_Close"] = "关闭",

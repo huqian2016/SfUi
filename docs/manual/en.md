@@ -198,7 +198,7 @@ The help icon (📖) at the right end of every window's top bar opens the user m
 | Org Management | 6. Org management |
 | Debug log analyzer | 4.3 Debug logs and analysis |
 
-The manual is available in four languages (English / 日本語 / 简体中文 / 한국어); switching the UI language also switches the language of the page opened from Help.
+The manual is available in four languages (English / 日本語 / 简体中文 / 한국어); switching the UI language also switches the language of the page opened from Help. The About window (the **?** button in the top bar) also links to the manual's first page in the current language.
 
 ---
 

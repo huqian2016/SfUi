@@ -13,9 +13,14 @@ public partial class AboutWindow : Window
     {
         AvaloniaXamlLoader.Load(this);
         this.FindControl<TextBlock>("VersionText")!.Text = $"v{typeof(AboutWindow).Assembly.GetName().Version?.ToString(3) ?? "0.0.0"}";
+
+        // マニュアル リンクは現在の UI 言語の先頭ページを指す（例: ja → docs/manual/ja.md）
+        this.FindControl<Button>("ManualLinkButton")!.Content = ManualLinks.BuildManualUrl();
     }
 
     private void OnRepoClick(object? sender, RoutedEventArgs e) => UrlLauncher.TryOpen("https://github.com/huqian2016/SfUi");
+
+    private void OnManualClick(object? sender, RoutedEventArgs e) => UrlLauncher.TryOpen(ManualLinks.BuildManualUrl());
 
     private void OnIssuesClick(object? sender, RoutedEventArgs e) => UrlLauncher.TryOpen("https://github.com/huqian2016/SfUi/issues");
 

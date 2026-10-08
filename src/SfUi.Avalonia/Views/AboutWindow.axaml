@@ -47,6 +47,14 @@
                     Content="https://github.com/huqian2016/SfUi" />
         </StackPanel>
 
+        <!-- ユーザーマニュアル（言語は実行時に設定） -->
+        <StackPanel Margin="0,10,0,0">
+            <TextBlock Text="{loc:Tr About_ManualLink}" FontWeight="SemiBold" />
+            <Button x:Name="ManualLinkButton" Classes="link" Margin="0,2,0,0" Click="OnManualClick"
+                    AutomationProperties.Name="{loc:Tr About_ManualLink}"
+                    Content="https://github.com/huqian2016/SfUi/blob/main/docs/manual/en.md" />
+        </StackPanel>
+
         <!-- 不具合の登録 -->
         <StackPanel Margin="0,10,0,0">
             <TextBlock Text="{loc:Tr About_IssuesLink}" FontWeight="SemiBold" />

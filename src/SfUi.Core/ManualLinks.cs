@@ -125,13 +125,21 @@ public static class ManualLinks
     /// </summary>
     public static string BuildUrl(Topic topic, string? language)
     {
-        var key = language is not null && AnchorsByLanguage.ContainsKey(language)
-            ? language
-            : UiText.English;
+        var key = LanguageKey(language);
         var anchor = AnchorsByLanguage[key][topic];
         return $"{BaseUrl}{key}.md#{Uri.EscapeDataString(anchor)}";
     }
 
+    /// <summary>現在の UI 言語のマニュアル先頭ページ（アンカーなし）の URL を返す（About ウィンドウ用）。</summary>
+    public static string BuildManualUrl() => BuildManualUrl(UiText.Language);
+
+    /// <summary>指定した言語コードのマニュアル先頭ページ（アンカーなし）の URL を返す。</summary>
+    public static string BuildManualUrl(string? language) => $"{BaseUrl}{LanguageKey(language)}.md";
+
     /// <summary>現在の UI 言語で、指定した章のページを既定のブラウザーで開く。</summary>
     public static bool TryOpen(Topic topic) => UrlLauncher.TryOpen(BuildUrl(topic));
+
+    /// <summary>言語コードを検証する（不明な言語は英語）。</summary>
+    private static string LanguageKey(string? language) =>
+        language is not null && AnchorsByLanguage.ContainsKey(language) ? language : UiText.English;
 }

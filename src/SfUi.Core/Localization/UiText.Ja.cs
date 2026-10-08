@@ -75,6 +75,7 @@ public static partial class UiText
         ["About_VersionLabel"] = "バージョン",
         ["About_Overview"] = "Salesforce CLI (sf) の日常操作を GUI で支援するデスクトップ ツールです。組織管理・SOQL・匿名 Apex・データ入出力・バックアップなどをまとめて操作できます。",
         ["About_GithubLink"] = "GitHub リポジトリ",
+        ["About_ManualLink"] = "ユーザーマニュアル",
         ["About_IssuesLink"] = "不具合の登録 (Issues)",
         ["About_ContactLink"] = "作者へのご連絡",
         ["About_Close"] = "閉じる",

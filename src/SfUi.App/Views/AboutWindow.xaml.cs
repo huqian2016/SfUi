@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Documents;
 using System.Windows.Navigation;
 using SfUi.Core;
 
@@ -11,6 +12,12 @@ public partial class AboutWindow : Window
     {
         InitializeComponent();
         VersionText.Text = $"v{typeof(AboutWindow).Assembly.GetName().Version?.ToString(3) ?? "0.0.0"}";
+
+        // マニュアル リンクは現在の UI 言語の先頭ページを指す（例: ja → docs/manual/ja.md）
+        var manualUrl = ManualLinks.BuildManualUrl();
+        ManualLink.NavigateUri = new Uri(manualUrl);
+        ManualLink.Inlines.Clear();
+        ManualLink.Inlines.Add(new Run(manualUrl));
     }
 
     private void OnRequestNavigate(object sender, RequestNavigateEventArgs e)

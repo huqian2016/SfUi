@@ -75,6 +75,7 @@ public static partial class UiText
         ["About_VersionLabel"] = "Version",
         ["About_Overview"] = "A desktop tool that helps you perform everyday Salesforce CLI (sf) operations through a GUI: org management, SOQL, anonymous Apex, data import/export, backups and more.",
         ["About_GithubLink"] = "GitHub repository",
+        ["About_ManualLink"] = "User manual",
         ["About_IssuesLink"] = "Report a bug (Issues)",
         ["About_ContactLink"] = "Contact the author",
         ["About_Close"] = "Close",
