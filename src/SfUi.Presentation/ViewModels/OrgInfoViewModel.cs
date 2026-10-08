@@ -21,6 +21,8 @@ public partial class OrgInfoViewModel : ObservableObject, IDisposable
     private readonly AiChatViewModel _ai;
     private readonly OrgInfoPreferencesStore _preferences;
     private readonly IAppWindowService _windows;
+    private readonly OrgExportService _exportService;
+    private readonly IFilePickerService _filePicker;
     private readonly IUiDispatcher _ui;
     private readonly List<OrgInfoCustomTabViewModel> _customTabs = new();
 
@@ -30,6 +32,7 @@ public partial class OrgInfoViewModel : ObservableObject, IDisposable
     private bool _autoFetchNeeded;
     private bool _suppressPreferencesReload;
     private OrgInfoMySettingsViewModel? _mySettings;
+    private OrgInfoExportViewModel? _export;
     private CancellationTokenSource? _cts;
 
     [ObservableProperty]
@@ -81,7 +84,7 @@ public partial class OrgInfoViewModel : ObservableObject, IDisposable
 
     public bool CanRefresh => !IsBusy;
 
-    public OrgInfoViewModel(OrgInfoService service, OrgInfoCacheStore cache, OrgInfoSearchService search, ToolLauncherService toolLauncher, AiChatViewModel ai, OrgInfoPreferencesStore preferences, IAppWindowService windows, IUiDispatcher ui, AppLog log)
+    public OrgInfoViewModel(OrgInfoService service, OrgInfoCacheStore cache, OrgInfoSearchService search, ToolLauncherService toolLauncher, AiChatViewModel ai, OrgInfoPreferencesStore preferences, IAppWindowService windows, OrgExportService export, IFilePickerService filePicker, IUiDispatcher ui, AppLog log)
     {
         _service = service;
         _cache = cache;
@@ -90,6 +93,8 @@ public partial class OrgInfoViewModel : ObservableObject, IDisposable
         _ai = ai;
         _preferences = preferences;
         _windows = windows;
+        _exportService = export;
+        _filePicker = filePicker;
         _ui = ui;
         _log = log;
         _searchDebounce = new UiDebouncer(300, ui);
@@ -145,6 +150,10 @@ public partial class OrgInfoViewModel : ObservableObject, IDisposable
         Sections.Add(_mySettings);
         _mySettings.SetTabs(_customTabs);
         _preferences.PreferencesUpdated += OnPreferencesUpdated;
+
+        // エクスポート（定義書出力。タブ末尾に固定。AI 添付・横断検索の対象外）
+        _export = new OrgInfoExportViewModel(org, _orgKey, _service, _exportService, _cache, _filePicker, _toolLauncher, _ui, _log);
+        Sections.Add(_export);
 
         // AI パネル（ウィンドウ単位の独立会話 + 表示中タブのデータ添付）
         _ai.CurrentOrg = org.DisplayName;
@@ -207,11 +216,13 @@ public partial class OrgInfoViewModel : ObservableObject, IDisposable
         _loaded = true;
         if (!_autoFetchNeeded)
         {
+            _export?.ReloadObjectCandidates();
             return;
         }
 
         StatusMessage = UiText.T("OrgInfo_FirstLoad");
         await RefreshSectionsAsync(Sections.OfType<OrgInfoSectionViewModel>().ToList(), firstLoad: true);
+        _export?.ReloadObjectCandidates();
     }
 
     [RelayCommand]
@@ -353,6 +364,7 @@ public partial class OrgInfoViewModel : ObservableObject, IDisposable
         if (string.Equals(sectionId, OrgInfoSections.Objects, StringComparison.Ordinal))
         {
             Fields?.ReloadObjectCandidates();
+            _export?.ReloadObjectCandidates();
         }
     }
 

@@ -77,6 +77,9 @@
                     <DataTemplate DataType="{x:Type vm:OrgInfoMySettingsViewModel}">
                         <views:OrgInfoMySettingsView />
                     </DataTemplate>
+                    <DataTemplate DataType="{x:Type vm:OrgInfoExportViewModel}">
+                        <views:OrgInfoExportView />
+                    </DataTemplate>
                 </TabControl.DataTemplates>
                 <TabControl.ItemTemplate>
                     <DataTemplate>

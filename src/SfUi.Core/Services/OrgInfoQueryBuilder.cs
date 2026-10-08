@@ -135,4 +135,28 @@ public static class OrgInfoQueryBuilder
     /// <summary>SOQL 文字列リテラルをエスケープする（\\ → \\\\、' → \\'）。</summary>
     public static string EscapeSoqlString(string value) =>
         value.Replace("\\", "\\\\").Replace("'", "\\'");
+
+    // ---- 定義書エクスポート（レイアウト / フロー）----
+    // Tooling API は Metadata / FullName を含むクエリを「単一行」に限定する（複数行は MALFORMED_QUERY）。
+    // そのため一覧（Metadata なし・複数行可）→ 個別 Metadata 取得（単一行）の 2 段階で取得する。
+
+    /// <summary>レイアウト一覧（Metadata なし・複数行可）。EntityDefinitionId は API 名で指定できる。</summary>
+    public static string BuildLayoutListQuery(IEnumerable<string> objectApiNames) =>
+        "SELECT Id, Name, EntityDefinitionId FROM Layout WHERE EntityDefinitionId IN ("
+        + string.Join(", ", objectApiNames.Select(name => "'" + EscapeSoqlString(name) + "'"))
+        + ")";
+
+    /// <summary>レイアウト 1 件の Metadata（単一行限定）。</summary>
+    public static string BuildLayoutMetadataQuery(string layoutId) =>
+        $"SELECT Id, Name, Metadata FROM Layout WHERE Id = '{EscapeSoqlString(layoutId)}'";
+
+    /// <summary>フロー一覧（Metadata なし・複数行可）。Status は Active / Obsolete / Draft など。</summary>
+    public static string BuildFlowListQuery(bool activeOnly) =>
+        "SELECT Id, MasterLabel, DefinitionId, Status, ProcessType, VersionNumber, LastModifiedDate FROM Flow"
+        + (activeOnly ? " WHERE Status = 'Active'" : string.Empty)
+        + " ORDER BY MasterLabel";
+
+    /// <summary>フロー 1 件の Metadata + FullName（単一行限定）。FullName は API 名（開発者名）。</summary>
+    public static string BuildFlowMetadataQuery(string flowId) =>
+        $"SELECT Id, MasterLabel, FullName, Metadata FROM Flow WHERE Id = '{EscapeSoqlString(flowId)}'";
 }

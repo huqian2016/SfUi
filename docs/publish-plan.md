@@ -143,7 +143,7 @@ Phase 3: 一般公開・拡大
 - [ ] Windows コード署名証明書（OV / EV）を直配布用に購入するか（Store 一本化なら不要）
 - [ ] Intel Mac（osx-x64）対応の有無
 - [ ] アップデート通知・リリース自動化の実装時期
-- [ ] Store の次回提出タイミング（公開済み 0.10.1 → 次回リリース時に 4 桁バージョンを上げて更新提出。掲載説明文も現行機能（マルチプロバイダー AI・4 言語 UI 等）に更新）
+- [ ] Store の次回提出タイミング（0.11.1 を 2026-10-06 に提出済み・審査待ち。以降もリリース毎に 4 桁バージョンを上げて更新提出。掲載説明文も現行機能（マルチプロバイダー AI・4 言語 UI 等）に更新）
 - [ ] OpenAI プリセット + 上限付きキーの追加時期
 
 ---
@@ -157,4 +157,4 @@ Phase 3: 一般公開・拡大
 5. [ ] README EN セクションの拡充
 6. [ ] 上記をまとめて v0.11.1 としてリリース → Store 再提出
 
-> 2026-10-06 進捗: 1〜4 完了（About/README/設定の文言 + PRIVACY/SECURITY/Dependabot/CodeQL）。v0.11.1 はバージョン更新（csproj 0.11.1 / AppxManifest 0.11.1.0）・`dist\SfUi.exe` publish・Store スクショ（`dist\SfUi-Store-Screenshots-v0.11.1.zip`）・掲載文ドラフト（`dist\store-listing-0.11.1.md`）まで準備済み。残り = 5（README EN 拡充）と 6（リリース + Store 再提出）。
+> 2026-10-06 進捗: 1〜4 完了（About/README/設定の文言 + PRIVACY/SECURITY/Dependabot/CodeQL）。5（README EN 拡充）は任意・未着手。**6 完了: v0.11.1 リリース（GitHub release id 404838840 / 5 アセット）+ Partner Center 更新提出済み（審査 1〜3 営業日待ち）**。掲載文 = `dist\store-listing-0.11.1.md`、スクショ = `dist\SfUi-Store-Screenshots-v0.11.1.zip`。

@@ -1,0 +1,99 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:SfUi.Avalonia"
+             x:Class="SfUi.Avalonia.Views.OrgInfoExportView">
+    <Grid Margin="12">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="1.15*" />
+            <ColumnDefinition Width="12" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- 左: 対象オブジェクト -->
+        <DockPanel Grid.Column="0">
+            <TextBlock DockPanel.Dock="Top" Text="{loc:Tr OrgInfoExport_ObjectsHeader}" FontWeight="Bold" Margin="0,0,0,6" />
+
+            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
+                <Button DockPanel.Dock="Right" Content="{loc:Tr OrgInfoExport_ReloadObjects}" Padding="8,2" Margin="6,0,0,0"
+                        Command="{Binding RefreshObjectsCommand}" IsEnabled="{Binding CanRun}"
+                        AutomationProperties.Name="{loc:Tr OrgInfoExport_ReloadObjects}" />
+                <CheckBox DockPanel.Dock="Right" Content="{loc:Tr OrgInfoExport_CustomOnly}" Margin="12,0,0,0" VerticalAlignment="Center"
+                          IsChecked="{Binding CustomOnly, Mode=TwoWay}" />
+                <TextBox Text="{Binding FilterText, Mode=TwoWay}"
+                         VerticalContentAlignment="Center"
+                         AutomationProperties.AutomationId="ExportFilterBox"
+                         ToolTip.Tip="{loc:Tr OrgInfoExport_FilterTip}" />
+            </DockPanel>
+
+            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
+                <Button Content="{loc:Tr OrgInfoExport_SelectAll}" Padding="8,2" Command="{Binding SelectAllCommand}"
+                        AutomationProperties.Name="{loc:Tr OrgInfoExport_SelectAll}" />
+                <Button Content="{loc:Tr OrgInfoExport_SelectNone}" Padding="8,2" Margin="6,0,0,0" Command="{Binding SelectNoneCommand}"
+                        AutomationProperties.Name="{loc:Tr OrgInfoExport_SelectNone}" />
+                <TextBlock Text="{Binding SelectionSummary}" Margin="10,0,0,0" VerticalAlignment="Center" Foreground="#555555" />
+            </DockPanel>
+
+            <ListBox ItemsSource="{Binding Items}">
+                <ListBox.Styles>
+                    <Style Selector="ListBoxItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                    </Style>
+                </ListBox.Styles>
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <CheckBox Content="{Binding Display}" IsChecked="{Binding IsSelected, Mode=TwoWay}" Padding="2,1" />
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </DockPanel>
+
+        <!-- 右: 定義書 / 出力形式 / 出力先 / 実行 -->
+        <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <TextBlock Text="{loc:Tr OrgInfoExport_DocsHeader}" FontWeight="Bold" Margin="0,0,0,6" />
+                <CheckBox Content="{loc:Tr OrgExport_Sheet_Objects}" IsChecked="{Binding ExportObjects, Mode=TwoWay}" />
+                <CheckBox Content="{loc:Tr OrgInfoExport_DocFields}" IsChecked="{Binding ExportFields, Mode=TwoWay}" />
+                <CheckBox Content="{loc:Tr OrgExport_Sheet_Layouts}" IsChecked="{Binding ExportLayouts, Mode=TwoWay}" />
+                <CheckBox Content="{loc:Tr OrgExport_Sheet_ListViews}" IsChecked="{Binding ExportListViews, Mode=TwoWay}" />
+                <CheckBox Content="{loc:Tr OrgExport_Sheet_Flows}" IsChecked="{Binding ExportFlows, Mode=TwoWay}" />
+                <CheckBox Content="{loc:Tr OrgInfoExport_ActiveOnly}" IsChecked="{Binding ActiveFlowsOnly, Mode=TwoWay}" Margin="18,0,0,0" />
+
+                <TextBlock Text="{loc:Tr OrgInfoExport_FormatHeader}" FontWeight="Bold" Margin="0,12,0,6" />
+                <StackPanel Orientation="Horizontal">
+                    <CheckBox Content="Excel (.xlsx)" IsChecked="{Binding Excel, Mode=TwoWay}" />
+                    <CheckBox Content="CSV" Margin="16,0,0,0" IsChecked="{Binding Csv, Mode=TwoWay}" />
+                </StackPanel>
+
+                <TextBlock Text="{loc:Tr OrgInfoExport_OutputHeader}" FontWeight="Bold" Margin="0,12,0,6" />
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Content="{loc:Tr Main_Browse}" Padding="10,2" Margin="6,0,0,0"
+                            Command="{Binding BrowseCommand}"
+                            AutomationProperties.Name="{loc:Tr Main_Browse}" />
+                    <TextBox Text="{Binding OutputDirectory, Mode=TwoWay}" VerticalContentAlignment="Center"
+                             AutomationProperties.AutomationId="ExportFolderBox" />
+                </DockPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                    <Button Content="{loc:Tr OrgInfoExport_Run}" Padding="16,4" FontWeight="Bold"
+                            Command="{Binding RunCommand}" IsEnabled="{Binding CanRun}"
+                            AutomationProperties.Name="{loc:Tr OrgInfoExport_Run}"
+                            AutomationProperties.AutomationId="ExportRunButton" />
+                    <Button Content="{loc:Tr Common_Cancel}" Padding="12,4" Margin="6,0,0,0"
+                            Command="{Binding CancelCommand}" IsEnabled="{Binding IsBusy}"
+                            AutomationProperties.Name="{loc:Tr Common_Cancel}" />
+                    <Button Content="{loc:Tr OrgInfoExport_OpenFolder}" Padding="12,4" Margin="6,0,0,0"
+                            Command="{Binding OpenFolderCommand}"
+                            AutomationProperties.Name="{loc:Tr OrgInfoExport_OpenFolder}" />
+                </StackPanel>
+
+                <ProgressBar Height="6" Minimum="0" Maximum="1" Value="{Binding ProgressPercent}" Margin="0,14,0,4" />
+                <TextBlock Text="{Binding ProgressText}" Foreground="#555555" TextWrapping="Wrap" Margin="0,0,0,6"
+                           AutomationProperties.AutomationId="ExportProgressText" />
+                <TextBlock Text="{Binding ResultText}" FontWeight="SemiBold" TextWrapping="Wrap"
+                           AutomationProperties.AutomationId="ExportResultText" />
+                <TextBox Text="{Binding WarningText}" IsReadOnly="True" TextWrapping="Wrap" MaxHeight="96"
+                         AcceptsReturn="True" Background="#FFF8F0" BorderBrush="#E8D8C0" Margin="0,6,0,0" />
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>
