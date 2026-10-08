@@ -106,6 +106,14 @@ public sealed class AvaloniaAppWindowService : IAppWindowService
         ShowOwned(new BackupCompareRecordsWindow(viewModel));
     }
 
+    /// <summary>デバッグログ解析ウィンドウを開く（非モーダル・複数同時表示可）。</summary>
+    public void OpenLogAnalyzer(DebugLogAnalysis analysis, string orgLabel, string sourceLabel)
+    {
+        var viewModel = _services.GetRequiredService<LogAnalyzerViewModel>();
+        viewModel.Initialize(analysis, orgLabel, sourceLabel);
+        ShowOwned(new LogAnalyzerWindow(viewModel));
+    }
+
     /// <summary>ようこそ画面をモーダルで開く（「設定を開く」が選ばれたら openSettings を呼ぶ）。</summary>
     public void OpenWelcome(Action? openSettings = null)
     {

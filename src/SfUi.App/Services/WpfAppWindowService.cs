@@ -15,6 +15,7 @@ public sealed class WpfAppWindowService : IAppWindowService
     private readonly OrgManageWindowFactory _orgManage;
     private readonly BackupRecordsWindowFactory _records;
     private readonly BackupCompareRecordsWindowFactory _compareRecords;
+    private readonly LogAnalyzerWindowFactory _logAnalyzer;
     private readonly WelcomeWindowFactory _welcome;
 
     public WpfAppWindowService(
@@ -26,6 +27,7 @@ public sealed class WpfAppWindowService : IAppWindowService
         OrgManageWindowFactory orgManage,
         BackupRecordsWindowFactory records,
         BackupCompareRecordsWindowFactory compareRecords,
+        LogAnalyzerWindowFactory logAnalyzer,
         WelcomeWindowFactory welcome)
     {
         _orgInfo = orgInfo;
@@ -36,6 +38,7 @@ public sealed class WpfAppWindowService : IAppWindowService
         _orgManage = orgManage;
         _records = records;
         _compareRecords = compareRecords;
+        _logAnalyzer = logAnalyzer;
         _welcome = welcome;
     }
 
@@ -57,6 +60,9 @@ public sealed class WpfAppWindowService : IAppWindowService
 
     public void OpenBackupCompareRecords(string backupIdA, string backupIdB, string objectName, string displayName, OrgInfo? currentOrg) =>
         _compareRecords.Open(backupIdA, backupIdB, objectName, displayName, currentOrg, ActiveOwner());
+
+    public void OpenLogAnalyzer(DebugLogAnalysis analysis, string orgLabel, string sourceLabel) =>
+        _logAnalyzer.Open(analysis, orgLabel, sourceLabel, ActiveOwner());
 
     public void OpenWelcome(Action? openSettings = null) => _welcome.Show(openSettings, ActiveOwner());
 

@@ -107,6 +107,9 @@ public partial class App : Application
         services.AddSingleton<BackupCompareRecordsWindowFactory>();
         services.AddTransient<BackupCompareRecordsViewModel>();
         services.AddTransient<BackupCompareRecordsWindow>();
+        services.AddSingleton<LogAnalyzerWindowFactory>();
+        services.AddTransient<LogAnalyzerViewModel>();
+        services.AddTransient<LogAnalyzerWindow>();
         services.AddSingleton<OrgManageWindowFactory>();
         services.AddTransient<OrgManageViewModel>();
         services.AddTransient<OrgHealthViewModel>();

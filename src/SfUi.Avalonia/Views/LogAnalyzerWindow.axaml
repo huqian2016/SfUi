@@ -1,0 +1,174 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:SfUi.Avalonia"
+        x:Class="SfUi.Avalonia.Views.LogAnalyzerWindow"
+        Title="{Binding Title}"
+        Height="760" Width="1160" MinWidth="840" MinHeight="480"
+        WindowStartupLocation="CenterOwner"
+        FontSize="13">
+    <DockPanel>
+
+        <!-- ヘッダー -->
+        <Border DockPanel.Dock="Top" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="10,6">
+            <StackPanel>
+                <TextBlock Text="{Binding HeaderText}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding StatusText}" Foreground="#666666" Margin="0,2,0,0" TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
+
+        <TabControl Margin="8">
+            <TabItem Header="{loc:Tr LogAnalyzer_TabSummary}">
+                <Grid Margin="4">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!-- サマリ カード -->
+                    <ItemsControl Grid.Row="0" ItemsSource="{Binding SummaryStats}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="#F7F9FB" BorderBrush="#DDDDDD" BorderThickness="1" CornerRadius="4"
+                                        Padding="12,8" Margin="0,0,8,8" MinWidth="150">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Label}" Foreground="#666666" />
+                                        <TextBlock Text="{Binding Value}" FontSize="17" FontWeight="SemiBold" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Grid Grid.Row="1" Margin="0,4,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="3*" MinWidth="360" />
+                            <ColumnDefinition Width="8" />
+                            <ColumnDefinition Width="2*" MinWidth="260" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- ガバナ制限 -->
+                        <DockPanel Grid.Column="0">
+                            <TextBlock DockPanel.Dock="Top" Text="{loc:Tr LogAnalyzer_LimitsHeader}" FontWeight="SemiBold" Margin="0,0,0,4" />
+                            <TextBlock DockPanel.Dock="Top" Text="{loc:Tr LogAnalyzer_NoLimits}" Foreground="#888888"
+                                       IsVisible="{Binding HasNoLimits}" />
+                            <DataGrid x:Name="LimitsGrid" ItemsSource="{Binding Limits}"
+                                      AutoGenerateColumns="False" IsReadOnly="True"
+                                      HeadersVisibility="Column" GridLinesVisibility="Horizontal">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="{loc:Tr LogAnalyzer_ColLimitNamespace}" Binding="{Binding NamespaceText}" Width="110" />
+                                    <DataGridTextColumn Header="{loc:Tr LogAnalyzer_ColLimitName}" Binding="{Binding Name}" Width="240" />
+                                    <DataGridTextColumn Header="{loc:Tr LogAnalyzer_ColUsage}" Binding="{Binding UsageText}" Width="130" />
+                                    <DataGridTemplateColumn Header="{loc:Tr LogAnalyzer_ColPercent}" Width="*" MinWidth="140">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <ProgressBar Width="90" Height="10" Minimum="0" Maximum="100"
+                                                                 Value="{Binding PercentValue, Mode=OneWay}" />
+                                                    <TextBlock Text="{Binding PercentText}" Margin="6,0,0,0" />
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </DockPanel>
+
+                        <!-- 右側: 遅い処理 / 例外 -->
+                        <Grid Grid.Column="2">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="8" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <DockPanel Grid.Row="0">
+                                <TextBlock DockPanel.Dock="Top" Text="{Binding SlowHeaderText}" FontWeight="SemiBold" Margin="0,0,0,4" />
+                                <DataGrid x:Name="SlowGrid" ItemsSource="{Binding SlowRows}"
+                                          AutoGenerateColumns="False" IsReadOnly="True"
+                                          HeadersVisibility="Column" GridLinesVisibility="Horizontal">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="{loc:Tr LogAnalyzer_ColKind}" Binding="{Binding Kind}" Width="90" />
+                                        <DataGridTextColumn Header="{loc:Tr LogAnalyzer_ColLabel}" Binding="{Binding Label}" Width="*" />
+                                        <DataGridTextColumn Header="{loc:Tr LogAnalyzer_ColMs}" Binding="{Binding DurationMs}" Width="70" />
+                                        <DataGridTextColumn Header="{loc:Tr LogAnalyzer_ColRows}" Binding="{Binding Rows}" Width="60" />
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </DockPanel>
+
+                            <DockPanel Grid.Row="2">
+                                <TextBlock DockPanel.Dock="Top" Text="{Binding ErrorsHeaderText}" FontWeight="SemiBold" Margin="0,0,0,4" />
+                                <TextBlock DockPanel.Dock="Top" Text="{loc:Tr LogAnalyzer_NoErrors}" Foreground="#888888"
+                                           IsVisible="{Binding HasNoErrors}" />
+                                <ListBox x:Name="ErrorsList" ItemsSource="{Binding Errors}" />
+                            </DockPanel>
+                        </Grid>
+                    </Grid>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="{loc:Tr LogAnalyzer_TabTree}">
+                <TreeView x:Name="NodeTree" ItemsSource="{Binding TreeRoots}" Margin="4">
+                    <TreeView.ItemTemplate>
+                        <TreeDataTemplate ItemsSource="{Binding Children}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding Label}" />
+                                <TextBlock Text="{Binding DurationMs, StringFormat={}{0:F0} ms}" Foreground="#1B5E20" Margin="6,0,0,0" />
+                                <TextBlock Text="{Binding EventType}" Foreground="#999999" Margin="6,0,0,0" />
+                                <TextBlock Text="{Binding Rows, StringFormat=rows: {0}}" Foreground="#555599" Margin="6,0,0,0" />
+                            </StackPanel>
+                        </TreeDataTemplate>
+                    </TreeView.ItemTemplate>
+                </TreeView>
+            </TabItem>
+
+            <TabItem Header="{loc:Tr LogAnalyzer_TabEvents}">
+                <DockPanel Margin="4">
+                    <Border DockPanel.Dock="Top" Padding="0,0,0,6">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBox x:Name="SearchBox" Width="240"
+                                     Text="{Binding SearchText, Mode=TwoWay}"
+                                     ToolTip.Tip="{loc:Tr LogAnalyzer_SearchPlaceholder}"
+                                     AutomationProperties.Name="{loc:Tr LogAnalyzer_SearchPlaceholder}" />
+                            <ComboBox x:Name="CategoryFilter" Width="150" Margin="8,0,0,0"
+                                      ItemsSource="{Binding CategoryChoices}"
+                                      SelectedItem="{Binding SelectedCategory, Mode=TwoWay}"
+                                      AutomationProperties.Name="{loc:Tr LogAnalyzer_ColCategory}" />
+                            <Button x:Name="ExportButton" Content="{loc:Tr LogAnalyzer_ExportCsv}" Margin="8,0,0,0" Padding="10,2"
+                                    Command="{Binding ExportCsvCommand}"
+                                    AutomationProperties.Name="{loc:Tr LogAnalyzer_ExportCsv}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border DockPanel.Dock="Bottom" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Height="110" Padding="6,4">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Top" Text="{loc:Tr LogAnalyzer_DetailsLabel}" Foreground="#666666" Margin="0,0,0,2" />
+                            <TextBox x:Name="DetailsBox" Text="{Binding SelectedDetails}" IsReadOnly="True"
+                                     FontFamily="Consolas, Menlo, monospace" FontSize="12"
+                                     ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                     TextWrapping="NoWrap" />
+                        </DockPanel>
+                    </Border>
+
+                    <DataGrid x:Name="EventsGrid" ItemsSource="{Binding EventsView}"
+                              SelectedItem="{Binding SelectedEvent, Mode=TwoWay}"
+                              AutoGenerateColumns="False" IsReadOnly="True"
+                              SelectionMode="Single"
+                              HeadersVisibility="Column" GridLinesVisibility="Horizontal">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="{loc:Tr LogAnalyzer_ColLine}" Binding="{Binding LineNumber}" Width="60" />
+                            <DataGridTextColumn Header="{loc:Tr LogAnalyzer_ColElapsed}" Binding="{Binding ElapsedMs, StringFormat={}{0:F3}}" Width="90" />
+                            <DataGridTextColumn Header="{loc:Tr LogAnalyzer_ColType}" Binding="{Binding EventType}" Width="180" />
+                            <DataGridTextColumn Header="{loc:Tr LogAnalyzer_ColCategory}" Binding="{Binding CategoryText}" Width="90" />
+                            <DataGridTextColumn Header="{loc:Tr LogAnalyzer_ColSummary}" Binding="{Binding Summary}" Width="*" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</Window>
