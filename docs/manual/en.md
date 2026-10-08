@@ -183,6 +183,23 @@ Child windows (Org Info, Compare, Data I/O, Backup & Restore, Org Management, �
 | Ctrl+Space | SOQL / Apex completion |
 | Double-click | Replay history / open row details (backup records, etc.) |
 
+### 3.6 Help (top-right of every window)
+
+The help icon (📖) at the right end of every window's top bar opens the user manual on GitHub in your browser, in the **current UI language**, scrolled to **the chapter for that window**.
+
+| Window | Chapter opened (English UI) |
+|---|---|
+| Main window | 3. The basics of the UI |
+| Welcome screen | 2. Installation & initial setup |
+| Org Info | 7. Org Info (Object Fields tab → 7.1) |
+| Compare Orgs / record diff detail | 10. Compare orgs |
+| Data I/O | 8. Data I/O |
+| Backup & Restore (records / compare) | 9. Backup & Restore (9.2 / 9.3) |
+| Org Management | 6. Org management |
+| Debug log analyzer | 4.3 Debug logs and analysis |
+
+The manual is available in four languages (English / 日本語 / 简体中文 / 한국어); switching the UI language also switches the language of the page opened from Help.
+
 ---
 
 ## 4. Query, develop, run

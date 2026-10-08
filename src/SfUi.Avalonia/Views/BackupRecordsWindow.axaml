@@ -1,5 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:SfUi.Avalonia.Views"
         xmlns:loc="clr-namespace:SfUi.Avalonia"
         x:Class="SfUi.Avalonia.Views.BackupRecordsWindow"
         Title="{Binding Title}"
@@ -24,6 +25,7 @@
                         Command="{Binding NextPageCommand}"
                         AutomationProperties.Name="{loc:Tr BackupRecords_Next}" />
                 <TextBlock Text="{Binding StatusMessage}" Foreground="#666666" Margin="16,0,0,0" VerticalAlignment="Center" />
+                <views:HelpButton Topic="RestoreRecords" Margin="16,0,0,0" />
             </StackPanel>
         </Border>
 

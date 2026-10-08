@@ -44,6 +44,7 @@
                               IsChecked="{Binding DiffOnly, Mode=TwoWay}" />
                     <Button Content="{loc:Tr Compare_ExportCsv}" Padding="10,2" Margin="12,0,0,0"
                             Command="{Binding ExportCsvCommand}" IsEnabled="{Binding CanInteract}" />
+                    <views:HelpButton Topic="CompareOrgs" Margin="12,0,0,0" />
                     <TextBlock Text="{Binding StatusMessage}" Margin="16,0,0,0" VerticalAlignment="Center"
                                Foreground="#555555" TextTrimming="CharacterEllipsis" />
                 </StackPanel>

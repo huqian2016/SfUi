@@ -14,6 +14,7 @@
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="{Binding Org.DisplayName}" FontWeight="SemiBold" VerticalAlignment="Center" />
                 <TextBlock Text="{Binding Org.Username}" Foreground="#666666" Margin="8,0,0,0" VerticalAlignment="Center" />
+                <views:HelpButton Topic="Backup" Margin="16,0,0,0" />
             </StackPanel>
         </Border>
 

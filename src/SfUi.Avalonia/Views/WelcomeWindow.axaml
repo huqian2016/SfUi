@@ -1,5 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:SfUi.Avalonia.Views"
         xmlns:loc="clr-namespace:SfUi.Avalonia"
         x:Class="SfUi.Avalonia.Views.WelcomeWindow"
         Title="{loc:Tr Welcome_Title}"
@@ -33,6 +34,7 @@
                         <ComboBox Width="140" ItemsSource="{Binding LanguageLabels}" SelectedItem="{Binding LanguageLabel, Mode=TwoWay}"
                                   ToolTip.Tip="{loc:Tr Main_LanguageTip}"
                                   AutomationProperties.Name="{loc:Tr Welcome_LanguageLabel}" />
+                        <views:HelpButton Topic="Welcome" Margin="8,0,0,0" VerticalAlignment="Center" />
                     </StackPanel>
                     <StackPanel Orientation="Horizontal">
                         <Path Width="36" Height="36" Stretch="Uniform" VerticalAlignment="Center" Fill="#2B6CB0"

@@ -71,6 +71,7 @@ public static partial class UiText
         ["Main_LanguageTip"] = "UI 언어",
         ["Main_About"] = "SfUi 정보",
         ["Main_AboutTip"] = "버전 정보, 관련 링크 및 연락처를 표시합니다",
+        ["Help_OpenManual"] = "사용자 매뉴얼 — GitHub에서 열기",
         ["About_VersionLabel"] = "버전",
         ["About_Overview"] = "Salesforce CLI(sf)의 일상 작업을 GUI로 지원하는 데스크톱 도구입니다. 조직 관리, SOQL, 익명 Apex, 데이터 가져오기/내보내기, 백업 등을 제공합니다.",
         ["About_GithubLink"] = "GitHub 저장소",

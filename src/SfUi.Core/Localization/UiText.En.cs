@@ -71,6 +71,7 @@ public static partial class UiText
         ["Main_LanguageTip"] = "UI language",
         ["Main_About"] = "About SfUi",
         ["Main_AboutTip"] = "Show version information, links and contact",
+        ["Help_OpenManual"] = "User manual — open on GitHub",
         ["About_VersionLabel"] = "Version",
         ["About_Overview"] = "A desktop tool that helps you perform everyday Salesforce CLI (sf) operations through a GUI: org management, SOQL, anonymous Apex, data import/export, backups and more.",
         ["About_GithubLink"] = "GitHub repository",

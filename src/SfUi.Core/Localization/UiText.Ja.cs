@@ -71,6 +71,7 @@ public static partial class UiText
         ["Main_LanguageTip"] = "UI の言語",
         ["Main_About"] = "SfUi について",
         ["Main_AboutTip"] = "バージョン情報・各種リンク・連絡先を表示します",
+        ["Help_OpenManual"] = "ユーザーマニュアル — GitHub で開く",
         ["About_VersionLabel"] = "バージョン",
         ["About_Overview"] = "Salesforce CLI (sf) の日常操作を GUI で支援するデスクトップ ツールです。組織管理・SOQL・匿名 Apex・データ入出力・バックアップなどをまとめて操作できます。",
         ["About_GithubLink"] = "GitHub リポジトリ",

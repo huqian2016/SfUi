@@ -204,6 +204,8 @@
                           SelectedItem="{Binding LanguageLabel, Mode=TwoWay}"
                           ToolTip.Tip="{loc:Tr Main_LanguageTip}" />
 
+                <views:HelpButton Topic="MainWindow" Margin="8,0,0,0" />
+
                 <Button Classes="icon" Margin="8,0,0,0" Click="AboutButton_Click"
                         ToolTip.Tip="{loc:Tr Main_AboutTip}"
                         AutomationProperties.Name="{loc:Tr Main_About}">

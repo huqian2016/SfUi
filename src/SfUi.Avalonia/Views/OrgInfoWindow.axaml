@@ -33,6 +33,7 @@
                                   IsChecked="{Binding IsAiPanelOpen, Mode=TwoWay}"
                                   ToolTip.Tip="{loc:Tr OrgInfo_Ai_ToggleTip}" />
                 </StackPanel>
+                <views:HelpButton Topic="OrgInfo" DockPanel.Dock="Right" Margin="8,0,0,0" VerticalAlignment="Center" />
                 <TextBlock Text="{Binding StatusMessage}" HorizontalAlignment="Right" VerticalAlignment="Center"
                            Foreground="#333333" TextTrimming="CharacterEllipsis" />
             </DockPanel>

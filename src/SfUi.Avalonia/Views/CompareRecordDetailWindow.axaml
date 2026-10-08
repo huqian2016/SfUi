@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:conv="clr-namespace:SfUi.Avalonia.Converters"
+        xmlns:views="clr-namespace:SfUi.Avalonia.Views"
         x:Class="SfUi.Avalonia.Views.CompareRecordDetailWindow"
         Title="{Binding Title}"
         Height="640" Width="1000" MinWidth="720" MinHeight="420"
@@ -17,7 +18,10 @@
 
         <!-- 上部: 対象オブジェクト / 項目数 / 差分件数 -->
         <Border DockPanel.Dock="Top" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
-            <TextBlock Text="{Binding HeaderText}" Foreground="#555555" TextTrimming="CharacterEllipsis" />
+            <DockPanel>
+                <views:HelpButton Topic="RecordDetail" DockPanel.Dock="Right" Margin="8,0,0,0" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding HeaderText}" Foreground="#555555" TextTrimming="CharacterEllipsis" />
+            </DockPanel>
         </Border>
 
         <DataGrid x:Name="RowsGrid" ItemsSource="{Binding Rows}"

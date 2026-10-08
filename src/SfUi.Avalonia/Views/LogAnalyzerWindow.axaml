@@ -1,5 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:SfUi.Avalonia.Views"
         xmlns:loc="clr-namespace:SfUi.Avalonia"
         x:Class="SfUi.Avalonia.Views.LogAnalyzerWindow"
         Title="{Binding Title}"
@@ -10,10 +11,13 @@
 
         <!-- ヘッダー -->
         <Border DockPanel.Dock="Top" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="10,6">
-            <StackPanel>
-                <TextBlock Text="{Binding HeaderText}" FontWeight="SemiBold" TextWrapping="Wrap" />
-                <TextBlock Text="{Binding StatusText}" Foreground="#666666" Margin="0,2,0,0" TextWrapping="Wrap" />
-            </StackPanel>
+            <DockPanel>
+                <views:HelpButton Topic="LogAnalyzer" DockPanel.Dock="Right" Margin="8,0,0,0" VerticalAlignment="Center" />
+                <StackPanel>
+                    <TextBlock Text="{Binding HeaderText}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding StatusText}" Foreground="#666666" Margin="0,2,0,0" TextWrapping="Wrap" />
+                </StackPanel>
+            </DockPanel>
         </Border>
 
         <TabControl Margin="8">

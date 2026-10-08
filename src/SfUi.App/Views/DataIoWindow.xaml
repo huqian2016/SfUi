@@ -22,6 +22,7 @@
                 <TextBlock Text="{Binding DescribeSummary}" Margin="10,0,0,0" VerticalAlignment="Center" Foreground="#555555" />
                 <TextBlock Text="{Binding StatusMessage}" Margin="16,0,0,0" VerticalAlignment="Center"
                            Foreground="#555555" TextTrimming="CharacterEllipsis" />
+                <views:HelpButton Topic="DataIo" Margin="16,0,0,0" />
             </StackPanel>
         </Border>
 

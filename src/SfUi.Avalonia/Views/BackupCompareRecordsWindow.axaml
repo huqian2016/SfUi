@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:loc="clr-namespace:SfUi.Avalonia"
         xmlns:conv="clr-namespace:SfUi.Avalonia.Converters"
+        xmlns:views="clr-namespace:SfUi.Avalonia.Views"
         x:Class="SfUi.Avalonia.Views.BackupCompareRecordsWindow"
         Title="{Binding Title}"
         Height="620" Width="1100" MinWidth="760" MinHeight="420"
@@ -32,6 +33,7 @@
                         Command="{Binding NextPageCommand}"
                         AutomationProperties.Name="{loc:Tr BackupRecords_Next}" />
                 <TextBlock Text="{Binding StatusMessage}" Foreground="#666666" Margin="16,0,0,0" VerticalAlignment="Center" />
+                <views:HelpButton Topic="BackupCompareRecords" Margin="16,0,0,0" />
             </StackPanel>
         </Border>
 

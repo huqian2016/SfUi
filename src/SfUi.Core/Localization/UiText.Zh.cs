@@ -71,6 +71,7 @@ public static partial class UiText
         ["Main_LanguageTip"] = "界面语言",
         ["Main_About"] = "关于 SfUi",
         ["Main_AboutTip"] = "显示版本信息、相关链接和联系方式",
+        ["Help_OpenManual"] = "用户手册 — 在 GitHub 打开",
         ["About_VersionLabel"] = "版本",
         ["About_Overview"] = "通过图形界面完成 Salesforce CLI (sf) 日常操作的桌面工具：组织管理、SOQL、匿名 Apex、数据导入/导出、备份等。",
         ["About_GithubLink"] = "GitHub 仓库",
