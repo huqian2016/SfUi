@@ -1,6 +1,6 @@
 # 複数組織比較ウィンドウ拡張 設計書（v2）
 
-最終更新: 2026-10-08 / ステータス: **Phase 2 完了**
+最終更新: 2026-10-09 / ステータス: **Phase 2 完了（`b069b93`）**
 対象: 既存「組織比較」ウィンドウ（`CompareOrgsWindow`）の拡張 — ユーザー確定（2026-10-08）により**新規ウィンドウは作らない**
 
 ---
@@ -50,7 +50,15 @@
 - すべて再取得: `CompareOrgsViewModel.RefreshAllAsync`（現在の `LoadCategoryAsync` を全カテゴリへ順次適用）
 - 差分バッジ: `CompareCategoryViewModel.BadgeText`（"≠N"）/ `HasBadge`。タブ ヘッダーに黄色バッジ
 
-## 6. リスク・注意
+## 6. 実装メモ（Phase 2）
+
+- 動的カテゴリ: `OrgCompareCategories.IsDynamic()`（`fields:` プレフィックス + オブジェクト名が非空）と `CreateFields(objectApiName)`（Keyed・key = API 名・表示列 = ラベル/型/カスタム/参照先/必須/Nillable/参照項目数/インデックス/計算/履歴/説明）。オブジェクト候補は `objects` セクションから取得（`OrgCompareService.EnsureSectionAsync` = キャッシュ優先）
+- タブは不変のため**選択時にタブを差し替える**（`CompareOrgsViewModel.CreateFieldsTab`）。選択オブジェクトは `OrgCompareState.FieldsObject` として状態保存。カテゴリ ID `fields:<Object>` は `OrgCompareStateStore.Sanitize` が保持（`IsDynamic` 判定。復元時に Overview へ落ちる不具合を修正）
+- ビュー: WPF `CompareFieldsCategoryView`（ツールバー = ComboBox、`TextSearch.TextPath="Display"`）+ Avalonia `CompareFieldsCategoryView`（AutoCompleteBox、`MinimumPrefixLength="0"` / `FilterMode="Contains"`）。本体は既存 `CompareCategoryView` を内包
+- UiText 追加: `Compare_FieldsTabFmt`（`項目: {0}`）/ `Compare_FieldsObjectLabel` / `Compare_FieldsSelectObject` / `Compare_FieldsNoObjects` ×4 言語
+- テスト +4（CreateFields 構築・API 名突合・FieldsObject ラウンドトリップ・動的カテゴリ ID 保持）= **510 件グリーン**。UIA 検証: 「Fields: Account」タブ選択・97 行 / 49 差分
+
+## 7. リスク・注意
 
 - 8 組織 × 全タブの比較はキャッシュ（組織情報と共有）の分だけディスクが増えるが、セクション単位の JSON のため許容
 - ログイン履歴 / 設定変更履歴は「同じでないのが正常」なデータのため、差分だらけになる（必要なら差分のみフィルタやタブ内検索で絞る）
