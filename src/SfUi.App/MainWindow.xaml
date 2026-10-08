@@ -31,15 +31,30 @@
 
         <!-- 上部バー: 組織/フォルダ切替とツール起動（Phase 1 / Phase 4 で機能実装） -->
         <Border DockPanel.Dock="Top" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Text="{loc:Tr Main_OrgLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
-                <ComboBox x:Name="OrgComboBox" Width="215" Margin="0,0,6,0"
-                          ItemsSource="{Binding Orgs}"
-                          SelectedItem="{Binding SelectedOrg, Mode=TwoWay}"
-                          DisplayMemberPath="DisplayName"
-                          ToolTip="{loc:Tr Main_OrgTooltip}" />
+            <StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="{loc:Tr Main_OrgLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                <Grid Margin="0,0,6,0">
+                    <ComboBox x:Name="OrgComboBox" Width="215"
+                              ItemsSource="{Binding Orgs}"
+                              SelectedItem="{Binding SelectedOrg, Mode=TwoWay}"
+                              DisplayMemberPath="DisplayName"
+                              IsEnabled="{Binding CanSelectOrg}"
+                              ToolTip="{loc:Tr Main_OrgTooltip}" />
+                    <!-- 取得中はコンボの上に「取得中…」を重ねて状態を明示する -->
+                    <TextBlock Text="{loc:Tr Main_OrgLoading}" Margin="8,0,0,0" VerticalAlignment="Center"
+                               Foreground="#777777" IsHitTestVisible="False"
+                               Visibility="{Binding IsLoadingOrgs, Converter={StaticResource BoolToVis}}" />
+                </Grid>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0"
+                            Visibility="{Binding IsLoadingOrgs, Converter={StaticResource BoolToVis}}">
+                    <ProgressBar Width="70" Height="6" IsIndeterminate="True" VerticalAlignment="Center"
+                                 AutomationProperties.AutomationId="OrgLoadingBar" />
+                    <TextBlock Text="{loc:Tr Msg_LoadingOrgs}" Margin="6,0,0,0" VerticalAlignment="Center" Foreground="#555555" />
+                </StackPanel>
                 <Button Style="{StaticResource IconButton}" Margin="0,0,12,0"
                         Command="{Binding RefreshOrgsCommand}"
+                        IsEnabled="{Binding CanSelectOrg}"
                         ToolTip="{loc:Tr Main_RefreshOrgsTip}"
                         AutomationProperties.Name="{loc:Tr Main_RefreshOrgsTip}">
                     <Path Width="16" Height="16" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconArrowClockwise}" />
@@ -47,7 +62,7 @@
 
                 <Button Style="{StaticResource IconButton}" Margin="0,0,8,0"
                         Command="{Binding OpenOrgInfoCommand}"
-                        IsEnabled="{Binding HasSelectedOrg}"
+                        IsEnabled="{Binding CanUseOrgFeature}"
                         AutomationProperties.Name="{loc:Tr Main_OrgInfo}">
                     <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconInfo}" />
                     <Button.ToolTip>
@@ -73,7 +88,7 @@
 
                 <Button Style="{StaticResource IconButton}" Margin="0,0,10,0"
                         Command="{Binding OpenDataIoCommand}"
-                        IsEnabled="{Binding HasSelectedOrg}"
+                        IsEnabled="{Binding CanUseOrgFeature}"
                         AutomationProperties.Name="{loc:Tr Main_DataIo}">
                     <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconDataIo}" />
                     <Button.ToolTip>
@@ -86,7 +101,7 @@
 
                 <Button Style="{StaticResource IconButton}" Margin="0,0,10,0"
                         Command="{Binding OpenBackupCommand}"
-                        IsEnabled="{Binding HasSelectedOrg}"
+                        IsEnabled="{Binding CanUseOrgFeature}"
                         AutomationProperties.Name="{loc:Tr Main_Backup}">
                     <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconCloudDownload}" />
                     <Button.ToolTip>
@@ -270,6 +285,11 @@
                         </StackPanel>
                     </Button.ToolTip>
                 </Button>
+                </StackPanel>
+
+                <!-- 組織関連の操作ができない理由（取得中 / 組織なし / 未選択） -->
+                <TextBlock Text="{Binding OrgHintText}" Foreground="#B35C00" Margin="0,4,0,0" TextWrapping="Wrap"
+                           Visibility="{Binding HasOrgHint, Converter={StaticResource BoolToVis}}" />
             </StackPanel>
         </Border>
 

@@ -20,12 +20,18 @@
                     <ComboBox Width="360" ItemsSource="{Binding Orgs}"
                               SelectedItem="{Binding SelectedOrgRow, Mode=TwoWay}"
                               DisplayMemberPath="Display"
+                              IsEnabled="{Binding CanInteract}"
                               ToolTip="{loc:Tr OrgManage_OrgComboTip}"
                               AutomationProperties.Name="{loc:Tr Main_OrgLabel}" />
                     <Button Content="{loc:Tr OrgManage_RefreshOrgs}" Margin="8,0,0,0" Padding="10,2"
                             Command="{Binding RefreshOrgsCommand}"
                             IsEnabled="{Binding CanInteract}"
                             AutomationProperties.Name="{loc:Tr OrgManage_RefreshOrgs}" />
+                    <ProgressBar Width="70" Height="6" IsIndeterminate="True" VerticalAlignment="Center" Margin="8,0,0,0"
+                                 AutomationProperties.AutomationId="OrgLoadingBar"
+                                 Visibility="{Binding IsLoadingOrgs, Converter={StaticResource BoolToVis}}" />
+                    <TextBlock Text="{loc:Tr Main_OrgLoading}" VerticalAlignment="Center" Margin="6,0,0,0" Foreground="#555555"
+                               Visibility="{Binding IsLoadingOrgs, Converter={StaticResource BoolToVis}}" />
                     <Button Content="{loc:Tr Common_Cancel}" Margin="8,0,0,0" Padding="10,2"
                             Command="{Binding CancelCommand}"
                             IsEnabled="{Binding CanCancel}"
@@ -33,6 +39,8 @@
                 </StackPanel>
                 <TextBlock Text="{Binding StatusMessage}" Foreground="#555555" Margin="0,4,0,0"
                            TextWrapping="Wrap" />
+                <TextBlock Text="{Binding OrgListHintText}" Foreground="#B35C00" Margin="0,2,0,0" TextWrapping="Wrap"
+                           Visibility="{Binding HasOrgListHint, Converter={StaticResource BoolToVis}}" />
             </StackPanel>
         </Border>
 

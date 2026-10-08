@@ -22,8 +22,15 @@ public partial class MainViewModel : ObservableObject
     private readonly IDialogService _dialogs;
     private readonly IClipboardService _clipboard;
 
+    /// <summary>組織一覧を取得中（取得インジケーター表示と各種操作のブロックに使う）。</summary>
     [ObservableProperty]
-    private bool _isBusy;
+    [NotifyPropertyChangedFor(nameof(CanSelectOrg))]
+    [NotifyPropertyChangedFor(nameof(CanUseOrgFeature))]
+    [NotifyPropertyChangedFor(nameof(CanCompareOrgs))]
+    [NotifyPropertyChangedFor(nameof(HasNoOrgs))]
+    [NotifyPropertyChangedFor(nameof(OrgHintText))]
+    [NotifyPropertyChangedFor(nameof(HasOrgHint))]
+    private bool _isLoadingOrgs;
 
     [ObservableProperty]
     private string _statusMessage = UiText.T("Common_Ready");
@@ -31,6 +38,9 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(StatusDetail))]
     [NotifyPropertyChangedFor(nameof(HasSelectedOrg))]
+    [NotifyPropertyChangedFor(nameof(CanUseOrgFeature))]
+    [NotifyPropertyChangedFor(nameof(OrgHintText))]
+    [NotifyPropertyChangedFor(nameof(HasOrgHint))]
     private OrgInfo? _selectedOrg;
 
     [ObservableProperty]
@@ -61,8 +71,27 @@ public partial class MainViewModel : ObservableObject
     /// <summary>組織が選択されているか（組織情報ボタンの有効化）。</summary>
     public bool HasSelectedOrg => SelectedOrg is not null;
 
-    /// <summary>組織比較を開けるか（2 組織以上が必要）。</summary>
-    public bool CanCompareOrgs => Orgs.Count > 1;
+    /// <summary>組織コンボ・更新ボタンが使えるか（組織一覧の取得中は不可）。</summary>
+    public bool CanSelectOrg => !IsLoadingOrgs;
+
+    /// <summary>選択中組織を使う機能（組織情報・データ入出力・バックアップ）が使えるか。</summary>
+    public bool CanUseOrgFeature => !IsLoadingOrgs && HasSelectedOrg;
+
+    /// <summary>組織比較を開けるか（取得中は不可・2 組織以上が必要）。</summary>
+    public bool CanCompareOrgs => !IsLoadingOrgs && Orgs.Count > 1;
+
+    /// <summary>組織が 1 件もない（取得完了後）。</summary>
+    public bool HasNoOrgs => !IsLoadingOrgs && Orgs.Count == 0;
+
+    /// <summary>組織関連の操作ができない理由（null = 制限なし。上部バーのヒント行に表示）。</summary>
+    public string? OrgHintText =>
+        IsLoadingOrgs ? UiText.T("Msg_OrgsLoadingWait")
+        : Orgs.Count == 0 ? UiText.T("Main_NoOrgsHint")
+        : SelectedOrg is null ? UiText.T("Main_OrgRequiredHint")
+        : null;
+
+    /// <summary>理由ヒントを表示するか。</summary>
+    public bool HasOrgHint => OrgHintText is not null;
 
     /// <summary>認証済み組織（既定組織が先頭）。</summary>
     public ObservableCollection<OrgInfo> Orgs { get; } = new();
@@ -137,7 +166,14 @@ public partial class MainViewModel : ObservableObject
         _filePicker = filePicker;
         _dialogs = dialogs;
         _clipboard = clipboard;
-        Orgs.CollectionChanged += (_, _) => OnPropertyChanged(nameof(CanCompareOrgs));
+        Orgs.CollectionChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(CanCompareOrgs));
+            OnPropertyChanged(nameof(HasNoOrgs));
+            OnPropertyChanged(nameof(OrgHintText));
+            OnPropertyChanged(nameof(HasOrgHint));
+        };
+        UiText.LanguageChanged += OnLanguageChanged;
         History = history;
         Soql = soql;
         Apex = apex;
@@ -228,12 +264,13 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private async Task RefreshOrgsAsync()
     {
-        if (IsBusy)
+        if (IsLoadingOrgs)
         {
+            StatusMessage = UiText.T("Msg_OrgsLoadingWait");
             return;
         }
 
-        IsBusy = true;
+        IsLoadingOrgs = true;
         StatusMessage = UiText.T("Msg_LoadingOrgs");
         try
         {
@@ -262,7 +299,7 @@ public partial class MainViewModel : ObservableObject
         }
         finally
         {
-            IsBusy = false;
+            IsLoadingOrgs = false;
         }
     }
 
@@ -458,6 +495,12 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void OpenOrgInfo()
     {
+        if (IsLoadingOrgs)
+        {
+            StatusMessage = UiText.T("Msg_OrgsLoadingWait");
+            return;
+        }
+
         if (SelectedOrg is null)
         {
             StatusMessage = UiText.T("Msg_SelectOrg");
@@ -480,6 +523,12 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void OpenCompareOrgs()
     {
+        if (IsLoadingOrgs)
+        {
+            StatusMessage = UiText.T("Msg_OrgsLoadingWait");
+            return;
+        }
+
         if (Orgs.Count < 2)
         {
             StatusMessage = UiText.T("Compare_NeedTwoOrgs");
@@ -502,6 +551,12 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void OpenDataIo()
     {
+        if (IsLoadingOrgs)
+        {
+            StatusMessage = UiText.T("Msg_OrgsLoadingWait");
+            return;
+        }
+
         if (SelectedOrg is null)
         {
             StatusMessage = UiText.T("Msg_SelectOrg");
@@ -524,6 +579,12 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void OpenBackup()
     {
+        if (IsLoadingOrgs)
+        {
+            StatusMessage = UiText.T("Msg_OrgsLoadingWait");
+            return;
+        }
+
         if (SelectedOrg is null)
         {
             StatusMessage = UiText.T("Msg_SelectOrg");
@@ -688,6 +749,12 @@ public partial class MainViewModel : ObservableObject
 
                 case "org-home":
                 case "org-setup":
+                    if (IsLoadingOrgs)
+                    {
+                        StatusMessage = UiText.T("Msg_OrgsLoadingWait");
+                        return;
+                    }
+
                     var org = Soql.CurrentOrg;
                     if (string.IsNullOrWhiteSpace(org))
                     {
@@ -789,5 +856,13 @@ public partial class MainViewModel : ObservableObject
         {
             RecentUrls.Add(url);
         }
+    }
+
+    /// <summary>言語切替時に計算文字列（ヒント・ステータス詳細）を再通知する。</summary>
+    private void OnLanguageChanged()
+    {
+        OnPropertyChanged(nameof(OrgHintText));
+        OnPropertyChanged(nameof(HasOrgHint));
+        OnPropertyChanged(nameof(StatusDetail));
     }
 }

@@ -119,6 +119,11 @@ public static partial class UiText
         // ---- MainViewModel メッセージ ----
         ["Msg_SelectOrg"] = "上部バーで組織を選択してください",
         ["Msg_LoadingOrgs"] = "組織一覧を取得中…",
+        ["Msg_OrgsLoadingWait"] = "組織一覧を取得中です。完了までお待ちください。",
+        ["Main_OrgLoading"] = "取得中…",
+        ["Main_OrgRequiredHint"] = "組織が選択されていません。上部の一覧から組織を選択してください。",
+        ["Main_NoOrgsHint"] = "組織がありません。「組織管理」からログインしてください。",
+        ["OrgManage_NoOrgsHint"] = "組織がありません。「組織を登録」からログインしてください。",
         ["Msg_OrgCountFmt"] = "組織 {0} 件を取得しました",
         ["Msg_OrgLoadFailedFmt"] = "組織一覧の取得に失敗: {0}",
         ["Msg_ReplaySoql"] = "履歴から SOQL を再実行します",

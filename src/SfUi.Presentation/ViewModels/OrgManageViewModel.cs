@@ -95,6 +95,11 @@ public sealed partial class OrgManageViewModel : ObservableObject, IDisposable
         Inventory = inventory;
         _title = UiText.T("OrgManage_Title");
         _orgsView = new ObservableFilterView<OrgManageOrgRowViewModel>(Orgs, Matches);
+        Orgs.CollectionChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(OrgListHintText));
+            OnPropertyChanged(nameof(HasOrgListHint));
+        };
         UiText.LanguageChanged += OnLanguageChanged;
     }
 
@@ -247,6 +252,21 @@ public sealed partial class OrgManageViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(CanInteract));
         OnPropertyChanged(nameof(CanCancel));
     }
+
+    /// <summary>組織一覧を取得中か（取得インジケーター・ヒント表示用）。</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(OrgListHintText))]
+    [NotifyPropertyChangedFor(nameof(HasOrgListHint))]
+    private bool _isLoadingOrgs;
+
+    /// <summary>組織一覧まわりのヒント（null = 非表示。取得中は待機、0 件は登録導線）。</summary>
+    public string? OrgListHintText =>
+        IsLoadingOrgs ? UiText.T("Msg_OrgsLoadingWait")
+        : Orgs.Count == 0 ? UiText.T("OrgManage_NoOrgsHint")
+        : null;
+
+    /// <summary>一覧まわりのヒントを表示するか。</summary>
+    public bool HasOrgListHint => OrgListHintText is not null;
 
     partial void OnIsTestingConnectionsChanged(bool value)
     {
@@ -635,6 +655,8 @@ public sealed partial class OrgManageViewModel : ObservableObject, IDisposable
     {
         Title = UiText.T("OrgManage_Title");
         OnPropertyChanged(nameof(RegisterInstanceUrlHint));
+        OnPropertyChanged(nameof(OrgListHintText));
+        OnPropertyChanged(nameof(HasOrgListHint));
     }
 
     private CancellationToken CurrentToken()
@@ -659,6 +681,8 @@ public sealed partial class OrgManageViewModel : ObservableObject, IDisposable
         }
 
         IsBusy = true;
+        IsLoadingOrgs = true;
+        StatusMessage = UiText.T("Msg_LoadingOrgs");
         var keep = SelectedOrgRow?.Org.Username ?? _initialUsername;
         try
         {
@@ -674,6 +698,7 @@ public sealed partial class OrgManageViewModel : ObservableObject, IDisposable
         }
         finally
         {
+            IsLoadingOrgs = false;
             IsBusy = false;
         }
     }

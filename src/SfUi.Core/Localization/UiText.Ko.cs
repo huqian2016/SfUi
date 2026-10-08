@@ -119,6 +119,11 @@ public static partial class UiText
         // ---- MainViewModel メッセージ ----
         ["Msg_SelectOrg"] = "상단에서 조직을 선택하세요",
         ["Msg_LoadingOrgs"] = "조직을 불러오는 중…",
+        ["Msg_OrgsLoadingWait"] = "조직 목록을 가져오는 중입니다. 완료될 때까지 잠시만 기다려 주세요.",
+        ["Main_OrgLoading"] = "가져오는 중…",
+        ["Main_OrgRequiredHint"] = "조직이 선택되지 않았습니다 — 상단에서 조직을 선택하세요.",
+        ["Main_NoOrgsHint"] = "조직이 없습니다 — '조직 관리'에서 로그인하세요.",
+        ["OrgManage_NoOrgsHint"] = "조직이 없습니다 — '조직 등록'에서 로그인하세요.",
         ["Msg_OrgCountFmt"] = "조직 {0}개를 가져왔습니다",
         ["Msg_OrgLoadFailedFmt"] = "조직을 불러오지 못했습니다: {0}",
         ["Msg_ReplaySoql"] = "히스토리에서 SOQL을 다시 실행합니다",

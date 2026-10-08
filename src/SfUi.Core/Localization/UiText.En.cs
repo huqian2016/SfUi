@@ -119,6 +119,11 @@ public static partial class UiText
         // ---- MainViewModel メッセージ ----
         ["Msg_SelectOrg"] = "Select an org in the top bar",
         ["Msg_LoadingOrgs"] = "Loading orgs…",
+        ["Msg_OrgsLoadingWait"] = "Loading the org list — please wait until it finishes.",
+        ["Main_OrgLoading"] = "Loading…",
+        ["Main_OrgRequiredHint"] = "No org selected — choose one in the top bar.",
+        ["Main_NoOrgsHint"] = "No orgs found — sign in from Org Management.",
+        ["OrgManage_NoOrgsHint"] = "No orgs found — use \"Register org\" to sign in.",
         ["Msg_OrgCountFmt"] = "Loaded {0} org(s)",
         ["Msg_OrgLoadFailedFmt"] = "Failed to load orgs: {0}",
         ["Msg_ReplaySoql"] = "Re-running SOQL from history",
