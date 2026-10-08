@@ -1,6 +1,6 @@
 # 組織一覧の読み込み中 UX 改善 設計書
 
-最終更新: 2026-10-08 / ステータス: **Phase 1〜4 完了（UIA E2E 検証済み）**
+最終更新: 2026-10-08 / ステータス: **Phase 1〜4 完了（UIA E2E 検証済み・v0.13.1 としてリリース済み）**
 対象: メインウィンドウ + 組織管理ウィンドウ（WPF / Avalonia 両方）
 
 ---
@@ -142,3 +142,7 @@ if (SelectedOrg is null) { StatusMessage = Msg_SelectOrg; return; }   // 既存�
 | 空一覧 | 「No orgs found — sign in from Org Management.」ヒント・ボタン無効のまま・「Loaded 0 org(s)」✓ ／ `org-loading-empty.png` |
 
 - テスト 520 件グリーン / ビルド 0 警告・0 エラー（WPF + Avalonia 両方）
+
+### リリース（2026-10-08）
+
+- タグ `v0.13.1`（コミット `0f65552`）/ GitHub Release id=406489423（アセット 5: exe・portable・MSIX 0.13.1.0・cer・公証済み osx-arm64）/ CI green
