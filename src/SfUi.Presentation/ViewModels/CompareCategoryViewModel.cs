@@ -104,6 +104,12 @@ public partial class CompareCategoryViewModel : ObservableObject
     /// <summary>タブタイトルを解決する（動的カテゴリはオーバーライドして整形する）。</summary>
     protected virtual string ResolveTitle() => UiText.T(Category.TitleKey);
 
+    /// <summary>セル表示・ツールチップに使う表示列（ラベル・キー。動的カテゴリはオーバーライドして差し替える）。</summary>
+    protected virtual IReadOnlyList<(string Label, string Key)> DisplayColumns => _displayColumns;
+
+    /// <summary>1 列目のヘッダー（レコード比較は照合キー名を表示する）。</summary>
+    public virtual string KeyHeaderText => UiText.T("Compare_KeyHeader");
+
     /// <summary>言語切替の再ローカライズ（タイトル + 表示行の再構築）。</summary>
     public void Relocalize(bool diffOnly)
     {
@@ -119,7 +125,7 @@ public partial class CompareCategoryViewModel : ObservableObject
     partial void OnFilterTextChanged(string? value) => RebuildRows();
 
     private List<CompareRowViewModel> Materialize(OrgCompareTable table) =>
-        table.Rows.Select(row => new CompareRowViewModel(row, _displayColumns)).ToList();
+        table.Rows.Select(row => new CompareRowViewModel(row, DisplayColumns)).ToList();
 
     private void RebuildRows()
     {

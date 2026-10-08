@@ -24,6 +24,7 @@ public partial class App : Application
     private string? _smokeOrgInfo;
     private bool _smokeOrgInfoRefresh;
     private string? _smokeCompare;
+    private string? _smokeCompareRecords;
     private string? _smokeDataIo;
     private string? _smokeAccess;
     private string? _smokeBackup;
@@ -43,6 +44,7 @@ public partial class App : Application
         _smokeOrgInfo = _smokeTest ? ReadOption(e.Args, "--smoke-orginfo") : null;
         _smokeOrgInfoRefresh = _smokeTest && e.Args.Any(a => string.Equals(a, "--smoke-orginfo-refresh", StringComparison.OrdinalIgnoreCase));
         _smokeCompare = _smokeTest ? ReadOption(e.Args, "--smoke-compare") : null;
+        _smokeCompareRecords = _smokeTest ? ReadOption(e.Args, "--smoke-compare-records") : null;
         _smokeDataIo = _smokeTest ? ReadOption(e.Args, "--smoke-dataio") : null;
         _smokeAccess = _smokeTest ? ReadOption(e.Args, "--smoke-access") : null;
         _smokeBackup = _smokeTest ? ReadOption(e.Args, "--smoke-backup") : null;
@@ -256,6 +258,11 @@ public partial class App : Application
             }
 
             if (!string.IsNullOrWhiteSpace(_smokeCompare) && !await RunCompareSmokeAsync(_smokeCompare))
+            {
+                exitCode = 1;
+            }
+
+            if (!string.IsNullOrWhiteSpace(_smokeCompareRecords) && !await RunCompareRecordsSmokeAsync(_smokeCompareRecords))
             {
                 exitCode = 1;
             }
@@ -760,6 +767,82 @@ public partial class App : Application
         catch (Exception ex)
         {
             _log.Error("--smoke-compare: 比較に失敗しました", ex);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// --smoke-compare-records: 指定組織で Account のレコード比較（照合キー Name / Name・Industry・Type・上限 100）を
+    /// 実行し、行数と差分件数をログ出力する（レコード比較タブの実 API 検証）。
+    /// </summary>
+    private async Task<bool> RunCompareRecordsSmokeAsync(string targets)
+    {
+        try
+        {
+            var orgs = await Services.GetRequiredService<OrgService>().ListOrgsAsync();
+            var selected = new List<OrgInfo>();
+            foreach (var target in targets.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                var org = orgs.FirstOrDefault(o =>
+                    string.Equals(o.Alias, target, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(o.Username, target, StringComparison.OrdinalIgnoreCase));
+                if (org is null)
+                {
+                    _log.Error($"--smoke-compare-records: 組織が見つかりません: {target}");
+                    return false;
+                }
+
+                selected.Add(org);
+            }
+
+            if (selected.Count < 2)
+            {
+                _log.Error("--smoke-compare-records: 組織は 2 つ以上指定してください（例: --smoke-compare-records hks4sand1,acc）");
+                return false;
+            }
+
+            _log.Info($"--smoke-compare-records: 対象 = {string.Join(" / ", selected.Select(o => o.DisplayName))}");
+            var service = Services.GetRequiredService<OrgRecordCompareService>();
+            var request = new OrgRecordCompareRequest(
+                "Account",
+                "Name",
+                new[]
+                {
+                    new OrgRecordCompareField("Name", "Name"),
+                    new OrgRecordCompareField("Industry", "Industry"),
+                    new OrgRecordCompareField("Type", "Type"),
+                },
+                Limit: 100);
+
+            var progress = new Progress<string>(message => _log.Info($"--smoke-compare-records: {message}"));
+            var results = await service.QueryAllAsync(selected, request, progress);
+            foreach (var result in results)
+            {
+                _log.Info($"--smoke-compare-records: {result.OrgKey}: {result.State} / {result.Records.Count} 件");
+            }
+
+            var columns = selected
+                .Select(o => new OrgCompareOrgColumn(OrgInfoCacheStore.GetOrgKey(o), o.DisplayName, o.Username, o.InstanceUrl))
+                .ToList();
+            var table = OrgRecordCompareService.BuildTable(OrgCompareCategories.CreateRecords("Account"), columns, results, request);
+            _log.Info($"--smoke-compare-records: 全 {table.Rows.Count} 行 / 差分 {table.DiffCount} 行");
+            if (table.Rows.Count > 0)
+            {
+                var sample = table.Rows.First(r => r.Cells.Any(c => c.State == OrgCompareCellState.Value));
+                _log.Info($"--smoke-compare-records: 例 [{sample.Label}] {string.Join(" || ", sample.Cells.Select(OrgCompareService.CellText))}");
+            }
+
+            var anyValue = results.Any(r => r.State == OrgCompareCellState.Value);
+            if (!anyValue)
+            {
+                _log.Error("--smoke-compare-records: 全組織でレコードを取得できませんでした");
+            }
+
+            return anyValue;
+        }
+        catch (Exception ex)
+        {
+            _log.Error("--smoke-compare-records: レコード比較に失敗しました", ex);
             return false;
         }
     }

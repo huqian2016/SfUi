@@ -103,6 +103,12 @@ public static class OrgInfoUrlBuilder
             ? null
             : ObjectFields(instanceUrl, objectApiName);
 
+    /// <summary>レコードページ（instanceUrl・オブジェクト・Id が揃わないときは null）。</summary>
+    public static string? RecordOrNull(string? instanceUrl, string? objectApiName, string? recordId) =>
+        string.IsNullOrWhiteSpace(instanceUrl) || string.IsNullOrWhiteSpace(objectApiName) || string.IsNullOrWhiteSpace(recordId)
+            ? null
+            : Combine(instanceUrl, $"/lightning/r/{objectApiName}/{recordId}/view");
+
     private static string Combine(string instanceUrl, string path)
     {
         if (string.IsNullOrWhiteSpace(instanceUrl))

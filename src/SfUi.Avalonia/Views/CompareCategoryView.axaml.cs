@@ -78,7 +78,7 @@ public partial class CompareCategoryView : UserControl
 
         grid.Columns.Add(new DataGridTextColumn
         {
-            Header = UiText.T("Compare_KeyHeader"),
+            Header = _viewModel.KeyHeaderText,
             Binding = new Binding(nameof(CompareRowViewModel.Label)),
             Width = new DataGridLength(260),
         });

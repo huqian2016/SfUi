@@ -87,6 +87,21 @@
 			"problemMatcher": []
 		},
 		{
+			"label": "run (smoke compare records)",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"run",
+				"--project",
+				"src/SfUi.App/SfUi.App.csproj",
+				"--",
+				"--smoke",
+				"--smoke-compare-records",
+				"hks4sand1,acc"
+			],
+			"problemMatcher": []
+		},
+		{
 			"label": "run (smoke orginfo)",
 			"type": "shell",
 			"command": "dotnet",

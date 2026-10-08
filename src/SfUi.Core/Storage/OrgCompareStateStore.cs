@@ -16,6 +16,18 @@ public sealed class OrgCompareState
 
     /// <summary>「オブジェクト項目」タブで選択していたオブジェクトの API 名。</summary>
     public string? FieldsObject { get; set; }
+
+    /// <summary>「レコード比較」タブで選択していたオブジェクトの API 名。</summary>
+    public string? RecordObject { get; set; }
+
+    /// <summary>レコード比較の照合キー項目（API 名）。</summary>
+    public string? RecordKeyField { get; set; }
+
+    /// <summary>レコード比較の比較項目（API 名）。</summary>
+    public List<string> RecordFields { get; set; } = new();
+
+    /// <summary>レコード比較の件数上限（0 = 既定値）。</summary>
+    public int RecordLimit { get; set; }
 }
 
 /// <summary>組織比較の状態を data/orginfo/compare.json に保存する（原子書き込み・スキーマ検証つき）。</summary>
@@ -82,5 +94,14 @@ public sealed class OrgCompareStateStore
         }
 
         state.FieldsObject = string.IsNullOrWhiteSpace(state.FieldsObject) ? null : state.FieldsObject.Trim();
+        state.RecordObject = string.IsNullOrWhiteSpace(state.RecordObject) ? null : state.RecordObject.Trim();
+        state.RecordKeyField = string.IsNullOrWhiteSpace(state.RecordKeyField) ? null : state.RecordKeyField.Trim();
+        state.RecordFields = state.RecordFields?
+            .Where(f => !string.IsNullOrWhiteSpace(f))
+            .Select(f => f.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(64)
+            .ToList() ?? new List<string>();
+        state.RecordLimit = Math.Clamp(state.RecordLimit, 0, OrgRecordCompareService.MaxLimit);
     }
 }

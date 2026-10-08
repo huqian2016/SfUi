@@ -13,6 +13,7 @@ namespace SfUi.App.ViewModels;
 public partial class CompareOrgsViewModel : ObservableObject, IDisposable
 {
     private readonly OrgCompareService _compare;
+    private readonly OrgRecordCompareService _recordCompare;
     private readonly OrgCompareStateStore _state;
     private readonly IFilePickerService _filePicker;
     private readonly ToolLauncherService _toolLauncher;
@@ -20,13 +21,15 @@ public partial class CompareOrgsViewModel : ObservableObject, IDisposable
     private readonly List<OrgInfo> _allOrgs = new();
     private readonly List<CompareObjectCandidate> _objectCandidates = new();
     private CompareFieldsCategoryViewModel? _fieldsTab;
+    private CompareRecordsCategoryViewModel? _recordsTab;
     private bool _candidatesLoading;
     private bool _suspendRefresh;
     private bool _disposed;
 
-    public CompareOrgsViewModel(OrgCompareService compare, OrgCompareStateStore state, IFilePickerService filePicker, ToolLauncherService toolLauncher, AppLog log)
+    public CompareOrgsViewModel(OrgCompareService compare, OrgRecordCompareService recordCompare, OrgCompareStateStore state, IFilePickerService filePicker, ToolLauncherService toolLauncher, AppLog log)
     {
         _compare = compare;
+        _recordCompare = recordCompare;
         _state = state;
         _filePicker = filePicker;
         _toolLauncher = toolLauncher;
@@ -109,6 +112,7 @@ public partial class CompareOrgsViewModel : ObservableObject, IDisposable
 
             DiffOnly = state.DiffOnly;
             CreateFieldsTab(state.FieldsObject);
+            CreateRecordsTab(state.RecordObject, state.RecordKeyField, state.RecordFields, state.RecordLimit);
             SelectedCategory = Categories.FirstOrDefault(c => c.Id == state.CategoryId) ?? Categories.FirstOrDefault();
         }
         finally
@@ -121,7 +125,7 @@ public partial class CompareOrgsViewModel : ObservableObject, IDisposable
     public Task LoadAsync()
     {
         var category = SelectedCategory;
-        _ = EnsureFieldsCandidatesAsync();
+        _ = EnsureObjectCandidatesAsync();
         return category is null ? Task.CompletedTask : LoadCategoryAsync(category, forceRefresh: false, fetchMissing: true);
     }
 
@@ -134,7 +138,7 @@ public partial class CompareOrgsViewModel : ObservableObject, IDisposable
 
         if (value is CompareFieldsCategoryViewModel)
         {
-            _ = EnsureFieldsCandidatesAsync();
+            _ = EnsureObjectCandidatesAsync();
         }
 
         _ = LoadCategoryAsync(value, forceRefresh: false, fetchMissing: true);
@@ -222,10 +226,159 @@ public partial class CompareOrgsViewModel : ObservableObject, IDisposable
         PersistState();
     }
 
-    /// <summary>オブジェクト候補（objects セクション）を確保して「オブジェクト項目」タブへ渡す。</summary>
-    private async Task EnsureFieldsCandidatesAsync()
+    /// <summary>「レコード比較」タブを作り直す（動的カテゴリのため差し替え方式）。</summary>
+    private void CreateRecordsTab(string? objectApiName, string? keyField = null, IReadOnlyList<string>? fields = null, int limit = 0)
     {
-        if (_fieldsTab is null || _objectCandidates.Count > 0 || _candidatesLoading)
+        var index = _recordsTab is null ? Categories.Count : Math.Max(0, Categories.IndexOf(_recordsTab));
+        if (_recordsTab is not null)
+        {
+            _recordsTab.ObjectSelectionChanged -= OnRecordsObjectChanged;
+            _recordsTab.OpenLinkRequested -= OnOpenLinkRequested;
+            _recordsTab.RunRequested -= OnRecordsRunRequested;
+            Categories.Remove(_recordsTab);
+        }
+
+        var tab = new CompareRecordsCategoryViewModel(objectApiName ?? string.Empty, keyField, fields, limit);
+        tab.ObjectSelectionChanged += OnRecordsObjectChanged;
+        tab.OpenLinkRequested += OnOpenLinkRequested;
+        tab.RunRequested += OnRecordsRunRequested;
+        if (_objectCandidates.Count > 0)
+        {
+            tab.SetCandidates(_objectCandidates);
+        }
+
+        index = Math.Clamp(index, 0, Categories.Count);
+        Categories.Insert(index, tab);
+        _recordsTab = tab;
+    }
+
+    /// <summary>オブジェクトが変わったらタブを作り直して選択・再比較する（照合キー・比較項目はリセット、上限は維持）。</summary>
+    private void OnRecordsObjectChanged(string objectApiName)
+    {
+        var limit = _recordsTab?.Limit ?? 0;
+        CreateRecordsTab(objectApiName, null, null, limit);
+        if (_recordsTab is null)
+        {
+            return;
+        }
+
+        SelectedCategory = _recordsTab;
+        PersistState();
+    }
+
+    /// <summary>「比較実行」ボタン（条件変更後の再クエリ）。</summary>
+    private void OnRecordsRunRequested()
+    {
+        PersistState();
+        var tab = _recordsTab;
+        if (tab is not null)
+        {
+            _ = LoadRecordsTabAsync(tab, forceRefresh: false);
+        }
+    }
+
+    /// <summary>「レコード比較」タブを実行する（候補確保 → 項目メタデータ → 各組織で REST SOQL → キー突合）。</summary>
+    private async Task LoadRecordsTabAsync(CompareRecordsCategoryViewModel tab, bool forceRefresh)
+    {
+        if (IsBusy)
+        {
+            return;
+        }
+
+        await EnsureObjectCandidatesAsync();
+
+        if (string.IsNullOrEmpty(tab.ObjectApiName))
+        {
+            tab.Clear();
+            tab.EmptyMessage = UiText.T("Compare_RecordsSelectObject");
+            StatusMessage = UiText.T("Compare_RecordsSelectObject");
+            return;
+        }
+
+        var selected = Orgs.Where(o => o.IsSelected).Select(o => o.Org).ToList();
+        if (selected.Count < 2)
+        {
+            tab.Clear();
+            StatusMessage = UiText.T("Compare_NeedTwoOrgs");
+            return;
+        }
+
+        IsBusy = true;
+        tab.IsLoading = true;
+        StatusMessage = UiText.T("Compare_Loading");
+        try
+        {
+            await EnsureRecordMetadataAsync(tab, selected[0], forceRefresh);
+            if (tab.Fields.Count == 0)
+            {
+                tab.Clear();
+                tab.EmptyMessage = UiText.T("Compare_RecordsNoMetadataFmt", tab.ObjectApiName);
+                StatusMessage = tab.EmptyMessage;
+                return;
+            }
+
+            var request = tab.BuildRequest();
+            if (request.Fields.Count == 0)
+            {
+                tab.Clear();
+                tab.EmptyMessage = UiText.T("Compare_RecordsNoFields");
+                StatusMessage = UiText.T("Compare_RecordsNoFields");
+                return;
+            }
+
+            var progress = new Progress<string>(message => StatusMessage = message);
+            var results = await _recordCompare.QueryAllAsync(selected, request, progress);
+            var columns = selected
+                .Select(o => new OrgCompareOrgColumn(OrgInfoCacheStore.GetOrgKey(o), o.DisplayName, o.Username, o.InstanceUrl))
+                .ToList();
+            var table = OrgRecordCompareService.BuildTable(tab.Category, columns, results, request);
+            tab.Apply(table, DiffOnly);
+            tab.IsLoaded = true;
+            StatusMessage = UiText.T("Compare_SummaryFmt", table.DiffCount, table.Rows.Count);
+        }
+        catch (Exception ex)
+        {
+            _log.Error("レコード比較: 比較表の構築に失敗しました", ex);
+            StatusMessage = UiText.T("Common_FailedFmt", ex.Message);
+        }
+        finally
+        {
+            tab.IsLoading = false;
+            IsBusy = false;
+        }
+    }
+
+    /// <summary>対象オブジェクトの項目メタデータ（fields:&lt;Object&gt; セクション）を確保し、タブの候補へ反映する。</summary>
+    private async Task EnsureRecordMetadataAsync(CompareRecordsCategoryViewModel tab, OrgInfo org, bool forceRefresh)
+    {
+        if (tab.HasMetadata && !forceRefresh)
+        {
+            return;
+        }
+
+        var section = await _compare.EnsureSectionAsync(org, OrgInfoSections.Fields(tab.ObjectApiName), forceRefresh);
+        if (section is null)
+        {
+            return;
+        }
+
+        var candidates = new List<CompareFieldCandidate>();
+        foreach (var row in section.Rows)
+        {
+            var apiName = row.Get("apiName");
+            if (!string.IsNullOrWhiteSpace(apiName))
+            {
+                candidates.Add(new CompareFieldCandidate(apiName!, row.Get("label") ?? string.Empty));
+            }
+        }
+
+        tab.SetMetadata(candidates);
+    }
+
+    /// <summary>オブジェクト候補（objects セクション）を確保して「オブジェクト項目」「レコード比較」タブへ渡す。</summary>
+    private async Task EnsureObjectCandidatesAsync()
+    {
+        if ((_fieldsTab is null && _recordsTab is null) || _objectCandidates.Count > 0 || _candidatesLoading)
         {
             return;
         }
@@ -253,6 +406,7 @@ public partial class CompareOrgsViewModel : ObservableObject, IDisposable
 
             _objectCandidates.Sort((a, b) => string.Compare(a.ApiName, b.ApiName, StringComparison.OrdinalIgnoreCase));
             _fieldsTab?.SetCandidates(_objectCandidates);
+            _recordsTab?.SetCandidates(_objectCandidates);
         }
         catch (Exception ex)
         {
@@ -311,6 +465,12 @@ public partial class CompareOrgsViewModel : ObservableObject, IDisposable
             _fieldsTab.ObjectSelectionChanged -= OnFieldsObjectChanged;
         }
 
+        if (_recordsTab is not null)
+        {
+            _recordsTab.ObjectSelectionChanged -= OnRecordsObjectChanged;
+            _recordsTab.RunRequested -= OnRecordsRunRequested;
+        }
+
         foreach (var item in Orgs)
         {
             item.PropertyChanged -= OnOrgItemPropertyChanged;
@@ -361,6 +521,18 @@ public partial class CompareOrgsViewModel : ObservableObject, IDisposable
             category.Clear();
             category.EmptyMessage = UiText.T("Compare_FieldsSelectObject");
             StatusMessage = UiText.T("Compare_FieldsSelectObject");
+            return;
+        }
+
+        if (category is CompareRecordsCategoryViewModel recordsTab)
+        {
+            if (!fetchMissing && recordsTab.IsLoaded)
+            {
+                // 言語切替などでは再クエリしない（セルは組織データのみで UI テキストを含まない）
+                return;
+            }
+
+            await LoadRecordsTabAsync(recordsTab, forceRefresh);
             return;
         }
 
@@ -431,6 +603,10 @@ public partial class CompareOrgsViewModel : ObservableObject, IDisposable
                 CategoryId = SelectedCategory?.Id,
                 DiffOnly = DiffOnly,
                 FieldsObject = _fieldsTab?.ObjectApiName,
+                RecordObject = _recordsTab?.ObjectApiName,
+                RecordKeyField = _recordsTab?.SelectedKeyField?.ApiName,
+                RecordFields = _recordsTab?.Fields.Where(f => f.IsSelected).Select(f => f.ApiName).ToList(),
+                RecordLimit = _recordsTab?.Limit ?? 0,
             });
         }
         catch (Exception ex)

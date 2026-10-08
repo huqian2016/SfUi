@@ -36,6 +36,9 @@ public static class OrgCompareCategories
     /// <summary>統計カテゴリの ID（セクションを持たない）。</summary>
     public const string StatsCategoryId = "compare:stats";
 
+    /// <summary>レコード比較の動的カテゴリ ID 接頭辞。例: records:Account</summary>
+    public const string RecordsPrefix = "records:";
+
     private static readonly string[] None = Array.Empty<string>();
 
     public static IReadOnlyList<OrgCompareCategory> All { get; } = new OrgCompareCategory[]
@@ -113,11 +116,9 @@ public static class OrgCompareCategories
         return ids;
     }
 
-    /// <summary>動的カテゴリ ID（fields:&lt;Object&gt;。オブジェクト名が空のものは動的とみなさない）か。</summary>
+    /// <summary>動的カテゴリ ID（fields:&lt;Object&gt; / records:&lt;Object&gt;。オブジェクト名が空のものは動的とみなさない）か。</summary>
     public static bool IsDynamic(string? id) =>
-        !string.IsNullOrEmpty(id) &&
-        id.Length > OrgInfoSections.FieldsPrefix.Length &&
-        id.StartsWith(OrgInfoSections.FieldsPrefix, StringComparison.Ordinal);
+        IsDynamicPrefix(id, OrgInfoSections.FieldsPrefix) || IsDynamicPrefix(id, RecordsPrefix);
 
     /// <summary>オブジェクト項目の動的カテゴリ（オブジェクトごとに生成する）。</summary>
     public static OrgCompareCategory CreateFields(string objectApiName) => new(
@@ -128,6 +129,27 @@ public static class OrgCompareCategories
         new[] { "apiName" },
         new[] { "label", "dataType", "custom", "referenceTo", "nillable", "indexed", "calculated", "historyTracked", "description" },
         null);
+
+    /// <summary>レコード比較のカテゴリ ID。</summary>
+    public static string RecordsCategoryId(string objectApiName) => RecordsPrefix + objectApiName;
+
+    /// <summary>
+    /// レコード比較の動的カテゴリ（オブジェクトごとに生成する）。表示列・Key 列はセクションを持たず、
+    /// OrgRecordCompareService が実行時に組み立てる（セルは「ラベル: 値」連結）。
+    /// </summary>
+    public static OrgCompareCategory CreateRecords(string objectApiName) => new(
+        RecordsCategoryId(objectApiName),
+        "OrgInfo_Tab_Records",
+        OrgCompareKind.Keyed,
+        null,
+        None,
+        None,
+        null);
+
+    private static bool IsDynamicPrefix(string? id, string prefix) =>
+        !string.IsNullOrEmpty(id) &&
+        id.Length > prefix.Length &&
+        id.StartsWith(prefix, StringComparison.Ordinal);
 }
 
 /// <summary>比較列（組織 1 つ分）。InstanceUrl はセルリンクのフォールバック（セクション Setup URL）に使う。</summary>

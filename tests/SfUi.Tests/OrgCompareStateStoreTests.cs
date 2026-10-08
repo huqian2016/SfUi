@@ -92,8 +92,32 @@ public class OrgCompareStateStoreTests : IDisposable
         Store.Save(new OrgCompareState { CategoryId = "fields:Account" });
         Assert.Equal("fields:Account", Store.Load().CategoryId);
 
+        Store.Save(new OrgCompareState { CategoryId = "records:Account" });
+        Assert.Equal("records:Account", Store.Load().CategoryId);
+
         Store.Save(new OrgCompareState { CategoryId = "fields:" });
         Assert.Null(Store.Load().CategoryId);
+    }
+
+    [Fact]
+    public void Save_roundtrips_record_compare_settings()
+    {
+        Store.Save(new OrgCompareState
+        {
+            RecordObject = " Account ",
+            RecordKeyField = " Name ",
+            RecordFields = new List<string> { "Name", " Industry ", "name", "  " },
+            RecordLimit = 150,
+        });
+
+        var state = Store.Load();
+        Assert.Equal("Account", state.RecordObject);
+        Assert.Equal("Name", state.RecordKeyField);
+        Assert.Equal(new[] { "Name", "Industry" }, state.RecordFields);
+        Assert.Equal(150, state.RecordLimit);
+
+        Store.Save(new OrgCompareState { RecordLimit = 999999 });
+        Assert.Equal(OrgRecordCompareService.MaxLimit, Store.Load().RecordLimit);
     }
 
     [Fact]

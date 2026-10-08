@@ -68,6 +68,9 @@
                 </DataTemplate>
             </TabControl.ItemTemplate>
             <TabControl.Resources>
+                <DataTemplate DataType="{x:Type vm:CompareRecordsCategoryViewModel}">
+                    <views:CompareRecordsCategoryView />
+                </DataTemplate>
                 <DataTemplate DataType="{x:Type vm:CompareFieldsCategoryViewModel}">
                     <views:CompareFieldsCategoryView />
                 </DataTemplate>
