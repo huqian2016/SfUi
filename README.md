@@ -8,6 +8,8 @@ and an **Org Management** window that keeps your orgs in order (default, alias, 
 
 > UI languages: **English (default) / 日本語 / 简体中文 / 한국어** — switch instantly from the top bar.
 
+📖 **User manual**: [English](docs/manual/en.md) · [日本語](docs/manual/ja.md) · [简体中文](docs/manual/zh.md) · [한국어](docs/manual/ko.md) — setup, every window explained, screenshots and diagrams.
+
 ## Getting started
 
 Two ways to get going: use a prebuilt binary below, or [build from source](#build-from-source).
@@ -226,6 +228,8 @@ SOQL・匿名Apex・デバッグログ・デプロイ・自由コマンド・RES
 組織情報の閲覧（別ウィンドウ。オブジェクト / 項目 / 画面レイアウト / リストビュー / フローの**定義書エクスポート** = xlsx / CSV 付き）・複数組織の一括比較・データの入出力（CSV / JSON・REST / Bulk API）・
 レコードのバックアップと復元（バックアップ間の比較・レコード単位の差分表示付き）・
 組織管理（組織の既定 / エイリアス / ログイン・登録操作、疎通テスト、タグ・メモ、使用量・移行棚卸しの確認）にも対応しています。
+
+📖 **ユーザーマニュアル**: [日本語](docs/manual/ja.md) · [English](docs/manual/en.md) · [简体中文](docs/manual/zh.md) · [한국어](docs/manual/ko.md) — セットアップから全ウィンドウの解説まで、スクリーンショットと図解付き。
 
 - **ようこそ画面**: 起動のたびに Welcome ウィンドウを表示（「今後表示しない」チェックで次回以降は非表示、設定タブの「ようこそ画面を表示」で再表示）。主な機能の一覧に加え、Salesforce CLI（sf コマンド）が見つからない場合はインストール案内（公式インストーラーを開く + npm コマンド例 + 再チェック）を表示し、UI 言語もウィンドウ内のコンボでその場で切り替えられます
 - UI は **英語（既定）/ 日本語 / 简体中文 / 한국어** に対応（上部バーのコンボで即時切替）
