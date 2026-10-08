@@ -1,6 +1,6 @@
 # SfUi 公開（Publish）計画
 
-> 対象: SfUi v0.13.0（2026-10-08 時点）
+> 対象: SfUi v0.13.1（2026-10-08 時点）
 > 目的: このツールを多くのユーザー（主に Salesforce 開発者・管理者）に届けるための計画をまとめる
 > 関連: `packaging/README.md`（MSIX / Store 提出）、`docs/macos-signing-notarization.md`（mac 署名・公証）、`.github/ISSUE_TEMPLATE/`（不具合報告）
 
