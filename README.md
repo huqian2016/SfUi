@@ -17,15 +17,15 @@ Two ways to get going: use a prebuilt binary below, or [build from source](#buil
 1. **Microsoft Store (recommended):** install from [SfUi on the Microsoft Store](https://apps.microsoft.com/store/detail/9NX0BFFHF7B1) — signed by Microsoft, so there is no SmartScreen warning (the Store version may lag a little behind the GitHub builds).
 2. **Or download from the [Releases](../../releases) page:**
    - **`SfUi.exe`** — the portable single executable, or
-   - **`SfUi-v0.12.0-portable.zip`** — the executable **plus a ready-to-use `data/` folder with 30 sample SOQL / Apex / commands / REST requests already in the history** (just extract and run).
-   - **`SfUi-0.12.0-x64.msix`** — Windows installer (MSIX). Trust the bundled certificate first: double-click **`SfUi-0.12.0-x64.cer`** → *Install Certificate* → **Local Machine** → **Trusted People** (admin required), then double-click the `.msix` to install.
+   - **`SfUi-v0.13.0-portable.zip`** — the executable **plus a ready-to-use `data/` folder with 30 sample SOQL / Apex / commands / REST requests already in the history** (just extract and run).
+   - **`SfUi-0.13.0-x64.msix`** — Windows installer (MSIX). Trust the bundled certificate first: double-click **`SfUi-0.13.0-x64.cer`** → *Install Certificate* → **Local Machine** → **Trusted People** (admin required), then double-click the `.msix` to install.
 3. Put it in any folder and double-click (no installer).
    - Windows SmartScreen may warn on the GitHub builds because the executable is unsigned (the Store version is signed) — choose *More info* → *Run anyway*.
 4. On first run a `data/` folder is created next to the exe (portable mode). Pick your org in the top bar and start with a tab — or add the sample history via **Settings → Seed sample history**.
 
 ### macOS (Apple Silicon, prebuilt)
 
-1. Download **`SfUi-0.12.0-osx-arm64.zip`** from [Releases](../../releases), extract it and run `SfUi.app`.
+1. Download **`SfUi-0.13.0-osx-arm64.zip`** from [Releases](../../releases), extract it and run `SfUi.app`.
 2. The app is signed with a Developer ID certificate and **notarized by Apple**, so it opens with a normal double-click — including the very first launch.
 3. Same as Windows from there: pick your org in the top bar and start with a tab.
 
@@ -80,7 +80,7 @@ SfUi.sln
 ├─ src/SfUi.Presentation … UI-framework-free ViewModels + UI abstractions (shared by WPF and Avalonia)
 ├─ src/SfUi.App     … WPF app (Windows; MVVM, views, localization markup extension)
 ├─ src/SfUi.Avalonia … Avalonia 11 app (Windows / macOS; shares Core + Presentation)
-└─ tests/SfUi.Tests … xUnit (504 tests: quoting, JSON parsing, stores, services, org info & document export, org compare, data I/O, backups, org management, localization, …)
+└─ tests/SfUi.Tests … xUnit (520 tests: quoting, JSON parsing, stores, services, org info & document export, org compare, data I/O, backups, org management, localization, …)
 ```
 
 Built with C# / .NET 9, CommunityToolkit.Mvvm and AvalonEdit (WPF) / AvaloniaEdit (Avalonia). All business logic is shared through `SfUi.Core` and `SfUi.Presentation`, so fixes apply to both UIs at once.
@@ -97,7 +97,13 @@ Built with C# / .NET 9, CommunityToolkit.Mvvm and AvalonEdit (WPF) / AvaloniaEdi
 *Org Info → Export — pick objects and documents (objects / fields / page layouts / list views / flows) and write a multi-sheet Excel workbook plus one CSV per sheet*
 
 ![Compare Orgs window](docs/screenshots/compare-en.png)
-*Compare Orgs — 2–4 orgs side by side; rows that exist in only some orgs (or differ in value) are highlighted in yellow*
+*Compare Orgs — compare up to 8 orgs side by side; rows that exist in only some orgs (or differ in value) are highlighted in yellow*
+
+![Record compare tab](docs/screenshots/compare-records-en.png)
+*Compare Orgs → record compare tab — pick an object, a matching key and the fields to compare; each org is queried with REST SOQL and records are matched by key*
+
+![Record diff detail](docs/screenshots/compare-records-detail-en.png)
+*Record detail window — double-click a row to see the per-field diff of one record across orgs*
 
 ![Backup & Restore window](docs/screenshots/backup-restore-en.png)
 *Backup & Restore — pick a backup and restore objects with Id/key matching; label, description, org info and counts are filled in for you*
@@ -135,7 +141,7 @@ Built with C# / .NET 9, CommunityToolkit.Mvvm and AvalonEdit (WPF) / AvaloniaEdi
 - **AI chat (multi-provider)** — generate SOQL / Apex / sf commands from natural language and analyze execution results; apply generated code to the matching tab with one click. Shown in a right-side panel (toggle with the **AI** button in the top bar). Works out of the box — an evaluation API key for the default DeepSeek endpoint is bundled. Settings → AI offers presets for **OpenAI-compatible APIs** (OpenAI, Anthropic via its OpenAI-compatibility layer, or a local LLM such as Ollama / LM Studio — no key needed there); set your own key in Settings → AI (or via the `SFUI_AI_API_KEY` environment variable). The bundled evaluation key is provided as-is **with usage limits** and may stop without notice — register your own key for uninterrupted use.
 - **Org Info window** — a separate non-modal window per org (click **Org Info** next to the org combo) with 20+ tabs: overview, org settings (values + setup links), users, profiles, permission sets, roles, objects, sharing/OWD, Apex classes & triggers, flows, scheduled jobs, connected apps, installed packages, login history, setup audit trail, record types, currencies, object fields (lazy-loaded) and your own **My Settings** tabs built from a 55-item catalog. Search across all tabs, refresh per tab or all at once, jump straight to Setup pages. Data is cached locally and fetched only on first open (manual refresh after that), so reopening is instant — and each window has its own AI panel with *Attach current tab data* + quick prompts.
 - **Definition-document export (Org Info → Export tab)** — turn org metadata into definition documents: pick objects (filter / custom-only / select all), tick **object definitions, field definitions, page layouts (section × column × row with required / read-only flags), list views (scope, conditions, columns with sort order, full SOQL) and flows (summary + element-level detail with connectors and conditions)**, then export **one multi-sheet Excel workbook + one CSV per sheet** (Excel / CSV toggles). Live progress, cancel, partial-failure warnings and an *Open folder* button; the object list is cached and refreshable in one click. Works in both the WPF and the Avalonia (macOS) app.
-- **Org comparison** — open the **Compare Orgs** window from the top bar and compare 2–4 orgs side by side: org settings, OWD, counts, users, profiles, permission sets, roles, objects, Apex classes/triggers, flows and record types are matched **by API name**, with rows that exist in only some orgs (or differ in value) highlighted. Includes a *Diff only* filter, cache-first loading (shared with the Org Info window — missing sections are fetched automatically) and CSV export.
+- **Org comparison** — open the **Compare Orgs** window from the top bar and compare **up to 8 orgs** side by side: org settings, OWD, counts, users, profiles, permission sets, roles, objects, Apex classes/triggers, flows, record types, scheduled jobs, connected apps, installed packages, currencies, login history and setup audit trail are matched **by API name**, with rows that exist in only some orgs (or differ in value) highlighted. Every cell has a ↗ link to the matching Setup page, tabs show diff-count badges (≠N) and *Refetch all* reloads every tab. Two dynamic tabs go further: **Object Fields** (pick any object and compare its field metadata) and **Record compare** (pick an object, a matching key such as Name and the fields to compare — each org is queried with REST SOQL and records are matched by key; double-click a row to open the per-field **detail window**). Includes a *Diff only* filter, cache-first loading (shared with the Org Info window — missing sections are fetched automatically) and CSV export.
 - **Data Import / Export window** — a separate window (open from **Data I/O** in the top bar, or from the **Data I/O** button on the Objects tab of the Org Info window, which pre-fills the selected object) with two tabs. *Export*: run SOQL directly or build it from field checkboxes, via REST or Bulk API, browse the result grid and save as CSV / JSON / TSV. *Import*: load a CSV (UTF-8 / Shift-JIS auto-detected), auto-map columns to fields (editable, with per-column include toggles), and run Insert / Update / Upsert / Delete via REST (`composite/sobjects`, 200 records per batch) or Bulk API — with a confirmation prompt, live progress and a per-row result grid (export failed rows to CSV). Runs are recorded in History as `data` and re-run by double-click.
 - **Access tabs** — the same window also has three access-permission tabs for the selected object. **Object Access**: object permissions of Permission Sets / Permission Set Groups / Profiles (kind, label, API name, custom, Read / Create / Edit / Delete / View All Records / Modify All Records / View All Fields, with row search; PSG rows are the union of their component permission sets). **Field Access**: a field × subject matrix (cells R / E) with kind filters, row search and column search. **Record Access**: pick active users with checkboxes (name search, scrollable) and run any SOQL to fetch target records, then page 200 at a time with search and see per-user **Read / Edit / Delete / Transfer** via `UserRecordAccess`, with links to open each record.
 - **Backup & Restore window** — a separate window (open from **Backup & Restore** in the top bar) with three tabs. *Backup*: pick objects from a searchable list with record counts (fetched in the background and cached — refresh anytime); the selection is remembered per org and can be cleared with one button; the label/description are prefilled with `<alias>_yyyy-MM-dd_HH-mm` and the alias, URL, org ID and org type, and the run exports small objects via REST, larger ones via Bulk API (CSV). *Restore*: choose a backup from the searchable list (with delete), pick target objects (record counts, per-object key field, and a **Records** button that opens a detail window with paging, AND search and a leading column to open each record's Salesforce page), then restore. **Same org**: records are matched by Id (existing records are skipped or overwritten, deleted records are undeleted **with their original Id**); **another org**: matched by a key field such as Name. Inserted records get new Ids and lookups to them are remapped automatically. A result grid summarizes created / updated / undeleted / skipped / failed per object.
@@ -170,7 +176,7 @@ The left **Quick Panel** shows favorites with number slots; the top bar hosts or
 
 The **Org Info** button (next to the org combo) opens a separate non-modal window for the selected org — multiple windows and multiple orgs at once. It contains 20+ tabs (org settings, users, permission sets, objects, OWD, Apex / flows / jobs, login history, …), cross-tab search with jump-to-row, per-tab refresh, lazy-loaded object fields, custom **My Settings** tabs, Setup links, and its own AI panel with *Attach current tab data*.
 
-The **Compare Orgs** button (enabled when 2 or more orgs are available) opens the side-by-side comparison window — 13 categories matched **by API name**, with diff highlighting, a *Diff only* filter, per-tab search and CSV export.
+The **Compare Orgs** button (enabled when 2 or more orgs are available) opens the side-by-side comparison window — 19 built-in categories plus object-fields and record-compare tabs, matched **by API name**, with diff highlighting, a *Diff only* filter, per-tab search, diff-count badges and CSV export.
 
 ## Where settings and data are stored
 
@@ -224,7 +230,7 @@ SOQL・匿名Apex・デバッグログ・デプロイ・自由コマンド・RES
 - **AI チャット（複数プロバイダー対応）**: 自然言語から SOQL / 匿名Apex / sf コマンドを生成、実行結果の分析も可能（右サイドパネル表示・上部バーの「AI」で表示切替。既定の DeepSeek 接続先はすぐ試せるよう評価用キーを同梱。設定 → AI のプリセットから OpenAI / Anthropic（Claude）/ ローカル LLM（Ollama 等、キー不要）など **OpenAI 互換 API** に接続可。自分のキーは 設定 → AI（または環境変数 `SFUI_AI_API_KEY`）で登録）。同梱の評価用キーは**上限があり、予告なく停止することがあります**（継続利用には自分のキーの登録を推奨）
 - **組織情報ウィンドウ**: 選択中組織の設定・ユーザー・権限・項目などを 20 以上のタブで一覧・検索（非モーダルの別ウィンドウ・複数同時可・「組織情報」ボタンから起動）。初回のみ自動取得してローカルにキャッシュし、以降は手動再取得。オブジェクト項目は遅延取得、Setup ページへのリンク、マイ設定（カタログ 55 項目から作るカスタムタブ）、ウィンドウ単位の AI パネル（表示中タブのデータ添付）付き
 - **定義書エクスポート（組織情報 →「エクスポート」タブ）**: 組織メタデータを定義書として出力。対象オブジェクトを選択（絞り込み / カスタムのみ / すべて選択）し、**オブジェクト定義 / 項目定義 / 画面レイアウト（セクション×列×行、必須・読取専用付き） / リストビュー（範囲・条件・表示項目・ソート・SOQL 全文） / フロー（一覧 + 接続・条件付きの要素明細）**をチェックして、**1 ブック複数シートの Excel + シートごとの CSV** に出力（Excel / CSV は個別に切替可）。進捗・キャンセル・一部失敗の警告・「フォルダーを開く」付き。オブジェクト一覧はキャッシュから即時表示しワンクリックで再読み込み。WPF / Avalonia（macOS）どちらでも利用可
-- **組織比較**: 上部バーの「組織比較」から 2〜4 組織を横並び比較（組織設定・OWD・統計・ユーザー・プロファイル・権限セット・ロール・オブジェクト・Apex クラス/トリガ・フロー・レコードタイプを **API 名で突合**。「片方にのみ存在」「値が異なる」行をハイライトし、差分のみ表示フィルタ・組織情報と共有のキャッシュ優先取得（未取得分は自動取得）・CSV 出力付き）
+- **組織比較**: 上部バーの「組織比較」から**最大 8 組織**を横並び比較（組織設定・OWD・統計・ユーザー・プロファイル・権限セット・ロール・オブジェクト・Apex クラス/トリガ・フロー・レコードタイプ・スケジュール済みジョブ・接続アプリ・インストール済みパッケージ・通貨・ログイン履歴・設定変更履歴を **API 名で突合**。「片方にのみ存在」「値が異なる」行をハイライトし、差分のみ表示フィルタ・組織情報と共有のキャッシュ優先取得（未取得分は自動取得）・CSV 出力付き）。各セルの「↗」で該当の Setup ページを開き、タブには差分件数バッジ（≠N）、「すべて再取得」で全タブを更新。さらに **オブジェクト項目タブ**（任意のオブジェクトの項目を比較）と **レコード比較タブ**（オブジェクト・照合キー（Name など）・比較項目を選び、各組織を REST SOQL で取得してキーで突合。行をダブルクリックすると項目単位の**差分詳細ウィンドウ**を表示）
 - **データ入出力**: 上部バーの「データ入出力」、または組織情報ウィンドウのオブジェクトタブの「データ入出力」から（選択中オブジェクトを引き継いで）開く独立ウィンドウ。エクスポート = SOQL 直接入力 / 項目選択ビルダー × REST / Bulk API → 結果グリッド + CSV / JSON / TSV 保存。インポート = CSV 読込（UTF-8 / Shift-JIS 自動判定）→ 自動マッピング（変更・使用可否可）→ 挿入 / 更新 / アップサート / 削除 × REST（composite・200 件/バッチ）/ Bulk API（確認ダイアログ・進捗・行別結果・失敗行 CSV 出力）。履歴「データ」からダブルクリックで再実行可
 - **アクセス権限タブ（オブジェクト / 項目 / レコード）**: データ入出力ウィンドウに追加。オブジェクトアクセス = 選択中オブジェクトに対する PS / PSG / プロファイルの権限一覧（種類・ラベル・API 名・カスタム・Read / Create / Edit / Delete / View All Records / Modify All Records / View All Fields。PSG は構成権限セットの和集合）。項目アクセス = 項目 × 権限主体のマトリクス（セル = R / E・種類フィルタ・列絞り込み付き）。両タブとも行の検索（AND・スペース区切り・表示件数付き）に対応。レコードアクセス = 有効ユーザーをチェックボックスで選択（名前検索・3 行スクロール・全選択 / 全解除）し、任意 SOQL で抽出した対象レコード（200 件/ページ・検索付き）のユーザーごとの読取 / 編集 / 削除 / 転送（UserRecordAccess）を表示。リンクからレコードをブラウザーで開ける
 - **レコードのバックアップと復元**: 上部バーの「バックアップと復元」から開く独立ウィンドウ。バックアップ = オブジェクト一覧（検索・件数付き。件数はバックグラウンド取得 + キャッシュ、再取得可）から選択（選択は組織ごとに記憶・ワンクリックでクリア可）→ ラベル / 説明（自動入力: `エイリアス_yyyy-MM-dd_HH-mm` / エイリアス・URL・組織 ID・種類）→ 実行（REST / 件数が多い場合は Bulk API・進捗 / キャンセル表示）。復元 = バックアップ選択（検索・削除可）→ オブジェクト選択（件数・キー項目・「レコード」ボタンでレコード詳細ウィンドウ。先頭列の「レコードページを開く」で Salesforce のレコードページをブラウザー表示）→ 照合方式（自動 / Id / キー）× 既存レコードの扱い（スキップ / 上書き）→ 実行。同じ組織は Id で照合（既存 = スキップ / 上書き、削除済み = 元の Id のまま復元、無い = 新規作成 + 参照の張り替え）、別の組織はキー項目（既定 Name）で照合。結果は作成 / 上書き / 復元 / スキップ / 失敗の集計 + エラー表示
@@ -235,7 +241,7 @@ SOQL・匿名Apex・デバッグログ・デプロイ・自由コマンド・RES
 - **SOQL タブの強化**: シンタックスハイライト・インライン候補エリア（項目 / リレーション / 関数をクリックで挿入）・ライブ件数（並行して `SELECT COUNT()`）・実行結果を AI へ送っての質問（候補クエリ + 「SOQL で開く」付き）
 - **匿名 Apex の補完と AI 連携**: スニペット / 静的メンバー / インライン SOQL / sObject 名・項目・リレーション / 変数・コレクション / 組織の Apex クラス / `System.Label.*` / カスタム メタデータ型の候補を表示。実行後にエラーは AI へ自動質問、成功時は「AI: continue code」で続きのコードを提案
 - **About ウィンドウ**: 上部バーの「?」ボタンからツール情報・バージョン・GitHub リポジトリ / 不具合登録（Issues）/ 作者への連絡先へのリンクを表示（4 言語対応）
-- 2026-10-08 時点で v0.12.0（テスト 504 件 / スモーク + UIA E2E 検証済み（WPF・Avalonia 両方）。組織情報ウィンドウに**定義書エクスポート**（オブジェクト / 項目 / 画面レイアウト / リストビュー / フローの定義書を 1 ブック複数シートの Excel + シート別 CSV で出力。オブジェクト選択・進捗・キャンセル・出力先選択付き）を追加。macOS（Avalonia）版でも同じ機能が使えます）
+- 2026-10-08 時点で v0.13.0（テスト 520 件 / スモーク + UIA E2E 検証済み（WPF・Avalonia 両方）。**組織比較ウィンドウを大幅強化**（最大 8 組織・追加セクション 6 種・セルから Setup ページを開く↗リンク・すべて再取得・タブの差分バッジ・オブジェクト項目タブ・レコード比較タブ・レコード差分詳細ウィンドウ）。組織情報ウィンドウの**定義書エクスポート**（Step 2〜4）も引き続き利用できます）
 - 2026-10-06 時点で v0.11.1（テスト 482 件 / スモーク + UIA E2E 検証済み。AI キーの難読化（enc1）と新しい OpenAI モデルへの自動対応・公開準備（非公式の免責事項、プライバシー / セキュリティ ポリシー、About ウィンドウへの免責表示）・SOQL・匿名 Apex のコード補完と AI 連携強化・About ウィンドウ（GitHub / Issues / 連絡先リンク）・GitHub Issue テンプレート・アクセス トークン取得の sf CLI 新旧両対応を含む。従来の機能: AI 接続先の汎用化・組織比較・データ入出力・アクセス権限タブ・レコードのバックアップと復元（比較タブ付き）・組織管理ウィンドウ（組織 / ヘルス / 移行棚卸し。新規組織の登録（ブラウザー / SFDX 認証 URL / アクセス トークン）・疎通テスト・タグ/メモ・最終バックアップ・Setup リンク付き）・ブラウザのセッション URL・アイコン ツールバー・ようこそ画面・4 言語 UI・macOS 署名 + 公証済みビルド）
 
 ## 使い方
@@ -247,15 +253,15 @@ SOQL・匿名Apex・デバッグログ・デプロイ・自由コマンド・RES
 1. **Microsoft Store（推奨）:** [SfUi on the Microsoft Store](https://apps.microsoft.com/store/detail/9NX0BFFHF7B1) からインストール（Microsoft 署名済みのため SmartScreen 警告なし。ストア版は GitHub 版より少し遅れることがあります）
 2. **または [Releases](../../releases) からダウンロード**
    - **`SfUi.exe`**（実行ファイル単体）または
-   - **`SfUi-v0.12.0-portable.zip`**（exe + サンプル履歴 30 件入りの `data/` フォルダ。解凍してそのまま実行）
-   - **`SfUi-0.12.0-x64.msix`** — Windows インストーラー（MSIX）。先に同梱の **`SfUi-0.12.0-x64.cer`** を信頼させる（証明書のインストール → ローカル コンピューター → 信頼されたユーザー。管理者権限が必要）→ `.msix` をダブルクリックでインストール
+   - **`SfUi-v0.13.0-portable.zip`**（exe + サンプル履歴 30 件入りの `data/` フォルダ。解凍してそのまま実行）
+   - **`SfUi-0.13.0-x64.msix`** — Windows インストーラー（MSIX）。先に同梱の **`SfUi-0.13.0-x64.cer`** を信頼させる（証明書のインストール → ローカル コンピューター → 信頼されたユーザー。管理者権限が必要）→ `.msix` をダブルクリックでインストール
 3. 任意のフォルダに置いてダブルクリック（インストーラー不要）
    - GitHub 版は署名なしのため SmartScreen の警告が出たら「詳細情報」→「実行」（ストア版は署名済みで警告なし）
 4. 初回起動時に exe 隣に `data/` フォルダ（設定・履歴・ログ）が作成されます。上部バーで組織を選び、各タブから操作を開始（サンプルの SOQL / Apex / コマンド / REST は「設定 → サンプル履歴を投入」で追加できます）
 
 ### macOS（Apple Silicon・ビルド済み）
 
-1. [Releases](../../releases) から **`SfUi-0.12.0-osx-arm64.zip`** をダウンロード → 解凍して `SfUi.app` を実行
+1. [Releases](../../releases) から **`SfUi-0.13.0-osx-arm64.zip`** をダウンロード → 解凍して `SfUi.app` を実行
 2. Developer ID 署名 + **Apple の公証（ステープル込み）** 済みのため、初回からダブルクリックで起動できます（「右クリック →「開く」」の回避策は不要）
 3. 以降は Windows 版と同じ（上部バーで組織を選んで開始）
 
@@ -311,7 +317,13 @@ bash packaging/make-mac-app.sh osx-arm64   # Intel は osx-x64
 *組織情報 → エクスポート — オブジェクトと定義書（オブジェクト / 項目 / 画面レイアウト / リストビュー / フロー）を選んで、複数シートの Excel ブックとシートごとの CSV を書き出します*
 
 ![組織比較ウィンドウ](docs/screenshots/compare-ja.png)
-*組織比較 — 2〜4 組織を横並び比較。「片方にのみ存在」「値が異なる」行を黄色でハイライト*
+*組織比較 — 最大 8 組織を横並び比較。「片方にのみ存在」「値が異なる」行を黄色でハイライト*
+
+![レコード比較タブ](docs/screenshots/compare-records-en.png)
+*組織比較 → レコード比較タブ — オブジェクト・照合キー・比較項目を選び、各組織を REST SOQL で取得してキーで突合（画面は英語 UI）*
+
+![レコード差分詳細ウィンドウ](docs/screenshots/compare-records-detail-en.png)
+*レコード差分詳細 — 行をダブルクリックすると 1 レコード分の項目別差分を表示（画面は英語 UI）*
 
 ![バックアップと復元ウィンドウ](docs/screenshots/backup-restore-ja.png)
 *バックアップと復元 — バックアップを選んで Id / キー照合で復元。ラベル・説明・組織情報・件数は自動で入力されます*
