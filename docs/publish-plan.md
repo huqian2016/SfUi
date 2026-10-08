@@ -1,6 +1,6 @@
 # SfUi 公開（Publish）計画
 
-> 対象: SfUi v0.11.1（2026-10-06 時点）
+> 対象: SfUi v0.12.0（2026-10-08 時点）
 > 目的: このツールを多くのユーザー（主に Salesforce 開発者・管理者）に届けるための計画をまとめる
 > 関連: `packaging/README.md`（MSIX / Store 提出）、`docs/macos-signing-notarization.md`（mac 署名・公証）、`.github/ISSUE_TEMPLATE/`（不具合報告）
 
@@ -155,6 +155,7 @@ Phase 3: 一般公開・拡大
 3. [x] README / 設定画面の説明に「お試しキー（上限あり）」の文言を追加
 4. [x] `.github/dependabot.yml` + CodeQL + `SECURITY.md` を追加
 5. [ ] README EN セクションの拡充
-6. [ ] 上記をまとめて v0.11.1 としてリリース → Store 再提出
+6. [x] v0.12.0 としてリリース済み（2026-10-08 / GitHub release id 406292083 / 5 アセット）→ Store 再提出（0.12.0.0）はユーザー作業
 
 > 2026-10-06 進捗: 1〜4 完了（About/README/設定の文言 + PRIVACY/SECURITY/Dependabot/CodeQL）。5（README EN 拡充）は任意・未着手。**6 完了: v0.11.1 リリース（GitHub release id 404838840 / 5 アセット）+ Partner Center 更新提出済み（審査 1〜3 営業日待ち）**。掲載文 = `dist\store-listing-0.11.1.md`、スクショ = `dist\SfUi-Store-Screenshots-v0.11.1.zip`。
+> 2026-10-08 進捗: **v0.12.0 リリース**（組織情報ウィンドウの定義書エクスポート = オブジェクト / 項目 / 画面レイアウト / リストビュー / フローを xlsx + CSV 出力。WPF / Avalonia 両対応・UI E2E 検証済み・テスト 504 件）。GitHub release id 406292083 / 5 アセット（SfUi.exe + portable + MSIX + cer + notarized osx-arm64）。README（EN/JA）にスクリーンショット 2 枚（en/ja）を追加。**Store 再提出用 MSIX = `dist\SfUi-0.12.0-x64.msix`（Partner Center で 0.12.0.0 をアップロード + 掲載説明の更新推奨）**。
