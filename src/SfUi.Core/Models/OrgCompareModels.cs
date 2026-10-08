@@ -112,6 +112,22 @@ public static class OrgCompareCategories
 
         return ids;
     }
+
+    /// <summary>動的カテゴリ ID（fields:&lt;Object&gt;。オブジェクト名が空のものは動的とみなさない）か。</summary>
+    public static bool IsDynamic(string? id) =>
+        !string.IsNullOrEmpty(id) &&
+        id.Length > OrgInfoSections.FieldsPrefix.Length &&
+        id.StartsWith(OrgInfoSections.FieldsPrefix, StringComparison.Ordinal);
+
+    /// <summary>オブジェクト項目の動的カテゴリ（オブジェクトごとに生成する）。</summary>
+    public static OrgCompareCategory CreateFields(string objectApiName) => new(
+        OrgInfoSections.Fields(objectApiName),
+        OrgInfoSections.FieldsTitleKey,
+        OrgCompareKind.Keyed,
+        OrgInfoSections.Fields(objectApiName),
+        new[] { "apiName" },
+        new[] { "label", "dataType", "custom", "referenceTo", "nillable", "indexed", "calculated", "historyTracked", "description" },
+        null);
 }
 
 /// <summary>比較列（組織 1 つ分）。InstanceUrl はセルリンクのフォールバック（セクション Setup URL）に使う。</summary>

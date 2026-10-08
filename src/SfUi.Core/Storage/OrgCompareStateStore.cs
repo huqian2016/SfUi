@@ -13,6 +13,9 @@ public sealed class OrgCompareState
 
     /// <summary>「差分のみ表示」の状態。</summary>
     public bool DiffOnly { get; set; }
+
+    /// <summary>「オブジェクト項目」タブで選択していたオブジェクトの API 名。</summary>
+    public string? FieldsObject { get; set; }
 }
 
 /// <summary>組織比較の状態を data/orginfo/compare.json に保存する（原子書き込み・スキーマ検証つき）。</summary>
@@ -72,9 +75,12 @@ public sealed class OrgCompareStateStore
             .Take(MaxOrgs)
             .ToList() ?? new List<string>();
 
-        if (string.IsNullOrWhiteSpace(state.CategoryId) || OrgCompareCategories.Find(state.CategoryId) is null)
+        if (string.IsNullOrWhiteSpace(state.CategoryId) ||
+            (!OrgCompareCategories.IsDynamic(state.CategoryId) && OrgCompareCategories.Find(state.CategoryId) is null))
         {
             state.CategoryId = null;
         }
+
+        state.FieldsObject = string.IsNullOrWhiteSpace(state.FieldsObject) ? null : state.FieldsObject.Trim();
     }
 }

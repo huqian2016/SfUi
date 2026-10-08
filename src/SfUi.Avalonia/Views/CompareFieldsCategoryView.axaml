@@ -1,0 +1,21 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="clr-namespace:SfUi.Avalonia.Views"
+             xmlns:loc="clr-namespace:SfUi.Avalonia"
+             x:Class="SfUi.Avalonia.Views.CompareFieldsCategoryView">
+    <DockPanel>
+
+        <!-- ツールバー: 比較するオブジェクトの選択（選択で再比較・状態は保存される） -->
+        <Border DockPanel.Dock="Top" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="{loc:Tr Compare_FieldsObjectLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                <AutoCompleteBox Width="340" MinimumPrefixLength="0" FilterMode="Contains"
+                                 ItemsSource="{Binding Objects}"
+                                 ValueMemberBinding="{Binding Display}"
+                                 SelectedItem="{Binding SelectedCandidate, Mode=TwoWay}" />
+            </StackPanel>
+        </Border>
+
+        <views:CompareCategoryView />
+    </DockPanel>
+</UserControl>

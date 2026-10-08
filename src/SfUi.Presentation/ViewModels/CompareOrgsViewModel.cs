@@ -18,6 +18,9 @@ public partial class CompareOrgsViewModel : ObservableObject, IDisposable
     private readonly ToolLauncherService _toolLauncher;
     private readonly AppLog _log;
     private readonly List<OrgInfo> _allOrgs = new();
+    private readonly List<CompareObjectCandidate> _objectCandidates = new();
+    private CompareFieldsCategoryViewModel? _fieldsTab;
+    private bool _candidatesLoading;
     private bool _suspendRefresh;
     private bool _disposed;
 
@@ -105,6 +108,7 @@ public partial class CompareOrgsViewModel : ObservableObject, IDisposable
             }
 
             DiffOnly = state.DiffOnly;
+            CreateFieldsTab(state.FieldsObject);
             SelectedCategory = Categories.FirstOrDefault(c => c.Id == state.CategoryId) ?? Categories.FirstOrDefault();
         }
         finally
@@ -117,6 +121,7 @@ public partial class CompareOrgsViewModel : ObservableObject, IDisposable
     public Task LoadAsync()
     {
         var category = SelectedCategory;
+        _ = EnsureFieldsCandidatesAsync();
         return category is null ? Task.CompletedTask : LoadCategoryAsync(category, forceRefresh: false, fetchMissing: true);
     }
 
@@ -125,6 +130,11 @@ public partial class CompareOrgsViewModel : ObservableObject, IDisposable
         if (_suspendRefresh || _disposed || value is null || value.IsLoaded || value.IsLoading)
         {
             return;
+        }
+
+        if (value is CompareFieldsCategoryViewModel)
+        {
+            _ = EnsureFieldsCandidatesAsync();
         }
 
         _ = LoadCategoryAsync(value, forceRefresh: false, fetchMissing: true);
@@ -175,6 +185,86 @@ public partial class CompareOrgsViewModel : ObservableObject, IDisposable
         StatusMessage = result.Message;
     }
 
+    /// <summary>「オブジェクト項目」タブを作り直す（動的カテゴリのため差し替え方式）。</summary>
+    private void CreateFieldsTab(string? objectApiName)
+    {
+        var index = _fieldsTab is null ? Categories.Count : Math.Max(0, Categories.IndexOf(_fieldsTab));
+        if (_fieldsTab is not null)
+        {
+            _fieldsTab.ObjectSelectionChanged -= OnFieldsObjectChanged;
+            _fieldsTab.OpenLinkRequested -= OnOpenLinkRequested;
+            Categories.Remove(_fieldsTab);
+        }
+
+        var tab = new CompareFieldsCategoryViewModel(objectApiName ?? string.Empty);
+        tab.ObjectSelectionChanged += OnFieldsObjectChanged;
+        tab.OpenLinkRequested += OnOpenLinkRequested;
+        if (_objectCandidates.Count > 0)
+        {
+            tab.SetCandidates(_objectCandidates);
+        }
+
+        index = Math.Clamp(index, 0, Categories.Count);
+        Categories.Insert(index, tab);
+        _fieldsTab = tab;
+    }
+
+    /// <summary>オブジェクトが変わったらタブを作り直して選択・再比較する。</summary>
+    private void OnFieldsObjectChanged(string objectApiName)
+    {
+        CreateFieldsTab(objectApiName);
+        if (_fieldsTab is null)
+        {
+            return;
+        }
+
+        SelectedCategory = _fieldsTab;
+        PersistState();
+    }
+
+    /// <summary>オブジェクト候補（objects セクション）を確保して「オブジェクト項目」タブへ渡す。</summary>
+    private async Task EnsureFieldsCandidatesAsync()
+    {
+        if (_fieldsTab is null || _objectCandidates.Count > 0 || _candidatesLoading)
+        {
+            return;
+        }
+
+        _candidatesLoading = true;
+        try
+        {
+            var org = Orgs.FirstOrDefault(o => o.IsSelected)?.Org ?? _allOrgs.FirstOrDefault();
+            var section = org is null ? null : await _compare.EnsureSectionAsync(org, OrgInfoSections.Objects);
+            if (section is null)
+            {
+                StatusMessage = UiText.T("Compare_FieldsNoObjects");
+                return;
+            }
+
+            _objectCandidates.Clear();
+            foreach (var row in section.Rows)
+            {
+                var apiName = row.Get("apiName");
+                if (!string.IsNullOrWhiteSpace(apiName))
+                {
+                    _objectCandidates.Add(new CompareObjectCandidate(apiName!, row.Get("label") ?? string.Empty));
+                }
+            }
+
+            _objectCandidates.Sort((a, b) => string.Compare(a.ApiName, b.ApiName, StringComparison.OrdinalIgnoreCase));
+            _fieldsTab?.SetCandidates(_objectCandidates);
+        }
+        catch (Exception ex)
+        {
+            _log.Error("組織比較: オブジェクト候補の取得に失敗しました", ex);
+            StatusMessage = UiText.T("Common_FailedFmt", ex.Message);
+        }
+        finally
+        {
+            _candidatesLoading = false;
+        }
+    }
+
     /// <summary>表示中の比較表（フィルタ適用後）を CSV へ出力する。</summary>
     [RelayCommand]
     private async Task ExportCsvAsync()
@@ -216,6 +306,11 @@ public partial class CompareOrgsViewModel : ObservableObject, IDisposable
 
         _disposed = true;
         UiText.LanguageChanged -= OnLanguageChanged;
+        if (_fieldsTab is not null)
+        {
+            _fieldsTab.ObjectSelectionChanged -= OnFieldsObjectChanged;
+        }
+
         foreach (var item in Orgs)
         {
             item.PropertyChanged -= OnOrgItemPropertyChanged;
@@ -261,6 +356,14 @@ public partial class CompareOrgsViewModel : ObservableObject, IDisposable
 
     private async Task LoadCategoryAsync(CompareCategoryViewModel category, bool forceRefresh, bool fetchMissing)
     {
+        if (category is CompareFieldsCategoryViewModel fieldsTab && string.IsNullOrEmpty(fieldsTab.ObjectApiName))
+        {
+            category.Clear();
+            category.EmptyMessage = UiText.T("Compare_FieldsSelectObject");
+            StatusMessage = UiText.T("Compare_FieldsSelectObject");
+            return;
+        }
+
         var selected = Orgs.Where(o => o.IsSelected).Select(o => o.Org).ToList();
         if (selected.Count < 2)
         {
@@ -327,6 +430,7 @@ public partial class CompareOrgsViewModel : ObservableObject, IDisposable
                 OrgUsernames = Orgs.Where(o => o.IsSelected).Select(o => o.Org.Username).ToList(),
                 CategoryId = SelectedCategory?.Id,
                 DiffOnly = DiffOnly,
+                FieldsObject = _fieldsTab?.ObjectApiName,
             });
         }
         catch (Exception ex)

@@ -100,6 +100,37 @@ public sealed class OrgCompareService
         return BuildTable(category, columns, sources);
     }
 
+    /// <summary>セクションをキャッシュ優先で確保する（未取得なら取得してキャッシュへ保存。失敗時はキャッシュ値を返す）。</summary>
+    public async Task<OrgInfoSection?> EnsureSectionAsync(
+        OrgInfo org,
+        string sectionId,
+        bool forceRefresh = false,
+        CancellationToken cancellationToken = default)
+    {
+        var orgKey = OrgInfoCacheStore.GetOrgKey(org);
+        var cached = _cache.GetSection(orgKey, sectionId);
+        if (!forceRefresh && cached is { HasData: true })
+        {
+            return cached;
+        }
+
+        try
+        {
+            var fetched = await _orgInfo.FetchSectionAsync(org, sectionId, cancellationToken).ConfigureAwait(false);
+            _cache.UpsertSection(orgKey, fetched);
+            return fetched;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _log.Warn($"組織比較: {org.DisplayName} / {sectionId} の取得に失敗しました: {ex.Message}");
+            return cached;
+        }
+    }
+
     /// <summary>比較表を組み立てる（純関数・テスト対象）。</summary>
     public static OrgCompareTable BuildTable(
         OrgCompareCategory category,

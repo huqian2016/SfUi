@@ -61,6 +61,38 @@ public class OrgCompareServiceTests
         Assert.EndsWith("/lightning/setup/ManageCurrencies/home", cell.Link, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void CreateFields_builds_dynamic_category()
+    {
+        var category = OrgCompareCategories.CreateFields("Account");
+
+        Assert.Equal(OrgInfoSections.Fields("Account"), category.Id);
+        Assert.Equal(OrgCompareKind.Keyed, category.Kind);
+        Assert.Equal(new[] { "apiName" }, category.KeyColumns);
+        Assert.Contains("dataType", category.DisplayColumns);
+    }
+
+    [Fact]
+    public void BuildTable_fields_category_matches_rows_by_api_name()
+    {
+        OrgInfoRow FieldRow(string api, string label) =>
+            Row(api, api, ("apiName", api), ("label", label), ("dataType", "Text"));
+
+        var sources = new[]
+        {
+            Source(OrgA, OrgInfoSections.Fields("Account"),
+                Section(OrgInfoSections.Fields("Account"), FieldRow("Name", "Account Name"), FieldRow("Type", "Type"))),
+            Source(OrgB, OrgInfoSections.Fields("Account"),
+                Section(OrgInfoSections.Fields("Account"), FieldRow("Name", "Name (JA)"), FieldRow("Type", "Type"))),
+        };
+
+        var table = OrgCompareService.BuildTable(OrgCompareCategories.CreateFields("Account"), TwoOrgs, sources);
+
+        Assert.Equal(2, table.Rows.Count);
+        Assert.True(table.Rows.Single(r => r.Key == "Name").IsDiff);
+        Assert.False(table.Rows.Single(r => r.Key == "Type").IsDiff);
+    }
+
     private static OrgCompareTable Build(string categoryId, params OrgCompareSource[] sources) =>
         OrgCompareService.BuildTable(Category(categoryId), TwoOrgs, sources);
 

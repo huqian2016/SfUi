@@ -77,6 +77,26 @@ public class OrgCompareStateStoreTests : IDisposable
     }
 
     [Fact]
+    public void Save_roundtrips_fields_object()
+    {
+        Store.Save(new OrgCompareState { FieldsObject = " Account " });
+        Assert.Equal("Account", Store.Load().FieldsObject);
+
+        Store.Save(new OrgCompareState());
+        Assert.Null(Store.Load().FieldsObject);
+    }
+
+    [Fact]
+    public void Save_keeps_dynamic_fields_category_id()
+    {
+        Store.Save(new OrgCompareState { CategoryId = "fields:Account" });
+        Assert.Equal("fields:Account", Store.Load().CategoryId);
+
+        Store.Save(new OrgCompareState { CategoryId = "fields:" });
+        Assert.Null(Store.Load().CategoryId);
+    }
+
+    [Fact]
     public void Save_ResetsUnknownCategory()
     {
         var store = Store;

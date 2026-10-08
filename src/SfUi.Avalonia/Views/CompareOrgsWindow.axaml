@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="clr-namespace:SfUi.Avalonia.Views"
+        xmlns:vm="clr-namespace:SfUi.App.ViewModels;assembly=SfUi.Presentation"
         xmlns:loc="clr-namespace:SfUi.Avalonia"
         x:Class="SfUi.Avalonia.Views.CompareOrgsWindow"
         Title="{Binding Title}"
@@ -62,11 +63,14 @@
                     </StackPanel>
                 </DataTemplate>
             </TabControl.ItemTemplate>
-            <TabControl.ContentTemplate>
-                <DataTemplate>
+            <TabControl.DataTemplates>
+                <DataTemplate DataType="{x:Type vm:CompareFieldsCategoryViewModel}">
+                    <views:CompareFieldsCategoryView />
+                </DataTemplate>
+                <DataTemplate DataType="{x:Type vm:CompareCategoryViewModel}">
                     <views:CompareCategoryView />
                 </DataTemplate>
-            </TabControl.ContentTemplate>
+            </TabControl.DataTemplates>
         </TabControl>
     </DockPanel>
 </Window>

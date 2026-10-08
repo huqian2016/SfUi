@@ -101,10 +101,13 @@ public partial class CompareCategoryViewModel : ObservableObject
         ColumnsChanged?.Invoke();
     }
 
+    /// <summary>タブタイトルを解決する（動的カテゴリはオーバーライドして整形する）。</summary>
+    protected virtual string ResolveTitle() => UiText.T(Category.TitleKey);
+
     /// <summary>言語切替の再ローカライズ（タイトル + 表示行の再構築）。</summary>
     public void Relocalize(bool diffOnly)
     {
-        Title = UiText.T(Category.TitleKey);
+        Title = ResolveTitle();
         if (Table is not null)
         {
             _materialized = Materialize(Table);
