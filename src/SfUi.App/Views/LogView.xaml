@@ -11,9 +11,9 @@
                 <Button Content="{loc:Tr Log_Fetch}" Padding="10,2" Margin="0,0,6,0" Command="{Binding FetchCommand}"
                         ToolTip="{loc:Tr Log_FetchTip}" />
                 <Button Content="{loc:Tr Log_Save}" Padding="10,2" Command="{Binding SaveLogCommand}" />
-                <Button Content="{loc:Tr LogAnalyze_Button}" Padding="10,2" Margin="6,0,0,0" Command="{Binding AnalyzeCommand}"
+                <Button x:Name="AnalyzeButton" Content="{loc:Tr LogAnalyze_Button}" Padding="10,2" Margin="6,0,0,0" Command="{Binding AnalyzeCommand}"
                         ToolTip="{loc:Tr LogAnalyze_Tip}" AutomationProperties.Name="{loc:Tr LogAnalyze_Button}" />
-                <Button Content="{loc:Tr LogAnalyze_OpenFile}" Padding="10,2" Margin="6,0,0,0" Command="{Binding OpenLogFileCommand}"
+                <Button x:Name="OpenLogFileButton" Content="{loc:Tr LogAnalyze_OpenFile}" Padding="10,2" Margin="6,0,0,0" Command="{Binding OpenLogFileCommand}"
                         AutomationProperties.Name="{loc:Tr LogAnalyze_OpenFile}" />
             </StackPanel>
         </Border>

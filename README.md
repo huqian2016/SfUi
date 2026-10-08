@@ -17,15 +17,15 @@ Two ways to get going: use a prebuilt binary below, or [build from source](#buil
 1. **Microsoft Store (recommended):** install from [SfUi on the Microsoft Store](https://apps.microsoft.com/store/detail/9NX0BFFHF7B1) — signed by Microsoft, so there is no SmartScreen warning (the Store version may lag a little behind the GitHub builds).
 2. **Or download from the [Releases](../../releases) page:**
    - **`SfUi.exe`** — the portable single executable, or
-   - **`SfUi-v0.13.1-portable.zip`** — the executable **plus a ready-to-use `data/` folder with 30 sample SOQL / Apex / commands / REST requests already in the history** (just extract and run).
-   - **`SfUi-0.13.1-x64.msix`** — Windows installer (MSIX). Trust the bundled certificate first: double-click **`SfUi-0.13.1-x64.cer`** → *Install Certificate* → **Local Machine** → **Trusted People** (admin required), then double-click the `.msix` to install.
+   - **`SfUi-v0.14.0-portable.zip`** — the executable **plus a ready-to-use `data/` folder with 30 sample SOQL / Apex / commands / REST requests already in the history** (just extract and run).
+   - **`SfUi-0.14.0-x64.msix`** — Windows installer (MSIX). Trust the bundled certificate first: double-click **`SfUi-0.14.0-x64.cer`** → *Install Certificate* → **Local Machine** → **Trusted People** (admin required), then double-click the `.msix` to install.
 3. Put it in any folder and double-click (no installer).
    - Windows SmartScreen may warn on the GitHub builds because the executable is unsigned (the Store version is signed) — choose *More info* → *Run anyway*.
 4. On first run a `data/` folder is created next to the exe (portable mode). Pick your org in the top bar and start with a tab — or add the sample history via **Settings → Seed sample history**.
 
 ### macOS (Apple Silicon, prebuilt)
 
-1. Download **`SfUi-0.13.1-osx-arm64.zip`** from [Releases](../../releases), extract it and run `SfUi.app`.
+1. Download **`SfUi-0.14.0-osx-arm64.zip`** from [Releases](../../releases), extract it and run `SfUi.app`.
 2. The app is signed with a Developer ID certificate and **notarized by Apple**, so it opens with a normal double-click — including the very first launch.
 3. Same as Windows from there: pick your org in the top bar and start with a tab.
 
@@ -243,7 +243,7 @@ SOQL・匿名Apex・デバッグログ・デプロイ・自由コマンド・RES
 - **SOQL タブの強化**: シンタックスハイライト・インライン候補エリア（項目 / リレーション / 関数をクリックで挿入）・ライブ件数（並行して `SELECT COUNT()`）・実行結果を AI へ送っての質問（候補クエリ + 「SOQL で開く」付き）
 - **匿名 Apex の補完と AI 連携**: スニペット / 静的メンバー / インライン SOQL / sObject 名・項目・リレーション / 変数・コレクション / 組織の Apex クラス / `System.Label.*` / カスタム メタデータ型の候補を表示。実行後にエラーは AI へ自動質問、成功時は「AI: continue code」で続きのコードを提案
 - **About ウィンドウ**: 上部バーの「?」ボタンからツール情報・バージョン・GitHub リポジトリ / 不具合登録（Issues）/ 作者への連絡先へのリンクを表示（4 言語対応）
-- 2026-10-08 時点で v0.13.1（テスト 520 件 / スモーク + UIA E2E 検証済み（WPF・Avalonia 両方）。**組織一覧の読み込み中 UX を改善**（上部バーの進捗表示、組織コンボの「取得中…」表示、取得中・組織なし・未選択時に操作理由を画面上に常時表示して無効化。メイン + 組織管理の両ウィンドウ）。**組織比較ウィンドウを大幅強化**（最大 8 組織・追加セクション 6 種・セルから Setup ページを開く↗リンク・すべて再取得・タブの差分バッジ・オブジェクト項目タブ・レコード比較タブ・レコード差分詳細ウィンドウ）。組織情報ウィンドウの**定義書エクスポート**（Step 2〜4）も引き続き利用できます）
+- 2026-10-08 時点で v0.14.0（テスト 552 件 / スモーク + UIA E2E 検証済み（WPF・Avalonia 両方）。**デバッグログ・アナライザー**（ログタブの「解析」ボタン / ローカル .log を開く → 概要カード（時間・件数・SOQL/DML 行数・コールアウト・例外）・ガバナ制限の使用率バー・遅い処理 Top15・所要時間付き実行ツリー・検索/カテゴリフィルタ付きイベント一覧・CSV 出力。組織にログが保存されていない場合も匿名 Apex のインラインログで解析可能）。**項目の使用箇所（フィールド影響分析）**（組織情報 → オブジェクト項目タブの「使用箇所を検索」→ Apex / フロー / 入力規則 / ページレイアウト / 数式項目 / 項目権限 を横断検索。行番号・JSON パス・抜粋表示、ソースフィルタ・CSV 出力・ダブルクリックで Salesforce を開く）。メインウィンドウを子ウィンドウより前に出せる修正・組織一覧の読み込み中 UX 改善・組織比較 v2（最大 8 組織・レコード比較）・定義書エクスポートも含みます）
 - 2026-10-06 時点で v0.11.1（テスト 482 件 / スモーク + UIA E2E 検証済み。AI キーの難読化（enc1）と新しい OpenAI モデルへの自動対応・公開準備（非公式の免責事項、プライバシー / セキュリティ ポリシー、About ウィンドウへの免責表示）・SOQL・匿名 Apex のコード補完と AI 連携強化・About ウィンドウ（GitHub / Issues / 連絡先リンク）・GitHub Issue テンプレート・アクセス トークン取得の sf CLI 新旧両対応を含む。従来の機能: AI 接続先の汎用化・組織比較・データ入出力・アクセス権限タブ・レコードのバックアップと復元（比較タブ付き）・組織管理ウィンドウ（組織 / ヘルス / 移行棚卸し。新規組織の登録（ブラウザー / SFDX 認証 URL / アクセス トークン）・疎通テスト・タグ/メモ・最終バックアップ・Setup リンク付き）・ブラウザのセッション URL・アイコン ツールバー・ようこそ画面・4 言語 UI・macOS 署名 + 公証済みビルド）
 
 ## 使い方
@@ -255,15 +255,15 @@ SOQL・匿名Apex・デバッグログ・デプロイ・自由コマンド・RES
 1. **Microsoft Store（推奨）:** [SfUi on the Microsoft Store](https://apps.microsoft.com/store/detail/9NX0BFFHF7B1) からインストール（Microsoft 署名済みのため SmartScreen 警告なし。ストア版は GitHub 版より少し遅れることがあります）
 2. **または [Releases](../../releases) からダウンロード**
    - **`SfUi.exe`**（実行ファイル単体）または
-   - **`SfUi-v0.13.1-portable.zip`**（exe + サンプル履歴 30 件入りの `data/` フォルダ。解凍してそのまま実行）
-   - **`SfUi-0.13.1-x64.msix`** — Windows インストーラー（MSIX）。先に同梱の **`SfUi-0.13.1-x64.cer`** を信頼させる（証明書のインストール → ローカル コンピューター → 信頼されたユーザー。管理者権限が必要）→ `.msix` をダブルクリックでインストール
+   - **`SfUi-v0.14.0-portable.zip`**（exe + サンプル履歴 30 件入りの `data/` フォルダ。解凍してそのまま実行）
+   - **`SfUi-0.14.0-x64.msix`** — Windows インストーラー（MSIX）。先に同梱の **`SfUi-0.14.0-x64.cer`** を信頼させる（証明書のインストール → ローカル コンピューター → 信頼されたユーザー。管理者権限が必要）→ `.msix` をダブルクリックでインストール
 3. 任意のフォルダに置いてダブルクリック（インストーラー不要）
    - GitHub 版は署名なしのため SmartScreen の警告が出たら「詳細情報」→「実行」（ストア版は署名済みで警告なし）
 4. 初回起動時に exe 隣に `data/` フォルダ（設定・履歴・ログ）が作成されます。上部バーで組織を選び、各タブから操作を開始（サンプルの SOQL / Apex / コマンド / REST は「設定 → サンプル履歴を投入」で追加できます）
 
 ### macOS（Apple Silicon・ビルド済み）
 
-1. [Releases](../../releases) から **`SfUi-0.13.1-osx-arm64.zip`** をダウンロード → 解凍して `SfUi.app` を実行
+1. [Releases](../../releases) から **`SfUi-0.14.0-osx-arm64.zip`** をダウンロード → 解凍して `SfUi.app` を実行
 2. Developer ID 署名 + **Apple の公証（ステープル込み）** 済みのため、初回からダブルクリックで起動できます（「右クリック →「開く」」の回避策は不要）
 3. 以降は Windows 版と同じ（上部バーで組織を選んで開始）
 

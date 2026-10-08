@@ -7,7 +7,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>SfUi.Avalonia</RootNamespace>
     <AssemblyName>SfUi.Avalonia</AssemblyName>
-    <Version>0.13.1</Version>
+    <Version>0.14.0</Version>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>
