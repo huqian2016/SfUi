@@ -1,6 +1,5 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using SfUi.Core;
 
@@ -9,7 +8,10 @@ namespace SfUi.Avalonia.Dialogs;
 /// <summary>メッセージ / 確認 / 1 行入力の共通ダイアログ（WPF の MessageBox / InputBox 相当）。</summary>
 public partial class MessageDialog : Window
 {
-    public MessageDialog() => AvaloniaXamlLoader.Load(this);
+    // NOTE: AvaloniaXamlLoader.Load(this) だけでは Avalonia.Generators が生成する x:Name フィールド
+    // （MessageText / InputBox / ButtonPanel）が代入されず null になる。生成された InitializeComponent
+    // を呼ぶこと（OrgInfoExportView と同じ方式）。
+    public MessageDialog() => InitializeComponent();
 
     /// <summary>情報 / 警告（OK のみ）。</summary>
     public static void Info(Window? owner, string message, string caption)

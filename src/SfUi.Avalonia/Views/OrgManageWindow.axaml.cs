@@ -36,6 +36,27 @@ public partial class OrgManageWindow : Window
             _languageHooked = true;
         }
 
+        // 複数選択を ViewModel へ反映する（一括操作の対象）。
+        if (this.FindControl<DataGrid>("OrgsGrid") is { } orgsGrid)
+        {
+            orgsGrid.SelectionChanged += (_, _) =>
+            {
+                var rows = new List<OrgManageOrgRowViewModel>();
+                if (orgsGrid.SelectedItems is { } selected)
+                {
+                    foreach (var item in selected)
+                    {
+                        if (item is OrgManageOrgRowViewModel row)
+                        {
+                            rows.Add(row);
+                        }
+                    }
+                }
+
+                _viewModel.SetSelectedOrgRows(rows);
+            };
+        }
+
         Opened += OnWindowOpened;
         Closed += (_, _) =>
         {

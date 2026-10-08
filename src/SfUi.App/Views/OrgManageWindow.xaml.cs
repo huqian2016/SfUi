@@ -40,4 +40,24 @@ public partial class OrgManageWindow : Window
             viewModel.RegisterAccessToken = box.Password;
         }
     }
+
+    /// <summary>複数選択を ViewModel へ反映する（一括操作の対象）。</summary>
+    private void OrgsGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (sender is not DataGrid grid || DataContext is not OrgManageViewModel viewModel)
+        {
+            return;
+        }
+
+        var rows = new List<OrgManageOrgRowViewModel>();
+        foreach (var item in grid.SelectedItems)
+        {
+            if (item is OrgManageOrgRowViewModel row)
+            {
+                rows.Add(row);
+            }
+        }
+
+        viewModel.SetSelectedOrgRows(rows);
+    }
 }

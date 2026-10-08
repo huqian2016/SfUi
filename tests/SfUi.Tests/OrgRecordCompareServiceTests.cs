@@ -3,6 +3,8 @@ using Xunit;
 
 namespace SfUi.Tests;
 
+// UiText.T（Compare_EmptyValue 等）で言語依存の文字列を検証するため、言語切替テストと直列化する
+[Collection("Localization")]
 public class OrgRecordCompareServiceTests
 {
     private static readonly OrgCompareOrgColumn OrgA = new("keyA", "Org A", "a@example.com", "https://a.my.salesforce.com");

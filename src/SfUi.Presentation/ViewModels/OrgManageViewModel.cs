@@ -74,6 +74,7 @@ public sealed partial class OrgManageViewModel : ObservableObject, IDisposable
     private bool _disposed;
     private CancellationTokenSource? _cts;
     private CancellationTokenSource? _testCts;
+    private readonly List<OrgManageOrgRowViewModel> _selectedOrgRows = new();
 
     public OrgManageViewModel(
         OrgService orgs,
@@ -295,6 +296,40 @@ public sealed partial class OrgManageViewModel : ObservableObject, IDisposable
         ? null
         : (string.IsNullOrWhiteSpace(SelectedOrg.Alias) ? SelectedOrg.Username : SelectedOrg.Alias);
 
+    /// <summary>複数選択された組織行（View の SelectionChanged から同期される）。</summary>
+    public IReadOnlyList<OrgManageOrgRowViewModel> SelectedOrgRows => _selectedOrgRows;
+
+    /// <summary>View から呼ばれる: DataGrid の複数選択を反映する。</summary>
+    public void SetSelectedOrgRows(IReadOnlyList<OrgManageOrgRowViewModel> rows)
+    {
+        _selectedOrgRows.Clear();
+        _selectedOrgRows.AddRange(rows);
+    }
+
+    /// <summary>一括操作の対象（複数選択が空なら現在行 1 件にフォールバック）。</summary>
+    private IReadOnlyList<OrgManageOrgRowViewModel> EffectiveSelectedRows()
+        => _selectedOrgRows.Count > 0
+            ? _selectedOrgRows.ToList()
+            : SelectedOrgRow is { } row
+                ? new[] { row }
+                : Array.Empty<OrgManageOrgRowViewModel>();
+
+    /// <summary>複数選択中の単一必須操作を拒否する（拒否したとき true）。</summary>
+    private bool RejectWhenMultipleSelected()
+    {
+        if (_selectedOrgRows.Count <= 1)
+        {
+            return false;
+        }
+
+        StatusMessage = UiText.T("OrgManage_NeedSingleOrg");
+        return true;
+    }
+
+    /// <summary>行の target-org 文字列（エイリアス優先）。</summary>
+    private static string TargetOf(OrgManageOrgRowViewModel row)
+        => string.IsNullOrWhiteSpace(row.Org.Alias) ? row.Username : row.Org.Alias!;
+
     partial void OnSelectedOrgRowChanged(OrgManageOrgRowViewModel? value)
     {
         if (value is not null && !string.IsNullOrWhiteSpace(value.AliasText))
@@ -331,10 +366,15 @@ public sealed partial class OrgManageViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task RefreshOrgsAsync() => await RefreshOrgsCoreAsync();
 
-    /// <summary>選択中の組織を既定（target-org）に設定する。</summary>
+    /// <summary>選択中の組織を既定（target-org）に設定する（単一選択のみ）。</summary>
     [RelayCommand]
     private async Task SetDefaultAsync()
     {
+        if (RejectWhenMultipleSelected())
+        {
+            return;
+        }
+
         var org = SelectedOrg;
         if (org is null)
         {
@@ -350,10 +390,15 @@ public sealed partial class OrgManageViewModel : ObservableObject, IDisposable
             keepUsername: org.Username);
     }
 
-    /// <summary>選択中の組織のユーザー名へエイリアスを設定する。</summary>
+    /// <summary>選択中の組織のユーザー名へエイリアスを設定する（単一選択のみ）。</summary>
     [RelayCommand]
     private async Task SetAliasAsync()
     {
+        if (RejectWhenMultipleSelected())
+        {
+            return;
+        }
+
         var org = SelectedOrg;
         if (org is null)
         {
@@ -375,22 +420,73 @@ public sealed partial class OrgManageViewModel : ObservableObject, IDisposable
             keepUsername: org.Username);
     }
 
-    /// <summary>選択中の組織をブラウザーで開く。</summary>
+    /// <summary>選択中の組織（複数可）をブラウザーで開く。</summary>
     [RelayCommand]
     private async Task OpenOrgAsync()
     {
-        var org = SelectedOrg;
-        if (org is null)
+        var rows = EffectiveSelectedRows();
+        if (rows.Count == 0)
         {
             StatusMessage = UiText.T("OrgManage_NeedOrg");
             return;
         }
 
-        await RunOrgCommandAsync(
-            () => _manage.OpenOrgAsync(SelectedTarget!, CurrentToken()),
-            UiText.T("OrgManage_OpenedOrgFmt", org.DisplayName),
-            reloadOrgs: false,
-            keepUsername: null);
+        if (rows.Count == 1)
+        {
+            await RunOrgCommandAsync(
+                () => _manage.OpenOrgAsync(TargetOf(rows[0]), CurrentToken()),
+                UiText.T("OrgManage_OpenedOrgFmt", rows[0].Display),
+                reloadOrgs: false,
+                keepUsername: null);
+            return;
+        }
+
+        if (IsBusy)
+        {
+            return;
+        }
+
+        IsBusy = true;
+        var token = CurrentToken();
+        var ok = 0;
+        var failed = 0;
+        try
+        {
+            foreach (var row in rows)
+            {
+                token.ThrowIfCancellationRequested();
+                try
+                {
+                    if ((await _manage.OpenOrgAsync(TargetOf(row), token)).Success)
+                    {
+                        ok++;
+                    }
+                    else
+                    {
+                        failed++;
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    failed++;
+                    _log.Warn($"組織管理: 組織を開けませんでした ({row.Username}): {ex.Message}");
+                }
+            }
+
+            StatusMessage = UiText.T("OrgManage_OpenSummaryFmt", ok, failed);
+        }
+        catch (OperationCanceledException)
+        {
+            StatusMessage = UiText.T("Common_Canceled");
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
     /// <summary>ブラウザー ログイン（sf org login web）を実行する。</summary>
@@ -478,33 +574,110 @@ public sealed partial class OrgManageViewModel : ObservableObject, IDisposable
         }
     }
 
-    /// <summary>選択中の組織からログアウトする。</summary>
+    /// <summary>選択中の組織（複数可）からログアウトする。</summary>
     [RelayCommand]
     private async Task LogoutAsync()
     {
-        var org = SelectedOrg;
-        if (org is null)
+        var rows = EffectiveSelectedRows();
+        if (rows.Count == 0)
         {
             StatusMessage = UiText.T("OrgManage_NeedOrg");
             return;
         }
 
-        if (!Confirm(UiText.T("OrgManage_LogoutConfirmFmt", org.DisplayName), UiText.T("OrgManage_Logout")))
+        if (rows.Count == 1)
+        {
+            var org = rows[0].Org;
+            if (!Confirm(UiText.T("OrgManage_LogoutConfirmFmt", org.DisplayName), UiText.T("OrgManage_Logout")))
+            {
+                return;
+            }
+
+            await RunOrgCommandAsync(
+                () => _manage.LogoutAsync(TargetOf(rows[0]), CurrentToken()),
+                UiText.T("OrgManage_LoggedOutFmt", org.DisplayName),
+                reloadOrgs: true,
+                keepUsername: null);
+            return;
+        }
+
+        if (!Confirm(
+                UiText.T("OrgManage_LogoutConfirmMultiFmt", rows.Count),
+                UiText.T("OrgManage_Logout")))
         {
             return;
         }
 
-        await RunOrgCommandAsync(
-            () => _manage.LogoutAsync(SelectedTarget!, CurrentToken()),
-            UiText.T("OrgManage_LoggedOutFmt", org.DisplayName),
-            reloadOrgs: true,
-            keepUsername: null);
+        if (IsBusy)
+        {
+            return;
+        }
+
+        IsBusy = true;
+        var token = CurrentToken();
+        var ok = 0;
+        var failed = 0;
+        try
+        {
+            for (var index = 0; index < rows.Count; index++)
+            {
+                token.ThrowIfCancellationRequested();
+                StatusMessage = UiText.T("OrgManage_LogoutProgressFmt", index + 1, rows.Count);
+                try
+                {
+                    if ((await _manage.LogoutAsync(TargetOf(rows[index]), token)).Success)
+                    {
+                        ok++;
+                    }
+                    else
+                    {
+                        failed++;
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    failed++;
+                    _log.Warn($"組織管理: ログアウトに失敗しました ({rows[index].Username}): {ex.Message}");
+                }
+            }
+
+            StatusMessage = UiText.T("OrgManage_LogoutSummaryFmt", ok, failed);
+        }
+        catch (OperationCanceledException)
+        {
+            StatusMessage = UiText.T("Common_Canceled");
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+
+        // 一括ログアウト後は一覧を再読み込みする（サマリ表示は維持）。
+        try
+        {
+            var orgs = await _orgs.ListOrgsAsync(CurrentToken());
+            RebuildRows(orgs, keepUsername: null);
+            ApplyTarget();
+        }
+        catch (Exception ex)
+        {
+            _log.Warn($"組織管理: ログアウト後の組織一覧再読込に失敗しました: {ex.Message}");
+        }
     }
 
-    /// <summary>選択中の組織のタグ・メモを保存する（ローカルのみ）。</summary>
+    /// <summary>選択中の組織のタグ・メモを保存する（ローカルのみ・単一選択のみ）。</summary>
     [RelayCommand]
     private void SaveNote()
     {
+        if (RejectWhenMultipleSelected())
+        {
+            return;
+        }
+
         var row = SelectedOrgRow;
         if (row is null)
         {
@@ -520,44 +693,36 @@ public sealed partial class OrgManageViewModel : ObservableObject, IDisposable
         _log.Info($"組織管理: タグ・メモを保存しました ({row.Username})");
     }
 
-    /// <summary>選択中の組織の疎通テスト（REST で Organization を 1 件読む）。</summary>
+    /// <summary>選択中の組織（複数可）の疎通テスト（REST で Organization を 1 件読む）。</summary>
     [RelayCommand]
     private async Task TestSelectedConnectionAsync()
     {
-        var row = SelectedOrgRow;
-        if (row is null)
+        var rows = EffectiveSelectedRows();
+        if (rows.Count == 0)
         {
             StatusMessage = UiText.T("OrgManage_NeedOrg");
             return;
         }
 
-        if (IsTestingConnections)
+        await RunConnectionTestsAsync(rows, showProgressAndSummary: rows.Count > 1);
+    }
+
+    /// <summary>登録されている全組織の疎通テスト（順番に実行・進捗表示・キャンセル可）。</summary>
+    [RelayCommand]
+    private async Task TestAllConnectionsAsync()
+    {
+        if (Orgs.Count == 0)
         {
             return;
         }
 
-        IsTestingConnections = true;
-        _testCts = new CancellationTokenSource();
-        try
-        {
-            await TestRowAsync(row, _testCts.Token);
-        }
-        catch (OperationCanceledException)
-        {
-            StatusMessage = UiText.T("Common_Canceled");
-        }
-        finally
-        {
-            IsTestingConnections = false;
-            TestProgress = string.Empty;
-        }
+        await RunConnectionTestsAsync(Orgs.ToList(), showProgressAndSummary: true);
     }
 
-    /// <summary>表示中の全組織の疎通テスト（順番に実行・進捗表示・キャンセル可）。</summary>
-    [RelayCommand]
-    private async Task TestAllConnectionsAsync()
+    /// <summary>渡された行を並び順に疎通テストし、結果をステータスへ反映する（進捗・サマリは任意）。</summary>
+    private async Task RunConnectionTestsAsync(IReadOnlyList<OrgManageOrgRowViewModel> rows, bool showProgressAndSummary)
     {
-        if (IsTestingConnections || Orgs.Count == 0)
+        if (IsTestingConnections || rows.Count == 0)
         {
             return;
         }
@@ -565,16 +730,18 @@ public sealed partial class OrgManageViewModel : ObservableObject, IDisposable
         IsTestingConnections = true;
         _testCts = new CancellationTokenSource();
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        var total = Orgs.Count;
         var ok = 0;
         var failed = 0;
         try
         {
-            var rows = Orgs.ToList();
             for (var index = 0; index < rows.Count; index++)
             {
                 _testCts.Token.ThrowIfCancellationRequested();
-                TestProgress = UiText.T("OrgManage_TestingFmt", index + 1, total);
+                if (showProgressAndSummary)
+                {
+                    TestProgress = UiText.T("OrgManage_TestingFmt", index + 1, rows.Count);
+                }
+
                 if (await TestRowAsync(rows[index], _testCts.Token))
                 {
                     ok++;
@@ -585,11 +752,14 @@ public sealed partial class OrgManageViewModel : ObservableObject, IDisposable
                 }
             }
 
-            StatusMessage = UiText.T(
-                "OrgManage_TestSummaryFmt",
-                ok,
-                failed,
-                TimeSpan.FromMilliseconds(stopwatch.ElapsedMilliseconds).ToString(@"m\:ss"));
+            if (showProgressAndSummary)
+            {
+                StatusMessage = UiText.T(
+                    "OrgManage_TestSummaryFmt",
+                    ok,
+                    failed,
+                    TimeSpan.FromMilliseconds(stopwatch.ElapsedMilliseconds).ToString(@"m\:ss"));
+            }
         }
         catch (OperationCanceledException)
         {

@@ -20,4 +20,24 @@ public partial class HistoryView : UserControl
             e.Handled = true;
         }
     }
+
+    /// <summary>複数選択を ViewModel へ反映する（一括削除の対象）。</summary>
+    private void HistoryGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (sender is not DataGrid grid || DataContext is not HistoryViewModel viewModel)
+        {
+            return;
+        }
+
+        var rows = new List<HistoryEntry>();
+        foreach (var item in grid.SelectedItems)
+        {
+            if (item is HistoryEntry entry)
+            {
+                rows.Add(entry);
+            }
+        }
+
+        viewModel.SetSelectedEntries(rows);
+    }
 }

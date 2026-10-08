@@ -24,6 +24,30 @@ public partial class HistoryViewModel : ObservableObject
     [ObservableProperty]
     private HistoryEntry? _selectedEntry;
 
+    /// <summary>状態バー（一括削除の件数・単一選択ガードなど）。</summary>
+    [ObservableProperty]
+    private string _statusMessage = string.Empty;
+
+    private readonly List<HistoryEntry> _selectedEntries = new();
+
+    /// <summary>複数選択された履歴行（View の SelectionChanged から同期される）。</summary>
+    public IReadOnlyList<HistoryEntry> SelectedEntries => _selectedEntries;
+
+    /// <summary>View から呼ばれる: DataGrid の複数選択を反映する。</summary>
+    public void SetSelectedEntries(IReadOnlyList<HistoryEntry> entries)
+    {
+        _selectedEntries.Clear();
+        _selectedEntries.AddRange(entries);
+    }
+
+    /// <summary>一括操作の対象（複数選択が空なら現在行 1 件にフォールバック）。</summary>
+    private IReadOnlyList<HistoryEntry> EffectiveSelectedEntries()
+        => _selectedEntries.Count > 0
+            ? _selectedEntries.ToList()
+            : SelectedEntry is { } entry
+                ? new[] { entry }
+                : Array.Empty<HistoryEntry>();
+
     public ObservableCollection<HistoryEntry> Entries { get; } = new();
 
     /// <summary>種別フィルタの選択肢（言語切替で再構築される）。</summary>
@@ -107,6 +131,9 @@ public partial class HistoryViewModel : ObservableObject
         {
             Entries.Add(entry);
         }
+
+        // 一覧の再構築で選択はグリッド側でも消えるが、参照の古いエントリを残さない
+        _selectedEntries.Clear();
     }
 
     partial void OnTypeFilterChanged(TypeFilterOption? value) => Refresh();
@@ -116,25 +143,64 @@ public partial class HistoryViewModel : ObservableObject
     [RelayCommand]
     private void DeleteSelected()
     {
-        if (SelectedEntry is not { } entry)
+        var rows = EffectiveSelectedEntries();
+        if (rows.Count == 0)
+        {
+            StatusMessage = UiText.T("Common_NeedRow");
+            return;
+        }
+
+        if (rows.Count == 1)
+        {
+            var entry = rows[0];
+            var answer = _dialogs.Confirm(
+                UiText.T("History_DeleteConfirmFmt", Environment.NewLine, entry.TimestampLocal, entry.TypeLabel, entry.Summary),
+                "SfUi");
+
+            if (answer)
+            {
+                _history.Delete(entry.Type, entry.Id);
+                StatusMessage = UiText.T("History_DeletedFmt", 1);
+            }
+
+            return;
+        }
+
+        var multiAnswer = _dialogs.Confirm(
+            UiText.T("History_DeleteConfirmMultiFmt", rows.Count, Environment.NewLine),
+            "SfUi");
+        if (!multiAnswer)
         {
             return;
         }
 
-        var answer = _dialogs.Confirm(
-            UiText.T("History_DeleteConfirmFmt", Environment.NewLine, entry.TimestampLocal, entry.TypeLabel, entry.Summary),
-            "SfUi");
-
-        if (answer)
+        var deleted = 0;
+        foreach (var entry in rows)
         {
             _history.Delete(entry.Type, entry.Id);
+            deleted++;
         }
+
+        StatusMessage = UiText.T("History_DeletedFmt", deleted);
     }
 
     [RelayCommand]
     private void CopyParams()
     {
-        if (SelectedEntry?.Params is not { Length: > 0 } text)
+        var rows = EffectiveSelectedEntries();
+        if (rows.Count == 0)
+        {
+            StatusMessage = UiText.T("Common_NeedRow");
+            return;
+        }
+
+        if (rows.Count > 1)
+        {
+            StatusMessage = UiText.T("Common_NeedSingleRow");
+            return;
+        }
+
+        if (rows[0].Params is not { Length: > 0 } text)
         {
             return;
         }

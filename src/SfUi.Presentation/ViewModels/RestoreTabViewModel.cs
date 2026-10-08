@@ -138,6 +138,26 @@ public sealed partial class RestoreTabViewModel : ObservableObject
     [ObservableProperty]
     private BackupListItemViewModel? _selectedBackup;
 
+    private readonly List<BackupListItemViewModel> _selectedBackups = new();
+
+    /// <summary>複数選択されたバックアップ（View の SelectionChanged から同期される）。</summary>
+    public IReadOnlyList<BackupListItemViewModel> SelectedBackups => _selectedBackups;
+
+    /// <summary>View から呼ばれる: ListBox の複数選択を反映する。</summary>
+    public void SetSelectedBackups(IReadOnlyList<BackupListItemViewModel> rows)
+    {
+        _selectedBackups.Clear();
+        _selectedBackups.AddRange(rows);
+    }
+
+    /// <summary>一括操作の対象（複数選択が空なら現在行 1 件にフォールバック）。</summary>
+    private IReadOnlyList<BackupListItemViewModel> EffectiveSelectedBackups()
+        => _selectedBackups.Count > 0
+            ? _selectedBackups.ToList()
+            : SelectedBackup is { } row
+                ? new[] { row }
+                : Array.Empty<BackupListItemViewModel>();
+
     [ObservableProperty]
     private string _backupSearchText = string.Empty;
 
@@ -170,6 +190,7 @@ public sealed partial class RestoreTabViewModel : ObservableObject
     public void RefreshBackups()
     {
         var previousId = SelectedBackup?.Id;
+        _selectedBackups.Clear();
         Backups.Clear();
         foreach (var metadata in _backups.ListBackups())
         {
@@ -198,30 +219,62 @@ public sealed partial class RestoreTabViewModel : ObservableObject
     [RelayCommand]
     private void DeleteBackup()
     {
-        if (SelectedBackup is null)
+        var rows = EffectiveSelectedBackups();
+        if (rows.Count == 0)
         {
+            StatusMessage = UiText.T("Common_NeedRow");
             return;
         }
 
-        var label = SelectedBackup.Title;
-        var confirmText = UiText.T("Restore_DeleteConfirmFmt", label);
         var caption = UiText.T("Main_Backup");
-        if (!_dialogs.Confirm(confirmText, caption))
+        if (rows.Count == 1)
+        {
+            var label = rows[0].Title;
+            if (!_dialogs.Confirm(UiText.T("Restore_DeleteConfirmFmt", label), caption))
+            {
+                return;
+            }
+
+            try
+            {
+                _backups.DeleteBackup(rows[0].Id);
+                StatusMessage = UiText.T("Restore_DeletedFmt", label);
+                RefreshBackups();
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = UiText.T("Common_FailedFmt", ex.Message);
+                _log.Error($"バックアップの削除に失敗しました: {rows[0].Id}", ex);
+            }
+
+            return;
+        }
+
+        if (!_dialogs.Confirm(
+                UiText.T("Restore_DeleteConfirmMultiFmt", rows.Count, Environment.NewLine),
+                caption))
         {
             return;
         }
 
-        try
+        var deleted = 0;
+        var failed = 0;
+        foreach (var row in rows)
         {
-            _backups.DeleteBackup(SelectedBackup.Id);
-            StatusMessage = UiText.T("Restore_DeletedFmt", label);
-            RefreshBackups();
+            try
+            {
+                _backups.DeleteBackup(row.Id);
+                deleted++;
+            }
+            catch (Exception ex)
+            {
+                failed++;
+                _log.Error($"バックアップの削除に失敗しました: {row.Id}", ex);
+            }
         }
-        catch (Exception ex)
-        {
-            StatusMessage = UiText.T("Common_FailedFmt", ex.Message);
-            _log.Error($"バックアップの削除に失敗しました: {SelectedBackup.Id}", ex);
-        }
+
+        RefreshBackups();
+        StatusMessage = UiText.T("Restore_DeletedMultiFmt", deleted, failed);
     }
 
     partial void OnSelectedBackupChanged(BackupListItemViewModel? value) => _ = LoadBackupObjectsAsync();

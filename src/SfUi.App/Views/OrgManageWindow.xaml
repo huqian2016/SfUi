@@ -181,6 +181,8 @@
                     </StackPanel>
                     <DataGrid x:Name="OrgsGrid" ItemsSource="{Binding OrgsView}"
                               SelectedItem="{Binding SelectedOrgRow, Mode=TwoWay}"
+                              SelectionMode="Extended"
+                              SelectionChanged="OrgsGrid_SelectionChanged"
                               AutoGenerateColumns="False" IsReadOnly="True"
                               CanUserAddRows="False" CanUserDeleteRows="False" HeadersVisibility="Column"
                               GridLinesVisibility="Horizontal" RowHeight="28"

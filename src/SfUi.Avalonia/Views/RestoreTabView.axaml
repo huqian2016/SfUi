@@ -22,8 +22,9 @@
                             AutomationProperties.Name="{loc:Tr Restore_Delete}" />
                 </StackPanel>
             </StackPanel>
-            <ListBox ItemsSource="{Binding BackupsView}" BorderBrush="#DDDDDD"
-                     SelectedItem="{Binding SelectedBackup, Mode=TwoWay}">
+            <ListBox x:Name="BackupsList" ItemsSource="{Binding BackupsView}" BorderBrush="#DDDDDD"
+                     SelectedItem="{Binding SelectedBackup, Mode=TwoWay}"
+                     SelectionMode="Multiple">
                 <ListBox.Styles>
                     <Style Selector="ListBoxItem">
                         <Setter Property="HorizontalContentAlignment" Value="Stretch" />

@@ -13,13 +13,36 @@ public partial class HistoryView : UserControl
         AvaloniaXamlLoader.Load(this);
         BuildColumns();
 
+        var historyGrid = this.FindControl<DataGrid>("HistoryGrid")!;
+
         // 行のダブルクリックで履歴を再実行
-        this.FindControl<DataGrid>("HistoryGrid")!.DoubleTapped += (_, e) =>
+        historyGrid.DoubleTapped += (_, e) =>
         {
             if (DataContext is HistoryViewModel viewModel && viewModel.SelectedEntry is { } entry)
             {
                 viewModel.RequestReplay(entry);
                 e.Handled = true;
+            }
+        };
+
+        // 複数選択を ViewModel へ反映する（一括削除の対象）
+        historyGrid.SelectionChanged += (_, _) =>
+        {
+            var rows = new List<HistoryEntry>();
+            if (historyGrid.SelectedItems is { } selected)
+            {
+                foreach (var item in selected)
+                {
+                    if (item is HistoryEntry entry)
+                    {
+                        rows.Add(entry);
+                    }
+                }
+            }
+
+            if (DataContext is HistoryViewModel viewModel)
+            {
+                viewModel.SetSelectedEntries(rows);
             }
         };
 

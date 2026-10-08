@@ -19,6 +19,31 @@ public partial class RestoreTabView : UserControl
         AvaloniaXamlLoader.Load(this);
 
         BuildColumns();
+
+        // 複数選択を ViewModel へ反映する（一括削除の対象）
+        if (this.FindControl<ListBox>("BackupsList") is { } backupsList)
+        {
+            backupsList.SelectionChanged += (_, _) =>
+            {
+                var rows = new List<BackupListItemViewModel>();
+                if (backupsList.SelectedItems is { } selected)
+                {
+                    foreach (var item in selected)
+                    {
+                        if (item is BackupListItemViewModel row)
+                        {
+                            rows.Add(row);
+                        }
+                    }
+                }
+
+                if (DataContext is RestoreTabViewModel viewModel)
+                {
+                    viewModel.SetSelectedBackups(rows);
+                }
+            };
+        }
+
         AttachedToVisualTree += (_, _) =>
         {
             if (!_languageHooked)
