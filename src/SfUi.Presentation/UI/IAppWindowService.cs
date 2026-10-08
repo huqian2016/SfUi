@@ -35,6 +35,9 @@ public interface IAppWindowService
     /// <summary>デバッグログ解析ウィンドウを開く（オフライン解析も可）。</summary>
     void OpenLogAnalyzer(DebugLogAnalysis analysis, string orgLabel, string sourceLabel);
 
+    /// <summary>項目の使用箇所（フィールド影響分析）ウィンドウを開く。</summary>
+    void OpenFieldUsage(OrgInfo org, string objectApiName, string fieldApiName, string? fieldLabel = null);
+
     /// <summary>ようこそ画面をモーダルで開く（「設定を開く」が選ばれたら openSettings を呼ぶ）。</summary>
     void OpenWelcome(Action? openSettings = null);
 }

@@ -72,6 +72,7 @@ public partial class App : Application
             services.AddTransient<BackupRecordsViewModel>();
             services.AddTransient<BackupCompareRecordsViewModel>();
             services.AddTransient<LogAnalyzerViewModel>();
+            services.AddTransient<FieldUsageViewModel>();
             services.AddTransient<OrgManageViewModel>();
             services.AddTransient<OrgHealthViewModel>();
             services.AddTransient<MigrationInventoryViewModel>();

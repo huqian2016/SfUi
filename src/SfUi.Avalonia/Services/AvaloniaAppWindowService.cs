@@ -114,6 +114,14 @@ public sealed class AvaloniaAppWindowService : IAppWindowService
         ShowOwned(new LogAnalyzerWindow(viewModel));
     }
 
+    /// <summary>項目の使用箇所（フィールド影響分析）ウィンドウを開く（非モーダル）。</summary>
+    public void OpenFieldUsage(OrgInfo org, string objectApiName, string fieldApiName, string? fieldLabel = null)
+    {
+        var viewModel = _services.GetRequiredService<FieldUsageViewModel>();
+        viewModel.Initialize(org, objectApiName, fieldApiName, fieldLabel);
+        ShowOwned(new FieldUsageWindow(viewModel));
+    }
+
     /// <summary>ようこそ画面をモーダルで開く（「設定を開く」が選ばれたら openSettings を呼ぶ）。</summary>
     public void OpenWelcome(Action? openSettings = null)
     {

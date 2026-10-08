@@ -23,6 +23,10 @@
                                  FilterMode="Contains"
                                  ItemsSource="{Binding Objects}"
                                  ValueMemberBinding="{Binding Display}" />
+                <Button Content="{loc:Tr OrgInfo_Fields_FindUsage}" Padding="10,2" Margin="8,0,0,0"
+                        Command="{Binding FindUsageCommand}"
+                        ToolTip.Tip="{loc:Tr OrgInfo_Fields_FindUsageTip}"
+                        AutomationProperties.Name="{loc:Tr OrgInfo_Fields_FindUsage}" />
                 <TextBlock Text="{Binding Hint}" VerticalAlignment="Center" Margin="12,0,0,0" Foreground="#666666"
                            TextTrimming="CharacterEllipsis" />
             </StackPanel>

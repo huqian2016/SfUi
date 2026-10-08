@@ -16,6 +16,7 @@ public sealed class WpfAppWindowService : IAppWindowService
     private readonly BackupRecordsWindowFactory _records;
     private readonly BackupCompareRecordsWindowFactory _compareRecords;
     private readonly LogAnalyzerWindowFactory _logAnalyzer;
+    private readonly FieldUsageWindowFactory _fieldUsage;
     private readonly WelcomeWindowFactory _welcome;
 
     public WpfAppWindowService(
@@ -28,6 +29,7 @@ public sealed class WpfAppWindowService : IAppWindowService
         BackupRecordsWindowFactory records,
         BackupCompareRecordsWindowFactory compareRecords,
         LogAnalyzerWindowFactory logAnalyzer,
+        FieldUsageWindowFactory fieldUsage,
         WelcomeWindowFactory welcome)
     {
         _orgInfo = orgInfo;
@@ -39,6 +41,7 @@ public sealed class WpfAppWindowService : IAppWindowService
         _records = records;
         _compareRecords = compareRecords;
         _logAnalyzer = logAnalyzer;
+        _fieldUsage = fieldUsage;
         _welcome = welcome;
     }
 
@@ -63,6 +66,9 @@ public sealed class WpfAppWindowService : IAppWindowService
 
     public void OpenLogAnalyzer(DebugLogAnalysis analysis, string orgLabel, string sourceLabel) =>
         _logAnalyzer.Open(analysis, orgLabel, sourceLabel, ActiveOwner());
+
+    public void OpenFieldUsage(OrgInfo org, string objectApiName, string fieldApiName, string? fieldLabel = null) =>
+        _fieldUsage.Open(org, objectApiName, fieldApiName, fieldLabel, ActiveOwner());
 
     public void OpenWelcome(Action? openSettings = null) => _welcome.Show(openSettings, ActiveOwner());
 

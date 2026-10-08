@@ -1,0 +1,59 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:SfUi.Avalonia"
+        x:Class="SfUi.Avalonia.Views.FieldUsageWindow"
+        Title="{Binding Title}"
+        Height="700" Width="1080" MinWidth="800" MinHeight="420"
+        WindowStartupLocation="CenterOwner"
+        FontSize="13">
+    <DockPanel>
+
+        <!-- ヘッダー -->
+        <Border DockPanel.Dock="Top" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="10,6">
+            <StackPanel>
+                <TextBlock Text="{Binding HeaderText}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding StatusText}" Foreground="#666666" Margin="0,2,0,0" TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
+
+        <!-- 警告（取得できなかったソース） -->
+        <Border DockPanel.Dock="Top" Background="#FFF8E1" BorderBrush="#E8D9A0" BorderThickness="0,0,0,1"
+                Padding="8,4" IsVisible="{Binding HasWarning}">
+            <TextBlock Text="{Binding WarningText}" Foreground="#8A6D00" TextWrapping="Wrap" />
+        </Border>
+
+        <!-- ツールバー -->
+        <Border DockPanel.Dock="Top" Padding="8,6">
+            <StackPanel Orientation="Horizontal">
+                <TextBox x:Name="SearchBox" Width="240"
+                         Text="{Binding SearchText, Mode=TwoWay}"
+                         ToolTip.Tip="{loc:Tr FieldUsage_SearchPlaceholder}"
+                         AutomationProperties.Name="{loc:Tr FieldUsage_SearchPlaceholder}" />
+                <ComboBox x:Name="SourceFilter" Width="180" Margin="8,0,0,0"
+                          ItemsSource="{Binding SourceChoices}"
+                          SelectedItem="{Binding SelectedSource, Mode=TwoWay}"
+                          AutomationProperties.Name="{loc:Tr FieldUsage_ColSource}" />
+                <Button x:Name="RerunButton" Content="{loc:Tr FieldUsage_Rerun}" Command="{Binding RunCommand}"
+                        Margin="8,0,0,0" Padding="10,2"
+                        AutomationProperties.Name="{loc:Tr FieldUsage_Rerun}" />
+                <Button x:Name="ExportButton" Content="{loc:Tr FieldUsage_ExportCsv}" Command="{Binding ExportCsvCommand}"
+                        Margin="8,0,0,0" Padding="10,2"
+                        AutomationProperties.Name="{loc:Tr FieldUsage_ExportCsv}" />
+                <TextBlock Text="{loc:Tr FieldUsage_OpenHint}" Foreground="#888888" Margin="12,0,0,0" VerticalAlignment="Center" />
+            </StackPanel>
+        </Border>
+
+        <DataGrid x:Name="HitsGrid" ItemsSource="{Binding Hits}"
+                  SelectedItem="{Binding SelectedRow, Mode=TwoWay}"
+                  AutoGenerateColumns="False" IsReadOnly="True"
+                  SelectionMode="Single"
+                  HeadersVisibility="Column" GridLinesVisibility="Horizontal">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="{loc:Tr FieldUsage_ColSource}" Binding="{Binding SourceText}" Width="110" />
+                <DataGridTextColumn Header="{loc:Tr FieldUsage_ColComponent}" Binding="{Binding ComponentName}" Width="270" />
+                <DataGridTextColumn Header="{loc:Tr FieldUsage_ColLocation}" Binding="{Binding LocationText}" Width="200" />
+                <DataGridTextColumn Header="{loc:Tr FieldUsage_ColExcerpt}" Binding="{Binding Excerpt}" Width="*" />
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</Window>

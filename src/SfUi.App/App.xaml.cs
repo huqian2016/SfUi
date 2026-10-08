@@ -124,6 +124,9 @@ public partial class App : Application
         services.AddSingleton<LogAnalyzerWindowFactory>();
         services.AddTransient<LogAnalyzerViewModel>();
         services.AddTransient<LogAnalyzerWindow>();
+        services.AddSingleton<FieldUsageWindowFactory>();
+        services.AddTransient<FieldUsageViewModel>();
+        services.AddTransient<FieldUsageWindow>();
         services.AddSingleton<OrgManageWindowFactory>();
         services.AddTransient<OrgManageViewModel>();
         services.AddTransient<OrgHealthViewModel>();

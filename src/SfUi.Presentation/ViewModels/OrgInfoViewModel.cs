@@ -138,7 +138,7 @@ public partial class OrgInfoViewModel : ObservableObject, IDisposable
             Sections.Add(section);
         }
 
-        Fields = new OrgInfoFieldsViewModel(org, _orgKey, _service, _cache, _log, _toolLauncher, _ui);
+        Fields = new OrgInfoFieldsViewModel(org, _orgKey, _service, _cache, _log, _toolLauncher, _ui, _windows);
         Sections.Add(Fields);
 
         // マイ設定（カスタムタブ + 管理タブ。タブ順: 固定 → 項目 → カスタム → マイ設定）

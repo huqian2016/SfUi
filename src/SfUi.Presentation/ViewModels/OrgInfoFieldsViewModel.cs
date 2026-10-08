@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using SfUi.Core;
 using SfUi.Presentation;
 
@@ -15,6 +16,7 @@ public partial class OrgInfoFieldsViewModel : ObservableObject, IOrgInfoTab, IDi
     private readonly AppLog _log;
     private readonly ToolLauncherService _toolLauncher;
     private readonly IUiDispatcher _ui;
+    private readonly IAppWindowService _windows;
 
     [ObservableProperty]
     private string _title = UiText.T(OrgInfoSections.FieldsTitleKey);
@@ -52,7 +54,8 @@ public partial class OrgInfoFieldsViewModel : ObservableObject, IOrgInfoTab, IDi
         OrgInfoCacheStore cache,
         AppLog log,
         ToolLauncherService toolLauncher,
-        IUiDispatcher ui)
+        IUiDispatcher ui,
+        IAppWindowService windows)
     {
         _org = org;
         _orgKey = orgKey;
@@ -61,6 +64,7 @@ public partial class OrgInfoFieldsViewModel : ObservableObject, IOrgInfoTab, IDi
         _log = log;
         _toolLauncher = toolLauncher;
         _ui = ui;
+        _windows = windows;
         ReloadObjectCandidates();
     }
 
@@ -141,6 +145,27 @@ public partial class OrgInfoFieldsViewModel : ObservableObject, IOrgInfoTab, IDi
     {
         Section?.Dispose();
         Section = null;
+    }
+
+    /// <summary>選択中の項目について使用箇所（フィールド影響分析）ウィンドウを開く。</summary>
+    [RelayCommand]
+    private void FindUsage()
+    {
+        if (SelectedObject is not { } target)
+        {
+            Hint = UiText.T("OrgInfo_Fields_NoSelection");
+            return;
+        }
+
+        var row = Section?.SelectedRow;
+        var fieldApiName = row?["apiName"];
+        if (string.IsNullOrWhiteSpace(fieldApiName))
+        {
+            Hint = UiText.T("OrgInfo_Fields_SelectField");
+            return;
+        }
+
+        _windows.OpenFieldUsage(_org, target.ApiName, fieldApiName, row?["label"]);
     }
 
     /// <summary>タブの UI オートメーション名などに使われる表示名。</summary>
