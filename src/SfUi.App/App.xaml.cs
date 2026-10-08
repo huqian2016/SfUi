@@ -1,4 +1,6 @@
+using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Net.Http;
 using System.Text.Json;
 using System.Windows;
@@ -29,6 +31,7 @@ public partial class App : Application
     private string? _smokeAccess;
     private string? _smokeBackup;
     private string? _smokeOrgManage;
+    private string? _smokeLogAnalyzer;
     private bool _noWelcome;
     private bool _forceWelcome;
     private bool _simulateSfMissing;
@@ -49,6 +52,7 @@ public partial class App : Application
         _smokeAccess = _smokeTest ? ReadOption(e.Args, "--smoke-access") : null;
         _smokeBackup = _smokeTest ? ReadOption(e.Args, "--smoke-backup") : null;
         _smokeOrgManage = _smokeTest ? ReadOption(e.Args, "--smoke-orgmanage") : null;
+        _smokeLogAnalyzer = _smokeTest ? ReadOption(e.Args, "--smoke-loganalyzer") : null;
         _noWelcome = e.Args.Any(a => string.Equals(a, "--no-welcome", StringComparison.OrdinalIgnoreCase));
         _simulateSfMissing = e.Args.Any(a => string.Equals(a, "--welcome-missing", StringComparison.OrdinalIgnoreCase));
         _forceWelcome = _simulateSfMissing || e.Args.Any(a => string.Equals(a, "--welcome", StringComparison.OrdinalIgnoreCase));
@@ -294,6 +298,11 @@ public partial class App : Application
             {
                 exitCode = 1;
             }
+
+            if (!string.IsNullOrWhiteSpace(_smokeLogAnalyzer) && !await RunLogAnalyzerSmokeAsync(_smokeLogAnalyzer))
+            {
+                exitCode = 1;
+            }
         }
         catch (Exception ex)
         {
@@ -319,6 +328,90 @@ public partial class App : Application
         }
 
         Shutdown(exitCode);
+    }
+
+    /// <summary>
+    /// --smoke-loganalyzer: デバッグログを解析してサマリを出力する。
+    /// 引数が既存ファイルならそのファイル、そうでなければ組織 alias として直近ログを取得して解析する。
+    /// </summary>
+    private async Task<bool> RunLogAnalyzerSmokeAsync(string target)
+    {
+        try
+        {
+            string? logText;
+            string source;
+            if (File.Exists(target))
+            {
+                logText = await File.ReadAllTextAsync(target);
+                source = $"file:{target}";
+            }
+            else
+            {
+                var apexService = Services.GetRequiredService<ApexService>();
+                logText = await apexService.GetLogAsync(target);
+                source = $"org:{target}";
+                if (string.IsNullOrEmpty(logText))
+                {
+                    // 組織にデバッグログが保存されていない場合は、匿名 Apex を実行して
+                    // 実行結果に含まれるログ本文を解析する（読み取り専用に近い最小コード）。
+                    var run = await apexService.ExecuteAnonymousAsync(
+                        target,
+                        "System.debug('SfUi log analyzer smoke');\nList<Account> accounts = [SELECT Id, Name FROM Account LIMIT 5];\nSystem.debug('Accounts: ' + accounts.size());");
+                    if (run.Success && !string.IsNullOrEmpty(run.Logs))
+                    {
+                        logText = run.Logs;
+                        source = $"org-run:{target}";
+                    }
+                    else
+                    {
+                        _log.Error(
+                            $"--smoke-loganalyzer: ログを取得できませんでした（匿名 Apex も失敗: {run.ErrorMessage ?? run.ExceptionMessage ?? run.CompileProblem ?? "不明"}）: {target}");
+                        return false;
+                    }
+                }
+            }
+
+            if (string.IsNullOrEmpty(logText))
+            {
+                _log.Error($"--smoke-loganalyzer: ログを取得できませんでした: {target}");
+                return false;
+            }
+
+            static string Cut(string text, int max) => text.Length <= max ? text : text[..max] + "…";
+
+            var stopwatch = Stopwatch.StartNew();
+            var analysis = DebugLogParser.Parse(logText);
+            stopwatch.Stop();
+
+            var summary = analysis.Summary;
+            _log.Info($"--smoke-loganalyzer: {source} 解析 {logText.Length:N0} 文字 / {stopwatch.Elapsed.TotalMilliseconds:F0} ms");
+            _log.Info(
+                $"--smoke-loganalyzer: 合計 {summary.TotalDurationMs:F0} ms / イベント {summary.EventCount:N0}"
+                + $" / SOQL {summary.SoqlCount}({summary.SoqlRows:N0}行) / DML {summary.DmlCount}({summary.DmlRows:N0}行)"
+                + $" / コールアウト {summary.CalloutCount} / 例外 {summary.Errors.Count} / リミット {summary.Limits.Count}");
+
+            foreach (var limit in summary.Limits.Take(3))
+            {
+                _log.Info($"--smoke-loganalyzer: リミット {limit.Namespace} {limit.Name} {limit.Used:N0}/{limit.Max:N0} ({limit.Percent:F1}%)");
+            }
+
+            foreach (var node in DebugLogParser.GetSlowestNodes(analysis, 3))
+            {
+                _log.Info($"--smoke-loganalyzer: 遅い {node.EventType} {Cut(node.Label, 70)} {node.DurationMs:F0} ms");
+            }
+
+            foreach (var error in summary.Errors.Take(3))
+            {
+                _log.Info($"--smoke-loganalyzer: 例外 {error.Type} {Cut(error.Message, 100)} (行 {error.LineNumber})");
+            }
+
+            return summary.EventCount > 0;
+        }
+        catch (Exception ex)
+        {
+            _log.Error($"--smoke-loganalyzer: 検証に失敗しました: {target}", ex);
+            return false;
+        }
     }
 
     /// <summary>
