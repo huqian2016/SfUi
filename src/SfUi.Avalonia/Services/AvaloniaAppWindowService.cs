@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using SfUi.App.ViewModels;
@@ -49,16 +50,25 @@ public sealed class AvaloniaAppWindowService : IAppWindowService
         ShowOwned(new CompareRecordDetailWindow(viewModel));
     }
 
+    /// <summary>
+    /// 子ウィンドウを表示する。所有関係（Show(owner)）は付けない: 所有ウィンドウは常に親より前面に固定され、
+    /// メインウィンドウを前に出せなくなるため。基準ウィンドウの中央へ自前で配置する（null・サイズ未指定は既定位置）。
+    /// </summary>
     private void ShowOwned(Window window)
     {
-        if (_top.Current is Window owner && !ReferenceEquals(owner, window))
+        if (_top.Current is Window reference && !ReferenceEquals(reference, window) &&
+            !double.IsNaN(window.Width) && !double.IsNaN(window.Height))
         {
-            window.Show(owner);
+            window.WindowStartupLocation = WindowStartupLocation.Manual;
+            var scale = reference.RenderScaling;
+            var width = window.Width * scale;
+            var height = window.Height * scale;
+            var x = reference.Position.X + (int)(((reference.ClientSize.Width * scale) - width) / 2);
+            var y = reference.Position.Y + (int)(((reference.ClientSize.Height * scale) - height) / 2);
+            window.Position = new PixelPoint(x, y);
         }
-        else
-        {
-            window.Show();
-        }
+
+        window.Show();
     }
 
     public void OpenDataIo(OrgInfo org, string? objectName = null, string? initialSoql = null)

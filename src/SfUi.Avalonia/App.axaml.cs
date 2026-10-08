@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
@@ -90,6 +91,8 @@ public partial class App : Application
             var window = Services.GetRequiredService<MainWindow>();
             Services.GetRequiredService<TopLevelAccessor>().Current = window;
             desktop.MainWindow = window;
+            // メインウィンドウを閉じたら（子ウィンドウが残っていても）アプリを終了する
+            desktop.ShutdownMode = ShutdownMode.OnMainWindowClose;
             _mainWindow = window;
 
             // 開発/スクリーンショット用: 指定タブを開いた状態で起動（--tab 0..7）

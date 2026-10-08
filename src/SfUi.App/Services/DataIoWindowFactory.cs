@@ -20,11 +20,8 @@ public sealed class DataIoWindowFactory
     {
         var window = _services.GetRequiredService<DataIoWindow>();
         window.ViewModel.Initialize(org, objectApiName, soql);
-        if (owner is not null && !ReferenceEquals(owner, window))
-        {
-            window.Owner = owner;
-        }
-
+        // Owner は設定しない（メインウィンドウを前に出せるようにする。中央配置は自前で行う）。
+        WindowPlacement.CenterOn(window, owner);
         window.Show();
         return window;
     }

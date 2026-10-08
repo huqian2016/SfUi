@@ -19,11 +19,8 @@ public sealed class OrgInfoWindowFactory
     {
         var window = _services.GetRequiredService<OrgInfoWindow>();
         window.ViewModel.Initialize(org);
-        if (owner is not null && !ReferenceEquals(owner, window))
-        {
-            window.Owner = owner;
-        }
-
+        // Owner は設定しない: 所有ウィンドウは常に親より前面に固定され、メインを前に出せなくなるため（中央配置は自前で行う）。
+        WindowPlacement.CenterOn(window, owner);
         window.Show();
         return window;
     }

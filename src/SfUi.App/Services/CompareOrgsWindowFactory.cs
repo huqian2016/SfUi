@@ -19,11 +19,8 @@ public sealed class CompareOrgsWindowFactory
     {
         var window = _services.GetRequiredService<CompareOrgsWindow>();
         window.ViewModel.Initialize(orgs);
-        if (owner is not null && !ReferenceEquals(owner, window))
-        {
-            window.Owner = owner;
-        }
-
+        // Owner は設定しない（メインウィンドウを前に出せるようにする。中央配置は自前で行う）。
+        WindowPlacement.CenterOn(window, owner);
         window.Show();
         return window;
     }
