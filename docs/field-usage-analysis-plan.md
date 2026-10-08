@@ -1,6 +1,6 @@
 # 項目の使用箇所（フィールド影響分析）設計書（C3）
 
-最終更新: 2026-10-08 / ステータス: **設計確定（実装開始前・API 実機プローブ済み）**
+最終更新: 2026-10-08 / ステータス: **実装完了（単体テスト + 実 org スモーク + UIA 14/14 PASS）**
 対象: 組織情報ウィンドウ（オブジェクト項目タブ）から起動 + 新規ウィンドウ（WPF / Avalonia）
 
 ---
@@ -104,3 +104,18 @@ Task<FieldUsageResult> AnalyzeAsync(string targetOrg, string objectApiName, stri
 | Tooling `Layout`/`ValidationRule` の Metadata が不完全な可能性 | 実装時に実データ確認。不足時は `sf project retrieve`（一時 sfdx プロジェクト）フォールバックを Phase 2 で判断 |
 | 誤検出（部分一致） | 単語境界一致のみ。完全一致以外は出さない |
 | 権限ソースの大量行 | R/E いずれかが true の行のみ表示、名前空間パッケージ由来は除外 |
+
+## 10. 実装メモ（2026-10-08 完了時点・実測で確定した制約）
+
+| # | 制約 / 判明事項 | 対応 |
+|---|---|---|
+| 1 | Tooling REST で **Metadata / FullName を含むクエリは 1 行制限**（2 行以上でエラー） | 一覧（メタデータ無し）→ 1 件ずつ `WHERE Id = '...'` で取得（並列 6・組織単位キャッシュ） |
+| 2 | Tooling `Layout` は **`WHERE EntityDefinitionId = 'X'` が必須**（無絞り込みは 1 行のみ返る） | 対象オブジェクトで絞って一覧 → 1 件ずつ Metadata |
+| 3 | Tooling `Flow` は `WHERE Status = 'Active'` で複数行取得可。acc は Active が 0 件（異常ではなく実データ） | hks4sand1 のスモークで動作確認 |
+| 4 | `FieldPermissions` は `Field = 'Object.Api'` で **0 件**になる（この API では照合不可） | `SobjectType` で取得しクライアント側で Field 照合（`PermissionAccessService` と同じ方式） |
+| 5 | 数式項目は REST describe の `calculatedFormula`（`DataIoField` に追加） | FormulaField ソースとして検索 |
+| 6 | Apex はコメント行（`//` `/*` `*` 始まり）をスキップしてノイズ削減 | `ScanText(skipCommentLines: true)` |
+
+- 検証: 単体テスト 10 件 / スモーク（hks4sand1 `Account.Description` = 54 件・3 ソース・6.9 秒・警告 0）/ UIA
+  `C:\SfUiDemo\sfui-field-usage-check.ps1` **14/14 PASS**（Org Info → Object Fields → Account → Description → 検索 → 権限フィルタ「Read: True / Edit: True」まで検証）。
+- 入力規則（ValidationRule）はテスト org に存在せず 0 件（コード経路は実装済み・スモークで正常終了を確認）。
