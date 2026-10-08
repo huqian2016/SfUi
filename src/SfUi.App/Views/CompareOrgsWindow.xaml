@@ -8,6 +8,9 @@
         Height="760" Width="1280" MinWidth="980" MinHeight="540"
         WindowStartupLocation="CenterOwner"
         FontSize="13">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+    </Window.Resources>
     <DockPanel>
 
         <!-- 上部: 組織選択 + 操作 -->
@@ -38,6 +41,8 @@
                 <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
                     <Button Content="{loc:Tr Compare_Refetch}" Padding="10,2"
                             Command="{Binding RefreshCurrentCommand}" IsEnabled="{Binding CanInteract}" />
+                    <Button Content="{loc:Tr Compare_RefreshAll}" Padding="10,2" Margin="6,0,0,0"
+                            Command="{Binding RefreshAllCommand}" IsEnabled="{Binding CanInteract}" />
                     <CheckBox Content="{loc:Tr Compare_DiffOnly}" Margin="12,0,0,0" VerticalAlignment="Center"
                               IsChecked="{Binding DiffOnly, Mode=TwoWay}" />
                     <Button Content="{loc:Tr Compare_ExportCsv}" Padding="10,2" Margin="12,0,0,0"
@@ -52,7 +57,13 @@
         <TabControl ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory, Mode=TwoWay}" Margin="8">
             <TabControl.ItemTemplate>
                 <DataTemplate>
-                    <TextBlock Text="{Binding Title}" />
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding Title}" />
+                        <Border Background="#FFF59D" CornerRadius="8" Padding="6,0" Margin="6,0,0,0"
+                                VerticalAlignment="Center" Visibility="{Binding HasBadge, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="{Binding BadgeText}" FontSize="11" Foreground="#6D4C00" />
+                        </Border>
+                    </StackPanel>
                 </DataTemplate>
             </TabControl.ItemTemplate>
             <TabControl.ContentTemplate>

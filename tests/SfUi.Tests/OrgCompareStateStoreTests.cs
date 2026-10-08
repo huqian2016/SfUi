@@ -67,13 +67,13 @@ public class OrgCompareStateStoreTests : IDisposable
         var store = Store;
         store.Save(new OrgCompareState
         {
-            OrgUsernames = new List<string> { "a@x.com", " b@x.com ", "a@X.com", "c@x.com", "d@x.com", "e@x.com" },
+            OrgUsernames = new List<string> { "a@x.com", " b@x.com ", "a@X.com", "c@x.com", "d@x.com", "e@x.com", "f@x.com", "g@x.com", "h@x.com", "i@x.com" },
         });
 
         var reloaded = Store.Load();
 
         Assert.Equal(OrgCompareStateStore.MaxOrgs, reloaded.OrgUsernames.Count);
-        Assert.Equal(new[] { "a@x.com", "b@x.com", "c@x.com", "d@x.com" }, reloaded.OrgUsernames);
+        Assert.Equal(new[] { "a@x.com", "b@x.com", "c@x.com", "d@x.com", "e@x.com", "f@x.com", "g@x.com", "h@x.com" }, reloaded.OrgUsernames);
     }
 
     [Fact]

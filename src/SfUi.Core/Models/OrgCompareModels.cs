@@ -66,6 +66,19 @@ public static class OrgCompareCategories
             new[] { "apiName" }, new[] { "label", "processType", "active" }, null),
         new(OrgInfoSections.RecordTypes, "OrgInfo_Tab_RecordTypes", OrgCompareKind.Keyed, OrgInfoSections.RecordTypes,
             new[] { "sobject", "developerName" }, new[] { "name" }, null),
+        new(OrgInfoSections.ScheduledJobs, "OrgInfo_Tab_ScheduledJobs", OrgCompareKind.Keyed, OrgInfoSections.ScheduledJobs,
+            new[] { "name" }, new[] { "jobType", "state", "nextFireTime" }, null),
+        new(OrgInfoSections.ConnectedApps, "OrgInfo_Tab_ConnectedApps", OrgCompareKind.Keyed, OrgInfoSections.ConnectedApps,
+            new[] { "name" }, new[] { "lastModified" }, null),
+        new(OrgInfoSections.InstalledPackages, "OrgInfo_Tab_InstalledPackages", OrgCompareKind.Keyed, OrgInfoSections.InstalledPackages,
+            new[] { "name" }, new[] { "namespace", "version" }, null),
+        new(OrgInfoSections.Currencies, "OrgInfo_Tab_Currencies", OrgCompareKind.Keyed, OrgInfoSections.Currencies,
+            new[] { "isoCode" }, new[] { "name", "active", "conversionRate" }, null),
+        // 時系列データ（差分が多くなりがち。タブ内検索・差分のみフィルタで絞る）
+        new(OrgInfoSections.LoginHistory, "OrgInfo_Tab_LoginHistory", OrgCompareKind.Keyed, OrgInfoSections.LoginHistory,
+            new[] { "user", "loginTime" }, new[] { "loginType", "status", "sourceIp" }, null),
+        new(OrgInfoSections.SetupAuditTrail, "OrgInfo_Tab_AuditTrail", OrgCompareKind.Keyed, OrgInfoSections.SetupAuditTrail,
+            new[] { "datetime" }, new[] { "user", "action", "section", "detail" }, null),
     };
 
     /// <summary>カテゴリ ID からカテゴリを返す（不明は null）。</summary>
@@ -101,8 +114,8 @@ public static class OrgCompareCategories
     }
 }
 
-/// <summary>比較列（組織 1 つ分）。</summary>
-public sealed record OrgCompareOrgColumn(string OrgKey, string DisplayName, string Username);
+/// <summary>比較列（組織 1 つ分）。InstanceUrl はセルリンクのフォールバック（セクション Setup URL）に使う。</summary>
+public sealed record OrgCompareOrgColumn(string OrgKey, string DisplayName, string Username, string? InstanceUrl);
 
 /// <summary>比較セルの状態。</summary>
 public enum OrgCompareCellState

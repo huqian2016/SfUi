@@ -15,22 +15,26 @@ public partial class CompareOrgsViewModel : ObservableObject, IDisposable
     private readonly OrgCompareService _compare;
     private readonly OrgCompareStateStore _state;
     private readonly IFilePickerService _filePicker;
+    private readonly ToolLauncherService _toolLauncher;
     private readonly AppLog _log;
     private readonly List<OrgInfo> _allOrgs = new();
     private bool _suspendRefresh;
     private bool _disposed;
 
-    public CompareOrgsViewModel(OrgCompareService compare, OrgCompareStateStore state, IFilePickerService filePicker, AppLog log)
+    public CompareOrgsViewModel(OrgCompareService compare, OrgCompareStateStore state, IFilePickerService filePicker, ToolLauncherService toolLauncher, AppLog log)
     {
         _compare = compare;
         _state = state;
         _filePicker = filePicker;
+        _toolLauncher = toolLauncher;
         _log = log;
         _title = UiText.T("Compare_Title");
 
         foreach (var category in OrgCompareCategories.All)
         {
-            Categories.Add(new CompareCategoryViewModel(category));
+            var item = new CompareCategoryViewModel(category);
+            item.OpenLinkRequested += OnOpenLinkRequested;
+            Categories.Add(item);
         }
 
         UiText.LanguageChanged += OnLanguageChanged;
@@ -142,6 +146,33 @@ public partial class CompareOrgsViewModel : ObservableObject, IDisposable
     {
         var category = SelectedCategory;
         return category is null ? Task.CompletedTask : LoadCategoryAsync(category, forceRefresh: true, fetchMissing: true);
+    }
+
+    /// <summary>すべてのタブを順に強制再取得する。</summary>
+    [RelayCommand]
+    private async Task RefreshAllAsync()
+    {
+        if (IsBusy)
+        {
+            return;
+        }
+
+        foreach (var category in Categories)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            await LoadCategoryAsync(category, forceRefresh: true, fetchMissing: true);
+        }
+    }
+
+    /// <summary>セルの ↗ をブラウザーで開く。</summary>
+    private void OnOpenLinkRequested(string url)
+    {
+        var result = _toolLauncher.LaunchBrowser(url);
+        StatusMessage = result.Message;
     }
 
     /// <summary>表示中の比較表（フィルタ適用後）を CSV へ出力する。</summary>

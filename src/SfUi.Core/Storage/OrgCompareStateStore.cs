@@ -21,7 +21,7 @@ public sealed class OrgCompareStateStore
     public const int CurrentSchemaVersion = 1;
 
     /// <summary>同時に比較できる組織数の上限。</summary>
-    public const int MaxOrgs = 4;
+    public const int MaxOrgs = 8;
 
     private readonly string _filePath;
     private readonly AppLog _log;

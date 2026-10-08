@@ -5,8 +5,8 @@ namespace SfUi.Tests;
 
 public class OrgCompareServiceTests
 {
-    private static readonly OrgCompareOrgColumn OrgA = new("keyA", "Org A", "a@example.com");
-    private static readonly OrgCompareOrgColumn OrgB = new("keyB", "Org B", "b@example.com");
+    private static readonly OrgCompareOrgColumn OrgA = new("keyA", "Org A", "a@example.com", "https://a.my.salesforce.com");
+    private static readonly OrgCompareOrgColumn OrgB = new("keyB", "Org B", "b@example.com", "https://b.my.salesforce.com");
     private static readonly IReadOnlyList<OrgCompareOrgColumn> TwoOrgs = new[] { OrgA, OrgB };
 
     private static OrgInfoRow Row(string id, string summary, params (string Key, string? Value)[] cells)
@@ -31,6 +31,35 @@ public class OrgCompareServiceTests
         new(org.OrgKey, sectionId, state, section);
 
     private static OrgCompareCategory Category(string id) => OrgCompareCategories.Find(id)!;
+
+    [Fact]
+    public void Categories_include_extended_sections_and_max_eight_orgs()
+    {
+        foreach (var id in new[]
+        {
+            OrgInfoSections.ScheduledJobs, OrgInfoSections.ConnectedApps, OrgInfoSections.InstalledPackages,
+            OrgInfoSections.Currencies, OrgInfoSections.LoginHistory, OrgInfoSections.SetupAuditTrail,
+        })
+        {
+            Assert.Contains(OrgCompareCategories.All, c => c.Id == id);
+        }
+
+        Assert.Equal(8, OrgCompareStateStore.MaxOrgs);
+    }
+
+    [Fact]
+    public void BuildTable_falls_back_to_section_setup_link_for_cells_without_row_link()
+    {
+        var rows = new[] { Row("USD", "USD", ("isoCode", "USD"), ("name", "US Dollar"), ("active", "true")) };
+        var table = Build(
+            OrgInfoSections.Currencies,
+            Source(OrgA, OrgInfoSections.Currencies, Section(OrgInfoSections.Currencies, rows)));
+
+        var cell = table.Rows.Single().Cells[0];
+        Assert.Equal(OrgCompareCellState.Value, cell.State);
+        Assert.NotNull(cell.Link);
+        Assert.EndsWith("/lightning/setup/ManageCurrencies/home", cell.Link, StringComparison.Ordinal);
+    }
 
     private static OrgCompareTable Build(string categoryId, params OrgCompareSource[] sources) =>
         OrgCompareService.BuildTable(Category(categoryId), TwoOrgs, sources);

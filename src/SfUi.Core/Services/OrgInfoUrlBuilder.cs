@@ -48,6 +48,8 @@ public static class OrgInfoUrlBuilder
 
     public static string InstalledPackages(string instanceUrl) => Combine(instanceUrl, "/lightning/setup/ImportedPackage/home");
 
+    public static string Currencies(string instanceUrl) => Combine(instanceUrl, "/lightning/setup/ManageCurrencies/home");
+
     public static string ResourceUsage(string instanceUrl) => Combine(instanceUrl, "/lightning/setup/CompanyResourceUsage/home");
 
     public static string SessionSettings(string instanceUrl) => Combine(instanceUrl, "/lightning/setup/SessionSettings/home");
@@ -84,6 +86,7 @@ public static class OrgInfoUrlBuilder
                 OrgInfoSections.InstalledPackages => InstalledPackages(instanceUrl),
                 OrgInfoSections.LoginHistory => LoginHistory(instanceUrl),
                 OrgInfoSections.SetupAuditTrail => SetupAuditTrail(instanceUrl),
+                OrgInfoSections.Currencies => Currencies(instanceUrl),
                 OrgInfoSections.RecordTypes => ObjectManager(instanceUrl),
                 _ => null,
             };

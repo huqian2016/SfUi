@@ -766,6 +766,8 @@ public static partial class UiText
         ["Compare_DiffOnly"] = "差分のみ表示",
         ["Compare_Refetch"] = "このタブを再取得",
         ["Compare_ExportCsv"] = "CSV 出力",
+        ["Compare_RefreshAll"] = "すべて再取得",
+        ["Compare_OpenLinkTip"] = "この組織の該当ページをブラウザーで開く",
         ["Compare_SummaryFmt"] = "差分 {0} 件 / 全 {1} 件",
         ["Compare_Empty"] = "データがありません（タブを開くと自動取得します）",
         ["Compare_Loading"] = "読み込み中…",

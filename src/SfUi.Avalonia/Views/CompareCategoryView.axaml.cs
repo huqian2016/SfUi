@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Data;
+using Avalonia.Layout;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
 using SfUi.App.ViewModels;
@@ -101,13 +102,14 @@ public partial class CompareCategoryView : UserControl
         }
     }
 
-    /// <summary>セル表示（テキスト + ツールチップ + 状態によるグレー / 赤字 + 斜体）。</summary>
-    private static TextBlock BuildCell(int index)
+    /// <summary>セル表示（テキスト + ツールチップ + 状態によるグレー / 赤字 + 斜体 + リンク時の ↗）。</summary>
+    private Control BuildCell(int index)
     {
         var text = new TextBlock
         {
-            Margin = new Thickness(4, 2, 4, 2),
+            Margin = new Thickness(4, 2, 2, 2),
             TextTrimming = TextTrimming.CharacterEllipsis,
+            VerticalAlignment = VerticalAlignment.Center,
         };
         text.Bind(TextBlock.TextProperty, new Binding($"Cells[{index}].Text"));
         text.Bind(ToolTip.TipProperty, new Binding($"Cells[{index}].ToolTip"));
@@ -121,6 +123,32 @@ public partial class CompareCategoryView : UserControl
             Converter = CellStyle,
             ConverterParameter = "italic",
         });
-        return text;
+
+        var link = new Button
+        {
+            Content = "↗",
+            Padding = new Thickness(4, 0, 4, 0),
+            FontSize = 11,
+            Margin = new Thickness(2, 0, 0, 0),
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        link.Bind(Visual.IsVisibleProperty, new Binding($"Cells[{index}].HasLink"));
+        link.Click += (_, _) =>
+        {
+            if (link.DataContext is CompareRowViewModel row && index >= 0 && index < row.Cells.Count)
+            {
+                var url = row.Cells[index].Link;
+                if (!string.IsNullOrEmpty(url))
+                {
+                    _viewModel?.RequestOpenLink(url!);
+                }
+            }
+        };
+
+        var panel = new DockPanel();
+        DockPanel.SetDock(link, Dock.Right);
+        panel.Children.Add(link);
+        panel.Children.Add(text);
+        return panel;
     }
 }

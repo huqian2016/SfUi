@@ -766,6 +766,8 @@ public static partial class UiText
         ["Compare_DiffOnly"] = "차이만",
         ["Compare_Refetch"] = "이 탭 다시 가져오기",
         ["Compare_ExportCsv"] = "CSV 내보내기",
+        ["Compare_RefreshAll"] = "모두 새로 고침",
+        ["Compare_OpenLinkTip"] = "브라우저에서 이 조직의 해당 페이지 열기",
         ["Compare_SummaryFmt"] = "{0}개 차이 / {1}행",
         ["Compare_Empty"] = "데이터 없음(탭을 열면 자동으로 가져옵니다)",
         ["Compare_Loading"] = "불러오는 중…",

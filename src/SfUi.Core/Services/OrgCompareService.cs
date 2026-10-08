@@ -42,7 +42,7 @@ public sealed class OrgCompareService
         CancellationToken ct = default)
     {
         var columns = orgs
-            .Select(o => new OrgCompareOrgColumn(OrgInfoCacheStore.GetOrgKey(o), o.DisplayName, o.Username))
+            .Select(o => new OrgCompareOrgColumn(OrgInfoCacheStore.GetOrgKey(o), o.DisplayName, o.Username, o.InstanceUrl))
             .ToList();
 
         var sources = new List<OrgCompareSource>();
@@ -250,7 +250,7 @@ public sealed class OrgCompareService
 
                     var raw = row.Get("value");
                     var text = OrgInfoDisplay.FormatCell(sectionId, row, "value", raw);
-                    cells.Add(new OrgCompareCell(OrgCompareCellState.Value, text, row.Link, new[] { raw }));
+                    cells.Add(new OrgCompareCell(OrgCompareCellState.Value, text, row.Link ?? SectionLink(org, sectionId), new[] { raw }));
                 }
 
                 rows.Add(new OrgCompareRow(templateRow.Id, label, IsRowDiff(cells), cells));
@@ -326,7 +326,7 @@ public sealed class OrgCompareService
 
                 var text = BuildCellText(sectionId, row, category.DisplayColumns);
                 var rawValues = category.DisplayColumns.Select(c => row.Get(c)).ToArray();
-                cells.Add(new OrgCompareCell(OrgCompareCellState.Value, text, row.Link, rawValues));
+                cells.Add(new OrgCompareCell(OrgCompareCellState.Value, text, row.Link ?? SectionLink(org, sectionId), rawValues));
             }
 
             rows.Add(new OrgCompareRow(key, label ?? key, IsRowDiff(cells), cells));
@@ -385,6 +385,10 @@ public sealed class OrgCompareService
 
         return parts.Count == 0 ? null : string.Join(CellSeparator, parts);
     }
+
+    /// <summary>行固有のリンクが無いときのセクション Setup URL（その組織のページ）を返す。</summary>
+    private static string? SectionLink(OrgCompareOrgColumn org, string sectionId) =>
+        OrgInfoUrlBuilder.ForSection(org.InstanceUrl, sectionId);
 
     private static OrgInfoRow? FindRow(OrgInfoSection? section, string rowId) =>
         section?.Rows.FirstOrDefault(r => string.Equals(r.Id, rowId, StringComparison.Ordinal));

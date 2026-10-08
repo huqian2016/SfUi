@@ -51,6 +51,13 @@ public partial class CompareCategoryViewModel : ObservableObject
     [ObservableProperty]
     private string? _filteredCountText;
 
+    /// <summary>タブの差分件数バッジ（"≠N"。差分なし・未取得は null）。</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasBadge))]
+    private string? _badgeText;
+
+    public bool HasBadge => !string.IsNullOrEmpty(BadgeText);
+
     /// <summary>現在の比較表（未取得は null）。CSV 出力でも使用する。</summary>
     public OrgCompareTable? Table { get; private set; }
 
@@ -58,6 +65,11 @@ public partial class CompareCategoryViewModel : ObservableObject
 
     /// <summary>グリッド列（組織数）が変わったことをビューへ通知する。</summary>
     public event Action? ColumnsChanged;
+
+    /// <summary>セルの ↗（リンク）が押された（ブラウザー起動は親 VM が行う）。</summary>
+    public event Action<string>? OpenLinkRequested;
+
+    public void RequestOpenLink(string url) => OpenLinkRequested?.Invoke(url);
 
     /// <summary>比較表を適用する（列構成の変更を通知）。</summary>
     public void Apply(OrgCompareTable table, bool diffOnly)
@@ -85,6 +97,7 @@ public partial class CompareCategoryViewModel : ObservableObject
         SummaryText = null;
         EmptyMessage = null;
         FilteredCountText = null;
+        BadgeText = null;
         ColumnsChanged?.Invoke();
     }
 
@@ -113,6 +126,7 @@ public partial class CompareCategoryViewModel : ObservableObject
             SummaryText = null;
             EmptyMessage = null;
             FilteredCountText = null;
+            BadgeText = null;
             return;
         }
 
@@ -133,6 +147,7 @@ public partial class CompareCategoryViewModel : ObservableObject
         }
 
         SummaryText = UiText.T("Compare_SummaryFmt", Table.DiffCount, _materialized.Count);
+        BadgeText = Table.DiffCount > 0 ? "≠" + Table.DiffCount : null;
         FilteredCountText = terms.Count == 0 ? null : UiText.T("Compare_FilteredFmt", Rows.Count, _materialized.Count);
         EmptyMessage = Rows.Count == 0
             ? (_materialized.Count == 0 ? UiText.T("Compare_Empty") : UiText.T("Compare_NoMatch"))
@@ -180,6 +195,7 @@ public sealed class CompareCellViewModel
     public CompareCellViewModel(OrgCompareCell cell, IReadOnlyList<(string Label, string Key)> displayColumns)
     {
         Text = OrgCompareService.CellText(cell);
+        Link = cell.Link;
         IsMissing = cell.State == OrgCompareCellState.Missing;
         IsNotFetched = cell.State == OrgCompareCellState.NotFetched;
         IsFailed = cell.State == OrgCompareCellState.Failed;
@@ -187,6 +203,11 @@ public sealed class CompareCellViewModel
     }
 
     public string Text { get; }
+
+    /// <summary>セル（行）に対応する Setup / レコードページ（null = リンクなし）。</summary>
+    public string? Link { get; }
+
+    public bool HasLink => !string.IsNullOrEmpty(Link);
 
     public string? ToolTip { get; }
 

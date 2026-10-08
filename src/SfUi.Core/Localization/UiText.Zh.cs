@@ -766,6 +766,8 @@ public static partial class UiText
         ["Compare_DiffOnly"] = "仅差异",
         ["Compare_Refetch"] = "重新获取此选项卡",
         ["Compare_ExportCsv"] = "导出 CSV",
+        ["Compare_RefreshAll"] = "全部重新获取",
+        ["Compare_OpenLinkTip"] = "在浏览器中打开该组织的相应页面",
         ["Compare_SummaryFmt"] = "{0} 处差异 / {1} 行",
         ["Compare_Empty"] = "无数据（打开选项卡时会自动获取）",
         ["Compare_Loading"] = "加载中…",

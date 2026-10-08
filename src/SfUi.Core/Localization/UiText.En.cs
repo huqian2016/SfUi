@@ -766,6 +766,8 @@ public static partial class UiText
         ["Compare_DiffOnly"] = "Diff only",
         ["Compare_Refetch"] = "Refetch this tab",
         ["Compare_ExportCsv"] = "Export CSV",
+        ["Compare_RefreshAll"] = "Refetch all",
+        ["Compare_OpenLinkTip"] = "Open the corresponding page of this org in the browser",
         ["Compare_SummaryFmt"] = "{0} diffs / {1} rows",
         ["Compare_Empty"] = "No data (opening a tab fetches automatically)",
         ["Compare_Loading"] = "Loading…",
