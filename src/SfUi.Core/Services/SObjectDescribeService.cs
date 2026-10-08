@@ -121,7 +121,8 @@ public sealed class SObjectDescribeService
                     GetBool(field, "externalId"),
                     GetBool(field, "custom"),
                     referenceTo,
-                    GetString(field, "relationshipName")));
+                    GetString(field, "relationshipName"),
+                    GetString(field, "calculatedFormula")));
             }
         }
 

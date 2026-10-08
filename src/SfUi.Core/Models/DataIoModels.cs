@@ -40,7 +40,8 @@ public sealed record DataIoField(
     bool ExternalId,
     bool Custom,
     IReadOnlyList<string> ReferenceTo,
-    string? RelationshipName = null)
+    string? RelationshipName = null,
+    string? CalculatedFormula = null)
 {
     /// <summary>Insert 時の必須項目（作成可・非 null 許容・既定値なし）。</summary>
     public bool RequiredForInsert => Createable && !Nillable && !DefaultedOnCreate;

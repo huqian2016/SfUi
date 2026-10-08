@@ -32,6 +32,9 @@ public partial class App : Application
     private string? _smokeBackup;
     private string? _smokeOrgManage;
     private string? _smokeLogAnalyzer;
+    private string? _smokeFieldUsageOrg;
+    private string? _smokeFieldUsageObject;
+    private string? _smokeFieldUsageField;
     private bool _noWelcome;
     private bool _forceWelcome;
     private bool _simulateSfMissing;
@@ -53,6 +56,17 @@ public partial class App : Application
         _smokeBackup = _smokeTest ? ReadOption(e.Args, "--smoke-backup") : null;
         _smokeOrgManage = _smokeTest ? ReadOption(e.Args, "--smoke-orgmanage") : null;
         _smokeLogAnalyzer = _smokeTest ? ReadOption(e.Args, "--smoke-loganalyzer") : null;
+        if (_smokeTest)
+        {
+            var fieldUsageIndex = Array.FindIndex(e.Args, a => string.Equals(a, "--smoke-fieldusage", StringComparison.OrdinalIgnoreCase));
+            if (fieldUsageIndex >= 0 && fieldUsageIndex + 3 < e.Args.Length)
+            {
+                _smokeFieldUsageOrg = e.Args[fieldUsageIndex + 1];
+                _smokeFieldUsageObject = e.Args[fieldUsageIndex + 2];
+                _smokeFieldUsageField = e.Args[fieldUsageIndex + 3];
+            }
+        }
+
         _noWelcome = e.Args.Any(a => string.Equals(a, "--no-welcome", StringComparison.OrdinalIgnoreCase));
         _simulateSfMissing = e.Args.Any(a => string.Equals(a, "--welcome-missing", StringComparison.OrdinalIgnoreCase));
         _forceWelcome = _simulateSfMissing || e.Args.Any(a => string.Equals(a, "--welcome", StringComparison.OrdinalIgnoreCase));
@@ -306,6 +320,11 @@ public partial class App : Application
             {
                 exitCode = 1;
             }
+
+            if (!string.IsNullOrWhiteSpace(_smokeFieldUsageOrg) && !await RunFieldUsageSmokeAsync())
+            {
+                exitCode = 1;
+            }
         }
         catch (Exception ex)
         {
@@ -413,6 +432,44 @@ public partial class App : Application
         catch (Exception ex)
         {
             _log.Error($"--smoke-loganalyzer: 検証に失敗しました: {target}", ex);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// --smoke-fieldusage: 項目の使用箇所（フィールド影響分析）を実行してソース別の件数を出力する。
+    /// 引数: &lt;org&gt; &lt;Object&gt; &lt;Field&gt;（例: --smoke-fieldusage hks4sand1 Account Name）。
+    /// </summary>
+    private async Task<bool> RunFieldUsageSmokeAsync()
+    {
+        try
+        {
+            var service = Services.GetRequiredService<FieldUsageService>();
+            var result = await service.AnalyzeAsync(_smokeFieldUsageOrg!, _smokeFieldUsageObject!, _smokeFieldUsageField!);
+            _log.Info($"--smoke-fieldusage: {result.ObjectApiName}.{result.FieldApiName} 使用箇所 {result.TotalCount} 件 / {result.Duration.TotalSeconds:F1} 秒");
+
+            foreach (var kind in Enum.GetValues<FieldUsageSourceKind>())
+            {
+                _log.Info($"--smoke-fieldusage: {kind}: {result.CountOf(kind)} 件");
+            }
+
+            foreach (var warning in result.Warnings)
+            {
+                _log.Info($"--smoke-fieldusage: 警告 {warning.SourceKind}: {warning.Message}");
+            }
+
+            foreach (var hit in result.Hits.Take(5))
+            {
+                var location = hit.LineNumber is { } line ? $"行 {line}" : (hit.Path ?? "");
+                var excerpt = hit.Excerpt.Length <= 90 ? hit.Excerpt : hit.Excerpt[..90] + "…";
+                _log.Info($"--smoke-fieldusage: 例 [{hit.SourceKind}] {hit.ComponentName} {location}: {excerpt}");
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _log.Error("--smoke-fieldusage: 検証に失敗", ex);
             return false;
         }
     }

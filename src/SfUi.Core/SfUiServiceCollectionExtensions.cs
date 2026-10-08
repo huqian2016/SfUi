@@ -32,6 +32,7 @@ public static class SfUiServiceCollectionExtensions
         services.AddSingleton<OrgCompareService>();
         services.AddSingleton<OrgCompareStateStore>();
         services.AddSingleton<OrgRecordCompareService>();
+        services.AddSingleton<FieldUsageService>();
         services.AddSingleton<SObjectDescribeService>();
         services.AddSingleton<OrgMetadataService>();
         services.AddSingleton<DataExportService>();
