@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SfUi.Core;
 using SfUi.Etl.Connections;
+using SfUi.Etl.Database;
 using SfUi.Etl.Engine;
 using SfUi.Etl.Expressions;
 using SfUi.Etl.Sources;
@@ -92,6 +93,20 @@ public sealed class EtlConnection
     public string MatchKeyField { get; set; } = string.Empty;
 
     public string OutputPath { get; set; } = string.Empty;
+
+    public string SourceDbProvider { get; set; } = DbProviderKind.Sqlite.ToString();
+
+    public string SourceDbConnectionString { get; set; } = string.Empty;
+
+    public string SourceDbQuery { get; set; } = string.Empty;
+
+    public string TargetDbProvider { get; set; } = DbProviderKind.Sqlite.ToString();
+
+    public string TargetDbConnectionString { get; set; } = string.Empty;
+
+    public string TargetDbTable { get; set; } = string.Empty;
+
+    public string TargetDbKeyField { get; set; } = string.Empty;
 
     public override string ToString() => Name;
 }
@@ -316,6 +331,15 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
                 {
                     SelectedStep = step;
                     _dialogs.Warning(UiText.T("Etl_MatchKey"), UiText.T("Etl_Title"));
+                    return;
+                }
+            }
+            else if (step.SelectedTargetType == "Database")
+            {
+                if (string.IsNullOrWhiteSpace(step.TargetDbTable) || string.IsNullOrWhiteSpace(step.TargetDbConnectionString))
+                {
+                    SelectedStep = step;
+                    _dialogs.Warning(UiText.T("Etl_DbSettings"), UiText.T("Etl_Title"));
                     return;
                 }
             }
@@ -640,6 +664,13 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
             Op = step.SelectedOp,
             MatchKeyField = step.MatchKeyField,
             OutputPath = step.OutputPath,
+            SourceDbProvider = step.SourceDbProvider,
+            SourceDbConnectionString = step.SourceDbConnectionString,
+            SourceDbQuery = step.SourceDbQuery,
+            TargetDbProvider = step.TargetDbProvider,
+            TargetDbConnectionString = step.TargetDbConnectionString,
+            TargetDbTable = step.TargetDbTable,
+            TargetDbKeyField = step.TargetDbKeyField,
         });
         SaveConnectionsFile();
     }
@@ -660,6 +691,13 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
         step.SelectedOp = SelectedConnection.Op;
         step.MatchKeyField = SelectedConnection.MatchKeyField;
         step.OutputPath = SelectedConnection.OutputPath;
+        step.SourceDbProvider = SelectedConnection.SourceDbProvider;
+        step.SourceDbConnectionString = SelectedConnection.SourceDbConnectionString;
+        step.SourceDbQuery = SelectedConnection.SourceDbQuery;
+        step.TargetDbProvider = SelectedConnection.TargetDbProvider;
+        step.TargetDbConnectionString = SelectedConnection.TargetDbConnectionString;
+        step.TargetDbTable = SelectedConnection.TargetDbTable;
+        step.TargetDbKeyField = SelectedConnection.TargetDbKeyField;
     }
 
     [RelayCommand]

@@ -71,6 +71,20 @@
                                     <TextBox x:Name="EtlRowElementBox" Width="160" VerticalContentAlignment="Center"
                                              Text="{Binding SelectedStep.XmlRowElement, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                 </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                    <TextBlock Text="{loc:Tr Etl_DbProvider}" VerticalAlignment="Center" />
+                                    <ComboBox x:Name="EtlSourceDbProviderBox" Width="120" Margin="4,0,0,0"
+                                              ItemsSource="{Binding SelectedStep.DbProviderOptions}"
+                                              SelectedItem="{Binding SelectedStep.SourceDbProvider, Mode=TwoWay}" />
+                                    <TextBlock Text="{loc:Tr Etl_DbConnection}" Margin="8,0,4,0" VerticalAlignment="Center" />
+                                    <TextBox x:Name="EtlSourceDbConnectionBox" Width="400" VerticalContentAlignment="Center"
+                                             Text="{Binding SelectedStep.SourceDbConnectionString, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             AutomationProperties.Name="{loc:Tr Etl_DbConnection}" />
+                                    <TextBlock Text="{loc:Tr Etl_DbQuery}" Margin="8,0,4,0" VerticalAlignment="Center" />
+                                    <TextBox x:Name="EtlSourceDbQueryBox" Width="320" VerticalContentAlignment="Center"
+                                             Text="{Binding SelectedStep.SourceDbQuery, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             AutomationProperties.Name="{loc:Tr Etl_DbQuery}" />
+                                </StackPanel>
                             </StackPanel>
                         </GroupBox>
 
@@ -130,6 +144,24 @@
                                     <TextBox x:Name="EtlCrosswalkKeyBox" Width="220" Margin="4,0,0,0" VerticalContentAlignment="Center"
                                              Text="{Binding SelectedStep.CrosswalkKeyField, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                              AutomationProperties.Name="{loc:Tr Etl_CrosswalkKey}" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                    <TextBlock Text="{loc:Tr Etl_DbProvider}" VerticalAlignment="Center" />
+                                    <ComboBox x:Name="EtlTargetDbProviderBox" Width="120" Margin="4,0,0,0"
+                                              ItemsSource="{Binding SelectedStep.DbProviderOptions}"
+                                              SelectedItem="{Binding SelectedStep.TargetDbProvider, Mode=TwoWay}" />
+                                    <TextBlock Text="{loc:Tr Etl_DbConnection}" Margin="8,0,4,0" VerticalAlignment="Center" />
+                                    <TextBox x:Name="EtlTargetDbConnectionBox" Width="360" VerticalContentAlignment="Center"
+                                             Text="{Binding SelectedStep.TargetDbConnectionString, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             AutomationProperties.Name="{loc:Tr Etl_DbConnection}" />
+                                    <TextBlock Text="{loc:Tr Etl_DbTable}" Margin="8,0,4,0" VerticalAlignment="Center" />
+                                    <TextBox x:Name="EtlTargetDbTableBox" Width="160" VerticalContentAlignment="Center"
+                                             Text="{Binding SelectedStep.TargetDbTable, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             AutomationProperties.Name="{loc:Tr Etl_DbTable}" />
+                                    <TextBlock Text="{loc:Tr Etl_DbKeyColumn}" Margin="8,0,4,0" VerticalAlignment="Center" />
+                                    <TextBox x:Name="EtlTargetDbKeyBox" Width="130" VerticalContentAlignment="Center"
+                                             Text="{Binding SelectedStep.TargetDbKeyField, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             AutomationProperties.Name="{loc:Tr Etl_DbKeyColumn}" />
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                                     <TextBlock Text="{loc:Tr Etl_OutputPath}" VerticalAlignment="Center" />

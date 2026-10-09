@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SfUi.Core;
 using SfUi.Etl.Connections;
+using SfUi.Etl.Database;
 using SfUi.Etl.Engine;
 using SfUi.Etl.Expressions;
 using SfUi.Etl.Sources;
@@ -49,7 +50,7 @@ public sealed partial class EtlStepViewModel : ObservableObject
     /// <summary>出力オブジェクト名（未入力時は Output）。</summary>
     public string EffectiveObjectName => string.IsNullOrWhiteSpace(ObjectApiName) ? "Output" : ObjectApiName.Trim();
 
-    public IReadOnlyList<string> SourceTypeOptions { get; } = new[] { "CSV", "TSV", "Excel", "JSON", "XML" };
+    public IReadOnlyList<string> SourceTypeOptions { get; } = new[] { "CSV", "TSV", "Excel", "JSON", "XML", "Database" };
 
     [ObservableProperty]
     private string _selectedSourceType = "CSV";
@@ -68,7 +69,7 @@ public sealed partial class EtlStepViewModel : ObservableObject
 
     public ObservableCollection<EtlMappingRow> Mappings { get; } = new();
 
-    public IReadOnlyList<string> TargetTypeOptions { get; } = new[] { "Salesforce", "CSV" };
+    public IReadOnlyList<string> TargetTypeOptions { get; } = new[] { "Salesforce", "CSV", "Database" };
 
     [ObservableProperty]
     private string _selectedTargetType = "Salesforce";
@@ -90,6 +91,34 @@ public sealed partial class EtlStepViewModel : ObservableObject
     /// <summary>crosswalk に source_key として記録するターゲット項目名（親の Id を子の LOOKUP で参照する）。</summary>
     [ObservableProperty]
     private string _crosswalkKeyField = string.Empty;
+
+    /// <summary>DB プロバイダーの選択肢（Sqlite / SqlServer / PostgreSql / Odbc）。</summary>
+    public IReadOnlyList<string> DbProviderOptions { get; } = DbConnectionSpec.All.Select(k => k.ToString()).ToList();
+
+    // ---- 入力（Database 選択時） ----
+
+    [ObservableProperty]
+    private string _sourceDbProvider = DbProviderKind.Sqlite.ToString();
+
+    [ObservableProperty]
+    private string _sourceDbConnectionString = string.Empty;
+
+    [ObservableProperty]
+    private string _sourceDbQuery = string.Empty;
+
+    // ---- 出力（Database 選択時） ----
+
+    [ObservableProperty]
+    private string _targetDbProvider = DbProviderKind.Sqlite.ToString();
+
+    [ObservableProperty]
+    private string _targetDbConnectionString = string.Empty;
+
+    [ObservableProperty]
+    private string _targetDbTable = string.Empty;
+
+    [ObservableProperty]
+    private string _targetDbKeyField = string.Empty;
 
     partial void OnObjectApiNameChanged(string value) => OnPropertyChanged(nameof(DisplayName));
 
@@ -142,8 +171,14 @@ public sealed partial class EtlStepViewModel : ObservableObject
         "Excel" => new ExcelFileSource(SourcePath, string.IsNullOrWhiteSpace(ExcelSheet) ? null : ExcelSheet, SourceHasHeader),
         "JSON" => new JsonFileSource(SourcePath),
         "XML" => new XmlFileSource(SourcePath, string.IsNullOrWhiteSpace(XmlRowElement) ? null : XmlRowElement),
+        "Database" => new DbTableSource(
+            new DbConnectionSpec(ParseProvider(SourceDbProvider), SourceDbConnectionString),
+            SourceDbQuery),
         _ => throw new InvalidOperationException("未対応の入力種別です: " + SelectedSourceType),
     };
+
+    private static DbProviderKind ParseProvider(string name)
+        => Enum.TryParse<DbProviderKind>(name, ignoreCase: true, out var kind) ? kind : DbProviderKind.Sqlite;
 
     /// <summary>マッピング変換器を生成する（式エンジンは LOOKUP 配線済みの共有インスタンスを渡す）。</summary>
     public RowMapper CreateMapper(ExpressionEngine engine)
@@ -164,6 +199,20 @@ public sealed partial class EtlStepViewModel : ObservableObject
         if (SelectedTargetType == "CSV")
         {
             return (new CsvFileTarget(OutputPath, fields), null);
+        }
+
+        if (SelectedTargetType == "Database")
+        {
+            var dbTarget = new DbTableTarget(
+                new DbConnectionSpec(ParseProvider(TargetDbProvider), TargetDbConnectionString),
+                new DbTableTargetOptions
+                {
+                    Table = TargetDbTable.Trim(),
+                    Fields = fields,
+                    Op = SelectedOp,
+                    KeyField = string.IsNullOrWhiteSpace(TargetDbKeyField) ? null : TargetDbKeyField.Trim(),
+                });
+            return (dbTarget, dbTarget);
         }
 
         var target = new SalesforceTarget(rest, targetOrg, new SalesforceTargetOptions
