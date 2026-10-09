@@ -138,45 +138,17 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
 
     public bool HasOrg => Org is not null;
 
-    // ---- ジョブ エディタ ----
+    // ---- ジョブ エディタ（ステップ リスト + 選択ステップの詳細） ----
 
-    public IReadOnlyList<string> SourceTypeOptions { get; } = new[] { "CSV", "TSV", "Excel", "JSON", "XML" };
-
-    [ObservableProperty]
-    private string _selectedSourceType = "CSV";
+    /// <summary>ステップ（上から順に実行。親 → 子の順に並べる）。</summary>
+    public ObservableCollection<EtlStepViewModel> Steps { get; } = new();
 
     [ObservableProperty]
-    private string _sourcePath = string.Empty;
+    private EtlStepViewModel? _selectedStep;
 
-    [ObservableProperty]
-    private bool _sourceHasHeader = true;
+    public bool HasSelectedStep => SelectedStep is not null;
 
-    [ObservableProperty]
-    private string _excelSheet = string.Empty;
-
-    [ObservableProperty]
-    private string _xmlRowElement = string.Empty;
-
-    public ObservableCollection<EtlMappingRow> Mappings { get; } = new();
-
-    public IReadOnlyList<string> TargetTypeOptions { get; } = new[] { "Salesforce", "CSV" };
-
-    [ObservableProperty]
-    private string _selectedTargetType = "Salesforce";
-
-    [ObservableProperty]
-    private string _objectApiName = "Account";
-
-    public IReadOnlyList<string> OpOptions { get; } = new[] { RowOp.Insert, RowOp.Update, RowOp.Upsert, RowOp.Delete };
-
-    [ObservableProperty]
-    private string _selectedOp = RowOp.Insert;
-
-    [ObservableProperty]
-    private string _matchKeyField = string.Empty;
-
-    [ObservableProperty]
-    private string _outputPath = string.Empty;
+    partial void OnSelectedStepChanged(EtlStepViewModel? value) => OnPropertyChanged(nameof(HasSelectedStep));
 
     [ObservableProperty]
     private string _errorRateText = "5";
@@ -234,49 +206,68 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
         StatusMessage = UiText.T("Etl_MonitorIdle");
         RefreshRuns();
         LoadConnections();
+        if (Steps.Count == 0)
+        {
+            AddStep();
+        }
     }
 
-    // ---- ジョブ エディタ コマンド ----
+    // ---- ステップ管理 ----
 
     [RelayCommand]
-    private async Task BrowseSourceAsync()
+    private void AddStep()
     {
-        var path = await _files.OpenFileAsync(UiText.T("Etl_SourceGroup"), UiText.T("Etl_SourceFilter"), _paths.DataRoot);
-        if (path is not null)
+        var index = 1;
+        while (Steps.Any(s => s.StepId == "step" + index))
         {
-            SourcePath = path;
+            index++;
+        }
+
+        var step = new EtlStepViewModel("step" + index, _dialogs, _files, _paths, message => StatusMessage = message);
+        Steps.Add(step);
+        SelectedStep = step;
+    }
+
+    [RelayCommand]
+    private void RemoveStep()
+    {
+        if (SelectedStep is null || Steps.Count <= 1)
+        {
+            return;
+        }
+
+        var index = Steps.IndexOf(SelectedStep);
+        Steps.Remove(SelectedStep);
+        SelectedStep = Steps[Math.Min(index, Steps.Count - 1)];
+    }
+
+    [RelayCommand]
+    private void MoveStepUp()
+    {
+        if (SelectedStep is null)
+        {
+            return;
+        }
+
+        var index = Steps.IndexOf(SelectedStep);
+        if (index > 0)
+        {
+            Steps.Move(index, index - 1);
         }
     }
 
     [RelayCommand]
-    private async Task BrowseOutputAsync()
+    private void MoveStepDown()
     {
-        var path = await _files.SaveFileAsync(UiText.T("Etl_OutputPath"), ObjectApiName + ".csv", UiText.T("Etl_OutputFilter"), _paths.DataRoot);
-        if (path is not null)
+        if (SelectedStep is null)
         {
-            OutputPath = path;
+            return;
         }
-    }
 
-    [RelayCommand]
-    private void LoadSource()
-    {
-        try
+        var index = Steps.IndexOf(SelectedStep);
+        if (index >= 0 && index < Steps.Count - 1)
         {
-            var source = CreateSource();
-            Mappings.Clear();
-            foreach (var column in source.Columns)
-            {
-                Mappings.Add(new EtlMappingRow(column));
-            }
-
-            StatusMessage = UiText.T("Etl_SourceLoadedFmt", Mappings.Count);
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            _log.Warn($"ETL ソースの読み込みに失敗しました: {ex.Message}");
-            _dialogs.Warning(ex.Message, UiText.T("Etl_Title"));
-            StatusMessage = UiText.T("Common_FailedFmt", ex.Message);
+            Steps.Move(index, index + 1);
         }
     }
 
@@ -298,36 +289,49 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
             return;
         }
 
-        if (Mappings.Count == 0)
+        if (Steps.Count == 0)
         {
-            _dialogs.Warning(UiText.T("Etl_Load"), UiText.T("Etl_Title"));
+            _dialogs.Warning(UiText.T("Etl_AddStep"), UiText.T("Etl_Title"));
             return;
         }
 
-        if (SelectedTargetType == "Salesforce")
+        foreach (var step in Steps)
         {
-            if (!HasOrg)
+            if (step.Mappings.Count == 0)
             {
-                _dialogs.Warning(UiText.T("Etl_OrgRequired"), UiText.T("Etl_Title"));
+                SelectedStep = step;
+                _dialogs.Warning(UiText.T("Etl_Load"), UiText.T("Etl_Title"));
                 return;
             }
 
-            if (SelectedOp != RowOp.Insert && string.IsNullOrWhiteSpace(MatchKeyField))
+            if (step.SelectedTargetType == "Salesforce")
             {
-                _dialogs.Warning(UiText.T("Etl_MatchKey"), UiText.T("Etl_Title"));
+                if (!HasOrg)
+                {
+                    _dialogs.Warning(UiText.T("Etl_OrgRequired"), UiText.T("Etl_Title"));
+                    return;
+                }
+
+                if (step.SelectedOp != RowOp.Insert && string.IsNullOrWhiteSpace(step.MatchKeyField))
+                {
+                    SelectedStep = step;
+                    _dialogs.Warning(UiText.T("Etl_MatchKey"), UiText.T("Etl_Title"));
+                    return;
+                }
+            }
+            else if (string.IsNullOrWhiteSpace(step.OutputPath))
+            {
+                SelectedStep = step;
+                _dialogs.Warning(UiText.T("Etl_OutputPath"), UiText.T("Etl_Title"));
                 return;
             }
         }
-        else if (string.IsNullOrWhiteSpace(OutputPath))
-        {
-            _dialogs.Warning(UiText.T("Etl_OutputPath"), UiText.T("Etl_Title"));
-            return;
-        }
 
-        if (!dryRun && SelectedTargetType == "Salesforce")
+        var salesforceSteps = Steps.Where(s => s.SelectedTargetType == "Salesforce").ToList();
+        if (!dryRun && salesforceSteps.Count > 0)
         {
             // 組織への書き込みは確認（CSV などローカル出力は即実行）
-            var summary = $"{SelectedTargetType}: {ObjectApiName} / {SelectedOp}";
+            var summary = string.Join(", ", salesforceSteps.Select(s => $"{s.EffectiveObjectName}/{s.SelectedOp}"));
             if (!_dialogs.Confirm(summary, UiText.T("Etl_Run")))
             {
                 return;
@@ -341,24 +345,36 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
 
         try
         {
-            var mapper = BuildMapper();
-            var source = CreateSource();
-            var (target, revertable) = CreateTarget();
-
             var runId = "run-" + DateTime.Now.ToString("yyyyMMdd-HHmmss");
             var runDirectory = Path.Combine(_paths.EtlRunsRoot, runId);
             _store?.Dispose();
             _store = RunStagingStore.Create(runDirectory, runId);
 
-            var plan = new EtlStepPlan
+            // 式ホスト（LOOKUP はストア生成後に配線。複数ステップの親 → 子 Id 解決に使用）
+            var host = new ExpressionHost
             {
-                StepId = "step1",
-                ObjectName = string.IsNullOrWhiteSpace(ObjectApiName) ? "Output" : ObjectApiName.Trim(),
-                Source = source,
-                Mapper = mapper,
-                Target = target,
-                Revertable = revertable,
+                UserName = Environment.UserName,
+                OrgName = TargetOrg,
+                MachineName = Environment.MachineName,
             };
+            EtlCrosswalk.WireLookup(host, _store);
+            var engine = new ExpressionEngine(host);
+
+            var plans = new List<EtlStepPlan>();
+            foreach (var step in Steps)
+            {
+                var (target, revertable) = step.CreateTarget(_rest, TargetOrg, _log);
+                plans.Add(new EtlStepPlan
+                {
+                    StepId = step.StepId,
+                    ObjectName = step.EffectiveObjectName,
+                    Source = step.CreateSource(),
+                    Mapper = step.CreateMapper(engine),
+                    Target = target,
+                    Revertable = revertable,
+                    CrosswalkKeyField = string.IsNullOrWhiteSpace(step.CrosswalkKeyField) ? null : step.CrosswalkKeyField.Trim(),
+                });
+            }
 
             var options = new EtlApplyOptions
             {
@@ -366,36 +382,73 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
                 MaxErrorRate = ParseErrorRate(),
             };
 
-            var stepRun = new EtlStepRun(_store, plan, options);
-            stepRun.Progress += p => _dispatcher.Post(() =>
-                CountsText = UiText.T("Etl_ProgressFmt", p.Attempted, p.Success, p.Failed, p.Skipped));
-
-            if (!dryRun && SelectedTargetType == "Salesforce" && RunBackupBefore)
+            Func<CancellationToken, Task<string?>>? backupHook = null;
+            if (!dryRun && RunBackupBefore && salesforceSteps.Count > 0)
             {
                 var orgInfo = Org!;
-                var objectName = plan.ObjectName;
-                stepRun.PreRunBackup = async backupCt =>
+                var backupObjects = salesforceSteps.Select(s => s.EffectiveObjectName).Distinct().ToList();
+                backupHook = async backupCt =>
                 {
                     var appVersion = typeof(EtlViewModel).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
                     var progress = new Progress<BackupProgress>(p => _dispatcher.Post(() =>
                         StatusMessage = UiText.T("Etl_BackupProgressFmt", p.Done, p.Total, p.ObjectName)));
                     var metadata = await _backup.RunBackupAsync(
                         TargetOrg, orgInfo.DisplayName, orgInfo.Username, orgInfo.OrgId, appVersion,
-                        UiText.T("Etl_BackupLabel"), runId + " / " + objectName,
-                        new[] { objectName }, progress, backupCt);
+                        UiText.T("Etl_BackupLabel"), runId + " / " + string.Join(",", backupObjects),
+                        backupObjects, progress, backupCt);
                     AppendLog(UiText.T("Etl_BackupDoneFmt", metadata.Id, metadata.TotalRecords));
                     return metadata.Id;
                 };
             }
 
-            var result = await Task.Run(() => stepRun.RunAsync(dryRun, autoRollbackOnFailure: true, ct), ct);
-
-            var apply = result.Apply!;
-            AppendLog(UiText.T("Etl_SourceLoadedFmt", result.Loaded));
-            AppendLog(UiText.T("Etl_CompleteFmt", apply.Success, apply.Failed, apply.Pending, apply.StopReason));
-            if (result.Rollback is not null)
+            if (plans.Count == 1)
             {
-                AppendLog(UiText.T("Etl_RevertedFmt", result.Rollback.Reverted, result.Rollback.Failed));
+                var stepRun = new EtlStepRun(_store, plans[0], options)
+                {
+                    PreRunBackup = backupHook,
+                };
+                stepRun.Progress += p => _dispatcher.Post(() =>
+                    CountsText = UiText.T("Etl_ProgressFmt", p.Attempted, p.Success, p.Failed, p.Skipped));
+
+                var result = await Task.Run(() => stepRun.RunAsync(dryRun, autoRollbackOnFailure: true, ct), ct);
+
+                var apply = result.Apply!;
+                AppendLog(UiText.T("Etl_SourceLoadedFmt", result.Loaded));
+                AppendLog(UiText.T("Etl_CompleteFmt", apply.Success, apply.Failed, apply.Pending, apply.StopReason));
+                if (result.Rollback is not null)
+                {
+                    AppendLog(UiText.T("Etl_RevertedFmt", result.Rollback.Reverted, result.Rollback.Failed));
+                }
+            }
+            else
+            {
+                // マルチステップ（親 → 子、停止時は子 → 親の逆順ロールバック）
+                var job = new EtlJobRunner(_store, new EtlJobPlan { JobName = "job:" + runId, Steps = plans }, options)
+                {
+                    PreRunBackup = backupHook,
+                };
+                job.StepProgress += (stepId, p) => _dispatcher.Post(() =>
+                    CountsText = stepId + " " + UiText.T("Etl_ProgressFmt", p.Attempted, p.Success, p.Failed, p.Skipped));
+
+                var jobResult = await Task.Run(() => job.RunAsync(dryRun, autoRollbackOnFailure: true, ct), ct);
+
+                for (var i = 0; i < jobResult.Steps.Count && i < jobResult.StepIds.Count; i++)
+                {
+                    if (jobResult.Steps[i].Apply is { } stepApply)
+                    {
+                        AppendLog(jobResult.StepIds[i] + ": " + UiText.T("Etl_CompleteFmt", stepApply.Success, stepApply.Failed, stepApply.Pending, stepApply.StopReason));
+                    }
+                }
+
+                foreach (var rollback in jobResult.Rollbacks)
+                {
+                    AppendLog(UiText.T("Etl_RevertedFmt", rollback.Reverted, rollback.Failed));
+                }
+
+                foreach (var error in jobResult.RollbackErrors)
+                {
+                    AppendLog(UiText.T("Common_FailedFmt", error));
+                }
             }
 
             StatusMessage = dryRun ? UiText.T("Etl_DryRun") : UiText.T("Etl_Run");
@@ -428,49 +481,6 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
         }
 
         return 0.05;
-    }
-
-    private IEtlSource CreateSource() => SelectedSourceType switch
-    {
-        "CSV" => new CsvFileSource(SourcePath, new CsvStreamOptions { HasHeader = SourceHasHeader }),
-        "TSV" => new CsvFileSource(SourcePath, new CsvStreamOptions { Delimiter = '\t', HasHeader = SourceHasHeader }),
-        "Excel" => new ExcelFileSource(SourcePath, string.IsNullOrWhiteSpace(ExcelSheet) ? null : ExcelSheet, SourceHasHeader),
-        "JSON" => new JsonFileSource(SourcePath),
-        "XML" => new XmlFileSource(SourcePath, string.IsNullOrWhiteSpace(XmlRowElement) ? null : XmlRowElement),
-        _ => throw new InvalidOperationException("未対応の入力種別です: " + SelectedSourceType),
-    };
-
-    private RowMapper BuildMapper()
-    {
-        var host = new ExpressionHost
-        {
-            UserName = Environment.UserName,
-            OrgName = TargetOrg,
-            MachineName = Environment.MachineName,
-        };
-        var engine = new ExpressionEngine(host);
-        var mappings = Mappings
-            .Select(m => new FieldMapping(m.TargetField, m.Expression, m.Type))
-            .ToList();
-        return new RowMapper(Mappings.Select(m => m.SourceColumn).ToList(), mappings, engine);
-    }
-
-    private (IEtlTarget Target, IEtlRevertable? Revertable) CreateTarget()
-    {
-        var fields = Mappings.Select(m => m.TargetField).ToList();
-        if (SelectedTargetType == "CSV")
-        {
-            return (new CsvFileTarget(OutputPath, fields), null);
-        }
-
-        var target = new SalesforceTarget(_rest, TargetOrg, new SalesforceTargetOptions
-        {
-            ObjectName = ObjectApiName.Trim(),
-            Fields = fields,
-            Op = SelectedOp,
-            MatchKeyField = string.IsNullOrWhiteSpace(MatchKeyField) ? null : MatchKeyField.Trim(),
-        }, _log);
-        return (target, target);
     }
 
     private void AppendLog(string line)
@@ -608,6 +618,12 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void SaveConnection()
     {
+        if (SelectedStep is null)
+        {
+            return;
+        }
+
+        var step = SelectedStep;
         var name = _dialogs.Prompt(UiText.T("Etl_SaveConnection"), UiText.T("Etl_SaveConnection"), TargetOrg);
         if (string.IsNullOrWhiteSpace(name))
         {
@@ -617,13 +633,13 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
         Connections.Add(new EtlConnection
         {
             Name = name.Trim(),
-            SourceType = SelectedSourceType,
-            SourcePath = SourcePath,
-            TargetType = SelectedTargetType,
-            ObjectApiName = ObjectApiName,
-            Op = SelectedOp,
-            MatchKeyField = MatchKeyField,
-            OutputPath = OutputPath,
+            SourceType = step.SelectedSourceType,
+            SourcePath = step.SourcePath,
+            TargetType = step.SelectedTargetType,
+            ObjectApiName = step.ObjectApiName,
+            Op = step.SelectedOp,
+            MatchKeyField = step.MatchKeyField,
+            OutputPath = step.OutputPath,
         });
         SaveConnectionsFile();
     }
@@ -631,18 +647,19 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void UseConnection()
     {
-        if (SelectedConnection is null)
+        if (SelectedConnection is null || SelectedStep is null)
         {
             return;
         }
 
-        SelectedSourceType = SelectedConnection.SourceType;
-        SourcePath = SelectedConnection.SourcePath;
-        SelectedTargetType = SelectedConnection.TargetType;
-        ObjectApiName = SelectedConnection.ObjectApiName;
-        SelectedOp = SelectedConnection.Op;
-        MatchKeyField = SelectedConnection.MatchKeyField;
-        OutputPath = SelectedConnection.OutputPath;
+        var step = SelectedStep;
+        step.SelectedSourceType = SelectedConnection.SourceType;
+        step.SourcePath = SelectedConnection.SourcePath;
+        step.SelectedTargetType = SelectedConnection.TargetType;
+        step.ObjectApiName = SelectedConnection.ObjectApiName;
+        step.SelectedOp = SelectedConnection.Op;
+        step.MatchKeyField = SelectedConnection.MatchKeyField;
+        step.OutputPath = SelectedConnection.OutputPath;
     }
 
     [RelayCommand]

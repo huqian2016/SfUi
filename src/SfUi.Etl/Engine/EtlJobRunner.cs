@@ -36,6 +36,9 @@ public sealed class EtlJobResult
     /// <summary>ロールバックに失敗したステップのエラー（途中停止時も残りを継続）。</summary>
     public List<string> RollbackErrors { get; } = new();
 
+    /// <summary>事前バックアップの結果情報（フックが実行された場合のみ）。</summary>
+    public string? BackupInfo { get; set; }
+
     public long DurationMs { get; set; }
 }
 
@@ -61,6 +64,9 @@ public sealed class EtlJobRunner
     /// <summary>ステップごとの進捗イベント（stepId, progress）。</summary>
     public event Action<string, EtlProgress>? StepProgress;
 
+    /// <summary>事前バックアップ フック（dry-run 以外の実行で最初のステップ前に呼ばれる）。</summary>
+    public Func<CancellationToken, Task<string?>>? PreRunBackup { get; set; }
+
     /// <summary>全ステップを順に実行する。</summary>
     public async Task<EtlJobResult> RunAsync(
         bool dryRun = false,
@@ -70,6 +76,11 @@ public sealed class EtlJobRunner
         var stopwatch = Stopwatch.StartNew();
         var result = new EtlJobResult { JobName = _plan.JobName };
         var stepRuns = new List<EtlStepRun>();
+
+        if (!dryRun && PreRunBackup is not null)
+        {
+            result.BackupInfo = await PreRunBackup(ct).ConfigureAwait(false);
+        }
 
         foreach (var stepPlan in _plan.Steps)
         {

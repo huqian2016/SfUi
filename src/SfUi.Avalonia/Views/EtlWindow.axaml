@@ -23,35 +23,55 @@
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
                     <StackPanel>
 
-                        <TextBlock Text="{loc:Tr Etl_SourceGroup}" FontWeight="SemiBold" Margin="0,0,0,4" />
+                        <TextBlock Text="{loc:Tr Etl_StepsGroup}" FontWeight="SemiBold" Margin="0,0,0,4" />
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                            <Button x:Name="EtlAddStepButton" Content="{loc:Tr Etl_AddStep}" Padding="10,2"
+                                    Command="{Binding AddStepCommand}"
+                                    AutomationProperties.Name="{loc:Tr Etl_AddStep}" />
+                            <Button x:Name="EtlRemoveStepButton" Content="{loc:Tr Etl_RemoveStep}" Padding="10,2" Margin="8,0,0,0"
+                                    Command="{Binding RemoveStepCommand}"
+                                    AutomationProperties.Name="{loc:Tr Etl_RemoveStep}" />
+                            <Button x:Name="EtlMoveUpButton" Content="{loc:Tr Etl_MoveUp}" Padding="10,2" Margin="8,0,0,0"
+                                    Command="{Binding MoveStepUpCommand}"
+                                    AutomationProperties.Name="{loc:Tr Etl_MoveUp}" />
+                            <Button x:Name="EtlMoveDownButton" Content="{loc:Tr Etl_MoveDown}" Padding="10,2" Margin="8,0,0,0"
+                                    Command="{Binding MoveStepDownCommand}"
+                                    AutomationProperties.Name="{loc:Tr Etl_MoveDown}" />
+                        </StackPanel>
+                        <ListBox x:Name="EtlStepsList" Height="76" ItemsSource="{Binding Steps}"
+                                 SelectedItem="{Binding SelectedStep, Mode=TwoWay}"
+                                 DisplayMemberBinding="{Binding DisplayName}"
+                                 AutomationProperties.Name="{loc:Tr Etl_StepsGroup}" />
+
+                        <TextBlock Text="{loc:Tr Etl_SourceGroup}" FontWeight="SemiBold" Margin="0,8,0,4" />
                         <StackPanel Orientation="Horizontal">
                             <ComboBox x:Name="EtlSourceTypeBox" Width="90"
-                                      ItemsSource="{Binding SourceTypeOptions}"
-                                      SelectedItem="{Binding SelectedSourceType, Mode=TwoWay}"
+                                      ItemsSource="{Binding SelectedStep.SourceTypeOptions}"
+                                      SelectedItem="{Binding SelectedStep.SelectedSourceType, Mode=TwoWay}"
                                       AutomationProperties.Name="{loc:Tr Etl_SourceGroup}" />
                             <TextBox x:Name="EtlSourcePathBox" Width="560" Margin="8,0,0,0" VerticalContentAlignment="Center"
-                                     Text="{Binding SourcePath, Mode=TwoWay}"
+                                     Text="{Binding SelectedStep.SourcePath, Mode=TwoWay}"
                                      AutomationProperties.Name="{loc:Tr Etl_SourcePath}" />
                             <Button x:Name="EtlBrowseSourceButton" Content="{loc:Tr Etl_Browse}" Margin="8,0,0,0" Padding="10,2"
-                                    Command="{Binding BrowseSourceCommand}"
+                                    Command="{Binding SelectedStep.BrowseSourceCommand}"
                                     AutomationProperties.Name="{loc:Tr Etl_Browse}" />
                             <Button x:Name="EtlLoadButton" Content="{loc:Tr Etl_Load}" Margin="8,0,0,0" Padding="10,2"
-                                    Command="{Binding LoadSourceCommand}"
+                                    Command="{Binding SelectedStep.LoadSourceCommand}"
                                     AutomationProperties.Name="{loc:Tr Etl_Load}" />
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                             <CheckBox x:Name="EtlHasHeaderBox" Content="{loc:Tr Etl_HasHeader}" VerticalAlignment="Center"
-                                      IsChecked="{Binding SourceHasHeader, Mode=TwoWay}" />
+                                      IsChecked="{Binding SelectedStep.SourceHasHeader, Mode=TwoWay}" />
                             <TextBlock Text="{loc:Tr Etl_Sheet}" Margin="16,0,4,0" VerticalAlignment="Center" />
                             <TextBox x:Name="EtlSheetBox" Width="150" VerticalContentAlignment="Center"
-                                     Text="{Binding ExcelSheet, Mode=TwoWay}" />
+                                     Text="{Binding SelectedStep.ExcelSheet, Mode=TwoWay}" />
                             <TextBlock Text="{loc:Tr Etl_RowElement}" Margin="16,0,4,0" VerticalAlignment="Center" />
                             <TextBox x:Name="EtlRowElementBox" Width="150" VerticalContentAlignment="Center"
-                                     Text="{Binding XmlRowElement, Mode=TwoWay}" />
+                                     Text="{Binding SelectedStep.XmlRowElement, Mode=TwoWay}" />
                         </StackPanel>
 
                         <TextBlock Text="{loc:Tr Etl_MappingGroup}" FontWeight="SemiBold" Margin="0,12,0,4" />
-                        <DataGrid x:Name="EtlMappingsGrid" ItemsSource="{Binding Mappings}" Height="230"
+                        <DataGrid x:Name="EtlMappingsGrid" ItemsSource="{Binding SelectedStep.Mappings}" Height="230"
                                   AutoGenerateColumns="False" CanUserReorderColumns="False"
                                   HeadersVisibility="Column" GridLinesVisibility="Horizontal"
                                   AutomationProperties.Name="{loc:Tr Etl_MappingGroup}">
@@ -72,23 +92,23 @@
                         <TextBlock Text="{loc:Tr Etl_TargetGroup}" FontWeight="SemiBold" Margin="0,12,0,4" />
                         <StackPanel Orientation="Horizontal">
                             <ComboBox x:Name="EtlTargetTypeBox" Width="110"
-                                      ItemsSource="{Binding TargetTypeOptions}"
-                                      SelectedItem="{Binding SelectedTargetType, Mode=TwoWay}"
+                                      ItemsSource="{Binding SelectedStep.TargetTypeOptions}"
+                                      SelectedItem="{Binding SelectedStep.SelectedTargetType, Mode=TwoWay}"
                                       AutomationProperties.Name="{loc:Tr Etl_TargetGroup}" />
                             <TextBlock Text="{loc:Tr Etl_Object}" Margin="12,0,4,0" VerticalAlignment="Center" />
                             <TextBox x:Name="EtlObjectBox" Width="200" VerticalContentAlignment="Center"
-                                     Text="{Binding ObjectApiName, Mode=TwoWay}"
+                                     Text="{Binding SelectedStep.ObjectApiName, Mode=TwoWay}"
                                      AutomationProperties.Name="{loc:Tr Etl_Object}" />
                             <TextBlock Text="{loc:Tr Etl_Op}" Margin="12,0,4,0" VerticalAlignment="Center" />
                             <ComboBox x:Name="EtlOpBox" Width="110"
-                                      ItemsSource="{Binding OpOptions}"
-                                      SelectedItem="{Binding SelectedOp, Mode=TwoWay}"
+                                      ItemsSource="{Binding SelectedStep.OpOptions}"
+                                      SelectedItem="{Binding SelectedStep.SelectedOp, Mode=TwoWay}"
                                       AutomationProperties.Name="{loc:Tr Etl_Op}" />
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                             <TextBlock Text="{loc:Tr Etl_MatchKey}" VerticalAlignment="Center" />
                             <TextBox x:Name="EtlMatchKeyBox" Width="170" Margin="4,0,0,0" VerticalContentAlignment="Center"
-                                     Text="{Binding MatchKeyField, Mode=TwoWay}"
+                                     Text="{Binding SelectedStep.MatchKeyField, Mode=TwoWay}"
                                      AutomationProperties.Name="{loc:Tr Etl_MatchKey}" />
                             <TextBlock Text="{loc:Tr Etl_ErrorRate}" Margin="16,0,4,0" VerticalAlignment="Center" />
                             <TextBox x:Name="EtlErrorRateBox" Width="60" VerticalContentAlignment="Center"
@@ -100,12 +120,18 @@
                                       IsChecked="{Binding RunBackupBefore, Mode=TwoWay}" />
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                            <TextBlock Text="{loc:Tr Etl_CrosswalkKey}" VerticalAlignment="Center" />
+                            <TextBox x:Name="EtlCrosswalkKeyBox" Width="220" Margin="4,0,0,0" VerticalContentAlignment="Center"
+                                     Text="{Binding SelectedStep.CrosswalkKeyField, Mode=TwoWay}"
+                                     AutomationProperties.Name="{loc:Tr Etl_CrosswalkKey}" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                             <TextBlock Text="{loc:Tr Etl_OutputPath}" VerticalAlignment="Center" />
                             <TextBox x:Name="EtlOutputPathBox" Width="480" Margin="4,0,0,0" VerticalContentAlignment="Center"
-                                     Text="{Binding OutputPath, Mode=TwoWay}"
+                                     Text="{Binding SelectedStep.OutputPath, Mode=TwoWay}"
                                      AutomationProperties.Name="{loc:Tr Etl_OutputPath}" />
                             <Button x:Name="EtlBrowseOutputButton" Content="{loc:Tr Etl_Browse}" Margin="8,0,0,0" Padding="10,2"
-                                    Command="{Binding BrowseOutputCommand}"
+                                    Command="{Binding SelectedStep.BrowseOutputCommand}"
                                     AutomationProperties.Name="{loc:Tr Etl_Browse}" />
                         </StackPanel>
 
