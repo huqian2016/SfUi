@@ -169,6 +169,8 @@
                                 <DataGridTextColumn Header="{loc:Tr Etl_ColExpr}" Binding="{Binding Expression, Mode=TwoWay}" Width="*" />
                             </DataGrid.Columns>
                         </DataGrid>
+                        <TextBlock x:Name="EtlFunctionHintText" Text="{loc:Tr Etl_FunctionHint}"
+                                   FontSize="11" Opacity="0.7" TextWrapping="Wrap" Margin="0,4,0,0" />
 
                         <TextBlock Text="{loc:Tr Etl_TargetGroup}" FontWeight="SemiBold" Margin="0,12,0,4" />
                         <StackPanel Orientation="Horizontal">

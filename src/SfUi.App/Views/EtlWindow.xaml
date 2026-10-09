@@ -156,6 +156,7 @@
                         </GroupBox>
 
                         <GroupBox Header="{loc:Tr Etl_MappingGroup}" Padding="8" Margin="0,8,0,0">
+                            <StackPanel>
                             <DataGrid x:Name="EtlMappingsGrid" ItemsSource="{Binding SelectedStep.Mappings}" Height="240"
                                       AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
                                       HeadersVisibility="Column" RowHeaderWidth="0" GridLinesVisibility="Horizontal"
@@ -173,6 +174,9 @@
                                     <DataGridTextColumn Header="{loc:Tr Etl_ColExpr}" Binding="{Binding Expression, Mode=TwoWay}" Width="*" />
                                 </DataGrid.Columns>
                             </DataGrid>
+                                <TextBlock x:Name="EtlFunctionHintText" Text="{loc:Tr Etl_FunctionHint}"
+                                           FontSize="11" Opacity="0.7" TextWrapping="Wrap" Margin="0,4,0,0" />
+                            </StackPanel>
                         </GroupBox>
 
                         <GroupBox Header="{loc:Tr Etl_TargetGroup}" Padding="8" Margin="0,8,0,0">

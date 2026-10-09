@@ -42,6 +42,13 @@ public sealed class DeltaSource : IEtlSource
 
         if (_columnIndex < 0)
         {
+            if (inner.Columns.Count == 0)
+            {
+                // 0 列 = 0 行の空ソース（例: SOQL delta push-down 後に変更なしで 0 件）。
+                // 差分列を確認できないが渡す行が無いため、空（0 件）として成功させる。
+                return;
+            }
+
             throw new ArgumentException($"差分列 '{DeltaColumn}' がソースの列に見つかりません。", nameof(deltaColumn));
         }
 

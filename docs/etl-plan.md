@@ -1,6 +1,6 @@
 # SfUi ETL 機能 設計書
 
-最終更新: 2026-10-09 / ステータス: **P2 完了 + P3 進行（ジョブ保存/読込・資格情報保護・失敗行のみ再実行・検証ステップ・SOQL delta push-down 完了）— 全コネクタ（CSV・TSV・Excel・JSON・XML・DB・REST・Salesforce SOQL / Bulk、出力 Salesforce・CSV・DB）+ delta モード（**SOQL は差分条件を WHERE 句へプッシュダウンし、変更分のみ取得**）+ ジョブ保存/読込 + **資格情報保護（connections.json の秘密値は DPAPI / AES-GCM で保護、ログは秘密値マスキング）** + **失敗行のみ再実行（失敗キュー行を pending に戻し、ステージング済みデータでソース再読込なしに再適用）** + **検証ステップ（移行後に件数・サンプル値・数値合計を自動照合し、verification.json レポートを保存）** + 安全 5 機能 / ETL ウィンドウ（両アプリ・4 領域）。検証: 765 テスト + `--smoke-etl`（実組織 + オフライン。retry / verify / soql-delta フェーズ含む）+ UI E2E（CSV→SQLite→CSV、REST→CSV、SOQL→CSV、delta、SOQL delta プッシュダウン、Bulk→CSV、ジョブ保存→再起動→読込→実行→削除、資格情報 保存→暗号化→Use 復元、失敗行再実行（実組織 Contact）、検証 自動+手動（実組織 Contact）+ レポート JSON）+ CI グリーン（Windows/macOS）。次の段階（P3）: 式関数拡充・非 CSV 入力の実組織スモーク**
+最終更新: 2026-10-09 / ステータス: **P3 完了（ジョブ保存/読込・資格情報保護・失敗行のみ再実行・検証ステップ・SOQL delta push-down・式関数拡充）— 全コネクタ（CSV・TSV・Excel・JSON・XML・DB・REST・Salesforce SOQL / Bulk、出力 Salesforce・CSV・DB）+ delta モード（SOQL は差分条件を WHERE 句へプッシュダウン）+ ジョブ保存/読込 + 資格情報保護（DPAPI / AES-GCM・ログ マスキング）+ 失敗行のみ再実行 + 検証ステップ（件数・サンプル値・数値合計の自動照合 + verification.json）+ **式関数 56 種（文字列/数値/日付/論理/システム/参照/Salesforce Id 変換）+ UI に関数一覧表示** + 安全 5 機能 / ETL ウィンドウ（両アプリ・4 領域）。検証: 771 テスト + `--smoke-etl`（実組織 + オフライン。retry / verify / functions / soql-delta フェーズ含む）+ UI E2E（CSV→SQLite→CSV、REST→CSV、SOQL→CSV、delta、SOQL delta プッシュダウン、Bulk→CSV、ジョブ保存/読込、資格情報、失敗行再実行、検証 自動+手動、関数一覧表示（WPF + Avalonia））+ CI グリーン（Windows/macOS）。次の段階（P3 残り + P4 候補）: 非 CSV 入力の実組織スモーク・ジョブ エクスポート/インポート・History への etl 種別記録・スケジュール実行検討**
 対象: WPF (`SfUi.App`) + Avalonia (`SfUi.Avalonia`) の両方
 
 ---
@@ -188,12 +188,15 @@ flowchart LR
 
 | カテゴリ | 関数（例） |
 |---|---|
-| 文字列 | `TEXT` `LEFT` `RIGHT` `MID` `LEN` `TRIM` `UPPER` `LOWER` `REPLACE` `CONCAT` `SPLIT` `JOIN` |
-| 数値 | `TO_NUMBER` `ROUND` `ABS` `FLOOR` `CEIL` `MIN` `MAX` |
-| 日付 | `TO_DATE` `FORMAT_DATE` `ADD_DAYS` `TODAY` `NOW`（タイムゾーン変換含む） |
-| 論理 | `IF` `IFNULL` `COALESCE` `ISBLANK`（真偽・空値の判定） |
+| 文字列 | `TEXT` `LEFT` `RIGHT` `MID` `LEN` `TRIM` `UPPER` `LOWER` `REPLACE` `CONCAT` `SPLIT` `JOIN` `SPLIT_PART` `LPAD` `RPAD` `CONTAINS` `STARTSWITH` `ENDSWITH` |
+| 数値 | `TO_NUMBER` `TO_INT` `ROUND` `ABS` `FLOOR` `CEIL` `MIN` `MAX` `IS_NUMBER` `FORMAT_NUMBER` |
+| 日付 | `TO_DATE` `FORMAT_DATE` `ADD_DAYS` `ADD_MONTHS` `ADD_HOURS` `DIFF_DAYS` `YEAR` `MONTH` `DAY` `TO_UTC` `TODAY` `NOW` |
+| 論理 | `IF` `IIF` `IFNULL` `COALESCE` `NULLIF` `ISBLANK`（真偽・空値の判定） |
 | システム | `CURRENT_USER()` `CURRENT_ORG()` `CURRENT_PC()` `ROW_NUMBER()` `GUID()` |
 | 参照 | `LOOKUP("Object", キー, 値)`（crosswalk 参照）`PREV("field")` `PARENT("field")` |
+| Salesforce Id | `ID15`（15 桁へ）`ID18`（大文字小文字安全の 18 桁へ） |
+
+関数一覧は ETL ウィンドウのマッピング グリッド下にも常時表示される（UI 言語に追従）。
 
 ### 3.7 UI
 

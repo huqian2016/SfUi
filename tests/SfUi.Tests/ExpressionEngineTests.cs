@@ -160,8 +160,89 @@ public class ExpressionEngineTests
     [Fact]
     public void ReservedNameColumn_RequiresBrackets()
     {
-        var vars = new Dictionary<string, object?> { ["NOW"] = "固定値" };
+        var vars = new Dictionary<string, object?> { ["NOW"] = "固定値", ["YEAR"] = 2026 };
         Assert.Equal("固定値", Eval("[NOW]", vars));
+        Assert.Equal(2026, Eval("[YEAR]", vars));
+    }
+
+    [Fact]
+    public void StringFunctions_Extended()
+    {
+        Assert.True((bool)Eval("CONTAINS(\"abcdef\", \"cd\")")!);
+        Assert.False((bool)Eval("CONTAINS(\"abcdef\", \"xy\")")!);
+        Assert.False((bool)Eval("CONTAINS(null, \"cd\")")!);
+        Assert.True((bool)Eval("STARTSWITH(\"abcdef\", \"ab\")")!);
+        Assert.False((bool)Eval("STARTSWITH(\"abcdef\", \"bc\")")!);
+        Assert.True((bool)Eval("ENDSWITH(\"abcdef\", \"ef\")")!);
+        Assert.Equal("b", Eval("SPLIT_PART(\"a|b|c\", \"|\", 2)"));
+        Assert.Equal("c", Eval("SPLIT_PART(\"a|b|c\", \"|\", 3)"));
+        Assert.Null(Eval("SPLIT_PART(\"a|b|c\", \"|\", 4)"));
+        Assert.Null(Eval("SPLIT_PART(\"a|b\", \"|\", 0)"));
+        Assert.Null(Eval("SPLIT_PART(null, \"|\", 1)"));
+        Assert.Equal("007", Eval("LPAD(\"7\", 3, \"0\")"));
+        Assert.Equal("x7", Eval("LPAD(\"7\", 2, \"xy\")"));
+        Assert.Equal("abc", Eval("LPAD(\"abcdef\", 3, \"0\")"));
+        Assert.Equal("700", Eval("RPAD(\"7\", 3, \"0\")"));
+        Assert.Equal("abc", Eval("RPAD(\"abcdef\", 3, \"0\")"));
+        Assert.Null(Eval("LPAD(null, 3, \"0\")"));
+    }
+
+    [Fact]
+    public void Numbers_Extended()
+    {
+        Assert.Equal(12L, Eval("TO_INT(\"12.9\")"));
+        Assert.Equal(-12L, Eval("TO_INT(\"-12.9\")"));
+        Assert.Null(Eval("TO_INT(\"abc\")"));
+        Assert.Null(Eval("TO_INT(null)"));
+        Assert.True((bool)Eval("IS_NUMBER(\"1,234.5\")")!);
+        Assert.False((bool)Eval("IS_NUMBER(\"abc\")")!);
+        Assert.False((bool)Eval("IS_NUMBER(null)")!);
+        Assert.Equal("1234.50", Eval("FORMAT_NUMBER(1234.5, \"0.00\")"));
+        Assert.Equal("1,234.5", Eval("FORMAT_NUMBER(1234.5, \"#,##0.#\")"));
+        Assert.Null(Eval("FORMAT_NUMBER(null, \"0.00\")"));
+    }
+
+    [Fact]
+    public void Dates_Extended()
+    {
+        Assert.Equal(new DateTime(2026, 2, 28), Eval("ADD_MONTHS(TO_DATE(\"2026-01-31\"), 1)"));
+        Assert.Equal(new DateTime(2025, 12, 31), Eval("ADD_MONTHS(TO_DATE(\"2026-01-31\"), -1)"));
+        Assert.Equal(new DateTime(2026, 10, 9, 13, 0, 0), Eval("ADD_HOURS(TO_DATE(\"2026-10-09\"), 13)"));
+        Assert.Equal(9, Eval("DIFF_DAYS(TO_DATE(\"2026-01-10\"), TO_DATE(\"2026-01-01\"))"));
+        Assert.Equal(-9, Eval("DIFF_DAYS(TO_DATE(\"2026-01-01\"), TO_DATE(\"2026-01-10\"))"));
+        Assert.Null(Eval("DIFF_DAYS(null, TO_DATE(\"2026-01-01\"))"));
+        Assert.Equal(2026, Eval("YEAR(TO_DATE(\"2026-10-09\"))"));
+        Assert.Equal(10, Eval("MONTH(TO_DATE(\"2026-10-09\"))"));
+        Assert.Equal(9, Eval("DAY(TO_DATE(\"2026-10-09\"))"));
+        Assert.Null(Eval("YEAR(\"not a date\")"));
+        var host = new ExpressionHost
+        {
+            NowProvider = () => new DateTimeOffset(2026, 10, 9, 12, 0, 0, TimeSpan.FromHours(9)),
+        };
+        Assert.Equal(new DateTime(2026, 10, 9, 3, 0, 0, DateTimeKind.Utc), Eval("TO_UTC(NOW())", host: host));
+    }
+
+    [Fact]
+    public void NullIf_And_Iif()
+    {
+        Assert.Null(Eval("NULLIF(\"a\", \"a\")"));
+        Assert.Equal("a", Eval("NULLIF(\"a\", \"b\")"));
+        Assert.Equal("", Eval("NULLIF(\"\", null)"));
+        Assert.Equal("x", Eval("IIF(LEN(\"abc\") == 3, \"x\", \"y\")"));
+        Assert.Equal("x", Eval("IIF(ISBLANK(null), \"x\", \"y\")"));
+        Assert.Equal("y", Eval("IIF(IS_NUMBER(\"abc\"), \"x\", \"y\")"));
+    }
+
+    [Fact]
+    public void SalesforceIdConversion()
+    {
+        Assert.Equal("003BK00000r7209", Eval("ID15(\"003BK00000r7209YAA\")"));
+        Assert.Equal("003BK00000r7209", Eval("ID15(\"003BK00000r7209\")"));
+        Assert.Equal("003BK00000r7209YAA", Eval("ID18(\"003BK00000r7209\")"));
+        Assert.Equal("003BK00000r7209YAA", Eval("ID18(\"003BK00000r7209YAA\")"));
+        Assert.Null(Eval("ID15(\"short\")"));
+        Assert.Null(Eval("ID18(null)"));
+        Assert.Null(Eval("ID15(\"003BK00000r7209YAAX\")"));
     }
 
     [Fact]

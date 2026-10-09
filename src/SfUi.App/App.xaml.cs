@@ -1427,6 +1427,65 @@ public partial class App : Application
                 _log.Info($"--smoke-etl: [verify] レポート={reportPath}（存在={File.Exists(reportPath)}）");
             }
 
+            // ---- オフライン 6: functions（式関数の評価確認。拡充分を含む）----
+            {
+                var fnEngine = new ExpressionEngine(new ExpressionHost
+                {
+                    NowProvider = () => new DateTimeOffset(2026, 1, 2, 3, 4, 5, TimeSpan.Zero),
+                    TodayProvider = () => new DateTime(2026, 1, 2),
+                    GuidProvider = () => "g",
+                });
+                var fnChecks = new (string Expression, object? Expected)[]
+                {
+                    ("SPLIT_PART(\"a|b|c\", \"|\", 2)", "b"),
+                    ("LPAD(\"7\", 3, \"0\")", "007"),
+                    ("RPAD(\"7\", 3, \"0\")", "700"),
+                    ("CONTAINS(\"abcdef\", \"cd\")", true),
+                    ("STARTSWITH(\"abcdef\", \"ab\")", true),
+                    ("ENDSWITH(\"abcdef\", \"ef\")", true),
+                    ("TO_INT(\"12.9\")", 12L),
+                    ("IS_NUMBER(\"1,234.5\")", true),
+                    ("FORMAT_NUMBER(1234.5, \"0.00\")", "1234.50"),
+                    ("ADD_MONTHS(TO_DATE(\"2026-01-31\"), 1)", new DateTime(2026, 2, 28)),
+                    ("ADD_HOURS(TO_DATE(\"2026-10-09\"), 13)", new DateTime(2026, 10, 9, 13, 0, 0)),
+                    ("DIFF_DAYS(TO_DATE(\"2026-01-10\"), TO_DATE(\"2026-01-01\"))", 9),
+                    ("YEAR(TO_DATE(\"2026-10-09\"))", 2026),
+                    ("TO_UTC(NOW())", new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc)),
+                    ("NULLIF(\"a\", \"a\")", null),
+                    ("IIF(ISBLANK(null), \"x\", \"y\")", "x"),
+                    ("ID18(\"003BK00000r7209\")", "003BK00000r7209YAA"),
+                    ("ID15(\"003BK00000r7209YAA\")", "003BK00000r7209"),
+                };
+
+                var fnOk = 0;
+                foreach (var (expression, expected) in fnChecks)
+                {
+                    try
+                    {
+                        var value = fnEngine.Compile(expression).EvaluateArgs();
+                        if (Equals(value, expected) || (value is null && expected is null))
+                        {
+                            fnOk++;
+                        }
+                        else
+                        {
+                            _log.Error($"--smoke-etl: [functions] 不一致: {expression} = {value}（期待 {expected}）");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _log.Error($"--smoke-etl: [functions] 例外: {expression}: {ex.Message}");
+                    }
+                }
+
+                _log.Info($"--smoke-etl: [functions] {fnOk}/{fnChecks.Length} 式が一致（期待全件）");
+                if (fnOk != fnChecks.Length)
+                {
+                    success = false;
+                    _log.Error("--smoke-etl: [functions] 検証に失敗しました");
+                }
+            }
+
             if (string.IsNullOrWhiteSpace(org))
             {
                 _log.Info("--smoke-etl: 実組織テストはスキップ（組織未指定。--smoke-etl <org> で実行）");
@@ -1815,6 +1874,8 @@ public partial class App : Application
                     }
 
                     // 2) 1 件追加 → 2 回目は押し込みで変更分だけ取得できる
+                    //    注意: SF の LastModifiedDate は秒精度 → A と B を同じ秒に入れると差分 0 件になるため待つ
+                    await Task.Delay(1100);
                     await CreateSmokeRecordAsync(rest, org!, apiVersion, "Contact", new Dictionary<string, object?>
                     {
                         ["LastName"] = dpMarker + "_B",

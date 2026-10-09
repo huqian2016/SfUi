@@ -60,6 +60,18 @@ public class DeltaSourceTests
     }
 
     [Fact]
+    public void EmptySource_WithNoColumns_YieldsEmptyWithoutThrowing()
+    {
+        // 例: SOQL delta プッシュダウンで変更なし（0 件）のとき。空のまま成功させる。
+        var inner = new FakeSource(Array.Empty<string>());
+        var source = new DeltaSource(inner, "ModifiedAt", DateTimeOffset.Parse("2026-01-02T00:00:00Z"));
+
+        Assert.Equal(0, source.Count);
+        Assert.Null(source.MaxValue);
+        Assert.Empty(source.ReadRows());
+    }
+
+    [Fact]
     public void ColumnLookup_IsCaseInsensitive()
     {
         var inner = new FakeSource(

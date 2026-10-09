@@ -16,9 +16,10 @@ public sealed class ExpressionEngine
     {
         // 組み込み関数名（ベア参照させない。必要な場合は [名前] を使用）
         "TEXT", "LEFT", "RIGHT", "MID", "LEN", "TRIM", "UPPER", "LOWER", "REPLACE", "CONCAT", "SPLIT", "JOIN",
-        "TO_NUMBER", "ROUND", "ABS", "FLOOR", "CEIL", "MIN", "MAX",
-        "TO_DATE", "FORMAT_DATE", "ADD_DAYS", "TODAY", "NOW",
-        "IF", "IFNULL", "COALESCE", "ISBLANK",
+        "SPLIT_PART", "LPAD", "RPAD", "CONTAINS", "STARTSWITH", "ENDSWITH", "ID15", "ID18",
+        "TO_NUMBER", "TO_INT", "ROUND", "ABS", "FLOOR", "CEIL", "MIN", "MAX", "IS_NUMBER", "FORMAT_NUMBER",
+        "TO_DATE", "FORMAT_DATE", "ADD_DAYS", "ADD_MONTHS", "ADD_HOURS", "DIFF_DAYS", "YEAR", "MONTH", "DAY", "TO_UTC", "TODAY", "NOW",
+        "IF", "IIF", "IFNULL", "COALESCE", "NULLIF", "ISBLANK",
         "CURRENT_USER", "CURRENT_ORG", "CURRENT_PC", "ROW_NUMBER", "GUID", "LOOKUP", "PREV", "PARENT",
         // C# 予約語
         "true", "false", "null", "if", "else", "for", "foreach", "while", "do", "switch", "case", "default",
@@ -91,25 +92,45 @@ public sealed class ExpressionEngine
         interpreter.SetFunction("CONCAT", (Func<object?, object?, object?, object?, object?>)((a, b, c, d) => ExprFunctions.Concat(a, b, c, d)));
         interpreter.SetFunction("SPLIT", (Func<object?, string, object?>)((v, s) => ExprFunctions.Split(v, s)));
         interpreter.SetFunction("JOIN", (Func<string, object?, object?>)((s, v) => ExprFunctions.Join(s, v)));
+        interpreter.SetFunction("SPLIT_PART", (Func<object?, string, int, object?>)ExprFunctions.SplitPart);
+        interpreter.SetFunction("LPAD", (Func<object?, int, string, object?>)ExprFunctions.LPad);
+        interpreter.SetFunction("RPAD", (Func<object?, int, string, object?>)ExprFunctions.RPad);
+        interpreter.SetFunction("CONTAINS", (Func<object?, string, bool>)ExprFunctions.Contains);
+        interpreter.SetFunction("STARTSWITH", (Func<object?, string, bool>)ExprFunctions.StartsWith);
+        interpreter.SetFunction("ENDSWITH", (Func<object?, string, bool>)ExprFunctions.EndsWith);
+        interpreter.SetFunction("ID15", (Func<object?, object?>)ExprFunctions.Id15);
+        interpreter.SetFunction("ID18", (Func<object?, object?>)ExprFunctions.Id18);
 
         // 数値
         interpreter.SetFunction("TO_NUMBER", (Func<object?, object?>)ExprFunctions.ToNumber);
+        interpreter.SetFunction("TO_INT", (Func<object?, object?>)ExprFunctions.ToInt);
         interpreter.SetFunction("ROUND", (Func<object?, int, object?>)ExprFunctions.Round);
         interpreter.SetFunction("ABS", (Func<object?, object?>)ExprFunctions.Abs);
         interpreter.SetFunction("FLOOR", (Func<object?, object?>)ExprFunctions.Floor);
         interpreter.SetFunction("CEIL", (Func<object?, object?>)ExprFunctions.Ceil);
         interpreter.SetFunction("MIN", (Func<object?, object?, object?>)ExprFunctions.Min);
         interpreter.SetFunction("MAX", (Func<object?, object?, object?>)ExprFunctions.Max);
+        interpreter.SetFunction("IS_NUMBER", (Func<object?, bool>)ExprFunctions.IsNumber);
+        interpreter.SetFunction("FORMAT_NUMBER", (Func<object?, string, object?>)ExprFunctions.FormatNumber);
 
         // 日付
         interpreter.SetFunction("TO_DATE", (Func<object?, object?>)(v => ExprFunctions.ToDate(v)));
         interpreter.SetFunction("FORMAT_DATE", (Func<object?, string, object?>)((v, f) => ExprFunctions.FormatDate(v, f)));
         interpreter.SetFunction("ADD_DAYS", (Func<object?, int, object?>)((v, n) => ExprFunctions.AddDays(v, n)));
+        interpreter.SetFunction("ADD_MONTHS", (Func<object?, int, object?>)((v, n) => ExprFunctions.AddMonths(v, n)));
+        interpreter.SetFunction("ADD_HOURS", (Func<object?, int, object?>)((v, n) => ExprFunctions.AddHours(v, n)));
+        interpreter.SetFunction("DIFF_DAYS", (Func<object?, object?, object?>)ExprFunctions.DiffDays);
+        interpreter.SetFunction("YEAR", (Func<object?, object?>)ExprFunctions.Year);
+        interpreter.SetFunction("MONTH", (Func<object?, object?>)ExprFunctions.Month);
+        interpreter.SetFunction("DAY", (Func<object?, object?>)ExprFunctions.Day);
+        interpreter.SetFunction("TO_UTC", (Func<object?, object?>)ExprFunctions.ToUtc);
 
         // 論理
         interpreter.SetFunction("IF", (Func<bool, object?, object?, object?>)ExprFunctions.If);
+        interpreter.SetFunction("IIF", (Func<bool, object?, object?, object?>)ExprFunctions.If);
         interpreter.SetFunction("IFNULL", (Func<object?, object?, object?>)ExprFunctions.IfNull);
         interpreter.SetFunction("COALESCE", (Func<object?, object?, object?>)ExprFunctions.Coalesce);
+        interpreter.SetFunction("NULLIF", (Func<object?, object?, object?>)ExprFunctions.NullIf);
         interpreter.SetFunction("ISBLANK", (Func<object?, bool>)ExprFunctions.IsBlank);
 
         // システム
