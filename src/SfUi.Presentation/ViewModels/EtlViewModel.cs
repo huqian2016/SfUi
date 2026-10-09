@@ -246,6 +246,7 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
         StatusMessage = UiText.T("Etl_MonitorIdle");
         RefreshRuns();
         LoadConnections();
+        RefreshSavedJobs();
         if (Steps.Count == 0)
         {
             AddStep();
@@ -253,6 +254,9 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
     }
 
     // ---- ステップ管理 ----
+
+    private EtlStepViewModel CreateStepViewModel(string stepId)
+        => new(stepId, _dialogs, _files, _paths, message => StatusMessage = message, _rest, _sfCli, () => TargetOrg);
 
     [RelayCommand]
     private void AddStep()
@@ -263,7 +267,7 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
             index++;
         }
 
-        var step = new EtlStepViewModel("step" + index, _dialogs, _files, _paths, message => StatusMessage = message, _rest, _sfCli, () => TargetOrg);
+        var step = CreateStepViewModel("step" + index);
         Steps.Add(step);
         SelectedStep = step;
     }
@@ -608,6 +612,236 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
 
         DeltaState.SetWatermark(delta.StatePath, stepId, max, _log);
         AppendLog(UiText.T("Etl_DeltaSavedFmt", stepId, max.ToString("u")));
+    }
+
+    // ---- ジョブ保存 / 読込（data/etl/jobs/<name>.json） ----
+
+    public ObservableCollection<string> SavedJobs { get; } = new();
+
+    [ObservableProperty]
+    private string _jobName = string.Empty;
+
+    [ObservableProperty]
+    private string? _selectedSavedJob;
+
+    partial void OnSelectedSavedJobChanged(string? value)
+    {
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            JobName = value!;
+        }
+    }
+
+    private void RefreshSavedJobs()
+    {
+        SavedJobs.Clear();
+        foreach (var name in EtlJobStore.List(_paths))
+        {
+            SavedJobs.Add(name);
+        }
+    }
+
+    [RelayCommand]
+    private void SaveJob()
+    {
+        var name = JobName.Trim();
+        if (name.Length == 0)
+        {
+            _dialogs.Warning(UiText.T("Etl_JobName"), Title);
+            return;
+        }
+
+        if (File.Exists(EtlJobStore.FilePath(_paths, name)) &&
+            !_dialogs.Confirm(UiText.T("Etl_JobOverwriteFmt", name), Title))
+        {
+            return;
+        }
+
+        // delta 列に状態キーが未設定ならジョブ名を既定にする（watermark がジョブ単位で安定する）
+        foreach (var step in Steps)
+        {
+            if (!string.IsNullOrWhiteSpace(step.DeltaColumn) && string.IsNullOrWhiteSpace(step.DeltaStateKey))
+            {
+                step.DeltaStateKey = name;
+            }
+        }
+
+        EtlJobStore.Save(_paths, BuildJobDefinition(name), _log);
+        RefreshSavedJobs();
+        SelectedSavedJob = name;
+        StatusMessage = UiText.T("Etl_JobSavedFmt", name);
+    }
+
+    [RelayCommand]
+    private void LoadJob()
+    {
+        var name = string.IsNullOrWhiteSpace(SelectedSavedJob) ? JobName.Trim() : SelectedSavedJob!.Trim();
+        if (name.Length == 0)
+        {
+            _dialogs.Warning(UiText.T("Etl_JobName"), Title);
+            return;
+        }
+
+        try
+        {
+            if (!File.Exists(EtlJobStore.FilePath(_paths, name)))
+            {
+                _dialogs.Warning(UiText.T("Common_FailedFmt", name), Title);
+                return;
+            }
+
+            ApplyJobDefinition(EtlJobStore.Load(_paths, name, _log));
+            JobName = name;
+            StatusMessage = UiText.T("Etl_JobLoadedFmt", name);
+        }
+        catch (Exception ex)
+        {
+            _dialogs.Warning(UiText.T("Common_FailedFmt", ex.Message), Title);
+        }
+    }
+
+    [RelayCommand]
+    private void DeleteJob()
+    {
+        var name = string.IsNullOrWhiteSpace(SelectedSavedJob) ? JobName.Trim() : SelectedSavedJob!.Trim();
+        if (name.Length == 0)
+        {
+            return;
+        }
+
+        if (!_dialogs.Confirm(UiText.T("Etl_JobDeleteConfirmFmt", name), Title))
+        {
+            return;
+        }
+
+        if (EtlJobStore.Delete(_paths, name))
+        {
+            RefreshSavedJobs();
+            SelectedSavedJob = null;
+            StatusMessage = UiText.T("Etl_JobDeletedFmt", name);
+            _log.Info($"ETL ジョブ削除: {name}");
+        }
+    }
+
+    private EtlJobDefinition BuildJobDefinition(string name)
+    {
+        var job = new EtlJobDefinition
+        {
+            Name = name,
+            ErrorRateText = ErrorRateText,
+            BatchSize = BatchSize,
+            RunBackupBefore = RunBackupBefore,
+        };
+
+        foreach (var step in Steps)
+        {
+            job.Steps.Add(new EtlStepDefinition
+            {
+                StepId = step.StepId,
+                SelectedSourceType = step.SelectedSourceType,
+                SourcePath = step.SourcePath,
+                SourceHasHeader = step.SourceHasHeader,
+                ExcelSheet = step.ExcelSheet,
+                XmlRowElement = step.XmlRowElement,
+                SourceDbProvider = step.SourceDbProvider,
+                SourceDbConnectionString = step.SourceDbConnectionString,
+                SourceDbQuery = step.SourceDbQuery,
+                SourceRestUrl = step.SourceRestUrl,
+                SourceRestAuth = step.SourceRestAuth,
+                SourceRestToken = step.SourceRestToken,
+                SourceRestUser = step.SourceRestUser,
+                SourceRestPassword = step.SourceRestPassword,
+                SourceRestHeaders = step.SourceRestHeaders,
+                SourceRestPaging = step.SourceRestPaging,
+                SourceSoql = step.SourceSoql,
+                SourceUseBulk = step.SourceUseBulk,
+                DeltaColumn = step.DeltaColumn,
+                DeltaStateKey = step.DeltaStateKey,
+                SelectedTargetType = step.SelectedTargetType,
+                ObjectApiName = step.ObjectApiName,
+                SelectedOp = step.SelectedOp,
+                MatchKeyField = step.MatchKeyField,
+                OutputPath = step.OutputPath,
+                CrosswalkKeyField = step.CrosswalkKeyField,
+                TargetDbProvider = step.TargetDbProvider,
+                TargetDbConnectionString = step.TargetDbConnectionString,
+                TargetDbTable = step.TargetDbTable,
+                TargetDbKeyField = step.TargetDbKeyField,
+                Mappings = step.Mappings.Select(m => new EtlMappingDefinition
+                {
+                    SourceColumn = m.SourceColumn,
+                    TargetField = m.TargetField,
+                    Expression = m.Expression,
+                    Type = m.Type,
+                }).ToList(),
+            });
+        }
+
+        return job;
+    }
+
+    private void ApplyJobDefinition(EtlJobDefinition job)
+    {
+        Steps.Clear();
+        var index = 0;
+        foreach (var def in job.Steps)
+        {
+            index++;
+            var step = CreateStepViewModel(string.IsNullOrWhiteSpace(def.StepId) ? "step" + index : def.StepId);
+            step.SelectedSourceType = def.SelectedSourceType;
+            step.SourcePath = def.SourcePath;
+            step.SourceHasHeader = def.SourceHasHeader;
+            step.ExcelSheet = def.ExcelSheet;
+            step.XmlRowElement = def.XmlRowElement;
+            step.SourceDbProvider = def.SourceDbProvider;
+            step.SourceDbConnectionString = def.SourceDbConnectionString;
+            step.SourceDbQuery = def.SourceDbQuery;
+            step.SourceRestUrl = def.SourceRestUrl;
+            step.SourceRestAuth = def.SourceRestAuth;
+            step.SourceRestToken = def.SourceRestToken;
+            step.SourceRestUser = def.SourceRestUser;
+            step.SourceRestPassword = def.SourceRestPassword;
+            step.SourceRestHeaders = def.SourceRestHeaders;
+            step.SourceRestPaging = def.SourceRestPaging;
+            step.SourceSoql = def.SourceSoql;
+            step.SourceUseBulk = def.SourceUseBulk;
+            step.DeltaColumn = def.DeltaColumn;
+            step.DeltaStateKey = def.DeltaStateKey;
+            step.SelectedTargetType = def.SelectedTargetType;
+            step.ObjectApiName = def.ObjectApiName;
+            step.SelectedOp = def.SelectedOp;
+            step.MatchKeyField = def.MatchKeyField;
+            step.OutputPath = def.OutputPath;
+            step.CrosswalkKeyField = def.CrosswalkKeyField;
+            step.TargetDbProvider = def.TargetDbProvider;
+            step.TargetDbConnectionString = def.TargetDbConnectionString;
+            step.TargetDbTable = def.TargetDbTable;
+            step.TargetDbKeyField = def.TargetDbKeyField;
+            foreach (var mapping in def.Mappings)
+            {
+                step.Mappings.Add(new EtlMappingRow(mapping.SourceColumn)
+                {
+                    TargetField = string.IsNullOrEmpty(mapping.TargetField) ? mapping.SourceColumn : mapping.TargetField,
+                    Expression = mapping.Expression,
+                    Type = mapping.Type,
+                });
+            }
+
+            Steps.Add(step);
+        }
+
+        if (Steps.Count == 0)
+        {
+            AddStep();
+        }
+        else
+        {
+            SelectedStep = Steps[0];
+        }
+
+        ErrorRateText = job.ErrorRateText;
+        BatchSize = job.BatchSize;
+        RunBackupBefore = job.RunBackupBefore;
     }
 
     // ---- 復元マネージャー ----

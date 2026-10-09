@@ -23,6 +23,23 @@
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
                     <StackPanel>
 
+                        <TextBlock Text="{loc:Tr Etl_Jobs}" FontWeight="SemiBold" Margin="0,0,0,4" />
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                            <TextBlock Text="{loc:Tr Etl_JobName}" VerticalAlignment="Center" />
+                            <TextBox x:Name="EtlJobNameBox" Width="180" Margin="4,0,0,0" VerticalContentAlignment="Center"
+                                     Text="{Binding JobName, Mode=TwoWay}"
+                                     AutomationProperties.Name="{loc:Tr Etl_JobName}" />
+                            <Button x:Name="EtlSaveJobButton" Content="{loc:Tr Etl_SaveJob}" Padding="10,2" Margin="8,0,0,0"
+                                    Command="{Binding SaveJobCommand}" AutomationProperties.Name="{loc:Tr Etl_SaveJob}" />
+                            <ComboBox x:Name="EtlSavedJobsBox" Width="180" Margin="16,0,0,0"
+                                      ItemsSource="{Binding SavedJobs}"
+                                      SelectedItem="{Binding SelectedSavedJob, Mode=TwoWay}" />
+                            <Button x:Name="EtlLoadJobButton" Content="{loc:Tr Etl_LoadJob}" Padding="10,2" Margin="8,0,0,0"
+                                    Command="{Binding LoadJobCommand}" AutomationProperties.Name="{loc:Tr Etl_LoadJob}" />
+                            <Button x:Name="EtlDeleteJobButton" Content="{loc:Tr Etl_DeleteJob}" Padding="10,2" Margin="8,0,0,0"
+                                    Command="{Binding DeleteJobCommand}" AutomationProperties.Name="{loc:Tr Etl_DeleteJob}" />
+                        </StackPanel>
+
                         <TextBlock Text="{loc:Tr Etl_StepsGroup}" FontWeight="SemiBold" Margin="0,0,0,4" />
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
                             <Button x:Name="EtlAddStepButton" Content="{loc:Tr Etl_AddStep}" Padding="10,2"
