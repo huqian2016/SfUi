@@ -146,6 +146,7 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
     private readonly IUiDispatcher _dispatcher;
     private readonly SalesforceRestClient _rest;
     private readonly SfCliRunner _sfCli;
+    private readonly ICredentialProtector _protector;
     private readonly BackupService _backup;
     private CancellationTokenSource? _cts;
     private RunStagingStore? _store;
@@ -158,6 +159,7 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
         IUiDispatcher dispatcher,
         SalesforceRestClient rest,
         SfCliRunner sfCli,
+        ICredentialProtector protector,
         BackupService backup)
     {
         _log = log;
@@ -167,6 +169,7 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
         _dispatcher = dispatcher;
         _rest = rest;
         _sfCli = sfCli;
+        _protector = protector;
         _backup = backup;
     }
 
@@ -1078,7 +1081,9 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
             }
 
             var items = JsonSerializer.Deserialize<List<EtlConnection>>(File.ReadAllText(ConnectionsFile));
-            foreach (var item in items ?? new List<EtlConnection>())
+            var list = items ?? new List<EtlConnection>();
+            EtlConnectionSecrets.UnprotectInPlace(list, _protector);   // 保存時に保護された値を平文へ戻す
+            foreach (var item in list)
             {
                 Connections.Add(item);
             }
@@ -1099,8 +1104,18 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
                 Directory.CreateDirectory(directory);
             }
 
-            var json = JsonSerializer.Serialize(Connections.ToList(), new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(ConnectionsFile, json, new UTF8Encoding(false));
+            // 秘密情報はファイルへ書く間だけ保護する（UI 上は平文のまま）
+            var list = Connections.ToList();
+            EtlConnectionSecrets.ProtectInPlace(list, _protector);
+            try
+            {
+                var json = JsonSerializer.Serialize(list, new JsonSerializerOptions { WriteIndented = true });
+                File.WriteAllText(ConnectionsFile, json, new UTF8Encoding(false));
+            }
+            finally
+            {
+                EtlConnectionSecrets.UnprotectInPlace(list, _protector);
+            }
         }
         catch (Exception ex)
         {

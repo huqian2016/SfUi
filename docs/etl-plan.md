@@ -1,6 +1,6 @@
 # SfUi ETL 機能 設計書
 
-最終更新: 2026-10-09 / ステータス: **P2 完了 + P3 着手（ジョブ保存/読込完了）— 全コネクタ（CSV・TSV・Excel・JSON・XML・DB・REST・Salesforce SOQL / Bulk、出力 Salesforce・CSV・DB）+ delta モード + ジョブ保存/読込（data/etl/jobs/&lt;name&gt;.json、保存・読込・削除、delta 状態キー連動）+ 安全 5 機能 / ETL ウィンドウ（両アプリ・4 領域）。検証: 706 テスト + `--smoke-etl`（実組織 + オフライン）+ UI E2E（CSV→SQLite→CSV、REST→CSV、SOQL→CSV、delta、Bulk→CSV、ジョブ保存→再起動→読込→実行→削除、両アプリ）+ CI グリーン（Windows/macOS）。次の段階（P3）: 資格情報保護（DPAPI）・失敗行再実行・検証ステップ・式関数拡充・非 CSV 入力の実組織スモーク**
+最終更新: 2026-10-09 / ステータス: **P2 完了 + P3 進行（ジョブ保存/読込・資格情報保護完了）— 全コネクタ（CSV・TSV・Excel・JSON・XML・DB・REST・Salesforce SOQL / Bulk、出力 Salesforce・CSV・DB）+ delta モード + ジョブ保存/読込 + **資格情報保護（connections.json の秘密値は DPAPI / AES-GCM で保護、ログは秘密値マスキング）** + 安全 5 機能 / ETL ウィンドウ（両アプリ・4 領域）。検証: 722 テスト + `--smoke-etl`（実組織 + オフライン）+ UI E2E（CSV→SQLite→CSV、REST→CSV、SOQL→CSV、delta、Bulk→CSV、ジョブ保存→再起動→読込→実行→削除、資格情報 保存→暗号化→Use 復元、両アプリ）+ CI グリーン（Windows/macOS）。次の段階（P3）: 失敗行再実行・検証ステップ・式関数拡充・非 CSV 入力の実組織スモーク**
 対象: WPF (`SfUi.App`) + Avalonia (`SfUi.Avalonia`) の両方
 
 ---

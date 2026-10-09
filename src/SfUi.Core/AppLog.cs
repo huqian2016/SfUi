@@ -30,6 +30,8 @@ public sealed class AppLog
 
     private void Write(string level, string message)
     {
+        // ログへ秘密情報（password=… / token=… 等）を出さない
+        message = CredentialMask.Mask(message);
         var line = string.Create(CultureInfo.InvariantCulture,
             $"{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture)} [{level}] {message}{Environment.NewLine}");
 

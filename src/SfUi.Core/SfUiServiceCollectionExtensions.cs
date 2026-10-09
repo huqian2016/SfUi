@@ -11,6 +11,7 @@ public static class SfUiServiceCollectionExtensions
     {
         services.AddSingleton(paths);
         services.AddSingleton<AppLog>();
+        services.AddSingleton<ICredentialProtector>(_ => new PlatformCredentialProtector());
         services.AddSingleton(sp => new SfCliRunner(sp.GetRequiredService<AppSettingsStore>().Current.SfExecutablePath));
         services.AddSingleton<OrgService>();
         services.AddSingleton<SalesforceRestClient>();
