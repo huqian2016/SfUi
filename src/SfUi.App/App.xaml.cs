@@ -1901,6 +1901,114 @@ public partial class App : Application
                 }
             }
 
+            // ---- H) 非 CSV 入力（Excel / JSON / XML / DB）→ Salesforce 実組織 ----
+            var inMarkerBase = "SfUiEtlIn" + DateTime.Now.ToString("MMddHHmmss", CultureInfo.InvariantCulture);
+
+            var excelPath = Path.Combine(tmp, "inputs.xlsx");
+            var excelMarker = inMarkerBase + "Xl";
+            ExcelExporter.Write(excelPath, new[]
+            {
+                new ExportSheet
+                {
+                    Name = "Contacts",
+                    Columns = new[] { "LastName", "Email" },
+                    Rows = new IReadOnlyList<string?>[]
+                    {
+                        new[] { excelMarker + "_1", "xl1@example.com" },
+                        new[] { excelMarker + "_2", "xl2@example.com" },
+                    },
+                },
+            });
+
+            var jsonPath = Path.Combine(tmp, "inputs.json");
+            var jsonMarker = inMarkerBase + "Js";
+            File.WriteAllText(
+                jsonPath,
+                "[" +
+                $"{{\"LastName\":\"{jsonMarker}_1\",\"Email\":\"js1@example.com\"}}," +
+                $"{{\"LastName\":\"{jsonMarker}_2\",\"Email\":\"js2@example.com\"}}" +
+                "]",
+                new UTF8Encoding(false));
+
+            var xmlPath = Path.Combine(tmp, "inputs.xml");
+            var xmlMarker = inMarkerBase + "Xm";
+            File.WriteAllText(
+                xmlPath,
+                $"<rows><row><LastName>{xmlMarker}_1</LastName><Email>xm1@example.com</Email></row>" +
+                $"<row><LastName>{xmlMarker}_2</LastName><Email>xm2@example.com</Email></row></rows>",
+                new UTF8Encoding(false));
+
+            var inputsDbPath = Path.Combine(tmp, "inputs.db");
+            if (File.Exists(inputsDbPath))
+            {
+                File.Delete(inputsDbPath);
+            }
+
+            var inputsDbSpec = new DbConnectionSpec(DbProviderKind.Sqlite, "Data Source=" + inputsDbPath);
+            var dbMarker = inMarkerBase + "Db";
+            await using (var connection = inputsDbSpec.CreateConnection())
+            {
+                await connection.OpenAsync();
+                await using var command = connection.CreateCommand();
+                command.CommandText =
+                    "CREATE TABLE src (LastName TEXT, Email TEXT); " +
+                    $"INSERT INTO src (LastName, Email) VALUES ('{dbMarker}_1', 'db1@example.com'), ('{dbMarker}_2', 'db2@example.com');";
+                await command.ExecuteNonQueryAsync();
+            }
+
+            var inputChecks = new (string Name, Func<IEtlSource> Create, string Marker)[]
+            {
+                ("Excel", () => new ExcelFileSource(excelPath, null, true), excelMarker),
+                ("JSON", () => new JsonFileSource(jsonPath), jsonMarker),
+                ("XML", () => new XmlFileSource(xmlPath, "row"), xmlMarker),
+                ("DB", () => new DbTableSource(inputsDbSpec, "SELECT LastName, Email FROM src ORDER BY LastName"), dbMarker),
+            };
+
+            foreach (var (inputName, create, inputMarker) in inputChecks)
+            {
+                var inputDir = Path.Combine(paths.EtlRunsRoot, "run-smoke-input-" + inputName.ToLowerInvariant());
+                using (var store = RunStagingStore.Create(inputDir, "run-smoke-input-" + inputName.ToLowerInvariant()))
+                {
+                    var inputSource = create();
+                    var inputMapper = new RowMapper(
+                        inputSource.Columns,
+                        new[] { new FieldMapping("LastName", "[LastName]"), new FieldMapping("Email", "[Email]") },
+                        new ExpressionEngine());
+                    var inputTarget = new SalesforceTarget(rest, org!, new SalesforceTargetOptions
+                    {
+                        ObjectName = "Contact",
+                        Fields = new[] { "LastName", "Email" },
+                        Op = RowOp.Insert,
+                    }, _log);
+                    var inputPlan = new EtlStepPlan
+                    {
+                        StepId = "step1",
+                        ObjectName = "Contact",
+                        Source = inputSource,
+                        Mapper = inputMapper,
+                        Target = inputTarget,
+                        Revertable = inputTarget,
+                    };
+                    var inputStep = new EtlStepRun(store, inputPlan, applyOptions);
+                    inputStep.Prepare();
+                    var inputApply = await inputStep.ApplyAsync();
+                    var inserted = await CountMarkersAsync(inputMarker + "%");
+                    var inputRollback = await inputStep.RollbackAsync();
+                    var afterRevert = await CountMarkersAsync(inputMarker + "%");
+                    var inputOk = !inputApply.Stopped && inputApply.Success == 2 && inserted == 2
+                        && inputRollback.Reverted == 2 && afterRevert == 0;
+                    _log.Info($"--smoke-etl: [inputs] {inputName} 適用={inputApply.Success}（期待 2）/ 投入後={inserted}（期待 2）/ 巻き戻し={inputRollback.Reverted}（期待 2）/ 残件={afterRevert}（期待 0）");
+                    if (!inputOk)
+                    {
+                        success = false;
+                        _log.Error($"--smoke-etl: [inputs] {inputName} の検証に失敗しました");
+                    }
+                }
+
+                // 保険（巻き戻し失敗時も残さない）
+                await DeleteMarkersAsync(rest, org!, apiVersion, "Contact", "LastName", inputMarker + "%");
+            }
+
             // 後片付け（保険）
             var leftovers = await DeleteMarkersAsync(rest, org!, apiVersion, "Contact", "LastName", marker + "%");
             if (leftovers > 0)

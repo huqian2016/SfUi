@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using System.Text;
+using SfUi.Core;
 using SfUi.Etl.Connections;
 using SfUi.Etl.Sources;
 using Xunit;
@@ -123,6 +124,34 @@ public class EtlSourceTests : IDisposable
         Assert.Equal("花子", rows[1][0]);
         Assert.Equal(28.5d, rows[1][1]);
         Assert.Equal("メモ", rows[1][3]);
+    }
+
+    [Fact]
+    public void Excel_ParsesWorkbookWrittenByExcelExporter()
+    {
+        // スモークの [inputs] と同じ経路: ExcelExporter で生成 → ExcelFileSource で読む
+        var path = TempFile("exported.xlsx");
+        ExcelExporter.Write(path, new[]
+        {
+            new ExportSheet
+            {
+                Name = "Contacts",
+                Columns = new[] { "LastName", "Email" },
+                Rows = new IReadOnlyList<string?>[]
+                {
+                    new[] { "SfUiInXl_1", "xl1@example.com" },
+                    new[] { "SfUiInXl_2", "xl2@example.com" },
+                },
+            },
+        });
+
+        var source = new ExcelFileSource(path);
+
+        Assert.Equal(new[] { "LastName", "Email" }, source.Columns);
+        var rows = source.ReadRows().ToList();
+        Assert.Equal(2, rows.Count);
+        Assert.Equal(new object?[] { "SfUiInXl_1", "xl1@example.com" }, rows[0]);
+        Assert.Equal(new object?[] { "SfUiInXl_2", "xl2@example.com" }, rows[1]);
     }
 
     [Fact]
