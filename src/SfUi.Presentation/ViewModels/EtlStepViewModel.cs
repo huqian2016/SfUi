@@ -50,7 +50,7 @@ public sealed partial class EtlStepViewModel : ObservableObject
     /// <summary>出力オブジェクト名（未入力時は Output）。</summary>
     public string EffectiveObjectName => string.IsNullOrWhiteSpace(ObjectApiName) ? "Output" : ObjectApiName.Trim();
 
-    public IReadOnlyList<string> SourceTypeOptions { get; } = new[] { "CSV", "TSV", "Excel", "JSON", "XML", "Database" };
+    public IReadOnlyList<string> SourceTypeOptions { get; } = new[] { "CSV", "TSV", "Excel", "JSON", "XML", "Database", "REST" };
 
     [ObservableProperty]
     private string _selectedSourceType = "CSV";
@@ -105,6 +105,35 @@ public sealed partial class EtlStepViewModel : ObservableObject
 
     [ObservableProperty]
     private string _sourceDbQuery = string.Empty;
+
+    // ---- 入力（REST 選択時） ----
+
+    /// <summary>REST 認証方式の選択肢（None / Bearer / Basic / Header）。</summary>
+    public IReadOnlyList<string> RestAuthOptions { get; } = new[] { "None", "Bearer", "Basic", "Header" };
+
+    /// <summary>REST ページング方式の選択肢（None / Offset / Link / Cursor）。</summary>
+    public IReadOnlyList<string> RestPagingOptions { get; } = new[] { "None", "Offset", "Link", "Cursor" };
+
+    [ObservableProperty]
+    private string _sourceRestUrl = string.Empty;
+
+    [ObservableProperty]
+    private string _sourceRestAuth = "None";
+
+    [ObservableProperty]
+    private string _sourceRestToken = string.Empty;
+
+    [ObservableProperty]
+    private string _sourceRestUser = string.Empty;
+
+    [ObservableProperty]
+    private string _sourceRestPassword = string.Empty;
+
+    [ObservableProperty]
+    private string _sourceRestHeaders = string.Empty;
+
+    [ObservableProperty]
+    private string _sourceRestPaging = "None";
 
     // ---- 出力（Database 選択時） ----
 
@@ -174,11 +203,23 @@ public sealed partial class EtlStepViewModel : ObservableObject
         "Database" => new DbTableSource(
             new DbConnectionSpec(ParseProvider(SourceDbProvider), SourceDbConnectionString),
             SourceDbQuery),
+        "REST" => new RestSource(new RestSourceOptions
+        {
+            Url = SourceRestUrl.Trim(),
+            AuthKind = SourceRestAuth,
+            BearerToken = NullIfBlank(SourceRestToken),
+            BasicUser = NullIfBlank(SourceRestUser),
+            BasicPassword = NullIfBlank(SourceRestPassword),
+            Headers = NullIfBlank(SourceRestHeaders),
+            Paging = SourceRestPaging,
+        }),
         _ => throw new InvalidOperationException("未対応の入力種別です: " + SelectedSourceType),
     };
 
     private static DbProviderKind ParseProvider(string name)
         => Enum.TryParse<DbProviderKind>(name, ignoreCase: true, out var kind) ? kind : DbProviderKind.Sqlite;
+
+    private static string? NullIfBlank(string value) => string.IsNullOrWhiteSpace(value) ? null : value;
 
     /// <summary>マッピング変換器を生成する（式エンジンは LOOKUP 配線済みの共有インスタンスを渡す）。</summary>
     public RowMapper CreateMapper(ExpressionEngine engine)

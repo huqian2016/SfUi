@@ -108,6 +108,20 @@ public sealed class EtlConnection
 
     public string TargetDbKeyField { get; set; } = string.Empty;
 
+    public string SourceRestUrl { get; set; } = string.Empty;
+
+    public string SourceRestAuth { get; set; } = "None";
+
+    public string SourceRestToken { get; set; } = string.Empty;
+
+    public string SourceRestUser { get; set; } = string.Empty;
+
+    public string SourceRestPassword { get; set; } = string.Empty;
+
+    public string SourceRestHeaders { get; set; } = string.Empty;
+
+    public string SourceRestPaging { get; set; } = "None";
+
     public override string ToString() => Name;
 }
 
@@ -316,6 +330,13 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
             {
                 SelectedStep = step;
                 _dialogs.Warning(UiText.T("Etl_Load"), UiText.T("Etl_Title"));
+                return;
+            }
+
+            if (step.SelectedSourceType == "REST" && string.IsNullOrWhiteSpace(step.SourceRestUrl))
+            {
+                SelectedStep = step;
+                _dialogs.Warning(UiText.T("Etl_RestSettings"), UiText.T("Etl_Title"));
                 return;
             }
 
@@ -671,6 +692,13 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
             TargetDbConnectionString = step.TargetDbConnectionString,
             TargetDbTable = step.TargetDbTable,
             TargetDbKeyField = step.TargetDbKeyField,
+            SourceRestUrl = step.SourceRestUrl,
+            SourceRestAuth = step.SourceRestAuth,
+            SourceRestToken = step.SourceRestToken,
+            SourceRestUser = step.SourceRestUser,
+            SourceRestPassword = step.SourceRestPassword,
+            SourceRestHeaders = step.SourceRestHeaders,
+            SourceRestPaging = step.SourceRestPaging,
         });
         SaveConnectionsFile();
     }
@@ -698,6 +726,13 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
         step.TargetDbConnectionString = SelectedConnection.TargetDbConnectionString;
         step.TargetDbTable = SelectedConnection.TargetDbTable;
         step.TargetDbKeyField = SelectedConnection.TargetDbKeyField;
+        step.SourceRestUrl = SelectedConnection.SourceRestUrl;
+        step.SourceRestAuth = SelectedConnection.SourceRestAuth;
+        step.SourceRestToken = SelectedConnection.SourceRestToken;
+        step.SourceRestUser = SelectedConnection.SourceRestUser;
+        step.SourceRestPassword = SelectedConnection.SourceRestPassword;
+        step.SourceRestHeaders = SelectedConnection.SourceRestHeaders;
+        step.SourceRestPaging = SelectedConnection.SourceRestPaging;
     }
 
     [RelayCommand]

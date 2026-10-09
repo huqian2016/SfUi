@@ -85,6 +85,37 @@
                                              Text="{Binding SelectedStep.SourceDbQuery, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                              AutomationProperties.Name="{loc:Tr Etl_DbQuery}" />
                                 </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                    <TextBlock Text="{loc:Tr Etl_RestUrl}" VerticalAlignment="Center" />
+                                    <TextBox x:Name="EtlSourceRestUrlBox" Width="480" Margin="4,0,0,0" VerticalContentAlignment="Center"
+                                             Text="{Binding SelectedStep.SourceRestUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             AutomationProperties.Name="{loc:Tr Etl_RestUrl}" />
+                                    <TextBlock Text="{loc:Tr Etl_RestPaging}" Margin="8,0,4,0" VerticalAlignment="Center" />
+                                    <ComboBox x:Name="EtlSourceRestPagingBox" Width="90"
+                                              ItemsSource="{Binding SelectedStep.RestPagingOptions}"
+                                              SelectedItem="{Binding SelectedStep.SourceRestPaging, Mode=TwoWay}" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                    <TextBlock Text="{loc:Tr Etl_RestAuth}" VerticalAlignment="Center" />
+                                    <ComboBox x:Name="EtlSourceRestAuthBox" Width="90" Margin="4,0,0,0"
+                                              ItemsSource="{Binding SelectedStep.RestAuthOptions}"
+                                              SelectedItem="{Binding SelectedStep.SourceRestAuth, Mode=TwoWay}" />
+                                    <TextBlock Text="{loc:Tr Etl_RestToken}" Margin="8,0,4,0" VerticalAlignment="Center" />
+                                    <TextBox x:Name="EtlSourceRestTokenBox" Width="200" VerticalContentAlignment="Center"
+                                             Text="{Binding SelectedStep.SourceRestToken, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <TextBlock Text="{loc:Tr Etl_RestUser}" Margin="8,0,4,0" VerticalAlignment="Center" />
+                                    <TextBox x:Name="EtlSourceRestUserBox" Width="110" VerticalContentAlignment="Center"
+                                             Text="{Binding SelectedStep.SourceRestUser, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <TextBlock Text="{loc:Tr Etl_RestPassword}" Margin="8,0,4,0" VerticalAlignment="Center" />
+                                    <TextBox x:Name="EtlSourceRestPasswordBox" Width="110" VerticalContentAlignment="Center"
+                                             Text="{Binding SelectedStep.SourceRestPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                    <TextBlock Text="{loc:Tr Etl_RestHeaders}" VerticalAlignment="Center" />
+                                    <TextBox x:Name="EtlSourceRestHeadersBox" Width="560" Margin="4,0,0,0" VerticalContentAlignment="Center"
+                                             Text="{Binding SelectedStep.SourceRestHeaders, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             AutomationProperties.Name="{loc:Tr Etl_RestHeaders}" />
+                                </StackPanel>
                             </StackPanel>
                         </GroupBox>
 
