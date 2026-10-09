@@ -12,6 +12,7 @@ using SfUi.App.ViewModels;
 using SfUi.App.Views;
 using SfUi.Core;
 using SfUi.Etl.Connections;
+using SfUi.Etl.Database;
 using SfUi.Etl.Engine;
 using SfUi.Etl.Expressions;
 using SfUi.Etl.Sources;
@@ -1183,6 +1184,82 @@ public partial class App : Application
                 {
                     success = false;
                     _log.Error("--smoke-etl: [offline] 適用の検証に失敗しました");
+                }
+            }
+
+            // ---- オフライン 2: CSV → SQLite（DB ターゲット + 巻き戻し）----
+            var sqlitePath = Path.Combine(tmp, "etl-smoke.db");
+            if (File.Exists(sqlitePath))
+            {
+                File.Delete(sqlitePath);
+            }
+
+            var sqliteSpec = new DbConnectionSpec(DbProviderKind.Sqlite, "Data Source=" + sqlitePath);
+            await using (var connection = sqliteSpec.CreateConnection())
+            {
+                await connection.OpenAsync();
+                await using var command = connection.CreateCommand();
+                command.CommandText = "CREATE TABLE contacts (Name TEXT NOT NULL, Age INTEGER);";
+                await command.ExecuteNonQueryAsync();
+            }
+
+            var sqliteRunDir = Path.Combine(paths.EtlRunsRoot, "run-smoke-sqlite");
+            using (var store = RunStagingStore.Create(sqliteRunDir, "run-smoke-sqlite"))
+            {
+                async Task<long> CountSqliteAsync()
+                {
+                    await using var connection = sqliteSpec.CreateConnection();
+                    await connection.OpenAsync();
+                    await using var command = connection.CreateCommand();
+                    command.CommandText = "SELECT COUNT(*) FROM contacts";
+                    return Convert.ToInt64(await command.ExecuteScalarAsync(), CultureInfo.InvariantCulture);
+                }
+
+                var source = new CsvFileSource(csvIn);
+                var mapper = new RowMapper(
+                    source.Columns,
+                    new[]
+                    {
+                        new FieldMapping("Name", "[Name]"),
+                        new FieldMapping("Age", "[Id]", StagingColumnType.Integer),
+                    },
+                    new ExpressionEngine());
+                var dbTarget = new DbTableTarget(sqliteSpec, new DbTableTargetOptions
+                {
+                    Table = "contacts",
+                    Fields = new[] { "Name", "Age" },
+                    Op = RowOp.Insert,
+                    KeyField = "Name",
+                });
+                var plan = new EtlStepPlan
+                {
+                    StepId = "step1",
+                    ObjectName = "contacts",
+                    Source = source,
+                    Mapper = mapper,
+                    Target = dbTarget,
+                    Revertable = dbTarget,
+                };
+
+                var step = new EtlStepRun(store, plan);
+                var sqliteResult = await step.RunAsync();
+                var sqliteCount = await CountSqliteAsync();
+                var sqliteOk = sqliteResult.Apply!.Success == 3 && !sqliteResult.Apply.Stopped && sqliteCount == 3;
+                _log.Info($"--smoke-etl: [sqlite] 適用 success={sqliteResult.Apply.Success} / 行数={sqliteCount}（期待 3）");
+                if (!sqliteOk)
+                {
+                    success = false;
+                    _log.Error("--smoke-etl: [sqlite] 適用の検証に失敗しました");
+                }
+
+                var sqliteRollback = await step.RollbackAsync();
+                var afterRevert = await CountSqliteAsync();
+                var sqliteRevertOk = sqliteRollback.Reverted == 3 && afterRevert == 0;
+                _log.Info($"--smoke-etl: [sqlite] 巻き戻し reverted={sqliteRollback.Reverted} / 行数={afterRevert}（期待 0）");
+                if (!sqliteRevertOk)
+                {
+                    success = false;
+                    _log.Error("--smoke-etl: [sqlite] 巻き戻しの検証に失敗しました");
                 }
             }
 

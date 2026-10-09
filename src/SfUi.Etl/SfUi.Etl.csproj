@@ -13,5 +13,8 @@
     <PackageReference Include="DynamicExpresso.Core" Version="2.19.6" />
     <PackageReference Include="System.Text.Encoding.CodePages" Version="9.0.20" />
     <PackageReference Include="ExcelDataReader" Version="3.9.0" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.3" />
+    <PackageReference Include="Npgsql" Version="8.0.9" />
+    <PackageReference Include="System.Data.Odbc" Version="9.0.20" />
   </ItemGroup>
 </Project>
