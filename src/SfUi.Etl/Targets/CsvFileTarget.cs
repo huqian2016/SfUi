@@ -58,6 +58,9 @@ public sealed class CsvFileTarget : IEtlTarget
 
         using (var writer = new StreamWriter(_path, append: true, new UTF8Encoding(false)))
         {
+            // RFC 4180: CSV の改行は CRLF（OS に依存しない決定論的な出力にする）
+            writer.NewLine = "\r\n";
+
             if (writeHeader)
             {
                 writer.WriteLine(string.Join(_delimiter, _fields.Select(Escape)));
