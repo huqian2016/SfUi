@@ -1788,6 +1788,58 @@ public partial class App : Application
                 }
             }
 
+            // ---- G) SOQL delta push-down: 差分条件を SOQL へ押し込み、変更分のみ取得 ----
+            {
+                var dpMarker = "SfUiEtlDp" + DateTime.Now.ToString("MMddHHmmss", CultureInfo.InvariantCulture);
+                await CreateSmokeRecordAsync(rest, org!, apiVersion, "Contact", new Dictionary<string, object?>
+                {
+                    ["LastName"] = dpMarker + "_A",
+                });
+
+                var dpSoql = $"SELECT Id, LastName, LastModifiedDate FROM Contact WHERE LastName LIKE '{dpMarker}%' ORDER BY LastName";
+                var dpStatePath = Path.Combine(tmp, "dp-state.json");
+                if (File.Exists(dpStatePath))
+                {
+                    File.Delete(dpStatePath);
+                }
+
+                try
+                {
+                    // 1) 初回: watermark なし → プッシュダウンなし（全件）
+                    var wm0 = DeltaState.GetWatermark(dpStatePath, "step1");
+                    var noPush = !SoqlDeltaPushDown.TryBuild(dpSoql, "LastModifiedDate", wm0, out _);
+                    var first = new DeltaSource(new SalesforceSource(rest, org!, dpSoql), "LastModifiedDate", wm0);
+                    if (first.MaxValue is { } max1)
+                    {
+                        DeltaState.SetWatermark(dpStatePath, "step1", max1);
+                    }
+
+                    // 2) 1 件追加 → 2 回目は押し込みで変更分だけ取得できる
+                    await CreateSmokeRecordAsync(rest, org!, apiVersion, "Contact", new Dictionary<string, object?>
+                    {
+                        ["LastName"] = dpMarker + "_B",
+                    });
+                    var wm1 = DeltaState.GetWatermark(dpStatePath, "step1");
+                    var pushed = SoqlDeltaPushDown.TryBuild(dpSoql, "LastModifiedDate", wm1, out var pushedSoql);
+                    var second = new DeltaSource(new SalesforceSource(rest, org!, pushedSoql), "LastModifiedDate", wm1);
+                    var dpOk = noPush && first.Count == 1 && pushed && second.Count == 1
+                        && pushedSoql.Contains("(LastName LIKE", StringComparison.Ordinal)
+                        && pushedSoql.Contains("LastModifiedDate >", StringComparison.Ordinal)
+                        && pushedSoql.EndsWith("ORDER BY LastName", StringComparison.OrdinalIgnoreCase);
+                    _log.Info($"--smoke-etl: [soql-delta] 初回={first.Count}（期待 1）/ 押し込み={pushed}（期待 True）/ 差分={second.Count}（期待 1）");
+                    if (!dpOk)
+                    {
+                        success = false;
+                        _log.Error("--smoke-etl: [soql-delta] 検証に失敗しました");
+                    }
+                }
+                finally
+                {
+                    var dpCleaned = await DeleteMarkersAsync(rest, org!, apiVersion, "Contact", "LastName", dpMarker + "%");
+                    _log.Info($"--smoke-etl: [soql-delta] クリーンアップ {dpCleaned} 件（期待 2）");
+                }
+            }
+
             // 後片付け（保険）
             var leftovers = await DeleteMarkersAsync(rest, org!, apiVersion, "Contact", "LastName", marker + "%");
             if (leftovers > 0)

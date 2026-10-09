@@ -708,16 +708,33 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
             foreach (var step in Steps)
             {
                 var (target, revertable) = step.CreateTarget(_rest, TargetOrg, _log);
-                var source = step.CreateSource();
+                IEtlSource source;
                 if (!string.IsNullOrWhiteSpace(step.DeltaColumn))
                 {
                     // delta（差分）: 前回 watermark より新しい行のみを読み込む
                     var statePath = DeltaState.FilePath(_paths.EtlJobsRoot, step.DeltaStateKey.Trim());
                     var watermark = DeltaState.GetWatermark(statePath, step.StepId, _log);
-                    var delta = new DeltaSource(source, step.DeltaColumn, watermark);
-                    deltaStates[step.StepId] = (delta, statePath);
                     AppendLog(UiText.T("Etl_DeltaStartFmt", step.StepId, watermark?.ToString("u") ?? "-"));
+
+                    // SOQL は差分条件をクエリ本体へプッシュダウンする（全件取得を避ける。watermark なしの初回は全件）
+                    string? pushedSoql = null;
+                    if (step.SelectedSourceType == "Salesforce"
+                        && SoqlDeltaPushDown.TryBuild(step.SourceSoql, step.DeltaColumn, watermark, out var filtered))
+                    {
+                        pushedSoql = filtered;
+                        AppendLog(UiText.T(
+                            "Etl_DeltaPushDownFmt",
+                            step.DeltaColumn.Trim(),
+                            SoqlDeltaPushDown.FormatLiteral(watermark!.Value)));
+                    }
+
+                    var delta = new DeltaSource(step.CreateSource(pushedSoql), step.DeltaColumn, watermark);
+                    deltaStates[step.StepId] = (delta, statePath);
                     source = delta;
+                }
+                else
+                {
+                    source = step.CreateSource();
                 }
 
                 plans.Add(new EtlStepPlan

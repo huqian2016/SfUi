@@ -1414,6 +1414,7 @@ public static partial class UiText
         ["Etl_DeltaKey"] = "差分状態キー",
         ["Etl_DeltaSettings"] = "差分状態キーを入力してください（または差分列を空にしてください）。",
         ["Etl_DeltaStartFmt"] = "差分 {0}: watermark {1}",
+        ["Etl_DeltaPushDownFmt"] = "差分プッシュダウン: {0} > {1}",
         ["Etl_DeltaSavedFmt"] = "差分保存 {0}: watermark {1}",
         ["Etl_UseBulk"] = "Bulk API 2.0 を使用（大量件数向け）",
         ["Etl_JobName"] = "ジョブ名",

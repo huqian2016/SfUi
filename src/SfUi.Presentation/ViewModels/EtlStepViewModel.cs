@@ -220,8 +220,8 @@ public sealed partial class EtlStepViewModel : ObservableObject
         }
     }
 
-    /// <summary>入力ソースを生成する。</summary>
-    public IEtlSource CreateSource() => SelectedSourceType switch
+    /// <summary>入力ソースを生成する（Salesforce は soqlOverride でクエリを差し替え可能 = delta プッシュダウン用）。</summary>
+    public IEtlSource CreateSource(string? soqlOverride = null) => SelectedSourceType switch
     {
         "CSV" => new CsvFileSource(SourcePath, new CsvStreamOptions { HasHeader = SourceHasHeader }),
         "TSV" => new CsvFileSource(SourcePath, new CsvStreamOptions { Delimiter = '\t', HasHeader = SourceHasHeader }),
@@ -242,8 +242,8 @@ public sealed partial class EtlStepViewModel : ObservableObject
             Paging = SourceRestPaging,
         }),
         "Salesforce" => SourceUseBulk
-            ? new SalesforceBulkSource(_sfCli, _targetOrg(), SourceSoql, Path.Combine(_paths.TempDirectory, "etl-bulk"))
-            : new SalesforceSource(_rest, _targetOrg(), SourceSoql),
+            ? new SalesforceBulkSource(_sfCli, _targetOrg(), soqlOverride ?? SourceSoql, Path.Combine(_paths.TempDirectory, "etl-bulk"))
+            : new SalesforceSource(_rest, _targetOrg(), soqlOverride ?? SourceSoql),
         _ => throw new InvalidOperationException("未対応の入力種別です: " + SelectedSourceType),
     };
 

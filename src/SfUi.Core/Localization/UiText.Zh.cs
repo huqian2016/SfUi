@@ -1415,6 +1415,7 @@ public static partial class UiText
         ["Etl_DeltaKey"] = "增量状态键",
         ["Etl_DeltaSettings"] = "请输入增量状态键（或清空增量列）。",
         ["Etl_DeltaStartFmt"] = "增量 {0}: watermark {1}",
+        ["Etl_DeltaPushDownFmt"] = "增量下推: {0} > {1}",
         ["Etl_DeltaSavedFmt"] = "增量已保存 {0}: watermark {1}",
         ["Etl_UseBulk"] = "使用 Bulk API 2.0（大量数据）",
         ["Etl_JobName"] = "作业名称",
