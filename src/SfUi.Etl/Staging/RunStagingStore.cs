@@ -29,6 +29,9 @@ public sealed class RunStagingStore : IDisposable
     /// <summary>実行 Id。</summary>
     public string RunId { get; }
 
+    /// <summary>run ディレクトリ（src.sqlite / dst.sqlite / レポートの保存先）。</summary>
+    public string RunDirectory { get; }
+
     /// <summary>src.sqlite（移行元 DB）のパス。</summary>
     public string SourceDbPath { get; }
 
@@ -38,6 +41,7 @@ public sealed class RunStagingStore : IDisposable
     private RunStagingStore(string runDirectory, string runId)
     {
         RunId = runId;
+        RunDirectory = runDirectory;
         SourceDbPath = Path.Combine(runDirectory, "src.sqlite");
         TargetDbPath = Path.Combine(runDirectory, "dst.sqlite");
 

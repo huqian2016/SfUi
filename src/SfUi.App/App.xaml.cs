@@ -19,6 +19,7 @@ using SfUi.Etl.Sources;
 using SfUi.Etl.Staging;
 using SfUi.Etl.Targets;
 using SfUi.Etl.Transforms;
+using SfUi.Etl.Verification;
 using SfUi.Presentation;
 
 namespace SfUi.App;
@@ -1382,6 +1383,48 @@ public partial class App : Application
                     success = false;
                     _log.Error("--smoke-etl: [retry] 再実行の検証に失敗しました");
                 }
+
+                // ---- オフライン 5: verify（移行後の自動検証 = 件数・サンプル値。ステージング済みキューと DB を照合）----
+                var verifier = new EtlVerifier(store, retryTarget, "step1", "items", retryMapper.StagingColumns);
+                var verifyPass = await verifier.VerifyAsync(CancellationToken.None);
+                var verifyPassOk = verifyPass.Passed && verifyPass.OkRows == 3 && verifyPass.FetchedRows == 3
+                    && verifyPass.SampledRows == 3 && verifyPass.Mismatches.Count == 0;
+                _log.Info($"--smoke-etl: [verify] 件数={verifyPass.OkRows}（期待 3）/ 取得={verifyPass.FetchedRows}（期待 3）/ サンプル={verifyPass.SampledRows}（期待 3）/ 合格={verifyPass.Passed}（期待 True）");
+                if (!verifyPassOk)
+                {
+                    success = false;
+                    _log.Error("--smoke-etl: [verify] 合格の検証に失敗しました");
+                }
+
+                // 1 行改ざん → 不一致を検知する（検証が機能することの確認）
+                await using (var connection = retrySpec.CreateConnection())
+                {
+                    await connection.OpenAsync();
+                    await using var command = connection.CreateCommand();
+                    command.CommandText = "UPDATE items SET Note = 'tampered' WHERE Name = 'Beta';";
+                    await command.ExecuteNonQueryAsync();
+                }
+
+                var verifyTampered = await verifier.VerifyAsync(CancellationToken.None);
+                var tamperOk = !verifyTampered.Passed && verifyTampered.Mismatches.Count == 1
+                    && verifyTampered.Mismatches[0].Field == "Note";
+                var mismatchField = verifyTampered.Mismatches.Count > 0 ? verifyTampered.Mismatches[0].Field : "-";
+                _log.Info($"--smoke-etl: [verify] 改ざん検知 不一致={verifyTampered.Mismatches.Count}（期待 1）/ 項目={mismatchField}（期待 Note）");
+                if (!tamperOk)
+                {
+                    success = false;
+                    _log.Error("--smoke-etl: [verify] 改ざん検知の検証に失敗しました");
+                }
+
+                // 検証レポート（監査証跡）の保存
+                var reportPath = Path.Combine(store.RunDirectory, "verification.json");
+                new EtlVerificationReport
+                {
+                    RunId = store.RunId,
+                    VerifiedAt = DateTime.Now.ToString("u"),
+                    Steps = new List<EtlVerificationResult> { verifyTampered },
+                }.Save(reportPath);
+                _log.Info($"--smoke-etl: [verify] レポート={reportPath}（存在={File.Exists(reportPath)}）");
             }
 
             if (string.IsNullOrWhiteSpace(org))
@@ -1517,6 +1560,18 @@ public partial class App : Application
                 {
                     success = false;
                     _log.Error("--smoke-etl: [org] 適用の検証に失敗しました");
+                }
+
+                // 移行後の自動検証（実レコードを SOQL で取得して件数・サンプル値を照合）
+                var verifier = new EtlVerifier(store, target, "step1", "Contact", mapper.StagingColumns);
+                var verifyResult = await verifier.VerifyAsync(CancellationToken.None);
+                var verifyOk = verifyResult.Passed && verifyResult.OkRows == 3 && verifyResult.FetchedRows == 3
+                    && verifyResult.MissingKeys.Count == 0 && verifyResult.Mismatches.Count == 0;
+                _log.Info($"--smoke-etl: [verify-org] 合格={verifyResult.Passed} / OK={verifyResult.OkRows} / 取得={verifyResult.FetchedRows} / 欠落={verifyResult.MissingKeys.Count} / サンプル={verifyResult.SampledRows} / 不一致={verifyResult.Mismatches.Count}");
+                if (!verifyOk)
+                {
+                    success = false;
+                    _log.Error("--smoke-etl: [verify-org] 組織検証に失敗しました");
                 }
 
                 var rollback = await step.RollbackAsync();

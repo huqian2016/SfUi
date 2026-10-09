@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Text.Json;
 using SfUi.Etl.Engine;
 using SfUi.Etl.Staging;
+using SfUi.Etl.Verification;
 
 namespace SfUi.Etl.Database;
 
@@ -34,7 +35,7 @@ public sealed class DbTableTargetOptions
 /// <item>巻き戻し: insert → DELETE / update → before-image を UPDATE / delete → before-image を再 INSERT</item>
 /// </list>
 /// </summary>
-public sealed class DbTableTarget : IEtlTarget, IEtlRevertable
+public sealed class DbTableTarget : IEtlTarget, IEtlRevertable, IEtlRecordFetcher
 {
     private readonly DbConnectionSpec _spec;
     private readonly DbTableTargetOptions _options;
@@ -91,6 +92,71 @@ public sealed class DbTableTarget : IEtlTarget, IEtlRevertable
         {
             return false;
         }
+    }
+
+    /// <summary>キー列の値でレコードを取得する（検証用。見つからないキーは結果に含めない）。</summary>
+    public async Task<IReadOnlyList<EtlFetchedRecord>> FetchByKeysAsync(
+        IReadOnlyCollection<string> keys,
+        IReadOnlyList<string> fields,
+        CancellationToken cancellationToken)
+    {
+        if (_options.KeyField is null || _keyIndex < 0)
+        {
+            throw new NotSupportedException("DB ターゲットの検証にはキー列（KeyField）が必要です。");
+        }
+
+        var result = new List<EtlFetchedRecord>();
+        if (keys.Count == 0)
+        {
+            return result;
+        }
+
+        var selectFields = fields
+            .Where(f => !string.IsNullOrWhiteSpace(f))
+            .Select(f => f.Trim())
+            .Where(f => !string.Equals(f, _options.KeyField, StringComparison.OrdinalIgnoreCase))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        foreach (var chunk in keys.Chunk(400))   // IN 句パラメーター上限を考慮
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            await using var connection = _spec.CreateConnection();
+            await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+            await using var command = connection.CreateCommand();
+
+            var columns = new List<string> { _spec.Quote(_options.KeyField) };
+            columns.AddRange(selectFields.Select(_spec.Quote));
+            var placeholders = new List<string>();
+            var index = 0;
+            foreach (var key in chunk)
+            {
+                placeholders.Add(AddParameter(command, key, index++));
+            }
+
+            command.CommandText =
+                $"SELECT {string.Join(", ", columns)} FROM {_spec.Quote(_options.Table)} " +
+                $"WHERE {_spec.Quote(_options.KeyField)} IN ({string.Join(", ", placeholders)})";
+
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+            {
+                var keyValue = reader.IsDBNull(0) ? null : reader.GetValue(0);
+                var key = (Convert.ToString(keyValue, CultureInfo.InvariantCulture) ?? string.Empty).Trim();
+                var values = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
+                {
+                    [_options.KeyField!] = keyValue,
+                };
+                for (var i = 0; i < selectFields.Count; i++)
+                {
+                    values[selectFields[i]] = reader.IsDBNull(i + 1) ? null : reader.GetValue(i + 1);
+                }
+
+                result.Add(new EtlFetchedRecord(key, values));
+            }
+        }
+
+        return result;
     }
 
     public async Task<EtlBatchResult> ApplyBatchAsync(EtlApplyContext context, IReadOnlyList<QueueRow> rows, CancellationToken ct)

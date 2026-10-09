@@ -199,6 +199,8 @@
                                      Text="{Binding BatchSize, Mode=TwoWay}" />
                             <CheckBox x:Name="EtlBackupBeforeBox" Content="{loc:Tr Etl_BackupBefore}" Margin="16,0,0,0" VerticalAlignment="Center"
                                       IsChecked="{Binding RunBackupBefore, Mode=TwoWay}" />
+                            <CheckBox x:Name="EtlVerifyAfterRunBox" Content="{loc:Tr Etl_VerifyAfterRun}" Margin="8,0,0,0" VerticalAlignment="Center"
+                                      IsChecked="{Binding VerifyAfterRun, Mode=TwoWay}" />
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                             <TextBlock Text="{loc:Tr Etl_CrosswalkKey}" VerticalAlignment="Center" />
@@ -247,6 +249,9 @@
                             <Button x:Name="EtlRetryFailedButton" Content="{loc:Tr Etl_RetryFailed}" Padding="14,4" Margin="8,0,0,0"
                                     Command="{Binding RetryFailedCommand}" IsEnabled="{Binding IsNotRunning}"
                                     AutomationProperties.Name="{loc:Tr Etl_RetryFailed}" />
+                            <Button x:Name="EtlVerifyButton" Content="{loc:Tr Etl_Verify}" Padding="14,4" Margin="8,0,0,0"
+                                    Command="{Binding VerifyCommand}" IsEnabled="{Binding IsNotRunning}"
+                                    AutomationProperties.Name="{loc:Tr Etl_Verify}" />
                         </StackPanel>
 
                     </StackPanel>

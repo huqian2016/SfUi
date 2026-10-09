@@ -3,6 +3,7 @@ using System.Text.Json;
 using SfUi.Core;
 using SfUi.Etl.Engine;
 using SfUi.Etl.Staging;
+using SfUi.Etl.Verification;
 
 namespace SfUi.Etl.Targets;
 
@@ -34,7 +35,7 @@ public sealed class SalesforceTargetOptions
 /// <item>巻き戻し（<see cref="IEtlRevertable"/>）: insert → 削除 / update → before-image へ復元 / delete → 再作成</item>
 /// </list>
 /// </summary>
-public sealed class SalesforceTarget : IEtlTarget, IEtlRevertable
+public sealed class SalesforceTarget : IEtlTarget, IEtlRevertable, IEtlRecordFetcher
 {
     private readonly SalesforceRestClient _client;
     private readonly AppLog _log;
@@ -102,7 +103,59 @@ public sealed class SalesforceTarget : IEtlTarget, IEtlRevertable
             return false;
         }
     }
+    /// <summary>キー（Id）でレコードを取得する（検証用。見つからないキーは結果に含めない）。</summary>
+    public async Task<IReadOnlyList<EtlFetchedRecord>> FetchByKeysAsync(
+        IReadOnlyCollection<string> keys,
+        IReadOnlyList<string> fields,
+        CancellationToken cancellationToken)
+    {
+        var result = new List<EtlFetchedRecord>();
+        if (keys.Count == 0)
+        {
+            return result;
+        }
 
+        var selectFields = fields
+            .Where(f => !string.IsNullOrWhiteSpace(f))
+            .Select(f => f.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        foreach (var chunk in keys.Chunk(200))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var soql = SalesforcePayloads.BuildResolveSoql(_options.ObjectName, "Id", selectFields, chunk);
+            using var document = await _client.QueryAsync(_targetOrg, soql, cancellationToken: cancellationToken).ConfigureAwait(false);
+            if (!document.RootElement.TryGetProperty("records", out var records) || records.ValueKind != JsonValueKind.Array)
+            {
+                continue;
+            }
+
+            foreach (var record in records.EnumerateArray())
+            {
+                var id = SalesforcePayloads.TryGetProperty(record, "Id", out var idProp) && idProp.ValueKind == JsonValueKind.String
+                    ? idProp.GetString()
+                    : null;
+                if (string.IsNullOrEmpty(id))
+                {
+                    continue;
+                }
+
+                var values = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+                foreach (var field in selectFields)
+                {
+                    if (SalesforcePayloads.TryGetProperty(record, field, out var prop))
+                    {
+                        values[field] = JsonToValue(prop);
+                    }
+                }
+
+                result.Add(new EtlFetchedRecord(id, values));
+            }
+        }
+
+        return result;
+    }
     public Task<EtlBatchResult> ApplyBatchAsync(EtlApplyContext context, IReadOnlyList<QueueRow> rows, CancellationToken ct)
         => _options.Op switch
         {

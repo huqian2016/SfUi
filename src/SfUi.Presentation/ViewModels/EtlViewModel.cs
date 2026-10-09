@@ -13,6 +13,7 @@ using SfUi.Etl.Sources;
 using SfUi.Etl.Staging;
 using SfUi.Etl.Targets;
 using SfUi.Etl.Transforms;
+using SfUi.Etl.Verification;
 using SfUi.Presentation;
 
 namespace SfUi.App.ViewModels;
@@ -202,6 +203,10 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
     /// <summary>Salesforce 出力の実行前に、対象オブジェクトをバックアップするか（既定: 有効）。</summary>
     [ObservableProperty]
     private bool _runBackupBefore = true;
+
+    /// <summary>実行後に移行結果を自動検証するか（既定: 有効）。</summary>
+    [ObservableProperty]
+    private bool _verifyAfterRun = true;
 
     // ---- 実行モニター ----
 
@@ -438,6 +443,158 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>移行結果を検証する（件数・サンプル値・数値合計。ステージング済みキューとターゲットを照合）。</summary>
+    [RelayCommand]
+    private async Task VerifyAsync()
+    {
+        if (IsRunning)
+        {
+            return;
+        }
+
+        if (_store is null)
+        {
+            StatusMessage = UiText.T("Etl_VerifyNoRun");
+            return;
+        }
+
+        IsRunning = true;
+        CountsText = string.Empty;
+        _cts = new CancellationTokenSource();
+        var ct = _cts.Token;
+
+        try
+        {
+            var (verified, failed) = await VerifyStepsCoreAsync(logSkipped: true, ct);
+            StatusMessage = verified == 0
+                ? UiText.T("Etl_VerifyNothing")
+                : failed == 0 ? UiText.T("Etl_VerifyPassed") : UiText.T("Etl_VerifyFailed");
+        }
+        catch (OperationCanceledException)
+        {
+            AppendLog(UiText.T("Etl_Stop"));
+            StatusMessage = UiText.T("Etl_Stop");
+        }
+        catch (Exception ex)
+        {
+            _log.Error("ETL 検証に失敗しました", ex);
+            AppendLog(UiText.T("Common_FailedFmt", ex.Message));
+            StatusMessage = UiText.T("Common_FailedFmt", ex.Message);
+        }
+        finally
+        {
+            IsRunning = false;
+            _cts?.Dispose();
+            _cts = null;
+        }
+    }
+
+    /// <summary>全ステップを検証する。戻り値 = (検証したステップ数, 不合格ステップ数)。</summary>
+    private async Task<(int Verified, int Failed)> VerifyStepsCoreAsync(bool logSkipped, CancellationToken ct)
+    {
+        var results = new List<EtlVerificationResult>();
+        var failedSteps = 0;
+
+        foreach (var step in Steps)
+        {
+            ct.ThrowIfCancellationRequested();
+            if (_store is null || !_store.QueueTableExists(step.EffectiveObjectName))
+            {
+                if (logSkipped)
+                {
+                    AppendLog(UiText.T("Etl_VerifySkipFmt", step.StepId));
+                }
+
+                continue;
+            }
+
+            var counts = _store.CountQueueByStatus(step.EffectiveObjectName);
+            if (!counts.TryGetValue(QueueStatus.Ok, out var ok) || ok == 0)
+            {
+                if (logSkipped)
+                {
+                    AppendLog(UiText.T("Etl_VerifySkipFmt", step.StepId));
+                }
+
+                continue;
+            }
+
+            if (step.SelectedTargetType == "Salesforce" && !HasOrg)
+            {
+                if (logSkipped)
+                {
+                    AppendLog(UiText.T("Etl_VerifySkipFmt", step.StepId));
+                }
+
+                continue;
+            }
+
+            var (target, _) = step.CreateTarget(_rest, TargetOrg, _log);
+            if (target is not IEtlRecordFetcher fetcher)
+            {
+                if (logSkipped)
+                {
+                    AppendLog(UiText.T("Etl_VerifySkipFmt", step.StepId));
+                }
+
+                continue;
+            }
+
+            try
+            {
+                var columns = step.CreateMapper(new ExpressionEngine()).StagingColumns;
+                var verifier = new EtlVerifier(_store, fetcher, step.StepId, step.EffectiveObjectName, columns);
+                var result = await verifier.VerifyAsync(ct);
+                results.Add(result);
+                if (result.Passed)
+                {
+                    AppendLog(UiText.T("Etl_VerifyPassFmt", step.StepId, result.OkRows, result.FetchedRows, result.SampledRows));
+                }
+                else
+                {
+                    failedSteps++;
+                    AppendLog(UiText.T(
+                        "Etl_VerifyFailFmt",
+                        step.StepId,
+                        result.MissingKeys.Count,
+                        result.Mismatches.Count,
+                        result.Totals.Count(t => t.Expected != t.Actual)));
+                    foreach (var mismatch in result.Mismatches.Take(5))
+                    {
+                        AppendLog(UiText.T("Etl_VerifyMismatchFmt", mismatch.Field, mismatch.RowId, mismatch.Expected, mismatch.Actual));
+                    }
+
+                    foreach (var total in result.Totals.Where(t => t.Expected != t.Actual).Take(5))
+                    {
+                        AppendLog(UiText.T("Etl_VerifyTotalMismatchFmt", total.Field, total.Expected, total.Actual));
+                    }
+                }
+            }
+            catch (NotSupportedException)
+            {
+                if (logSkipped)
+                {
+                    AppendLog(UiText.T("Etl_VerifySkipFmt", step.StepId));
+                }
+            }
+        }
+
+        if (results.Count > 0 && _store is not null)
+        {
+            var report = new EtlVerificationReport
+            {
+                RunId = _store.RunId,
+                VerifiedAt = DateTime.Now.ToString("u"),
+                Steps = results,
+            };
+            var reportPath = Path.Combine(_store.RunDirectory, "verification.json");
+            report.Save(reportPath);
+            AppendLog(UiText.T("Etl_VerifyReportFmt", reportPath));
+        }
+
+        return (results.Count, failedSteps);
+    }
+
     private async Task RunCoreAsync(bool dryRun)
     {
         if (IsRunning)
@@ -668,6 +825,28 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
 
             StatusMessage = dryRun ? UiText.T("Etl_DryRun") : UiText.T("Etl_Run");
             RefreshRuns();
+
+            // 実行後の自動検証（ソース再読込なし。ステージング済みキューとターゲットを照合）
+            if (!dryRun && VerifyAfterRun)
+            {
+                try
+                {
+                    var (verified, failed) = await VerifyStepsCoreAsync(logSkipped: false, ct);
+                    if (verified > 0)
+                    {
+                        StatusMessage = failed == 0 ? UiText.T("Etl_VerifyPassed") : UiText.T("Etl_VerifyFailed");
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    _log.Error("ETL 検証に失敗しました", ex);
+                    AppendLog(UiText.T("Common_FailedFmt", ex.Message));
+                }
+            }
         }
         catch (OperationCanceledException)
         {
@@ -843,6 +1022,7 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
             ErrorRateText = ErrorRateText,
             BatchSize = BatchSize,
             RunBackupBefore = RunBackupBefore,
+            VerifyAfterRun = VerifyAfterRun,
         };
 
         foreach (var step in Steps)
@@ -954,6 +1134,7 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
         ErrorRateText = job.ErrorRateText;
         BatchSize = job.BatchSize;
         RunBackupBefore = job.RunBackupBefore;
+        VerifyAfterRun = job.VerifyAfterRun;
     }
 
     // ---- 復元マネージャー ----

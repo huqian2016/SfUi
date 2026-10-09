@@ -15,6 +15,9 @@ public sealed class EtlJobDefinition
 
     public bool RunBackupBefore { get; set; } = true;
 
+    /// <summary>実行後に移行結果を自動検証するか。</summary>
+    public bool VerifyAfterRun { get; set; } = true;
+
     public List<EtlStepDefinition> Steps { get; set; } = new();
 }
 
