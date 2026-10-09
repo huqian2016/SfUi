@@ -1415,6 +1415,7 @@ public static partial class UiText
         ["Etl_DeltaSettings"] = "Enter the delta state key (or clear the delta column).",
         ["Etl_DeltaStartFmt"] = "Delta {0}: watermark {1}",
         ["Etl_DeltaSavedFmt"] = "Delta saved {0}: watermark {1}",
+        ["Etl_UseBulk"] = "Use Bulk API 2.0 (large volumes)",
         ["Etl_Run"] = "Run",
         ["Etl_DryRun"] = "Validate (dry-run)",
         ["Etl_Stop"] = "Stop",

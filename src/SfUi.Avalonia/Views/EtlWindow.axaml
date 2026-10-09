@@ -116,10 +116,12 @@
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                             <TextBlock Text="{loc:Tr Etl_Soql}" VerticalAlignment="Top" Margin="0,6,4,0" />
-                            <TextBox x:Name="EtlSourceSoqlBox" Width="580" Height="56" AcceptsReturn="True"
+                            <TextBox x:Name="EtlSourceSoqlBox" Width="460" Height="56" AcceptsReturn="True"
                                      VerticalContentAlignment="Top"
                                      Text="{Binding SelectedStep.SourceSoql, Mode=TwoWay}"
                                      AutomationProperties.Name="{loc:Tr Etl_Soql}" />
+                            <CheckBox x:Name="EtlSourceBulkBox" Content="{loc:Tr Etl_UseBulk}" Margin="8,8,0,0" VerticalAlignment="Top"
+                                      IsChecked="{Binding SelectedStep.SourceUseBulk, Mode=TwoWay}" />
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                             <TextBlock Text="{loc:Tr Etl_DeltaColumn}" VerticalAlignment="Center" />

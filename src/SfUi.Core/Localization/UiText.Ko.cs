@@ -1416,6 +1416,7 @@ public static partial class UiText
         ["Etl_DeltaSettings"] = "증분 상태 키를 입력하세요(또는 증분 열을 비우세요).",
         ["Etl_DeltaStartFmt"] = "증분 {0}: watermark {1}",
         ["Etl_DeltaSavedFmt"] = "증분 저장 {0}: watermark {1}",
+        ["Etl_UseBulk"] = "Bulk API 2.0 사용(대량 건수용)",
         ["Etl_Run"] = "실행",
         ["Etl_DryRun"] = "검증 (dry-run)",
         ["Etl_Stop"] = "중지",

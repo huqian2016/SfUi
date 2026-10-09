@@ -128,6 +128,8 @@ public sealed class EtlConnection
 
     public string DeltaStateKey { get; set; } = string.Empty;
 
+    public bool SourceUseBulk { get; set; }
+
     public override string ToString() => Name;
 }
 
@@ -143,6 +145,7 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
     private readonly IFilePickerService _files;
     private readonly IUiDispatcher _dispatcher;
     private readonly SalesforceRestClient _rest;
+    private readonly SfCliRunner _sfCli;
     private readonly BackupService _backup;
     private CancellationTokenSource? _cts;
     private RunStagingStore? _store;
@@ -154,6 +157,7 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
         IFilePickerService files,
         IUiDispatcher dispatcher,
         SalesforceRestClient rest,
+        SfCliRunner sfCli,
         BackupService backup)
     {
         _log = log;
@@ -162,6 +166,7 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
         _files = files;
         _dispatcher = dispatcher;
         _rest = rest;
+        _sfCli = sfCli;
         _backup = backup;
     }
 
@@ -258,7 +263,7 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
             index++;
         }
 
-        var step = new EtlStepViewModel("step" + index, _dialogs, _files, _paths, message => StatusMessage = message, _rest, () => TargetOrg);
+        var step = new EtlStepViewModel("step" + index, _dialogs, _files, _paths, message => StatusMessage = message, _rest, _sfCli, () => TargetOrg);
         Steps.Add(step);
         SelectedStep = step;
     }
@@ -776,6 +781,7 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
             SourceSoql = step.SourceSoql,
             DeltaColumn = step.DeltaColumn,
             DeltaStateKey = step.DeltaStateKey,
+            SourceUseBulk = step.SourceUseBulk,
         });
         SaveConnectionsFile();
     }
@@ -813,6 +819,7 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
         step.SourceSoql = SelectedConnection.SourceSoql;
         step.DeltaColumn = SelectedConnection.DeltaColumn;
         step.DeltaStateKey = SelectedConnection.DeltaStateKey;
+        step.SourceUseBulk = SelectedConnection.SourceUseBulk;
     }
 
     [RelayCommand]

@@ -1590,6 +1590,43 @@ public partial class App : Application
                     _log.Error("--smoke-etl: [soql] 検証に失敗しました");
                 }
 
+                // ---- F) Bulk 入力: sf data export bulk → CSV（大量件数向けの経路）----
+                var bulkOut = Path.Combine(tmp, "bulk-out.csv");
+                if (File.Exists(bulkOut))
+                {
+                    File.Delete(bulkOut);
+                }
+
+                var bulkSource = new SalesforceBulkSource(
+                    Services.GetRequiredService<SfCliRunner>(),
+                    org!,
+                    $"SELECT Id, Name FROM Account WHERE Name LIKE '{multiMarker}%'",
+                    Path.Combine(tmp, "bulk-work"));
+                var bulkMapper = new RowMapper(
+                    bulkSource.Columns,
+                    new[] { new FieldMapping("Id", "[Id]"), new FieldMapping("Name", "[Name]") },
+                    new ExpressionEngine(host));
+                var bulkPlan = new EtlStepPlan
+                {
+                    StepId = "step4",
+                    ObjectName = "AccountBulk",
+                    Source = bulkSource,
+                    Mapper = bulkMapper,
+                    Target = new CsvFileTarget(bulkOut, new[] { "Id", "Name" }),
+                };
+                var bulkResult = await new EtlStepRun(store, bulkPlan).RunAsync();
+                var bulkLines = File.Exists(bulkOut) ? File.ReadAllLines(bulkOut).Length : 0;
+                var bulkOk = bulkSource.Columns.Count == 2
+                    && bulkResult.Apply!.Success == 2
+                    && !bulkResult.Apply.Stopped
+                    && bulkLines == 3;
+                _log.Info($"--smoke-etl: [bulk] 列数={bulkSource.Columns.Count} / 適用 success={bulkResult.Apply!.Success} / 出力行数={bulkLines}（期待 2 / 2 / 3）");
+                if (!bulkOk)
+                {
+                    success = false;
+                    _log.Error("--smoke-etl: [bulk] 検証に失敗しました");
+                }
+
                 // 子 → 親の順に巻き戻し（成功後の巻き戻し）
                 var childRollback = await new EtlStepRun(store, childStep).RollbackAsync();
                 var parentRollback = await new EtlStepRun(store, parentStep).RollbackAsync();

@@ -126,7 +126,8 @@ public sealed class SalesforceSource : IEtlSource
     private static readonly Regex FromPattern = new(
         @"\bFROM\s+([A-Za-z][A-Za-z0-9_]*)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-    private static string? ParseObjectName(string soql)
+    /// <summary>SOQL から対象オブジェクト名を推定する（見つからなければ null）。</summary>
+    internal static string? ParseObjectName(string soql)
     {
         var match = FromPattern.Match(soql);
         return match.Success ? match.Groups[1].Value : null;

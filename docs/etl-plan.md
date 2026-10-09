@@ -1,6 +1,6 @@
 # SfUi ETL 機能 設計書
 
-最終更新: 2026-10-09 / ステータス: **P1 縦串 + マルチステップ（エンジン + UI）+ 全コネクタ + delta モード完了 — エンジン / 式 / マッピング / CSV・Excel・JSON・XML・DB・REST 入力（GET + ページング 4 方式 + 認証 4 方式）・Salesforce 入力（SOQL、REST ページング）/ Salesforce・CSV・DB（SQLite / SQL Server / PostgreSQL / ODBC）出力 / 安全 5 機能 / delta（差分、watermark は data/etl/jobs に永続）/ ETL ウィンドウ（両アプリ・4 領域・ステップ リスト、DB / REST / SOQL / delta 設定付き）/ マルチステップ（crosswalk + LOOKUP、逆順ロールバック）。検証: 694 テスト + `--smoke-etl`（実組織 + オフライン CSV→CSV / CSV→SQLite / delta + SOQL→CSV）+ UI E2E（CSV→SQLite→CSV、REST→CSV、SOQL→CSV、delta 2 回実行、両アプリ）+ 両アプリ UIA + CI グリーン（Windows/macOS）。次の段階: Bulk 入力（P2 残）・非 CSV 入力の実組織スモーク・式関数拡充（P3）**
+最終更新: 2026-10-09 / ステータス: **P2 完了 — P1 縦串 + マルチステップ（エンジン + UI）+ 全コネクタ（CSV・TSV・Excel・JSON・XML・DB・REST・Salesforce SOQL / Bulk、出力 Salesforce・CSV・DB）+ delta モード（watermark は data/etl/jobs に永続）/ 安全 5 機能 / ETL ウィンドウ（両アプリ・4 領域、DB / REST / SOQL / Bulk / delta 設定付き）。検証: 701 テスト + `--smoke-etl`（実組織: エラー率停止→ロールバック→成功後巻き戻し + マルチステップ + SOQL + **Bulk 実 CLI**、オフライン: CSV→CSV / CSV→SQLite / delta）+ UI E2E（CSV→SQLite→CSV、REST→CSV、SOQL→CSV、delta 2 回実行、Bulk→CSV、両アプリ）+ CI グリーン（Windows/macOS）。次の段階（P3）: 式関数拡充・検証ステップ・ジョブのエクスポート / インポート・非 CSV 入力の実組織スモーク**
 対象: WPF (`SfUi.App`) + Avalonia (`SfUi.Avalonia`) の両方
 
 ---

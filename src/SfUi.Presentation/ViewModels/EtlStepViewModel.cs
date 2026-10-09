@@ -26,6 +26,7 @@ public sealed partial class EtlStepViewModel : ObservableObject
     private readonly AppPaths _paths;
     private readonly Action<string> _status;
     private readonly SalesforceRestClient _rest;
+    private readonly SfCliRunner _sfCli;
     private readonly Func<string> _targetOrg;
 
     public EtlStepViewModel(
@@ -35,6 +36,7 @@ public sealed partial class EtlStepViewModel : ObservableObject
         AppPaths paths,
         Action<string> status,
         SalesforceRestClient rest,
+        SfCliRunner sfCli,
         Func<string> targetOrg)
     {
         StepId = stepId;
@@ -43,6 +45,7 @@ public sealed partial class EtlStepViewModel : ObservableObject
         _paths = paths;
         _status = status;
         _rest = rest;
+        _sfCli = sfCli;
         _targetOrg = targetOrg;
     }
 
@@ -146,6 +149,10 @@ public sealed partial class EtlStepViewModel : ObservableObject
     [ObservableProperty]
     private string _sourceSoql = string.Empty;
 
+    /// <summary>Salesforce 入力を Bulk API 2.0（sf data export bulk）で実行するか。</summary>
+    [ObservableProperty]
+    private bool _sourceUseBulk;
+
     // ---- 差分（delta）モード ----
 
     /// <summary>タイムスタンプ列名（空 = 差分無効・全件読込み）。</summary>
@@ -234,7 +241,9 @@ public sealed partial class EtlStepViewModel : ObservableObject
             Headers = NullIfBlank(SourceRestHeaders),
             Paging = SourceRestPaging,
         }),
-        "Salesforce" => new SalesforceSource(_rest, _targetOrg(), SourceSoql),
+        "Salesforce" => SourceUseBulk
+            ? new SalesforceBulkSource(_sfCli, _targetOrg(), SourceSoql, Path.Combine(_paths.TempDirectory, "etl-bulk"))
+            : new SalesforceSource(_rest, _targetOrg(), SourceSoql),
         _ => throw new InvalidOperationException("未対応の入力種別です: " + SelectedSourceType),
     };
 
