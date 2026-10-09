@@ -122,6 +122,75 @@ public static class SalesforcePayloads
     public static string BuildDeletePath(string apiVersion, IReadOnlyList<string> ids)
         => $"/services/data/v{apiVersion}/composite/sobjects?allOrNone=false&ids={string.Join(",", ids)}";
 
+    /// <summary>巻き戻し用の PATCH ボディ（Id + before-image の項目）。</summary>
+    public static string BuildRevertUpdateBody(string objectName, IReadOnlyList<(string Id, string BeforeJson)> updates)
+    {
+        using var stream = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(stream))
+        {
+            writer.WriteStartObject();
+            writer.WriteBoolean("allOrNone", false);
+            writer.WritePropertyName("records");
+            writer.WriteStartArray();
+
+            foreach (var (id, beforeJson) in updates)
+            {
+                using var document = JsonDocument.Parse(beforeJson);
+                writer.WriteStartObject();
+                WriteAttributes(writer, objectName);
+                writer.WriteString("Id", id);
+                CopyProperties(writer, document.RootElement);
+                writer.WriteEndObject();
+            }
+
+            writer.WriteEndArray();
+            writer.WriteEndObject();
+        }
+
+        return Encoding.UTF8.GetString(stream.ToArray());
+    }
+
+    /// <summary>巻き戻し用の再作成 POST ボディ（before-image から Id を除いて再作成）。</summary>
+    public static string BuildRevertRecreateBody(string objectName, IReadOnlyList<string> beforeJsonList)
+    {
+        using var stream = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(stream))
+        {
+            writer.WriteStartObject();
+            writer.WriteBoolean("allOrNone", false);
+            writer.WritePropertyName("records");
+            writer.WriteStartArray();
+
+            foreach (var beforeJson in beforeJsonList)
+            {
+                using var document = JsonDocument.Parse(beforeJson);
+                writer.WriteStartObject();
+                WriteAttributes(writer, objectName);
+                CopyProperties(writer, document.RootElement);
+                writer.WriteEndObject();
+            }
+
+            writer.WriteEndArray();
+            writer.WriteEndObject();
+        }
+
+        return Encoding.UTF8.GetString(stream.ToArray());
+    }
+
+    private static void CopyProperties(Utf8JsonWriter writer, JsonElement element)
+    {
+        foreach (var property in element.EnumerateObject())
+        {
+            if (string.Equals(property.Name, "Id", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            writer.WritePropertyName(property.Name);
+            property.Value.WriteTo(writer);
+        }
+    }
+
     /// <summary>composite/sobjects 応答（配列）を解析する。入力順で返る。</summary>
     public static IReadOnlyList<CompositeRecordResult> ParseCompositeResponse(string json)
     {

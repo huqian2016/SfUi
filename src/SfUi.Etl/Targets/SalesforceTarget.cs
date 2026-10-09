@@ -31,9 +31,10 @@ public sealed class SalesforceTargetOptions
 /// <item>insert: POST composite/sobjects（journal: insert / 成功 Id を <c>_target_id</c> へ）</item>
 /// <item>update / upsert: マッチ キーで SOQL 解決 → before-image を journal 記録 → PATCH / POST</item>
 /// <item>delete: マッチ キーで解決 → DELETE composite（journal: delete + before-image で巻き戻し可能）</item>
+/// <item>巻き戻し（<see cref="IEtlRevertable"/>）: insert → 削除 / update → before-image へ復元 / delete → 再作成</item>
 /// </list>
 /// </summary>
-public sealed class SalesforceTarget : IEtlTarget
+public sealed class SalesforceTarget : IEtlTarget, IEtlRevertable
 {
     private readonly SalesforceRestClient _client;
     private readonly AppLog _log;
@@ -254,6 +255,87 @@ public sealed class SalesforceTarget : IEtlTarget
         }
 
         return results;
+    }
+
+    /// <summary>
+    /// journal エントリを巻き戻す（insert → 削除 / update → before-image へ復元 / delete → 再作成）。
+    /// 結果の <see cref="RowApplyResult.RowId"/> は journal エントリの Id。
+    /// </summary>
+    public async Task<EtlBatchResult> RevertBatchAsync(EtlApplyContext context, IReadOnlyList<JournalRow> entries, CancellationToken ct)
+    {
+        var results = new List<RowApplyResult>(entries.Count);
+
+        // insert の巻き戻し = 作成したレコードを削除
+        var insertDeletes = entries
+            .Where(e => e.Op == RowOp.Insert && !string.IsNullOrEmpty(e.TargetId))
+            .ToList();
+        if (insertDeletes.Count > 0)
+        {
+            var path = SalesforcePayloads.BuildDeletePath(_apiVersion, insertDeletes.Select(e => e.TargetId!).ToList());
+            var response = await _client.SendRawAsync(_targetOrg, HttpMethod.Delete, path, null, ct).ConfigureAwait(false);
+            MapRevertResults(results, insertDeletes, SalesforcePayloads.ParseCompositeResponse(response), "挿入の取り消し");
+        }
+
+        // update の巻き戻し = before-image へ復元（PATCH）
+        var updateReverts = entries
+            .Where(e => e.Op == RowOp.Update && !string.IsNullOrEmpty(e.TargetId) && !string.IsNullOrEmpty(e.BeforeJson))
+            .ToList();
+        if (updateReverts.Count > 0)
+        {
+            var body = SalesforcePayloads.BuildRevertUpdateBody(
+                _options.ObjectName,
+                updateReverts.Select(e => (e.TargetId!, e.BeforeJson!)).ToList());
+            var path = $"/services/data/v{_apiVersion}/composite/sobjects";
+            var response = await _client.SendRawAsync(_targetOrg, HttpMethod.Patch, path, body, ct).ConfigureAwait(false);
+            MapRevertResults(results, updateReverts, SalesforcePayloads.ParseCompositeResponse(response), "更新の巻き戻し");
+        }
+
+        // delete の巻き戻し = before-image から再作成（POST）
+        var deleteReverts = entries
+            .Where(e => e.Op == RowOp.Delete && !string.IsNullOrEmpty(e.BeforeJson))
+            .ToList();
+        if (deleteReverts.Count > 0)
+        {
+            var body = SalesforcePayloads.BuildRevertRecreateBody(
+                _options.ObjectName,
+                deleteReverts.Select(e => e.BeforeJson!).ToList());
+            var path = $"/services/data/v{_apiVersion}/composite/sobjects";
+            var response = await _client.SendRawAsync(_targetOrg, HttpMethod.Post, path, body, ct).ConfigureAwait(false);
+            MapRevertResults(results, deleteReverts, SalesforcePayloads.ParseCompositeResponse(response), "削除の復元");
+        }
+
+        // 対象外（journal 情報不足）
+        foreach (var entry in entries)
+        {
+            if (results.Any(r => r.RowId == entry.Id))
+            {
+                continue;
+            }
+
+            results.Add(new RowApplyResult(entry.Id, false, Error: "journal の情報不足により巻き戻しできません（before-image / targetId なし）。"));
+        }
+
+        return new EtlBatchResult(results);
+    }
+
+    private static void MapRevertResults(
+        List<RowApplyResult> results,
+        IReadOnlyList<JournalRow> entries,
+        IReadOnlyList<CompositeRecordResult> parsed,
+        string label)
+    {
+        for (var i = 0; i < entries.Count; i++)
+        {
+            var entry = entries[i];
+            var record = i < parsed.Count ? parsed[i] : new CompositeRecordResult(null, false, null, $"{label}: 結果が返されませんでした。");
+            results.Add(record.Success
+                ? new RowApplyResult(entry.Id, true, record.Id)
+                : new RowApplyResult(
+                    entry.Id,
+                    false,
+                    Error: record.Message ?? label + " に失敗しました。",
+                    Transient: SalesforcePayloads.IsTransientStatus(record.StatusCode)));
+        }
     }
 
     /// <summary>マッチ キーで既存レコードを解決する（キー値 → Id + before-image JSON）。</summary>
