@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Text.Json;
@@ -149,6 +150,7 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
     private readonly SfCliRunner _sfCli;
     private readonly ICredentialProtector _protector;
     private readonly BackupService _backup;
+    private readonly HistoryStore _history;
     private CancellationTokenSource? _cts;
     private RunStagingStore? _store;
 
@@ -161,7 +163,8 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
         SalesforceRestClient rest,
         SfCliRunner sfCli,
         ICredentialProtector protector,
-        BackupService backup)
+        BackupService backup,
+        HistoryStore history)
     {
         _log = log;
         _paths = paths;
@@ -172,6 +175,7 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
         _sfCli = sfCli;
         _protector = protector;
         _backup = backup;
+        _history = history;
     }
 
     public string Title => UiText.T("Etl_Title");
@@ -685,10 +689,13 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
         CountsText = string.Empty;
         _cts = new CancellationTokenSource();
         var ct = _cts.Token;
+        var runStopwatch = Stopwatch.StartNew();
+        string? historyRunId = null;
+        var verificationFailed = -1;
 
         try
         {
-            var runId = "run-" + DateTime.Now.ToString("yyyyMMdd-HHmmss");
+            var runId = historyRunId = "run-" + DateTime.Now.ToString("yyyyMMdd-HHmmss");
             var runDirectory = Path.Combine(_paths.EtlRunsRoot, runId);
             _store?.Dispose();
             _store = RunStagingStore.Create(runDirectory, runId);
@@ -851,6 +858,7 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
                     var (verified, failed) = await VerifyStepsCoreAsync(logSkipped: false, ct);
                     if (verified > 0)
                     {
+                        verificationFailed = failed;
                         StatusMessage = failed == 0 ? UiText.T("Etl_VerifyPassed") : UiText.T("Etl_VerifyFailed");
                     }
                 }
@@ -864,23 +872,98 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
                     AppendLog(UiText.T("Common_FailedFmt", ex.Message));
                 }
             }
+
+            // 実行結果を操作履歴（history/etl.json）へ記録する
+            if (!dryRun)
+            {
+                RecordEtlRunHistory(historyRunId, runStopwatch.ElapsedMilliseconds, verificationFailed);
+            }
         }
         catch (OperationCanceledException)
         {
             AppendLog(UiText.T("Etl_Stop"));
             StatusMessage = UiText.T("Etl_Stop");
+            if (!dryRun)
+            {
+                RecordEtlHistory("canceled", historyRunId, runStopwatch.ElapsedMilliseconds, UiText.T("Etl_Stop"));
+            }
         }
         catch (Exception ex)
         {
             _log.Error("ETL の実行に失敗しました", ex);
             AppendLog(UiText.T("Common_FailedFmt", ex.Message));
             StatusMessage = UiText.T("Common_FailedFmt", ex.Message);
+            if (!dryRun)
+            {
+                RecordEtlHistory("error", historyRunId, runStopwatch.ElapsedMilliseconds, ex.Message);
+            }
         }
         finally
         {
             IsRunning = false;
             _cts?.Dispose();
             _cts = null;
+        }
+    }
+
+    /// <summary>実行完了時の履歴記録（成功/部分失敗。キュー状態と検証結果からサマリを作る）。</summary>
+    private void RecordEtlRunHistory(string? runId, long durationMs, int verificationFailed)
+    {
+        var lines = new List<string>();
+        var hasFailure = false;
+        if (_store is not null)
+        {
+            foreach (var step in Steps)
+            {
+                if (!_store.QueueTableExists(step.EffectiveObjectName))
+                {
+                    continue;
+                }
+
+                var counts = _store.CountQueueByStatus(step.EffectiveObjectName);
+                counts.TryGetValue(QueueStatus.Ok, out var ok);
+                counts.TryGetValue(QueueStatus.Failed, out var failed);
+                counts.TryGetValue(QueueStatus.Pending, out var pending);
+                counts.TryGetValue(QueueStatus.Skipped, out var skipped);
+                hasFailure |= failed > 0 || pending > 0;
+                lines.Add($"{step.StepId}: OK {ok} / Failed {failed} / Pending {pending} / Skipped {skipped}");
+            }
+        }
+
+        if (verificationFailed >= 0)
+        {
+            lines.Add(verificationFailed == 0 ? UiText.T("Etl_VerifyPassed") : UiText.T("Etl_VerifyFailed"));
+        }
+
+        RecordEtlHistory(hasFailure ? "error" : "success", runId, durationMs, string.Join("\n", lines));
+    }
+
+    /// <summary>ETL の実行結果を操作履歴（history/etl.json）へ記録する。</summary>
+    private void RecordEtlHistory(string status, string? runId, long durationMs, string? result)
+    {
+        try
+        {
+            var summary = Steps.Count == 0
+                ? UiText.T("Etl_Title")
+                : string.Join(", ", Steps.Select(s => s.StepId + ": " + s.EffectiveObjectName));
+            if (summary.Length > 200)
+            {
+                summary = summary[..200];
+            }
+
+            _history.Append(new HistoryEntry
+            {
+                Type = HistoryTypes.Etl,
+                Org = HasOrg ? TargetOrg : null,
+                Params = runId,
+                Summary = summary,
+                Status = status,
+                DurationMs = (int)Math.Min(int.MaxValue, durationMs),
+            }, result);
+        }
+        catch (Exception ex)
+        {
+            _log.Warn("ETL 履歴の記録に失敗: " + ex.Message);
         }
     }
 

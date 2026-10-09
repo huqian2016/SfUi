@@ -116,6 +116,7 @@ public partial class HistoryViewModel : ObservableObject
         TypeFilters.Add(new TypeFilterOption(HistoryTypes.Deploy, UiText.T("Type_Deploy")));
         TypeFilters.Add(new TypeFilterOption(HistoryTypes.Org, UiText.T("Type_Org")));
         TypeFilters.Add(new TypeFilterOption(HistoryTypes.Data, UiText.T("Type_Data")));
+        TypeFilters.Add(new TypeFilterOption(HistoryTypes.Etl, UiText.T("Type_Etl")));
 
         TypeFilter = TypeFilters.FirstOrDefault(o => o.Type == selectedType) ?? TypeFilters[0];
     }

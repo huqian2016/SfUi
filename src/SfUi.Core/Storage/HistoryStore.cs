@@ -15,6 +15,9 @@ public static class HistoryTypes
     /// <summary>データ入出力（エクスポート / インポート）。</summary>
     public const string Data = "data";
 
+    /// <summary>ETL 実行。</summary>
+    public const string Etl = "etl";
+
     /// <summary>種別の表示ラベル（現在の言語）。</summary>
     public static string ToLabel(string type) => type.ToLowerInvariant() switch
     {
@@ -25,6 +28,7 @@ public static class HistoryTypes
         Deploy => UiText.T("Type_Deploy"),
         Org => UiText.T("Type_Org"),
         Data => UiText.T("Type_Data"),
+        Etl => UiText.T("Type_Etl"),
         _ => type,
     };
 }

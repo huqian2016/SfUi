@@ -92,6 +92,23 @@ public class HistoryStoreTests : IDisposable
     }
 
     [Fact]
+    public void EtlEntry_IsStoredAndQueriedByType()
+    {
+        var store = new HistoryStore(_paths, _log, CreateSettings());
+        store.Append(
+            Entry(HistoryTypes.Etl, "step1: Contact", At(12), org: "hks4"),
+            result: "step1: OK 2 / Failed 0 / Pending 0 / Skipped 0");
+
+        var entry = Assert.Single(store.Query(new HistoryQuery(Type: HistoryTypes.Etl)));
+
+        Assert.Equal(HistoryTypes.Etl, entry.Type);
+        Assert.Equal("step1: Contact", entry.Summary);
+        Assert.Equal("hks4", entry.Org);
+        Assert.Equal("step1: OK 2 / Failed 0 / Pending 0 / Skipped 0", entry.ResultInline);
+        Assert.Equal("ETL", entry.TypeLabel);
+    }
+
+    [Fact]
     public void Append_TrimsToMaxPerType()
     {
         var store = new HistoryStore(_paths, _log, CreateSettings(maxPerType: 2));

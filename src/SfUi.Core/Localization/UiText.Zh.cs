@@ -818,6 +818,7 @@ public static partial class UiText
 
         // ---- データ入出力（Data Export / Data Import）----
         ["Type_Data"] = "数据",
+        ["Type_Etl"] = "ETL",
         ["Main_DataIo"] = "数据 I/O",
         ["Main_DataIoTip"] = "导出查询结果并导入 CSV 数据（REST / Bulk API）",
         ["Msg_DataIoOpenedFmt"] = "已打开数据 I/O 窗口：{0}",

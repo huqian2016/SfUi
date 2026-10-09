@@ -818,6 +818,7 @@ public static partial class UiText
 
         // ---- データ入出力（Data Export / Data Import）----
         ["Type_Data"] = "데이터",
+        ["Type_Etl"] = "ETL",
         ["Main_DataIo"] = "데이터 입출력",
         ["Main_DataIoTip"] = "쿼리 결과 내보내기 및 CSV 데이터 가져오기(REST / Bulk API)",
         ["Msg_DataIoOpenedFmt"] = "데이터 입출력 창을 열었습니다: {0}",
