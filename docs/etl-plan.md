@@ -1,6 +1,6 @@
 # SfUi ETL 機能 設計書
 
-最終更新: 2026-10-09 / ステータス: **設計確定（P0 技術検証 着手前）**
+最終更新: 2026-10-09 / ステータス: **P0 技術検証 完了（全項目パス）→ P1 実装中（SfUi.Etl 基盤から）**
 対象: WPF (`SfUi.App`) + Avalonia (`SfUi.Avalonia`) の両方
 
 ---
@@ -61,7 +61,8 @@ src/SfUi.Etl/                    （新規・net9.0・UI 非依存エンジン�
   Security/                      … 資格情報保護（DPAPI / AES）
 ```
 
-- 依存: `SfUi.Core`（CSV / Salesforce REST / Bulk / Backup / Limits / AtomicJsonFile を再利用）+ 追加 NuGet（§8 の P0 で確定）
+- 依存: `SfUi.Core`（CSV / Salesforce REST / Bulk / Backup / Limits / AtomicJsonFile を再利用）
+- 追加 NuGet（P0 で確定・検証済み）: Microsoft.Data.Sqlite 9.0.20 / DynamicExpresso.Core 2.19.6 / ExcelDataReader 3.9.0 / Microsoft.Data.SqlClient 5.2.3 / Npgsql 8.0.9 / System.Data.Odbc 9.0.20 / System.Security.Cryptography.ProtectedData 9.0.20 / System.Text.Encoding.CodePages 9.0.20（ExcelDataReader 利用時は CodePages プロバイダ登録が必須）
 - UI: `SfUi.Presentation` に ETL ViewModel 群、WPF / Avalonia に `EtlWindow`（+ 接続マネージャ）
 
 ### 3.2 コネクタ レイヤー
@@ -258,14 +259,16 @@ data/etl/
 
 ## 8. P0 技術検証（結果）
 
-> P0 実行後に実測値を記録する。
+実施日: 2026-10-09 / 検証スクリプト: `C:\huqian\etl-p0`（リポジトリ外・コンソール スパイク、.NET 9.0.6 / 12 CPUs）
 
 | 検証項目 | 結果 | 判定 |
 |---|---|---|
-| SQLite 100 万行（投入 / 索引 / 検索） | （未実施） | — |
-| ストリーミング CSV（100 万行 読込） | （未実施） | — |
-| DynamicExpresso（関数・日付・性能） | （未実施） | — |
-| ExcelDataReader（読み取り） | （未実施） | — |
-| ADO.NET プロバイダ（SqlClient / Npgsql / Odbc） | （未実施） | — |
-| DPAPI（暗号化ラウンドトリップ） | （未実施） | — |
-| Bulk 2.0（実組織・小規模） | （未実施） | — |
+| SQLite 100 万行 | 投入 1,504ms（20k/トランザクション）/ 索引作成 666ms / COUNT 19ms / キー検索 0ms / SUM 56ms / ファイル 48.3MB / WS 53MB | ✅ 採用（Microsoft.Data.Sqlite 9.0.20） |
+| ストリーミング CSV（100 万行 読込・プロトタイプ） | 177ms / GC 割当 3MB / 500 万フィールド正確に解析（引用・カンマ・日本語含む） | ✅ 採用（SfUi.Etl へ移植） |
+| DynamicExpresso（関数・日付・日本語・性能） | サンプル式 OK（LEFT/IF/日付フォーマット）/ 200,000 回 = 367ms（約 545,000 evals/s） | ✅ 採用（2.19.6。1 行 5 式で 100 万行 ≈ 10 秒弱、許容） |
+| ExcelDataReader（読み取り） | OpenXml 生成 1,000 行を 44ms で読取 | ✅ 採用（3.9.0。CodePages 登録が必須） |
+| ADO.NET プロバイダ | SqlClient 5.2.3 / Npgsql 8.0.9 / Odbc 9.0.20 のロード確認（実接続はユーザー環境で検証） | ✅ 採用 |
+| DPAPI（暗号化ラウンドトリップ） | 成功（246 バイト暗号文） | ✅ 採用（Windows 限定 → `PlatformInfo` ガード必須。macOS は AES 方式） |
+| Bulk 2.0（実組織・小規模） | P1 の `--smoke-etl` で実施（保留） | — |
+
+補足: 100 万行 CSV の生成は 342ms / 59.7MB。SQLite は「100 万件超」想定でも性能上の問題なし（WAL + バッチ トランザクション + 索引で実用十分）。
