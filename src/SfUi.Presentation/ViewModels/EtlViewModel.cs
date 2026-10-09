@@ -317,8 +317,9 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
             return;
         }
 
-        if (!dryRun)
+        if (!dryRun && SelectedTargetType == "Salesforce")
         {
+            // 組織への書き込みは確認（CSV などローカル出力は即実行）
             var summary = $"{SelectedTargetType}: {ObjectApiName} / {SelectedOp}";
             if (!_dialogs.Confirm(summary, UiText.T("Etl_Run")))
             {
