@@ -1527,6 +1527,40 @@ public partial class App : Application
                     _log.Error("--smoke-etl: [multistep] LOOKUP による Id 受渡しの検証に失敗しました");
                 }
 
+                // ---- E) Salesforce 入力: SOQL → CSV（REST ページングで親 Account を読み戻す）----
+                var soqlOut = Path.Combine(tmp, "soql-out.csv");
+                if (File.Exists(soqlOut))
+                {
+                    File.Delete(soqlOut);
+                }
+
+                var soqlSource = new SalesforceSource(
+                    rest, org!, $"SELECT Id, Name FROM Account WHERE Name LIKE '{multiMarker}%' ORDER BY Name");
+                var soqlMapper = new RowMapper(
+                    soqlSource.Columns,
+                    new[] { new FieldMapping("Id", "[Id]"), new FieldMapping("Name", "[Name]") },
+                    new ExpressionEngine(host));
+                var soqlPlan = new EtlStepPlan
+                {
+                    StepId = "step3",
+                    ObjectName = "AccountSoql",
+                    Source = soqlSource,
+                    Mapper = soqlMapper,
+                    Target = new CsvFileTarget(soqlOut, new[] { "Id", "Name" }),
+                };
+                var soqlResult = await new EtlStepRun(store, soqlPlan).RunAsync();
+                var soqlLines = File.Exists(soqlOut) ? File.ReadAllLines(soqlOut).Length : 0;
+                var soqlOk = soqlSource.Columns.Count == 2
+                    && soqlResult.Apply!.Success == 2
+                    && !soqlResult.Apply.Stopped
+                    && soqlLines == 3;
+                _log.Info($"--smoke-etl: [soql] 列数={soqlSource.Columns.Count} / 適用 success={soqlResult.Apply!.Success} / 出力行数={soqlLines}（期待 2 / 2 / 3）");
+                if (!soqlOk)
+                {
+                    success = false;
+                    _log.Error("--smoke-etl: [soql] 検証に失敗しました");
+                }
+
                 // 子 → 親の順に巻き戻し（成功後の巻き戻し）
                 var childRollback = await new EtlStepRun(store, childStep).RollbackAsync();
                 var parentRollback = await new EtlStepRun(store, parentStep).RollbackAsync();

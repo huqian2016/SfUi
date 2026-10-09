@@ -1408,6 +1408,8 @@ public static partial class UiText
         ["Etl_RestHeaders"] = "ヘッダー",
         ["Etl_RestPaging"] = "ページング",
         ["Etl_RestSettings"] = "REST の URL（http/https）を入力してください。",
+        ["Etl_Soql"] = "SOQL クエリ",
+        ["Etl_SoqlSettings"] = "SOQL クエリを入力し、組織を選択してください。",
         ["Etl_Run"] = "実行",
         ["Etl_DryRun"] = "検証 (dry-run)",
         ["Etl_Stop"] = "停止",

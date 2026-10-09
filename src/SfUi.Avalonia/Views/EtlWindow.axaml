@@ -114,6 +114,13 @@
                                      Text="{Binding SelectedStep.SourceRestHeaders, Mode=TwoWay}"
                                      AutomationProperties.Name="{loc:Tr Etl_RestHeaders}" />
                         </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                            <TextBlock Text="{loc:Tr Etl_Soql}" VerticalAlignment="Top" Margin="0,6,4,0" />
+                            <TextBox x:Name="EtlSourceSoqlBox" Width="580" Height="56" AcceptsReturn="True"
+                                     VerticalContentAlignment="Top"
+                                     Text="{Binding SelectedStep.SourceSoql, Mode=TwoWay}"
+                                     AutomationProperties.Name="{loc:Tr Etl_Soql}" />
+                        </StackPanel>
 
                         <TextBlock Text="{loc:Tr Etl_MappingGroup}" FontWeight="SemiBold" Margin="0,12,0,4" />
                         <DataGrid x:Name="EtlMappingsGrid" ItemsSource="{Binding SelectedStep.Mappings}" Height="230"

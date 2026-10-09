@@ -48,7 +48,8 @@ internal static class JsonRecords
         records.Add(record);
     }
 
-    private static object? ToValue(JsonElement element) => element.ValueKind switch
+    /// <summary>JSON 値をフラット値へ変換する（文字列 / 数値原文 / true / false / null、ネストは生 JSON）。</summary>
+    public static object? ToValue(JsonElement element) => element.ValueKind switch
     {
         JsonValueKind.String => element.GetString(),
         JsonValueKind.Number => element.GetRawText(),

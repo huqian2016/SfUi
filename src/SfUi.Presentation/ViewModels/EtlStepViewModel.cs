@@ -25,19 +25,25 @@ public sealed partial class EtlStepViewModel : ObservableObject
     private readonly IFilePickerService _files;
     private readonly AppPaths _paths;
     private readonly Action<string> _status;
+    private readonly SalesforceRestClient _rest;
+    private readonly Func<string> _targetOrg;
 
     public EtlStepViewModel(
         string stepId,
         IDialogService dialogs,
         IFilePickerService files,
         AppPaths paths,
-        Action<string> status)
+        Action<string> status,
+        SalesforceRestClient rest,
+        Func<string> targetOrg)
     {
         StepId = stepId;
         _dialogs = dialogs;
         _files = files;
         _paths = paths;
         _status = status;
+        _rest = rest;
+        _targetOrg = targetOrg;
     }
 
     /// <summary>ステップ Id（journal / crosswalk の単位）。</summary>
@@ -50,7 +56,7 @@ public sealed partial class EtlStepViewModel : ObservableObject
     /// <summary>出力オブジェクト名（未入力時は Output）。</summary>
     public string EffectiveObjectName => string.IsNullOrWhiteSpace(ObjectApiName) ? "Output" : ObjectApiName.Trim();
 
-    public IReadOnlyList<string> SourceTypeOptions { get; } = new[] { "CSV", "TSV", "Excel", "JSON", "XML", "Database", "REST" };
+    public IReadOnlyList<string> SourceTypeOptions { get; } = new[] { "CSV", "TSV", "Excel", "JSON", "XML", "Database", "REST", "Salesforce" };
 
     [ObservableProperty]
     private string _selectedSourceType = "CSV";
@@ -135,6 +141,11 @@ public sealed partial class EtlStepViewModel : ObservableObject
     [ObservableProperty]
     private string _sourceRestPaging = "None";
 
+    // ---- 入力（Salesforce 選択時: SOQL） ----
+
+    [ObservableProperty]
+    private string _sourceSoql = string.Empty;
+
     // ---- 出力（Database 選択時） ----
 
     [ObservableProperty]
@@ -213,6 +224,7 @@ public sealed partial class EtlStepViewModel : ObservableObject
             Headers = NullIfBlank(SourceRestHeaders),
             Paging = SourceRestPaging,
         }),
+        "Salesforce" => new SalesforceSource(_rest, _targetOrg(), SourceSoql),
         _ => throw new InvalidOperationException("未対応の入力種別です: " + SelectedSourceType),
     };
 

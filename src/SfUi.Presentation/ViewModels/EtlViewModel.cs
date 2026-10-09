@@ -122,6 +122,8 @@ public sealed class EtlConnection
 
     public string SourceRestPaging { get; set; } = "None";
 
+    public string SourceSoql { get; set; } = string.Empty;
+
     public override string ToString() => Name;
 }
 
@@ -252,7 +254,7 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
             index++;
         }
 
-        var step = new EtlStepViewModel("step" + index, _dialogs, _files, _paths, message => StatusMessage = message);
+        var step = new EtlStepViewModel("step" + index, _dialogs, _files, _paths, message => StatusMessage = message, _rest, () => TargetOrg);
         Steps.Add(step);
         SelectedStep = step;
     }
@@ -337,6 +339,13 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
             {
                 SelectedStep = step;
                 _dialogs.Warning(UiText.T("Etl_RestSettings"), UiText.T("Etl_Title"));
+                return;
+            }
+
+            if (step.SelectedSourceType == "Salesforce" && (!HasOrg || string.IsNullOrWhiteSpace(step.SourceSoql)))
+            {
+                SelectedStep = step;
+                _dialogs.Warning(UiText.T("Etl_SoqlSettings"), UiText.T("Etl_Title"));
                 return;
             }
 
@@ -699,6 +708,7 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
             SourceRestPassword = step.SourceRestPassword,
             SourceRestHeaders = step.SourceRestHeaders,
             SourceRestPaging = step.SourceRestPaging,
+            SourceSoql = step.SourceSoql,
         });
         SaveConnectionsFile();
     }
@@ -733,6 +743,7 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
         step.SourceRestPassword = SelectedConnection.SourceRestPassword;
         step.SourceRestHeaders = SelectedConnection.SourceRestHeaders;
         step.SourceRestPaging = SelectedConnection.SourceRestPaging;
+        step.SourceSoql = SelectedConnection.SourceSoql;
     }
 
     [RelayCommand]

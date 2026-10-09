@@ -1409,6 +1409,8 @@ public static partial class UiText
         ["Etl_RestHeaders"] = "标头",
         ["Etl_RestPaging"] = "分页",
         ["Etl_RestSettings"] = "请输入 REST URL（http/https）。",
+        ["Etl_Soql"] = "SOQL 查询",
+        ["Etl_SoqlSettings"] = "请输入 SOQL 查询并选择组织。",
         ["Etl_Run"] = "运行",
         ["Etl_DryRun"] = "验证 (dry-run)",
         ["Etl_Stop"] = "停止",

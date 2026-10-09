@@ -116,6 +116,13 @@
                                              Text="{Binding SelectedStep.SourceRestHeaders, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                              AutomationProperties.Name="{loc:Tr Etl_RestHeaders}" />
                                 </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                    <TextBlock Text="{loc:Tr Etl_Soql}" VerticalAlignment="Top" Margin="0,6,4,0" />
+                                    <TextBox x:Name="EtlSourceSoqlBox" Width="640" Height="56" AcceptsReturn="True"
+                                             VerticalScrollBarVisibility="Auto" VerticalContentAlignment="Top"
+                                             Text="{Binding SelectedStep.SourceSoql, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             AutomationProperties.Name="{loc:Tr Etl_Soql}" />
+                                </StackPanel>
                             </StackPanel>
                         </GroupBox>
 

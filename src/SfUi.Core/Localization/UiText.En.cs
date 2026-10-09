@@ -1408,6 +1408,8 @@ public static partial class UiText
         ["Etl_RestHeaders"] = "Headers",
         ["Etl_RestPaging"] = "Paging",
         ["Etl_RestSettings"] = "Enter the REST URL (http/https).",
+        ["Etl_Soql"] = "SOQL query",
+        ["Etl_SoqlSettings"] = "Enter the SOQL query and select an org.",
         ["Etl_Run"] = "Run",
         ["Etl_DryRun"] = "Validate (dry-run)",
         ["Etl_Stop"] = "Stop",

@@ -1,6 +1,6 @@
 # SfUi ETL 機能 設計書
 
-最終更新: 2026-10-09 / ステータス: **P1 縦串 + マルチステップ（エンジン + UI）+ DB・REST コネクタ（エンジン + UI）完了 — エンジン / 式 / マッピング / CSV・Excel・JSON・XML・DB・REST 入力（GET + ページング 4 方式 + 認証 4 方式）/ Salesforce・CSV・DB（SQLite / SQL Server / PostgreSQL / ODBC）出力 / 安全 5 機能 / ETL ウィンドウ（両アプリ・4 領域・ステップ リスト、DB / REST 設定付き）/ マルチステップ（crosswalk + LOOKUP、逆順ロールバック）。検証: 674 テスト + `--smoke-etl`（実組織 + オフライン CSV→CSV / CSV→SQLite）+ UI E2E（CSV→SQLite→CSV、REST→CSV: 認証なし / カスタムヘッダーの両方、両アプリ）+ 両アプリ UIA + CI グリーン（Windows/macOS）。次の段階: Salesforce 入力（SOQL、P2）・非 CSV 入力の実組織スモーク・式関数拡充（P3）**
+最終更新: 2026-10-09 / ステータス: **P1 縦串 + マルチステップ（エンジン + UI）+ DB・REST・Salesforce コネクタ（エンジン + UI）完了 — エンジン / 式 / マッピング / CSV・Excel・JSON・XML・DB・REST 入力（GET + ページング 4 方式 + 認証 4 方式）・Salesforce 入力（SOQL、REST ページング）/ Salesforce・CSV・DB（SQLite / SQL Server / PostgreSQL / ODBC）出力 / 安全 5 機能 / ETL ウィンドウ（両アプリ・4 領域・ステップ リスト、DB / REST / SOQL 設定付き）/ マルチステップ（crosswalk + LOOKUP、逆順ロールバック）。検証: 683 テスト + `--smoke-etl`（実組織 + オフライン CSV→CSV / CSV→SQLite + SOQL→CSV）+ UI E2E（CSV→SQLite→CSV、REST→CSV、SOQL→CSV: 実組織、両アプリ）+ 両アプリ UIA + CI グリーン（Windows/macOS）。次の段階: Bulk 入力・delta モード（P2）・非 CSV 入力の実組織スモーク・式関数拡充（P3）**
 対象: WPF (`SfUi.App`) + Avalonia (`SfUi.Avalonia`) の両方
 
 ---
