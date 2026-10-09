@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\SfUi.Core\SfUi.Core.csproj" />
+    <ProjectReference Include="..\..\src\SfUi.Etl\SfUi.Etl.csproj" />
     <ProjectReference Include="..\..\src\SfUi.Presentation\SfUi.Presentation.csproj" />
   </ItemGroup>
 
