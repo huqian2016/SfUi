@@ -8,7 +8,7 @@
     <Nullable>enable</Nullable>
     <AssemblyName>SfUi</AssemblyName>
     <RootNamespace>SfUi.App</RootNamespace>
-    <Version>0.14.1</Version>
+    <Version>0.15.0</Version>
     <ApplicationIcon>SfUi.ico</ApplicationIcon>
   </PropertyGroup>
 
