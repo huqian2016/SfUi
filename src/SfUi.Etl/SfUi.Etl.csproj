@@ -12,5 +12,6 @@
     <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.20" />
     <PackageReference Include="DynamicExpresso.Core" Version="2.19.6" />
     <PackageReference Include="System.Text.Encoding.CodePages" Version="9.0.20" />
+    <PackageReference Include="ExcelDataReader" Version="3.9.0" />
   </ItemGroup>
 </Project>
