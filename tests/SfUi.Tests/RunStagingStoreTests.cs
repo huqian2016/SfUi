@@ -160,6 +160,19 @@ public class RunStagingStoreTests : IDisposable
     }
 
     [Fact]
+    public void Crosswalk_LookupByObject_AcrossSteps()
+    {
+        using var store = RunStagingStore.Create(_dir, "run-009");
+        store.UpsertCrosswalk("step1", "Account", "K1", "001A");
+        store.UpsertCrosswalk("step2", "Account", "K2", "001B");
+
+        Assert.Equal("001A", store.LookupCrosswalkByObject("Account", "K1"));
+        Assert.Equal("001B", store.LookupCrosswalkByObject("Account", "K2"));
+        Assert.Null(store.LookupCrosswalkByObject("Account", "K9"));
+        Assert.Null(store.LookupCrosswalkByObject("Contact", "K1"));
+    }
+
+    [Fact]
     public void Journal_Append_Query_And_Revert()
     {
         using var store = RunStagingStore.Create(_dir, "run-007");

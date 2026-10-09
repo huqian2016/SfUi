@@ -229,6 +229,20 @@ public sealed class RunStagingStore : IDisposable
         return cmd.ExecuteScalar() as string;
     }
 
+    /// <summary>オブジェクト名 + source_key で crosswalk を参照する（ステップ横断。未登録は null）。</summary>
+    public string? LookupCrosswalkByObject(string objectName, string sourceKey)
+    {
+        using var cmd = _source.CreateCommand();
+        cmd.CommandText = """
+            SELECT target_id FROM crosswalk
+            WHERE object_name = $object AND source_key = $key AND target_id IS NOT NULL
+            LIMIT 1;
+            """;
+        cmd.Parameters.AddWithValue("$object", objectName);
+        cmd.Parameters.AddWithValue("$key", sourceKey);
+        return cmd.ExecuteScalar() as string;
+    }
+
     /// <summary>crosswalk の件数。</summary>
     public long CountCrosswalk(string stepId, string objectName)
     {

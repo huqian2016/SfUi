@@ -57,6 +57,21 @@ public class EtlRunnerTests : IDisposable
     }
 
     [Fact]
+    public async Task Crosswalk_Written_OnSuccess()
+    {
+        var (store, target) = Setup(3);
+        using var _ = store;
+
+        var runner = new EtlRunner(store, target, "step1", "Contact", new EtlApplyOptions(), crosswalkKeyIndex: 0);
+        var result = await runner.RunAsync();
+
+        Assert.Equal(3, result.Success);
+        Assert.Equal(3, store.CountCrosswalk("step1", "Contact"));
+        Assert.Equal("T1", store.LookupCrosswalk("step1", "Contact", "姓1"));
+        Assert.Equal("T3", store.LookupCrosswalkByObject("Contact", "姓3"));
+    }
+
+    [Fact]
     public async Task PermanentFailure_MarksFailed_AndContinues()
     {
         var (store, target) = Setup(5);

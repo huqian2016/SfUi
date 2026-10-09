@@ -22,6 +22,9 @@ public sealed class EtlStepPlan
     /// <summary>出力ターゲット。</summary>
     public required IEtlTarget Target { get; init; }
 
+    /// <summary>crosswalk に source_key として記録するターゲット項目名（親ステップの Id 受渡し用。null = 記録しない）。</summary>
+    public string? CrosswalkKeyField { get; init; }
+
     /// <summary>巻き戻し対応ターゲット（自動ロールバック / 手動リストア用。null = 非対応）。</summary>
     public IEtlRevertable? Revertable { get; init; }
 }
@@ -54,12 +57,33 @@ public sealed class EtlStepRun
     private readonly RunStagingStore _store;
     private readonly EtlStepPlan _plan;
     private readonly EtlApplyOptions _applyOptions;
+    private readonly int _crosswalkKeyIndex;
 
     public EtlStepRun(RunStagingStore store, EtlStepPlan plan, EtlApplyOptions? applyOptions = null)
     {
         _store = store;
         _plan = plan;
         _applyOptions = applyOptions ?? new EtlApplyOptions();
+
+        _crosswalkKeyIndex = -1;
+        if (!string.IsNullOrWhiteSpace(plan.CrosswalkKeyField))
+        {
+            var columns = plan.Mapper.StagingColumns;
+            for (var i = 0; i < columns.Count; i++)
+            {
+                if (string.Equals(columns[i].Name, plan.CrosswalkKeyField, StringComparison.OrdinalIgnoreCase))
+                {
+                    _crosswalkKeyIndex = i;
+                    break;
+                }
+            }
+
+            if (_crosswalkKeyIndex < 0)
+            {
+                throw new ArgumentException(
+                    $"CrosswalkKeyField '{plan.CrosswalkKeyField}' がマッピングに含まれていません。", nameof(plan));
+            }
+        }
     }
 
     public EtlStepPlan Plan => _plan;
@@ -85,7 +109,7 @@ public sealed class EtlStepRun
     /// <summary>適用ループを実行する（dry-run はレポートのみ）。</summary>
     public async Task<EtlRunResult> ApplyAsync(bool dryRun = false, CancellationToken ct = default)
     {
-        var runner = new EtlRunner(_store, _plan.Target, _plan.StepId, _plan.ObjectName, _applyOptions);
+        var runner = new EtlRunner(_store, _plan.Target, _plan.StepId, _plan.ObjectName, _applyOptions, _crosswalkKeyIndex);
         if (Progress is not null)
         {
             runner.Progress += p => Progress(p);

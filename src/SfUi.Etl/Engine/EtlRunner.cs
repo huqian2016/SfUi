@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using SfUi.Etl.Staging;
 
 namespace SfUi.Etl.Engine;
@@ -20,19 +21,22 @@ public sealed class EtlRunner
     private readonly string _stepId;
     private readonly string _objectName;
     private readonly EtlApplyOptions _options;
+    private readonly int _crosswalkKeyIndex;
 
     public EtlRunner(
         RunStagingStore store,
         IEtlTarget target,
         string stepId,
         string objectName,
-        EtlApplyOptions? options = null)
+        EtlApplyOptions? options = null,
+        int crosswalkKeyIndex = -1)
     {
         _store = store;
         _target = target;
         _stepId = stepId;
         _objectName = objectName;
         _options = options ?? new EtlApplyOptions();
+        _crosswalkKeyIndex = crosswalkKeyIndex;
     }
 
     /// <summary>進捗（バッチ完了ごとに発火）。</summary>
@@ -102,6 +106,19 @@ public sealed class EtlRunner
                     if (outcome.Success)
                     {
                         _store.MarkQueueRow(_objectName, row.RowId, QueueStatus.Ok, outcome.TargetId, null, outcome.JournalId, incrementAttempts: true);
+
+                        // 親ステップの Id を crosswalk に記録（子ステップの LOOKUP で解決）
+                        if (_crosswalkKeyIndex >= 0 && !string.IsNullOrEmpty(outcome.TargetId))
+                        {
+                            var key = Convert.ToString(
+                                row.Values.Length > _crosswalkKeyIndex ? row.Values[_crosswalkKeyIndex] : null,
+                                CultureInfo.InvariantCulture);
+                            if (!string.IsNullOrEmpty(key))
+                            {
+                                _store.UpsertCrosswalk(_stepId, _objectName, key, outcome.TargetId);
+                            }
+                        }
+
                         result.Success++;
                         consecutiveFailures = 0;
                     }

@@ -1332,6 +1332,138 @@ public partial class App : Application
                 }
             }
 
+            // ---- D) マルチステップ: Account（親）→ Contact（子）を LOOKUP で接続 ----
+            var multiMarker = "SfUiEtlJob" + DateTime.Now.ToString("MMddHHmmss", CultureInfo.InvariantCulture);
+            var parentCsv = Path.Combine(tmp, "parents.csv");
+            File.WriteAllText(parentCsv, $"Name\r\n{multiMarker}_A\r\n{multiMarker}_B\r\n", new UTF8Encoding(false));
+            var childCsv = Path.Combine(tmp, "children.csv");
+            File.WriteAllText(
+                childCsv,
+                $"LastName,ParentName\r\n{multiMarker}_C1,{multiMarker}_A\r\n{multiMarker}_C2,{multiMarker}_B\r\n",
+                new UTF8Encoding(false));
+
+            var multiDir = Path.Combine(paths.EtlRunsRoot, "run-smoke-multistep");
+            using (var store = RunStagingStore.Create(multiDir, "run-smoke-multistep"))
+            {
+                var host = new ExpressionHost
+                {
+                    UserName = Environment.UserName,
+                    OrgName = org!,
+                    MachineName = Environment.MachineName,
+                };
+                EtlCrosswalk.WireLookup(host, store);
+
+                var parentSource = new CsvFileSource(parentCsv);
+                var parentMapper = new RowMapper(
+                    parentSource.Columns,
+                    new[] { new FieldMapping("Name", "[Name]") },
+                    new ExpressionEngine(host));
+                var parentTarget = new SalesforceTarget(rest, org!, new SalesforceTargetOptions
+                {
+                    ObjectName = "Account",
+                    Fields = new[] { "Name" },
+                    Op = RowOp.Insert,
+                }, _log);
+                var parentStep = new EtlStepPlan
+                {
+                    StepId = "step1",
+                    ObjectName = "Account",
+                    Source = parentSource,
+                    Mapper = parentMapper,
+                    Target = parentTarget,
+                    Revertable = parentTarget,
+                    CrosswalkKeyField = "Name",
+                };
+
+                var childSource = new CsvFileSource(childCsv);
+                var childMapper = new RowMapper(
+                    childSource.Columns,
+                    new[]
+                    {
+                        new FieldMapping("LastName", "[LastName]"),
+                        new FieldMapping("AccountId", "LOOKUP(\"Account\", \"Name\", [ParentName])"),
+                    },
+                    new ExpressionEngine(host));
+                var childTarget = new SalesforceTarget(rest, org!, new SalesforceTargetOptions
+                {
+                    ObjectName = "Contact",
+                    Fields = new[] { "LastName", "AccountId" },
+                    Op = RowOp.Insert,
+                }, _log);
+                var childStep = new EtlStepPlan
+                {
+                    StepId = "step2",
+                    ObjectName = "Contact",
+                    Source = childSource,
+                    Mapper = childMapper,
+                    Target = childTarget,
+                    Revertable = childTarget,
+                };
+
+                var job = new EtlJobRunner(store, new EtlJobPlan
+                {
+                    JobName = "smoke-multistep",
+                    Steps = new[] { parentStep, childStep },
+                });
+                var jobResult = await job.RunAsync();
+
+                var stepOk = jobResult.Steps.Count == 2
+                    && jobResult.Steps[0].Apply!.Success == 2
+                    && jobResult.Steps[1].Apply!.Success == 2
+                    && !jobResult.Stopped;
+                _log.Info($"--smoke-etl: [multistep] 親成功={jobResult.Steps.ElementAtOrDefault(0)?.Apply?.Success} / 子成功={jobResult.Steps.ElementAtOrDefault(1)?.Apply?.Success}（期待 2 / 2）");
+                if (!stepOk)
+                {
+                    success = false;
+                    _log.Error("--smoke-etl: [multistep] 適用の検証に失敗しました");
+                }
+
+                // 子 Contact が LOOKUP で解決した親 Account を指しているか
+                var linkedOk = false;
+                using (var document = await rest.QueryAsync(org!, $"SELECT Id, AccountId, Account.Name FROM Contact WHERE LastName LIKE '{multiMarker}%'"))
+                {
+                    var records = document.RootElement.GetProperty("records");
+                    linkedOk = records.GetArrayLength() == 2;
+                    if (linkedOk)
+                    {
+                        foreach (var record in records.EnumerateArray())
+                        {
+                            var accountId = record.TryGetProperty("AccountId", out var accId) && accId.ValueKind != JsonValueKind.Null ? accId.GetString() : null;
+                            var accountName = record.TryGetProperty("Account", out var acc) && acc.TryGetProperty("Name", out var name)
+                                ? name.GetString()
+                                : null;
+                            if (string.IsNullOrEmpty(accountId) ||
+                                accountName is null ||
+                                !accountName.StartsWith(multiMarker, StringComparison.Ordinal))
+                            {
+                                linkedOk = false;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                _log.Info($"--smoke-etl: [multistep] 子→親リンク OK={linkedOk}");
+                if (!linkedOk)
+                {
+                    success = false;
+                    _log.Error("--smoke-etl: [multistep] LOOKUP による Id 受渡しの検証に失敗しました");
+                }
+
+                // 子 → 親の順に巻き戻し（成功後の巻き戻し）
+                var childRollback = await new EtlStepRun(store, childStep).RollbackAsync();
+                var parentRollback = await new EtlStepRun(store, parentStep).RollbackAsync();
+                var remainingContacts = await DeleteMarkersAsync(rest, org!, apiVersion, "Contact", "LastName", multiMarker + "%");
+                var remainingAccounts = await DeleteMarkersAsync(rest, org!, apiVersion, "Account", "Name", multiMarker + "%");
+                var revertOk = childRollback.Reverted == 2 && parentRollback.Reverted == 2 && remainingContacts == 0 && remainingAccounts == 0;
+                _log.Info($"--smoke-etl: [multistep] 巻き戻し 子={childRollback.Reverted} / 親={parentRollback.Reverted} / 残件 Contact={remainingContacts} Account={remainingAccounts}（期待 2 / 2 / 0 / 0）");
+                if (!revertOk)
+                {
+                    success = false;
+                    _log.Error("--smoke-etl: [multistep] 巻き戻しの検証に失敗しました");
+                }
+            }
+
             // 後片付け（保険）
             var leftovers = await DeleteMarkersAsync(rest, org!, apiVersion, "Contact", "LastName", marker + "%");
             if (leftovers > 0)
