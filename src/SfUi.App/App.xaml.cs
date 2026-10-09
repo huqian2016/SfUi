@@ -1292,6 +1292,98 @@ public partial class App : Application
                 _log.Error("--smoke-etl: [delta] 検証に失敗しました");
             }
 
+            // ---- オフライン 4: retry（失敗行のみ再実行。ステージング済みキューを再利用しソース再読込なし）----
+            var retryDbPath = Path.Combine(tmp, "etl-smoke-retry.db");
+            if (File.Exists(retryDbPath))
+            {
+                File.Delete(retryDbPath);
+            }
+
+            var retrySpec = new DbConnectionSpec(DbProviderKind.Sqlite, "Data Source=" + retryDbPath);
+            await using (var connection = retrySpec.CreateConnection())
+            {
+                await connection.OpenAsync();
+                await using var command = connection.CreateCommand();
+                command.CommandText =
+                    "CREATE TABLE items (Name TEXT PRIMARY KEY, Note TEXT); " +
+                    "INSERT INTO items (Name, Note) VALUES ('Alpha', 'x'), ('Beta', 'x');";
+                await command.ExecuteNonQueryAsync();
+            }
+
+            var retryCsv = Path.Combine(tmp, "retry.csv");
+            File.WriteAllText(retryCsv, "Name,Note\r\nAlpha,new\r\nBeta,new\r\nGamma,new\r\n", new UTF8Encoding(false));
+
+            var retryRunDir = Path.Combine(paths.EtlRunsRoot, "run-smoke-retry");
+            using (var store = RunStagingStore.Create(retryRunDir, "run-smoke-retry"))
+            {
+                async Task<long> CountUpdatedAsync()
+                {
+                    await using var connection = retrySpec.CreateConnection();
+                    await connection.OpenAsync();
+                    await using var command = connection.CreateCommand();
+                    command.CommandText = "SELECT COUNT(*) FROM items WHERE Note = 'new'";
+                    return Convert.ToInt64(await command.ExecuteScalarAsync(), CultureInfo.InvariantCulture);
+                }
+
+                var retrySource = new CsvFileSource(retryCsv);
+                var retryMapper = new RowMapper(
+                    retrySource.Columns,
+                    new[]
+                    {
+                        new FieldMapping("Name", "[Name]"),
+                        new FieldMapping("Note", "[Note]"),
+                    },
+                    new ExpressionEngine());
+                var retryTarget = new DbTableTarget(retrySpec, new DbTableTargetOptions
+                {
+                    Table = "items",
+                    Fields = new[] { "Name", "Note" },
+                    Op = RowOp.Update,
+                    KeyField = "Name",
+                });
+                var retryPlan = new EtlStepPlan
+                {
+                    StepId = "step1",
+                    ObjectName = "items",
+                    Source = retrySource,
+                    Mapper = retryMapper,
+                    Target = retryTarget,
+                };
+
+                // 初回: Gamma が DB に存在しないため更新失敗（行レベル Failed=1。例外は出ない）
+                var retryStep = new EtlStepRun(store, retryPlan);
+                var firstRun = await retryStep.RunAsync();
+                var firstOk = firstRun.Apply!.Success == 2 && firstRun.Apply.Failed == 1 && !firstRun.Apply.Stopped;
+                _log.Info($"--smoke-etl: [retry] 初回 success={firstRun.Apply.Success}（期待 2）/ failed={firstRun.Apply.Failed}（期待 1）");
+                if (!firstOk)
+                {
+                    success = false;
+                    _log.Error("--smoke-etl: [retry] 初回適用の検証に失敗しました");
+                }
+
+                // 失敗原因（Gamma 行の欠落）を解消してから失敗行のみ再実行する（ソースは再読込しない）
+                await using (var connection = retrySpec.CreateConnection())
+                {
+                    await connection.OpenAsync();
+                    await using var command = connection.CreateCommand();
+                    command.CommandText = "INSERT INTO items (Name, Note) VALUES ('Gamma', 'x');";
+                    await command.ExecuteNonQueryAsync();
+                }
+
+                var reset = store.ResetFailedToPending("items");
+                var retryRunner = new EtlRunner(store, retryTarget, "step1", "items");
+                var retryResult = await retryRunner.RunAsync();
+                var updated = await CountUpdatedAsync();
+                var retryOk = reset == 1 && retryResult.Success == 1 && retryResult.Failed == 0
+                    && retryResult.Pending == 0 && updated == 3;
+                _log.Info($"--smoke-etl: [retry] 再実行 reset={reset}（期待 1）/ success={retryResult.Success}（期待 1）/ 更新済み={updated}（期待 3）");
+                if (!retryOk)
+                {
+                    success = false;
+                    _log.Error("--smoke-etl: [retry] 再実行の検証に失敗しました");
+                }
+            }
+
             if (string.IsNullOrWhiteSpace(org))
             {
                 _log.Info("--smoke-etl: 実組織テストはスキップ（組織未指定。--smoke-etl <org> で実行）");

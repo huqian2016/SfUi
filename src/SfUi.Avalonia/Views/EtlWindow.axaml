@@ -244,6 +244,9 @@
                             <Button x:Name="EtlStopButton" Content="{loc:Tr Etl_Stop}" Padding="14,4" Margin="8,0,0,0"
                                     Command="{Binding StopCommand}" IsEnabled="{Binding IsRunning}"
                                     AutomationProperties.Name="{loc:Tr Etl_Stop}" />
+                            <Button x:Name="EtlRetryFailedButton" Content="{loc:Tr Etl_RetryFailed}" Padding="14,4" Margin="8,0,0,0"
+                                    Command="{Binding RetryFailedCommand}" IsEnabled="{Binding IsNotRunning}"
+                                    AutomationProperties.Name="{loc:Tr Etl_RetryFailed}" />
                         </StackPanel>
 
                     </StackPanel>
@@ -254,8 +257,7 @@
             <TabItem Header="{loc:Tr Etl_TabMonitor}">
                 <DockPanel Margin="10">
                     <TextBlock x:Name="EtlCountsText" DockPanel.Dock="Top" Text="{Binding CountsText}"
-                               FontWeight="SemiBold" Margin="0,0,0,6"
-                               AutomationProperties.Name="{loc:Tr Etl_TabMonitor}" />
+                               FontWeight="SemiBold" Margin="0,0,0,6" />
                     <ListBox x:Name="EtlLogList" ItemsSource="{Binding LogLines}"
                              FontFamily="Consolas" FontSize="12"
                              AutomationProperties.Name="{loc:Tr Etl_TabMonitor}" />

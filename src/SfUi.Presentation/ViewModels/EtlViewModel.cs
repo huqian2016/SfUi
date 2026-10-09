@@ -329,6 +329,115 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void Stop() => _cts?.Cancel();
 
+    /// <summary>前回実行の失敗行のみを再実行する（ステージング済みのキューを再利用し、ソースは再読込しない）。</summary>
+    [RelayCommand]
+    private async Task RetryFailedAsync()
+    {
+        if (IsRunning)
+        {
+            return;
+        }
+
+        if (_store is null)
+        {
+            StatusMessage = UiText.T("Etl_RetryNoRun");
+            return;
+        }
+
+        var retryable = new List<(EtlStepViewModel Step, int Failed)>();
+        foreach (var step in Steps)
+        {
+            var objectName = step.EffectiveObjectName;
+            if (!_store.QueueTableExists(objectName))
+            {
+                continue;
+            }
+
+            var counts = _store.CountQueueByStatus(objectName);
+            if (counts.TryGetValue(QueueStatus.Failed, out var failed) && failed > 0)
+            {
+                retryable.Add((step, failed));
+            }
+        }
+
+        if (retryable.Count == 0)
+        {
+            StatusMessage = UiText.T("Etl_RetryNoFailed");
+            return;
+        }
+
+        if (retryable.Any(r => r.Step.SelectedTargetType == "Salesforce") &&
+            !_dialogs.Confirm(
+                string.Join(", ", retryable.Select(r => r.Step.EffectiveObjectName)),
+                UiText.T("Etl_RetryFailed")))
+        {
+            return;
+        }
+
+        IsRunning = true;
+        CountsText = string.Empty;
+        _cts = new CancellationTokenSource();
+        var ct = _cts.Token;
+
+        try
+        {
+            var options = new EtlApplyOptions
+            {
+                BatchSize = Math.Max(1, BatchSize),
+                MaxErrorRate = ParseErrorRate(),
+            };
+
+            foreach (var (step, failed) in retryable)
+            {
+                ct.ThrowIfCancellationRequested();
+                AppendLog(UiText.T("Etl_RetryStartFmt", step.StepId, failed));
+                _store.ResetFailedToPending(step.EffectiveObjectName);
+
+                // crosswalk キーの位置を決める（マッピングのみから算出。ソースは読まない）
+                var crosswalkIndex = -1;
+                if (!string.IsNullOrWhiteSpace(step.CrosswalkKeyField))
+                {
+                    var columns = step.CreateMapper(new ExpressionEngine()).StagingColumns;
+                    for (var i = 0; i < columns.Count; i++)
+                    {
+                        if (string.Equals(columns[i].Name, step.CrosswalkKeyField.Trim(), StringComparison.OrdinalIgnoreCase))
+                        {
+                            crosswalkIndex = i;
+                            break;
+                        }
+                    }
+                }
+
+                var (target, _) = step.CreateTarget(_rest, TargetOrg, _log);
+                var runner = new EtlRunner(_store, target, step.StepId, step.EffectiveObjectName, options, crosswalkIndex);
+                runner.Progress += p => _dispatcher.Post(() =>
+                    CountsText = step.StepId + " " + UiText.T("Etl_ProgressFmt", p.Attempted, p.Success, p.Failed, p.Skipped));
+                var result = await Task.Run(() => runner.RunAsync(dryRun: false, ct), ct);
+                AppendLog(step.StepId + ": " + UiText.T("Etl_CompleteFmt", result.Success, result.Failed, result.Pending, result.StopReason));
+            }
+
+            StatusMessage = UiText.T("Etl_RetryFailed");
+            RefreshRuns();
+        }
+        catch (OperationCanceledException)
+        {
+            AppendLog(UiText.T("Etl_Stop"));
+            StatusMessage = UiText.T("Etl_Stop");
+        }
+        catch (Exception ex)
+        {
+            _log.Error("ETL 失敗行の再実行に失敗しました", ex);
+            AppendLog(UiText.T("Common_FailedFmt", ex.Message));
+            StatusMessage = UiText.T("Common_FailedFmt", ex.Message);
+        }
+        finally
+        {
+            IsRunning = false;
+            _cts?.Dispose();
+            _cts = null;
+        }
+    }
+
     private async Task RunCoreAsync(bool dryRun)
     {
         if (IsRunning)

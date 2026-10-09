@@ -397,6 +397,27 @@ public sealed class RunStagingStore : IDisposable
         return result;
     }
 
+    /// <summary>失敗行を pending に戻す（失敗行のみ再実行用。試行回数はリセット）。戻り値は対象行数。</summary>
+    public int ResetFailedToPending(string objectName)
+    {
+        using var cmd = _target.CreateCommand();
+        cmd.CommandText = $"""
+            UPDATE {Q(StagingTableName(objectName))}
+            SET "_status" = 'pending', "_error" = NULL, "_attempts" = 0
+            WHERE "_status" = 'failed';
+            """;
+        return cmd.ExecuteNonQuery();
+    }
+
+    /// <summary>適用キュー テーブル（stg_&lt;object&gt;）が存在するか（未実行ステップの判定用）。</summary>
+    public bool QueueTableExists(string objectName)
+    {
+        using var cmd = _target.CreateCommand();
+        cmd.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = $name;";
+        cmd.Parameters.AddWithValue("$name", StagingTableName(objectName));
+        return Convert.ToInt64(cmd.ExecuteScalar(), CultureInfo.InvariantCulture) > 0;
+    }
+
     // ------------------------------------------------------------------ journal（適用ジャーナル = 復元用）
 
     /// <summary>journal に 1 件追記して Id を返す。</summary>
