@@ -1114,6 +1114,74 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>現在のジョブ定義をファイルへエクスポートする（接続情報は含まれない）。</summary>
+    [RelayCommand]
+    private async Task ExportJobAsync()
+    {
+        if (Steps.Count == 0)
+        {
+            _dialogs.Warning(UiText.T("Etl_JobEmpty"), Title);
+            return;
+        }
+
+        var name = string.IsNullOrWhiteSpace(JobName) ? "etl-job" : JobName.Trim();
+        var path = await _files.SaveFileAsync(
+            UiText.T("Etl_JobExportTitle"),
+            name + ".json",
+            UiText.T("Etl_JobExportFilter"),
+            _paths.EtlJobsRoot);
+        if (path is null)
+        {
+            return;
+        }
+
+        try
+        {
+            EtlJobExport.Export(BuildJobDefinition(name), path);
+            AppendLog(UiText.T("Etl_JobExportedFmt", path));
+            StatusMessage = UiText.T("Etl_JobExportedFmt", path);
+            _log.Info($"ETL ジョブ エクスポート: {name} → {path}");
+        }
+        catch (Exception ex)
+        {
+            _log.Error("ETL ジョブのエクスポートに失敗しました", ex);
+            _dialogs.Warning(UiText.T("Common_FailedFmt", ex.Message), Title);
+        }
+    }
+
+    /// <summary>ジョブ ファイルをインポートしてエディタへ適用する。</summary>
+    [RelayCommand]
+    private async Task ImportJobAsync()
+    {
+        var path = await _files.OpenFileAsync(
+            UiText.T("Etl_JobImportTitle"),
+            UiText.T("Etl_JobExportFilter"),
+            _paths.DataRoot);
+        if (path is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var job = EtlJobExport.Import(path);
+            ApplyJobDefinition(job);
+            JobName = job.Name;
+            AppendLog(UiText.T("Etl_JobImportedFmt", job.Name, job.Steps.Count));
+            StatusMessage = UiText.T("Etl_JobImportedFmt", job.Name, job.Steps.Count);
+            _log.Info($"ETL ジョブ インポート: {job.Name}（{job.Steps.Count} ステップ）← {path}");
+        }
+        catch (InvalidDataException)
+        {
+            _dialogs.Warning(UiText.T("Etl_JobImportInvalid"), Title);
+        }
+        catch (Exception ex)
+        {
+            _log.Error("ETL ジョブのインポートに失敗しました", ex);
+            _dialogs.Warning(UiText.T("Common_FailedFmt", ex.Message), Title);
+        }
+    }
+
     private EtlJobDefinition BuildJobDefinition(string name)
     {
         var job = new EtlJobDefinition

@@ -1,4 +1,6 @@
 using System.IO;
+using System.Text;
+using System.Text.Json;
 using SfUi.Core;
 using SfUi.Etl.Staging;
 
@@ -97,6 +99,75 @@ public sealed class EtlMappingDefinition
     public string Expression { get; set; } = string.Empty;
 
     public StagingColumnType Type { get; set; } = StagingColumnType.Text;
+}
+
+/// <summary>ジョブのエクスポート ファイル（他環境への受け渡し用。形式マーカー付き）。</summary>
+public sealed class EtlJobExportFile
+{
+    public string Format { get; set; } = EtlJobExport.FormatName;
+
+    public int Version { get; set; } = 1;
+
+    public EtlJobDefinition? Job { get; set; }
+}
+
+/// <summary>ジョブのエクスポート / インポート（任意のファイル パス。接続情報は含まれない）。</summary>
+public static class EtlJobExport
+{
+    public const string FormatName = "sfui-etl-job";
+
+    /// <summary>エクスポート用の JSON 文字列を作る。</summary>
+    public static string Serialize(EtlJobDefinition job)
+        => JsonSerializer.Serialize(new EtlJobExportFile { Job = job }, AtomicJsonFile.Options);
+
+    /// <summary>ファイルへ書き出す（UTF-8 BOM なし）。</summary>
+    public static void Export(EtlJobDefinition job, string filePath)
+        => File.WriteAllText(filePath, Serialize(job), new UTF8Encoding(false));
+
+    /// <summary>
+    /// エクスポート ファイルを読み込む（旧形式の素のジョブ JSON も受け付ける）。
+    /// ジョブとして解釈できない場合は <see cref="InvalidDataException"/>。
+    /// </summary>
+    public static EtlJobDefinition Import(string filePath)
+    {
+        var text = File.ReadAllText(filePath);
+
+        EtlJobDefinition? job = null;
+        try
+        {
+            var wrapper = JsonSerializer.Deserialize<EtlJobExportFile>(text, AtomicJsonFile.Options);
+            if (wrapper?.Job is not null && wrapper.Job.Steps.Count > 0)
+            {
+                job = wrapper.Job;
+            }
+        }
+        catch (JsonException)
+        {
+            // 素のジョブ JSON として再試行する
+        }
+
+        if (job is null)
+        {
+            try
+            {
+                var plain = JsonSerializer.Deserialize<EtlJobDefinition>(text, AtomicJsonFile.Options);
+                if (plain is not null && plain.Steps.Count > 0)
+                {
+                    job = plain;
+                }
+            }
+            catch (JsonException)
+            {
+            }
+        }
+
+        if (job is null)
+        {
+            throw new InvalidDataException("Not an ETL job file.");
+        }
+
+        return job;
+    }
 }
 
 /// <summary>ジョブ ファイルの読み書き（data/etl/jobs/&lt;name&gt;.json、AtomicJsonFile で原子的に保存）。</summary>

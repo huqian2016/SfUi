@@ -38,6 +38,10 @@
                                     Command="{Binding LoadJobCommand}" AutomationProperties.Name="{loc:Tr Etl_LoadJob}" />
                             <Button x:Name="EtlDeleteJobButton" Content="{loc:Tr Etl_DeleteJob}" Padding="10,2" Margin="8,0,0,0"
                                     Command="{Binding DeleteJobCommand}" AutomationProperties.Name="{loc:Tr Etl_DeleteJob}" />
+                            <Button x:Name="EtlExportJobButton" Content="{loc:Tr Etl_ExportJob}" Padding="10,2" Margin="8,0,0,0"
+                                    Command="{Binding ExportJobCommand}" AutomationProperties.Name="{loc:Tr Etl_ExportJob}" />
+                            <Button x:Name="EtlImportJobButton" Content="{loc:Tr Etl_ImportJob}" Padding="10,2" Margin="8,0,0,0"
+                                    Command="{Binding ImportJobCommand}" AutomationProperties.Name="{loc:Tr Etl_ImportJob}" />
                         </StackPanel>
 
                         <TextBlock Text="{loc:Tr Etl_StepsGroup}" FontWeight="SemiBold" Margin="0,0,0,4" />
