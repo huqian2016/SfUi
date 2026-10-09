@@ -179,6 +179,44 @@ public class EtlStepRunTests : IDisposable
         await Assert.ThrowsAsync<InvalidOperationException>(() => stepRun.RollbackAsync());
     }
 
+    [Fact]
+    public async Task PreRunBackup_RunsBeforeApply_OnlyWhenNotDryRun()
+    {
+        var csvPath = Path.Combine(_dir, "in6.csv");
+        File.WriteAllText(csvPath, "Id\r\n1\r\n", new UTF8Encoding(false));
+
+        using var store = RunStagingStore.Create(_dir, "step-6");
+        var plan = new EtlStepPlan
+        {
+            StepId = "step1",
+            ObjectName = "Contact",
+            Source = new CsvFileSource(csvPath),
+            Mapper = MapperFor(new[] { "Id" }, new FieldMapping("Code", "[Id]")),
+            Target = new CsvFileTarget(Path.Combine(_dir, "out6.csv"), new[] { "Code" }),
+        };
+
+        var stepRun = new EtlStepRun(store, plan);
+        var backupCalls = 0;
+        var pendingAtBackup = -1;
+        stepRun.PreRunBackup = _ =>
+        {
+            backupCalls++;
+            pendingAtBackup = store.CountQueueByStatus("Contact").TryGetValue(QueueStatus.Pending, out var p) ? p : 0;
+            return Task.FromResult<string?>("backup-001");
+        };
+
+        var dryRun = await stepRun.RunAsync(dryRun: true);
+        Assert.Equal(0, backupCalls);
+        Assert.Null(dryRun.BackupInfo);
+
+        var result = await stepRun.RunAsync();
+        Assert.Equal(1, backupCalls);
+        Assert.Equal("backup-001", result.BackupInfo);
+
+        // dry-run の残 pending = 1。フックが Prepare の後に動くなら 2 になるため、事前実行を証明できる
+        Assert.Equal(1, pendingAtBackup);
+    }
+
     private static object?[][] Rows(params string[] keys)
         => keys.Select(k => new object?[] { k }).ToArray();
 

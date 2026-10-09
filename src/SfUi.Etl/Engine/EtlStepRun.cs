@@ -35,6 +35,9 @@ public sealed class EtlStepRunResult
     /// <summary>適用キューへ積んだ行数。</summary>
     public int Enqueued { get; set; }
 
+    /// <summary>事前バックアップの結果情報（フックが設定され実行された場合のみ。パスやバックアップ Id など）。</summary>
+    public string? BackupInfo { get; set; }
+
     /// <summary>適用ループの結果（dry-run の場合も設定される）。</summary>
     public EtlRunResult? Apply { get; set; }
 
@@ -63,6 +66,12 @@ public sealed class EtlStepRun
 
     /// <summary>適用ループの進捗イベント。</summary>
     public event Action<EtlProgress>? Progress;
+
+    /// <summary>
+    /// 事前バックアップ フック（安全機能）。dry-run 以外の実行で Prepare 前に呼ばれ、
+    /// 戻り値（バックアップ Id / パス等）は <see cref="EtlStepRunResult.BackupInfo"/> に入る。
+    /// </summary>
+    public Func<CancellationToken, Task<string?>>? PreRunBackup { get; set; }
 
     /// <summary>ソース → マッピング → ステージング投入 → 適用キュー投入。</summary>
     public (int Loaded, int Enqueued) Prepare()
@@ -107,6 +116,12 @@ public sealed class EtlStepRun
         CancellationToken ct = default)
     {
         var result = new EtlStepRunResult();
+
+        if (!dryRun && PreRunBackup is not null)
+        {
+            result.BackupInfo = await PreRunBackup(ct).ConfigureAwait(false);
+        }
+
         var (loaded, enqueued) = Prepare();
         result.Loaded = loaded;
         result.Enqueued = enqueued;
