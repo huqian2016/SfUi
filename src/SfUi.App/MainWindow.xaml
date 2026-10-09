@@ -113,6 +113,18 @@
                 </Button>
 
                 <Button Style="{StaticResource IconButton}" Margin="0,0,10,0"
+                        Command="{Binding OpenEtlCommand}"
+                        AutomationProperties.Name="{loc:Tr Main_Etl}">
+                    <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconDataIo}" />
+                    <Button.ToolTip>
+                        <StackPanel MaxWidth="360">
+                            <TextBlock Text="{loc:Tr Main_Etl}" FontWeight="SemiBold" />
+                            <TextBlock Text="{loc:Tr Main_EtlTip}" TextWrapping="Wrap" Foreground="#555555" Margin="0,2,0,0" />
+                        </StackPanel>
+                    </Button.ToolTip>
+                </Button>
+
+                <Button Style="{StaticResource IconButton}" Margin="0,0,10,0"
                         Command="{Binding OpenOrgManageCommand}"
                         AutomationProperties.Name="{loc:Tr Main_OrgManage}">
                     <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconBuilding}" />

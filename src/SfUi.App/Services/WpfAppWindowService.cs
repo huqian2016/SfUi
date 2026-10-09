@@ -13,6 +13,7 @@ public sealed class WpfAppWindowService : IAppWindowService
     private readonly DataIoWindowFactory _dataIo;
     private readonly BackupWindowFactory _backup;
     private readonly OrgManageWindowFactory _orgManage;
+    private readonly EtlWindowFactory _etl;
     private readonly BackupRecordsWindowFactory _records;
     private readonly BackupCompareRecordsWindowFactory _compareRecords;
     private readonly LogAnalyzerWindowFactory _logAnalyzer;
@@ -26,6 +27,7 @@ public sealed class WpfAppWindowService : IAppWindowService
         DataIoWindowFactory dataIo,
         BackupWindowFactory backup,
         OrgManageWindowFactory orgManage,
+        EtlWindowFactory etl,
         BackupRecordsWindowFactory records,
         BackupCompareRecordsWindowFactory compareRecords,
         LogAnalyzerWindowFactory logAnalyzer,
@@ -38,6 +40,7 @@ public sealed class WpfAppWindowService : IAppWindowService
         _dataIo = dataIo;
         _backup = backup;
         _orgManage = orgManage;
+        _etl = etl;
         _records = records;
         _compareRecords = compareRecords;
         _logAnalyzer = logAnalyzer;
@@ -57,6 +60,8 @@ public sealed class WpfAppWindowService : IAppWindowService
     public void OpenBackup(OrgInfo org) => _backup.Open(org, ActiveOwner());
 
     public void OpenOrgManage(OrgInfo? initial) => _orgManage.Open(initial, ActiveOwner());
+
+    public void OpenEtl(OrgInfo? org) => _etl.Open(org, ActiveOwner());
 
     public void OpenBackupRecords(string backupId, BackupObjectInfo info, string displayName, OrgInfo? currentOrg) =>
         _records.Open(backupId, info, displayName, currentOrg, ActiveOwner());

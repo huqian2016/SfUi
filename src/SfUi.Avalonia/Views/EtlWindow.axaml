@@ -1,0 +1,204 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:SfUi.Avalonia"
+        x:Class="SfUi.Avalonia.Views.EtlWindow"
+        Title="{Binding Title}"
+        Height="780" Width="1180" MinWidth="960" MinHeight="560"
+        WindowStartupLocation="CenterOwner"
+        FontSize="13">
+    <DockPanel>
+
+        <!-- ヘッダー -->
+        <Border DockPanel.Dock="Top" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="10,6">
+            <StackPanel>
+                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding StatusMessage}" Foreground="#666666" Margin="0,2,0,0" TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
+
+        <TabControl Margin="8">
+
+            <!-- 1. ジョブ エディタ -->
+            <TabItem Header="{loc:Tr Etl_TabJob}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
+                    <StackPanel>
+
+                        <TextBlock Text="{loc:Tr Etl_SourceGroup}" FontWeight="SemiBold" Margin="0,0,0,4" />
+                        <StackPanel Orientation="Horizontal">
+                            <ComboBox x:Name="EtlSourceTypeBox" Width="90"
+                                      ItemsSource="{Binding SourceTypeOptions}"
+                                      SelectedItem="{Binding SelectedSourceType, Mode=TwoWay}"
+                                      AutomationProperties.Name="{loc:Tr Etl_SourceGroup}" />
+                            <TextBox x:Name="EtlSourcePathBox" Width="560" Margin="8,0,0,0" VerticalContentAlignment="Center"
+                                     Text="{Binding SourcePath, Mode=TwoWay}"
+                                     AutomationProperties.Name="{loc:Tr Etl_SourcePath}" />
+                            <Button x:Name="EtlBrowseSourceButton" Content="{loc:Tr Etl_Browse}" Margin="8,0,0,0" Padding="10,2"
+                                    Command="{Binding BrowseSourceCommand}"
+                                    AutomationProperties.Name="{loc:Tr Etl_Browse}" />
+                            <Button x:Name="EtlLoadButton" Content="{loc:Tr Etl_Load}" Margin="8,0,0,0" Padding="10,2"
+                                    Command="{Binding LoadSourceCommand}"
+                                    AutomationProperties.Name="{loc:Tr Etl_Load}" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                            <CheckBox x:Name="EtlHasHeaderBox" Content="{loc:Tr Etl_HasHeader}" VerticalAlignment="Center"
+                                      IsChecked="{Binding SourceHasHeader, Mode=TwoWay}" />
+                            <TextBlock Text="{loc:Tr Etl_Sheet}" Margin="16,0,4,0" VerticalAlignment="Center" />
+                            <TextBox x:Name="EtlSheetBox" Width="150" VerticalContentAlignment="Center"
+                                     Text="{Binding ExcelSheet, Mode=TwoWay}" />
+                            <TextBlock Text="{loc:Tr Etl_RowElement}" Margin="16,0,4,0" VerticalAlignment="Center" />
+                            <TextBox x:Name="EtlRowElementBox" Width="150" VerticalContentAlignment="Center"
+                                     Text="{Binding XmlRowElement, Mode=TwoWay}" />
+                        </StackPanel>
+
+                        <TextBlock Text="{loc:Tr Etl_MappingGroup}" FontWeight="SemiBold" Margin="0,12,0,4" />
+                        <DataGrid x:Name="EtlMappingsGrid" ItemsSource="{Binding Mappings}" Height="230"
+                                  AutoGenerateColumns="False" CanUserReorderColumns="False"
+                                  HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                                  AutomationProperties.Name="{loc:Tr Etl_MappingGroup}">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="{loc:Tr Etl_ColSource}" Binding="{Binding SourceColumn}" Width="240" IsReadOnly="True" />
+                                <DataGridTextColumn Header="{loc:Tr Etl_ColTarget}" Binding="{Binding TargetField, Mode=TwoWay}" Width="240" />
+                                <DataGridTemplateColumn Header="{loc:Tr Etl_ColType}" Width="110">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <ComboBox ItemsSource="{Binding TypeOptions}" SelectedItem="{Binding Type, Mode=TwoWay}" Margin="2" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="{loc:Tr Etl_ColExpr}" Binding="{Binding Expression, Mode=TwoWay}" Width="*" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+
+                        <TextBlock Text="{loc:Tr Etl_TargetGroup}" FontWeight="SemiBold" Margin="0,12,0,4" />
+                        <StackPanel Orientation="Horizontal">
+                            <ComboBox x:Name="EtlTargetTypeBox" Width="110"
+                                      ItemsSource="{Binding TargetTypeOptions}"
+                                      SelectedItem="{Binding SelectedTargetType, Mode=TwoWay}"
+                                      AutomationProperties.Name="{loc:Tr Etl_TargetGroup}" />
+                            <TextBlock Text="{loc:Tr Etl_Object}" Margin="12,0,4,0" VerticalAlignment="Center" />
+                            <TextBox x:Name="EtlObjectBox" Width="200" VerticalContentAlignment="Center"
+                                     Text="{Binding ObjectApiName, Mode=TwoWay}"
+                                     AutomationProperties.Name="{loc:Tr Etl_Object}" />
+                            <TextBlock Text="{loc:Tr Etl_Op}" Margin="12,0,4,0" VerticalAlignment="Center" />
+                            <ComboBox x:Name="EtlOpBox" Width="110"
+                                      ItemsSource="{Binding OpOptions}"
+                                      SelectedItem="{Binding SelectedOp, Mode=TwoWay}"
+                                      AutomationProperties.Name="{loc:Tr Etl_Op}" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                            <TextBlock Text="{loc:Tr Etl_MatchKey}" VerticalAlignment="Center" />
+                            <TextBox x:Name="EtlMatchKeyBox" Width="170" Margin="4,0,0,0" VerticalContentAlignment="Center"
+                                     Text="{Binding MatchKeyField, Mode=TwoWay}"
+                                     AutomationProperties.Name="{loc:Tr Etl_MatchKey}" />
+                            <TextBlock Text="{loc:Tr Etl_ErrorRate}" Margin="16,0,4,0" VerticalAlignment="Center" />
+                            <TextBox x:Name="EtlErrorRateBox" Width="60" VerticalContentAlignment="Center"
+                                     Text="{Binding ErrorRateText, Mode=TwoWay}" />
+                            <TextBlock Text="{loc:Tr Etl_BatchSize}" Margin="16,0,4,0" VerticalAlignment="Center" />
+                            <TextBox x:Name="EtlBatchSizeBox" Width="70" VerticalContentAlignment="Center"
+                                     Text="{Binding BatchSize, Mode=TwoWay}" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                            <TextBlock Text="{loc:Tr Etl_OutputPath}" VerticalAlignment="Center" />
+                            <TextBox x:Name="EtlOutputPathBox" Width="480" Margin="4,0,0,0" VerticalContentAlignment="Center"
+                                     Text="{Binding OutputPath, Mode=TwoWay}"
+                                     AutomationProperties.Name="{loc:Tr Etl_OutputPath}" />
+                            <Button x:Name="EtlBrowseOutputButton" Content="{loc:Tr Etl_Browse}" Margin="8,0,0,0" Padding="10,2"
+                                    Command="{Binding BrowseOutputCommand}"
+                                    AutomationProperties.Name="{loc:Tr Etl_Browse}" />
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,12,0,8">
+                            <Button x:Name="EtlDryRunButton" Content="{loc:Tr Etl_DryRun}" Padding="14,4"
+                                    Command="{Binding DryRunCommand}" IsEnabled="{Binding IsNotRunning}"
+                                    AutomationProperties.Name="{loc:Tr Etl_DryRun}" />
+                            <Button x:Name="EtlRunButton" Content="{loc:Tr Etl_Run}" Padding="14,4" Margin="8,0,0,0"
+                                    Command="{Binding RunCommand}" IsEnabled="{Binding IsNotRunning}"
+                                    AutomationProperties.Name="{loc:Tr Etl_Run}" />
+                            <Button x:Name="EtlStopButton" Content="{loc:Tr Etl_Stop}" Padding="14,4" Margin="8,0,0,0"
+                                    Command="{Binding StopCommand}" IsEnabled="{Binding IsRunning}"
+                                    AutomationProperties.Name="{loc:Tr Etl_Stop}" />
+                        </StackPanel>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- 2. 実行モニター -->
+            <TabItem Header="{loc:Tr Etl_TabMonitor}">
+                <DockPanel Margin="10">
+                    <TextBlock x:Name="EtlCountsText" DockPanel.Dock="Top" Text="{Binding CountsText}"
+                               FontWeight="SemiBold" Margin="0,0,0,6"
+                               AutomationProperties.Name="{loc:Tr Etl_TabMonitor}" />
+                    <ListBox x:Name="EtlLogList" ItemsSource="{Binding LogLines}"
+                             FontFamily="Consolas" FontSize="12"
+                             AutomationProperties.Name="{loc:Tr Etl_TabMonitor}" />
+                </DockPanel>
+            </TabItem>
+
+            <!-- 3. 復元マネージャー -->
+            <TabItem Header="{loc:Tr Etl_TabRestore}">
+                <Grid Margin="10" RowDefinitions="Auto,*">
+                    <StackPanel Orientation="Horizontal">
+                        <Button x:Name="EtlRefreshRunsButton" Content="{loc:Tr Etl_Refresh}" Padding="10,2"
+                                Command="{Binding RefreshRunsCommand}"
+                                AutomationProperties.Name="{loc:Tr Etl_Refresh}" />
+                        <Button x:Name="EtlLoadJournalButton" Content="{loc:Tr Etl_LoadJournal}" Padding="10,2" Margin="8,0,0,0"
+                                Command="{Binding LoadJournalCommand}"
+                                AutomationProperties.Name="{loc:Tr Etl_LoadJournal}" />
+                        <Button x:Name="EtlRevertGroupButton" Content="{loc:Tr Etl_RevertGroup}" Padding="10,2" Margin="8,0,0,0"
+                                Command="{Binding RevertGroupCommand}" IsEnabled="{Binding IsNotRunning}"
+                                AutomationProperties.Name="{loc:Tr Etl_RevertGroup}" />
+                        <Button x:Name="EtlRevertAllButton" Content="{loc:Tr Etl_RevertAll}" Padding="10,2" Margin="8,0,0,0"
+                                Command="{Binding RevertAllCommand}" IsEnabled="{Binding IsNotRunning}"
+                                AutomationProperties.Name="{loc:Tr Etl_RevertAll}" />
+                    </StackPanel>
+                    <Grid Grid.Row="1" Margin="0,8,0,0" ColumnDefinitions="260,*">
+                        <ListBox x:Name="EtlRunsList" ItemsSource="{Binding Runs}"
+                                 SelectedItem="{Binding SelectedRun, Mode=TwoWay}"
+                                 DisplayMemberBinding="{Binding RunId}"
+                                 AutomationProperties.Name="{loc:Tr Etl_TabRestore}" />
+                        <DataGrid x:Name="EtlJournalGrid" Grid.Column="1" Margin="8,0,0,0"
+                                  ItemsSource="{Binding JournalItems}"
+                                  SelectedItem="{Binding SelectedJournal, Mode=TwoWay}"
+                                  AutoGenerateColumns="False" IsReadOnly="True"
+                                  SelectionMode="Single"
+                                  HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                                  AutomationProperties.Name="{loc:Tr Etl_RestoreGroup}">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="{loc:Tr Etl_ColSource}" Binding="{Binding StepId}" Width="90" />
+                                <DataGridTextColumn Header="{loc:Tr Etl_Object}" Binding="{Binding ObjectName}" Width="150" />
+                                <DataGridTextColumn Header="{loc:Tr Etl_Op}" Binding="{Binding Op}" Width="80" />
+                                <DataGridTextColumn Header="Id" Binding="{Binding TargetId}" Width="170" />
+                                <DataGridTextColumn Header="{loc:Tr Etl_ColType}" Binding="{Binding Status}" Width="90" />
+                                <DataGridTextColumn Header="{loc:Tr Etl_Refresh}" Binding="{Binding AppliedAt}" Width="*" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </Grid>
+            </TabItem>
+
+            <!-- 4. 接続マネージャー -->
+            <TabItem Header="{loc:Tr Etl_TabConnections}">
+                <DockPanel Margin="10">
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
+                        <Button x:Name="EtlSaveConnectionButton" Content="{loc:Tr Etl_SaveConnection}" Padding="10,2"
+                                Command="{Binding SaveConnectionCommand}"
+                                AutomationProperties.Name="{loc:Tr Etl_SaveConnection}" />
+                        <Button x:Name="EtlUseConnectionButton" Content="{loc:Tr Etl_Use}" Padding="10,2" Margin="8,0,0,0"
+                                Command="{Binding UseConnectionCommand}"
+                                AutomationProperties.Name="{loc:Tr Etl_Use}" />
+                        <Button x:Name="EtlDeleteConnectionButton" Content="{loc:Tr Etl_Delete}" Padding="10,2" Margin="8,0,0,0"
+                                Command="{Binding DeleteConnectionCommand}"
+                                AutomationProperties.Name="{loc:Tr Etl_Delete}" />
+                    </StackPanel>
+                    <TextBlock DockPanel.Dock="Bottom" Text="{loc:Tr Etl_ConnectionsNote}" Foreground="#888888" Margin="0,8,0,0" TextWrapping="Wrap" />
+                    <ListBox x:Name="EtlConnectionsList" Margin="0,8,0,0" ItemsSource="{Binding Connections}"
+                             SelectedItem="{Binding SelectedConnection, Mode=TwoWay}"
+                             DisplayMemberBinding="{Binding Name}"
+                             AutomationProperties.Name="{loc:Tr Etl_TabConnections}" />
+                </DockPanel>
+            </TabItem>
+
+        </TabControl>
+    </DockPanel>
+</Window>

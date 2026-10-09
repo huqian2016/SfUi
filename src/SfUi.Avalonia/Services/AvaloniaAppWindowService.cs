@@ -92,6 +92,14 @@ public sealed class AvaloniaAppWindowService : IAppWindowService
         ShowOwned(new OrgManageWindow(viewModel));
     }
 
+    /// <summary>ETL 移行ウィンドウを開く（非モーダル・複数同時表示可）。</summary>
+    public void OpenEtl(OrgInfo? org)
+    {
+        var viewModel = _services.GetRequiredService<EtlViewModel>();
+        viewModel.Initialize(org);
+        ShowOwned(new EtlWindow(viewModel));
+    }
+
     public void OpenBackupRecords(string backupId, BackupObjectInfo info, string displayName, OrgInfo? currentOrg)
     {
         var viewModel = _services.GetRequiredService<BackupRecordsViewModel>();

@@ -109,6 +109,9 @@ public partial class App : Application
         services.AddTransient<FieldAccessViewModel>();
         services.AddTransient<RecordAccessViewModel>();
         services.AddTransient<DataIoWindow>();
+        services.AddSingleton<EtlWindowFactory>();
+        services.AddTransient<EtlViewModel>();
+        services.AddTransient<EtlWindow>();
         services.AddSingleton<BackupWindowFactory>();
         services.AddTransient<BackupViewModel>();
         services.AddTransient<BackupTabViewModel>();

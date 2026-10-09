@@ -619,6 +619,22 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
+    /// <summary>ETL 移行ウィンドウを新しいウィンドウで開く（組織未選択でも可）。</summary>
+    [RelayCommand]
+    private void OpenEtl()
+    {
+        try
+        {
+            _windows.OpenEtl(SelectedOrg);
+            StatusMessage = UiText.T("Msg_EtlOpenedFmt", SelectedOrg?.DisplayName ?? UiText.T("Main_NotSelected"));
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = UiText.T("Common_FailedFmt", ex.Message);
+            _log.Error("ETL ウィンドウを開けませんでした", ex);
+        }
+    }
+
     /// <summary>設定タブのインデックス（ようこそ画面の「設定を開く」遷移先）。</summary>
     private const int SettingsTabIndex = 7;
 

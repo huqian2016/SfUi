@@ -18,6 +18,9 @@ public sealed class AppPaths
     /// <summary>settings.json のフルパス</summary>
     public string SettingsFile { get; }
 
+    /// <summary>ETL 実行ディレクトリ（data/etl/runs）。実行ごとにサブフォルダーを作る。</summary>
+    public string EtlRunsRoot { get; }
+
     private AppPaths(string dataRoot)
     {
         DataRoot = dataRoot;
@@ -26,6 +29,7 @@ public sealed class AppPaths
         ResultsDirectory = Path.Combine(dataRoot, "results");
         TempDirectory = Path.Combine(dataRoot, "tmp");
         SettingsFile = Path.Combine(dataRoot, "settings.json");
+        EtlRunsRoot = Path.Combine(dataRoot, "etl", "runs");
 
         foreach (var directory in new[] { DataRoot, LogsDirectory, HistoryDirectory, ResultsDirectory, TempDirectory })
         {

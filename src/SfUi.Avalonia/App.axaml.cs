@@ -76,6 +76,7 @@ public partial class App : Application
             services.AddTransient<OrgManageViewModel>();
             services.AddTransient<OrgHealthViewModel>();
             services.AddTransient<MigrationInventoryViewModel>();
+            services.AddTransient<EtlViewModel>();
             services.AddSingleton(new StartupOptions { SimulateSfMissing = simulateSfMissing });
             services.AddTransient<WelcomeViewModel>();
             services.AddSingleton<MainWindow>();

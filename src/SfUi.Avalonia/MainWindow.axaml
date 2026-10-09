@@ -102,6 +102,13 @@
                 </Button>
 
                 <Button Classes="icon" Margin="0,0,10,0"
+                        Command="{Binding OpenEtlCommand}"
+                        ToolTip.Tip="{loc:Tr Main_EtlTip}"
+                        AutomationProperties.Name="{loc:Tr Main_Etl}">
+                    <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconDataIo}" />
+                </Button>
+
+                <Button Classes="icon" Margin="0,0,10,0"
                         Command="{Binding OpenOrgManageCommand}"
                         ToolTip.Tip="{loc:Tr Main_OrgManageTip}"
                         AutomationProperties.Name="{loc:Tr Main_OrgManage}">
