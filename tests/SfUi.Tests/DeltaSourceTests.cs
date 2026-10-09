@@ -162,13 +162,12 @@ public class DeltaStateTests : IDisposable
     [Fact]
     public void FilePath_SanitizesKey()
     {
-        var path = DeltaState.FilePath(_dir, "a/b:c*?");
+        // '/' は全プラットフォームで無効なファイル名文字（他の無効文字は OS 依存のため検証しない）
+        var path = DeltaState.FilePath(_dir, "a/b");
         Assert.EndsWith(".state.json", path);
         var name = Path.GetFileName(path);
         Assert.DoesNotContain('/', name);
-        Assert.DoesNotContain(':', name);
-        Assert.DoesNotContain('*', name);
-        Assert.DoesNotContain('?', name);
+        Assert.Equal("a_b.state.json", name);
     }
 
     [Fact]
