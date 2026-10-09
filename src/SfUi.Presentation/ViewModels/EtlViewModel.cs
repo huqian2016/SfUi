@@ -124,6 +124,10 @@ public sealed class EtlConnection
 
     public string SourceSoql { get; set; } = string.Empty;
 
+    public string DeltaColumn { get; set; } = string.Empty;
+
+    public string DeltaStateKey { get; set; } = string.Empty;
+
     public override string ToString() => Name;
 }
 
@@ -349,6 +353,13 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
                 return;
             }
 
+            if (!string.IsNullOrWhiteSpace(step.DeltaColumn) && string.IsNullOrWhiteSpace(step.DeltaStateKey))
+            {
+                SelectedStep = step;
+                _dialogs.Warning(UiText.T("Etl_DeltaSettings"), UiText.T("Etl_Title"));
+                return;
+            }
+
             if (step.SelectedTargetType == "Salesforce")
             {
                 if (!HasOrg)
@@ -415,14 +426,27 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
             var engine = new ExpressionEngine(host);
 
             var plans = new List<EtlStepPlan>();
+            var deltaStates = new Dictionary<string, (DeltaSource Source, string StatePath)>(StringComparer.Ordinal);
             foreach (var step in Steps)
             {
                 var (target, revertable) = step.CreateTarget(_rest, TargetOrg, _log);
+                var source = step.CreateSource();
+                if (!string.IsNullOrWhiteSpace(step.DeltaColumn))
+                {
+                    // delta（差分）: 前回 watermark より新しい行のみを読み込む
+                    var statePath = DeltaState.FilePath(_paths.EtlJobsRoot, step.DeltaStateKey.Trim());
+                    var watermark = DeltaState.GetWatermark(statePath, step.StepId, _log);
+                    var delta = new DeltaSource(source, step.DeltaColumn, watermark);
+                    deltaStates[step.StepId] = (delta, statePath);
+                    AppendLog(UiText.T("Etl_DeltaStartFmt", step.StepId, watermark?.ToString("u") ?? "-"));
+                    source = delta;
+                }
+
                 plans.Add(new EtlStepPlan
                 {
                     StepId = step.StepId,
                     ObjectName = step.EffectiveObjectName,
-                    Source = step.CreateSource(),
+                    Source = source,
                     Mapper = step.CreateMapper(engine),
                     Target = target,
                     Revertable = revertable,
@@ -473,6 +497,11 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
                 {
                     AppendLog(UiText.T("Etl_RevertedFmt", result.Rollback.Reverted, result.Rollback.Failed));
                 }
+
+                if (!dryRun)
+                {
+                    SaveDeltaWatermark(deltaStates, plans[0].StepId, apply);
+                }
             }
             else
             {
@@ -491,6 +520,17 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
                     if (jobResult.Steps[i].Apply is { } stepApply)
                     {
                         AppendLog(jobResult.StepIds[i] + ": " + UiText.T("Etl_CompleteFmt", stepApply.Success, stepApply.Failed, stepApply.Pending, stepApply.StopReason));
+                    }
+                }
+
+                if (!dryRun)
+                {
+                    for (var i = 0; i < jobResult.Steps.Count && i < jobResult.StepIds.Count; i++)
+                    {
+                        if (jobResult.Steps[i].Apply is { } stepApply)
+                        {
+                            SaveDeltaWatermark(deltaStates, jobResult.StepIds[i], stepApply);
+                        }
                     }
                 }
 
@@ -539,6 +579,31 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
 
     private void AppendLog(string line)
         => _dispatcher.Post(() => LogLines.Add(DateTime.Now.ToString("HH:mm:ss") + " " + line));
+
+    /// <summary>成功したステップの delta watermark を保存する（停止・失敗行ありは保存しない）。</summary>
+    private void SaveDeltaWatermark(
+        Dictionary<string, (DeltaSource Source, string StatePath)> deltaStates,
+        string stepId,
+        EtlRunResult apply)
+    {
+        if (apply.Stopped || apply.Failed != 0)
+        {
+            return;
+        }
+
+        if (!deltaStates.TryGetValue(stepId, out var delta))
+        {
+            return;
+        }
+
+        if (delta.Source.MaxValue is not { } max)
+        {
+            return;
+        }
+
+        DeltaState.SetWatermark(delta.StatePath, stepId, max, _log);
+        AppendLog(UiText.T("Etl_DeltaSavedFmt", stepId, max.ToString("u")));
+    }
 
     // ---- 復元マネージャー ----
 
@@ -709,6 +774,8 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
             SourceRestHeaders = step.SourceRestHeaders,
             SourceRestPaging = step.SourceRestPaging,
             SourceSoql = step.SourceSoql,
+            DeltaColumn = step.DeltaColumn,
+            DeltaStateKey = step.DeltaStateKey,
         });
         SaveConnectionsFile();
     }
@@ -744,6 +811,8 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
         step.SourceRestHeaders = SelectedConnection.SourceRestHeaders;
         step.SourceRestPaging = SelectedConnection.SourceRestPaging;
         step.SourceSoql = SelectedConnection.SourceSoql;
+        step.DeltaColumn = SelectedConnection.DeltaColumn;
+        step.DeltaStateKey = SelectedConnection.DeltaStateKey;
     }
 
     [RelayCommand]

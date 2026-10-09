@@ -21,6 +21,9 @@ public sealed class AppPaths
     /// <summary>ETL 実行ディレクトリ（data/etl/runs）。実行ごとにサブフォルダーを作る。</summary>
     public string EtlRunsRoot { get; }
 
+    /// <summary>ETL ジョブ状態ディレクトリ（data/etl/jobs）。delta の watermark 等を保持し、run 削除の影響を受けない。</summary>
+    public string EtlJobsRoot { get; }
+
     private AppPaths(string dataRoot)
     {
         DataRoot = dataRoot;
@@ -30,6 +33,7 @@ public sealed class AppPaths
         TempDirectory = Path.Combine(dataRoot, "tmp");
         SettingsFile = Path.Combine(dataRoot, "settings.json");
         EtlRunsRoot = Path.Combine(dataRoot, "etl", "runs");
+        EtlJobsRoot = Path.Combine(dataRoot, "etl", "jobs");
 
         foreach (var directory in new[] { DataRoot, LogsDirectory, HistoryDirectory, ResultsDirectory, TempDirectory })
         {

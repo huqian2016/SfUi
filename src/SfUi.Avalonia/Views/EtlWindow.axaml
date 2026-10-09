@@ -121,6 +121,16 @@
                                      Text="{Binding SelectedStep.SourceSoql, Mode=TwoWay}"
                                      AutomationProperties.Name="{loc:Tr Etl_Soql}" />
                         </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                            <TextBlock Text="{loc:Tr Etl_DeltaColumn}" VerticalAlignment="Center" />
+                            <TextBox x:Name="EtlDeltaColumnBox" Width="150" Margin="4,0,0,0" VerticalContentAlignment="Center"
+                                     Text="{Binding SelectedStep.DeltaColumn, Mode=TwoWay}"
+                                     AutomationProperties.Name="{loc:Tr Etl_DeltaColumn}" />
+                            <TextBlock Text="{loc:Tr Etl_DeltaKey}" Margin="8,0,4,0" VerticalAlignment="Center" />
+                            <TextBox x:Name="EtlDeltaKeyBox" Width="200" VerticalContentAlignment="Center"
+                                     Text="{Binding SelectedStep.DeltaStateKey, Mode=TwoWay}"
+                                     AutomationProperties.Name="{loc:Tr Etl_DeltaKey}" />
+                        </StackPanel>
 
                         <TextBlock Text="{loc:Tr Etl_MappingGroup}" FontWeight="SemiBold" Margin="0,12,0,4" />
                         <DataGrid x:Name="EtlMappingsGrid" ItemsSource="{Binding SelectedStep.Mappings}" Height="230"

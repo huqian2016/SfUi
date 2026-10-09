@@ -1263,6 +1263,35 @@ public partial class App : Application
                 }
             }
 
+            // ---- オフライン 3: delta（差分抽出 + watermark 保存/読込み）----
+            var deltaCsv = Path.Combine(tmp, "delta.csv");
+            File.WriteAllText(
+                deltaCsv,
+                "Id,ModifiedAt,Name\r\n1,2026-01-01 00:00:00,Alpha\r\n2,2026-01-02 00:00:00,Beta\r\n",
+                new UTF8Encoding(false));
+            var deltaStatePath = Path.Combine(tmp, "delta-state.json");
+            if (File.Exists(deltaStatePath))
+            {
+                File.Delete(deltaStatePath);
+            }
+
+            var fullDelta = new DeltaSource(new CsvFileSource(deltaCsv), "ModifiedAt", null);
+            if (fullDelta.MaxValue is { } firstMax)
+            {
+                DeltaState.SetWatermark(deltaStatePath, "step1", firstMax);
+            }
+
+            var savedWatermark = DeltaState.GetWatermark(deltaStatePath, "step1");
+            File.AppendAllText(deltaCsv, "3,2026-01-03 00:00:00,Gamma\r\n", new UTF8Encoding(false));
+            var incremental = new DeltaSource(new CsvFileSource(deltaCsv), "ModifiedAt", savedWatermark);
+            var deltaOk = fullDelta.Count == 2 && savedWatermark == fullDelta.MaxValue && incremental.Count == 1;
+            _log.Info($"--smoke-etl: [delta] 全量={fullDelta.Count}（期待 2）/ watermark={savedWatermark:yyyy-MM-dd HH:mm:ss} / 差分={incremental.Count}（期待 1）");
+            if (!deltaOk)
+            {
+                success = false;
+                _log.Error("--smoke-etl: [delta] 検証に失敗しました");
+            }
+
             if (string.IsNullOrWhiteSpace(org))
             {
                 _log.Info("--smoke-etl: 実組織テストはスキップ（組織未指定。--smoke-etl <org> で実行）");

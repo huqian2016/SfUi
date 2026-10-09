@@ -123,6 +123,16 @@
                                              Text="{Binding SelectedStep.SourceSoql, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                              AutomationProperties.Name="{loc:Tr Etl_Soql}" />
                                 </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                    <TextBlock Text="{loc:Tr Etl_DeltaColumn}" VerticalAlignment="Center" />
+                                    <TextBox x:Name="EtlDeltaColumnBox" Width="160" Margin="4,0,0,0" VerticalContentAlignment="Center"
+                                             Text="{Binding SelectedStep.DeltaColumn, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             AutomationProperties.Name="{loc:Tr Etl_DeltaColumn}" />
+                                    <TextBlock Text="{loc:Tr Etl_DeltaKey}" Margin="8,0,4,0" VerticalAlignment="Center" />
+                                    <TextBox x:Name="EtlDeltaKeyBox" Width="220" VerticalContentAlignment="Center"
+                                             Text="{Binding SelectedStep.DeltaStateKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             AutomationProperties.Name="{loc:Tr Etl_DeltaKey}" />
+                                </StackPanel>
                             </StackPanel>
                         </GroupBox>
 

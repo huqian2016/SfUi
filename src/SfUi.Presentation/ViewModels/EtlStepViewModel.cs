@@ -146,6 +146,16 @@ public sealed partial class EtlStepViewModel : ObservableObject
     [ObservableProperty]
     private string _sourceSoql = string.Empty;
 
+    // ---- 差分（delta）モード ----
+
+    /// <summary>タイムスタンプ列名（空 = 差分無効・全件読込み）。</summary>
+    [ObservableProperty]
+    private string _deltaColumn = string.Empty;
+
+    /// <summary>watermark 保存キー（data/etl/jobs/&lt;key&gt;.state.json）。</summary>
+    [ObservableProperty]
+    private string _deltaStateKey = string.Empty;
+
     // ---- 出力（Database 選択時） ----
 
     [ObservableProperty]
