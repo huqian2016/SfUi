@@ -198,6 +198,15 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
 
     partial void OnSelectedStepChanged(EtlStepViewModel? value) => OnPropertyChanged(nameof(HasSelectedStep));
 
+    /// <summary>ステップ編集の表示形式（true = キャンバス フロー表示 / false = 表形式リスト）。</summary>
+    [ObservableProperty]
+    private bool _isCanvasEditor = true;
+
+    /// <summary>表形式リスト表示か（キャンバス表示の双対）。</summary>
+    public bool IsTableEditor => !IsCanvasEditor;
+
+    partial void OnIsCanvasEditorChanged(bool value) => OnPropertyChanged(nameof(IsTableEditor));
+
     [ObservableProperty]
     private string _errorRateText = "5";
 
@@ -284,43 +293,52 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
         SelectedStep = step;
     }
 
+    /// <summary>ステップを削除する（キャンバスのノード ボタンからは対象ステップをパラメーターで受け取る）。</summary>
     [RelayCommand]
-    private void RemoveStep()
+    private void RemoveStep(object? parameter)
     {
-        if (SelectedStep is null || Steps.Count <= 1)
+        var step = parameter as EtlStepViewModel ?? SelectedStep;
+        if (step is null || Steps.Count <= 1)
         {
             return;
         }
 
-        var index = Steps.IndexOf(SelectedStep);
-        Steps.Remove(SelectedStep);
+        SelectedStep = step;
+        var index = Steps.IndexOf(step);
+        Steps.Remove(step);
         SelectedStep = Steps[Math.Min(index, Steps.Count - 1)];
     }
 
+    /// <summary>ステップを 1 つ前に移動する（キャンバスのノード ボタンからは対象ステップをパラメーターで受け取る）。</summary>
     [RelayCommand]
-    private void MoveStepUp()
+    private void MoveStepUp(object? parameter)
     {
-        if (SelectedStep is null)
+        var step = parameter as EtlStepViewModel ?? SelectedStep;
+        if (step is null)
         {
             return;
         }
 
-        var index = Steps.IndexOf(SelectedStep);
+        SelectedStep = step;
+        var index = Steps.IndexOf(step);
         if (index > 0)
         {
             Steps.Move(index, index - 1);
         }
     }
 
+    /// <summary>ステップを 1 つ後ろに移動する（キャンバスのノード ボタンからは対象ステップをパラメーターで受け取る）。</summary>
     [RelayCommand]
-    private void MoveStepDown()
+    private void MoveStepDown(object? parameter)
     {
-        if (SelectedStep is null)
+        var step = parameter as EtlStepViewModel ?? SelectedStep;
+        if (step is null)
         {
             return;
         }
 
-        var index = Steps.IndexOf(SelectedStep);
+        SelectedStep = step;
+        var index = Steps.IndexOf(step);
         if (index >= 0 && index < Steps.Count - 1)
         {
             Steps.Move(index, index + 1);

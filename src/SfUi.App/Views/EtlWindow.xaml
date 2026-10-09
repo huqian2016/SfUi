@@ -7,6 +7,9 @@
         Height="780" Width="1180" MinWidth="960" MinHeight="560"
         WindowStartupLocation="CenterOwner"
         FontSize="13">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+    </Window.Resources>
     <DockPanel>
 
         <!-- ヘッダー -->
@@ -59,10 +62,98 @@
                             <Button x:Name="EtlMoveDownButton" Content="{loc:Tr Etl_MoveDown}" Padding="10,2" Margin="8,0,0,0"
                                     Command="{Binding MoveStepDownCommand}"
                                     AutomationProperties.Name="{loc:Tr Etl_MoveDown}" />
+                            <CheckBox x:Name="EtlCanvasModeBox" Content="{loc:Tr Etl_CanvasMode}" Margin="16,0,0,0" VerticalAlignment="Center"
+                                      IsChecked="{Binding IsCanvasEditor, Mode=TwoWay}"
+                                      AutomationProperties.Name="{loc:Tr Etl_CanvasMode}" />
                         </StackPanel>
+
+                        <!-- キャンバス フロー表示: ノードの選択 / 並べ替え / 削除、右端の + で追加 -->
+                        <Grid Visibility="{Binding IsCanvasEditor, Converter={StaticResource BoolToVis}}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <ListBox x:Name="EtlStepsFlow" Height="148" ItemsSource="{Binding Steps}"
+                                     SelectedItem="{Binding SelectedStep, Mode=TwoWay}"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                     ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                     AutomationProperties.Name="{loc:Tr Etl_StepsGroup}">
+                                <ListBox.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" />
+                                    </ItemsPanelTemplate>
+                                </ListBox.ItemsPanel>
+                                <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem">
+                                        <Setter Property="Padding" Value="0" />
+                                        <Setter Property="Margin" Value="0" />
+                                        <Setter Property="Background" Value="Transparent" />
+                                        <Style.Triggers>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter Property="Background" Value="Transparent" />
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" Margin="2,6">
+                                            <Border Width="234" Padding="8" CornerRadius="6" Background="White">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="BorderThickness" Value="2" />
+                                                        <Setter Property="BorderBrush" Value="#DDDDDD" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True">
+                                                                <Setter Property="BorderBrush" Value="#0078D4" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" />
+                                                    <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
+                                                        <TextBlock Text="{Binding SelectedSourceType}" Foreground="#1B5E20" />
+                                                        <TextBlock Text=" · " Foreground="#AAAAAA" Visibility="{Binding HasFlowSourceDetail, Converter={StaticResource BoolToVis}}" />
+                                                        <TextBlock Text="{Binding FlowSourceDetail}" Foreground="#666666" MaxWidth="150"
+                                                                   TextTrimming="CharacterEllipsis" />
+                                                    </StackPanel>
+                                                    <TextBlock Text="{Binding FlowTargetText}" Foreground="#0D47A1" Margin="0,2,0,0"
+                                                               MaxWidth="214" TextTrimming="CharacterEllipsis" />
+                                                    <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                                                        <Button Content="←" Padding="8,0" MinWidth="30"
+                                                                Command="{Binding DataContext.MoveStepUpCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                                CommandParameter="{Binding}"
+                                                                ToolTip="{loc:Tr Etl_MoveUp}"
+                                                                AutomationProperties.Name="{loc:Tr Etl_MoveUp}" />
+                                                        <Button Content="→" Padding="8,0" MinWidth="30" Margin="6,0,0,0"
+                                                                Command="{Binding DataContext.MoveStepDownCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                                CommandParameter="{Binding}"
+                                                                ToolTip="{loc:Tr Etl_MoveDown}"
+                                                                AutomationProperties.Name="{loc:Tr Etl_MoveDown}" />
+                                                        <Button Content="×" Padding="8,0" MinWidth="30" Margin="6,0,0,0"
+                                                                Command="{Binding DataContext.RemoveStepCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                                CommandParameter="{Binding}"
+                                                                ToolTip="{loc:Tr Etl_RemoveStep}"
+                                                                AutomationProperties.Name="{loc:Tr Etl_RemoveStep}" />
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </Border>
+                                            <TextBlock Text="→" FontSize="20" Foreground="#999999" VerticalAlignment="Center" Margin="4,0,4,0" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                            <Button x:Name="EtlCanvasAddStepButton" Grid.Column="1" Content="{loc:Tr Etl_AddStep}"
+                                    Padding="14,8" Margin="8,0,0,0" VerticalAlignment="Center"
+                                    Command="{Binding AddStepCommand}"
+                                    AutomationProperties.Name="{loc:Tr Etl_AddStep}" />
+                        </Grid>
+
                         <ListBox x:Name="EtlStepsList" Height="76" ItemsSource="{Binding Steps}"
                                  SelectedItem="{Binding SelectedStep, Mode=TwoWay}"
                                  DisplayMemberPath="DisplayName"
+                                 Visibility="{Binding IsTableEditor, Converter={StaticResource BoolToVis}}"
                                  AutomationProperties.Name="{loc:Tr Etl_StepsGroup}" />
 
                         <GroupBox Header="{loc:Tr Etl_SourceGroup}" Padding="8" Margin="0,8,0,0">

@@ -1391,6 +1391,7 @@ public static partial class UiText
         ["Etl_BackupProgressFmt"] = "バックアップ {0}/{1}: {2}",
         ["Etl_BackupDoneFmt"] = "バックアップ完了: {0}（{1} 件）",
         ["Etl_StepsGroup"] = "ステップ（上から順に実行）",
+        ["Etl_CanvasMode"] = "キャンバス表示",
         ["Etl_AddStep"] = "ステップ追加",
         ["Etl_RemoveStep"] = "ステップ削除",
         ["Etl_MoveUp"] = "上へ",

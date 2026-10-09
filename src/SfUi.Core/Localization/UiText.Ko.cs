@@ -1392,6 +1392,7 @@ public static partial class UiText
         ["Etl_BackupProgressFmt"] = "백업 {0}/{1}: {2}",
         ["Etl_BackupDoneFmt"] = "백업 완료: {0}（{1}건）",
         ["Etl_StepsGroup"] = "단계（위에서부터 실행）",
+        ["Etl_CanvasMode"] = "캔버스 보기",
         ["Etl_AddStep"] = "단계 추가",
         ["Etl_RemoveStep"] = "단계 삭제",
         ["Etl_MoveUp"] = "위로",

@@ -1391,6 +1391,7 @@ public static partial class UiText
         ["Etl_BackupProgressFmt"] = "Backup {0}/{1}: {2}",
         ["Etl_BackupDoneFmt"] = "Backup completed: {0} ({1} records)",
         ["Etl_StepsGroup"] = "Steps (run top to bottom)",
+        ["Etl_CanvasMode"] = "Canvas view",
         ["Etl_AddStep"] = "Add step",
         ["Etl_RemoveStep"] = "Remove step",
         ["Etl_MoveUp"] = "Move up",

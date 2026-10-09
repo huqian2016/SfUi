@@ -1392,6 +1392,7 @@ public static partial class UiText
         ["Etl_BackupProgressFmt"] = "备份 {0}/{1}: {2}",
         ["Etl_BackupDoneFmt"] = "备份完成: {0}（{1} 条）",
         ["Etl_StepsGroup"] = "步骤（从上到下执行）",
+        ["Etl_CanvasMode"] = "画布视图",
         ["Etl_AddStep"] = "添加步骤",
         ["Etl_RemoveStep"] = "删除步骤",
         ["Etl_MoveUp"] = "上移",

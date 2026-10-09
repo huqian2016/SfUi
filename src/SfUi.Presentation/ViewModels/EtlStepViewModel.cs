@@ -177,7 +177,61 @@ public sealed partial class EtlStepViewModel : ObservableObject
     [ObservableProperty]
     private string _targetDbKeyField = string.Empty;
 
-    partial void OnObjectApiNameChanged(string value) => OnPropertyChanged(nameof(DisplayName));
+    // ---- キャンバス表示（フロー ノードの要約） ----
+
+    /// <summary>キャンバス ノードのソース要約（種別 + パス / URL / クエリ）。</summary>
+    public string FlowSourceText => SelectedSourceType switch
+    {
+        "Database" => string.IsNullOrWhiteSpace(SourceDbQuery) ? SelectedSourceType : SourceDbQuery.Trim(),
+        "REST" => string.IsNullOrWhiteSpace(SourceRestUrl) ? SelectedSourceType : SourceRestUrl.Trim(),
+        "Salesforce" => SourceUseBulk ? "Bulk API 2.0" : "SOQL",
+        _ => string.IsNullOrWhiteSpace(SourcePath) ? SelectedSourceType : SourcePath,
+    };
+
+    /// <summary>キャンバス ノードの出力要約（種別 · オブジェクト (操作)）。</summary>
+    public string FlowTargetText => SelectedTargetType + " · " + EffectiveObjectName + " (" + SelectedOp + ")";
+
+    /// <summary>ソース要約のうち種別以外の詳細（パス / URL / クエリ）。種別と同じ（詳細未設定）なら空。</summary>
+    public string FlowSourceDetail
+    {
+        get
+        {
+            var text = FlowSourceText;
+            return text == SelectedSourceType ? string.Empty : text;
+        }
+    }
+
+    public bool HasFlowSourceDetail => FlowSourceDetail.Length > 0;
+
+    partial void OnSelectedSourceTypeChanged(string value) => RaiseFlowSourceText();
+
+    partial void OnSourcePathChanged(string value) => RaiseFlowSourceText();
+
+    partial void OnSourceDbQueryChanged(string value) => RaiseFlowSourceText();
+
+    partial void OnSourceRestUrlChanged(string value) => RaiseFlowSourceText();
+
+    partial void OnSourceUseBulkChanged(bool value) => RaiseFlowSourceText();
+
+    partial void OnSelectedTargetTypeChanged(string value) => RaiseFlowTargetText();
+
+    partial void OnSelectedOpChanged(string value) => RaiseFlowTargetText();
+
+    partial void OnObjectApiNameChanged(string value)
+    {
+        OnPropertyChanged(nameof(DisplayName));
+        OnPropertyChanged(nameof(EffectiveObjectName));
+        RaiseFlowTargetText();
+    }
+
+    private void RaiseFlowSourceText()
+    {
+        OnPropertyChanged(nameof(FlowSourceText));
+        OnPropertyChanged(nameof(FlowSourceDetail));
+        OnPropertyChanged(nameof(HasFlowSourceDetail));
+    }
+
+    private void RaiseFlowTargetText() => OnPropertyChanged(nameof(FlowTargetText));
 
     [RelayCommand]
     private async Task BrowseSourceAsync()
