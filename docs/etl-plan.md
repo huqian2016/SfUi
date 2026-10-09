@@ -1,6 +1,6 @@
 # SfUi ETL 機能 設計書
 
-最終更新: 2026-10-09 / ステータス: **P1 縦串 + マルチステップ（エンジン + UI）完了 — エンジン / 式 / マッピング / CSV・Excel・JSON・XML 入力 / Salesforce・CSV 出力 / 安全 5 機能（dry-run・事前バックアップ・失敗時ロールバック・手動リストア・成功後巻き戻し）/ ETL ウィンドウ（両アプリ・4 領域・ステップ リスト付きジョブ エディタ）/ マルチステップ（crosswalk + LOOKUP、子→親の逆順ロールバック）。検証: 651 テスト + `--smoke-etl`（実組織: エラー率停止→ロールバック→成功後巻き戻し + Account→Contact マルチステップ）+ 両アプリ UIA（ステップ追加/並替え/削除・単一ステップ実行回帰）。次の段階: SQL Server / PostgreSQL / ODBC / REST コネクタ（P2）・非 CSV 入力の実組織スモーク・式関数拡充（P3）**
+最終更新: 2026-10-09 / ステータス: **P1 縦串 + マルチステップ（エンジン + UI）+ DB コネクタ基盤 完了 — エンジン / 式 / マッピング / CSV・Excel・JSON・XML 入力 / Salesforce・CSV・DB（SQLite / SQL Server / PostgreSQL / ODBC）出力 / 安全 5 機能 / ETL ウィンドウ（両アプリ・4 領域・ステップ リスト付き）/ マルチステップ（crosswalk + LOOKUP、逆順ロールバック）。検証: 661 テスト + `--smoke-etl`（実組織: エラー率停止→ロールバック→成功後巻き戻し + Account→Contact マルチステップ; オフライン: CSV→CSV / CSV→SQLite + 巻き戻し）+ 両アプリ UIA + CI グリーン（Windows/macOS）。次の段階: UI での DB コネクタ設定・REST コネクタ（P2）・非 CSV 入力の実組織スモーク・式関数拡充（P3）**
 対象: WPF (`SfUi.App`) + Avalonia (`SfUi.Avalonia`) の両方
 
 ---
