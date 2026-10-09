@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Net.Http;
+using System.Text;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Threading;
@@ -10,6 +11,13 @@ using SfUi.App.Services;
 using SfUi.App.ViewModels;
 using SfUi.App.Views;
 using SfUi.Core;
+using SfUi.Etl.Connections;
+using SfUi.Etl.Engine;
+using SfUi.Etl.Expressions;
+using SfUi.Etl.Sources;
+using SfUi.Etl.Staging;
+using SfUi.Etl.Targets;
+using SfUi.Etl.Transforms;
 using SfUi.Presentation;
 
 namespace SfUi.App;
@@ -35,6 +43,8 @@ public partial class App : Application
     private string? _smokeFieldUsageOrg;
     private string? _smokeFieldUsageObject;
     private string? _smokeFieldUsageField;
+    private bool _smokeEtlRequested;
+    private string? _smokeEtlOrg;
     private bool _noWelcome;
     private bool _forceWelcome;
     private bool _simulateSfMissing;
@@ -64,6 +74,18 @@ public partial class App : Application
                 _smokeFieldUsageOrg = e.Args[fieldUsageIndex + 1];
                 _smokeFieldUsageObject = e.Args[fieldUsageIndex + 2];
                 _smokeFieldUsageField = e.Args[fieldUsageIndex + 3];
+            }
+
+            _smokeEtlRequested = e.Args.Any(a =>
+                string.Equals(a, "--smoke-etl", StringComparison.OrdinalIgnoreCase) ||
+                a.StartsWith("--smoke-etl=", StringComparison.OrdinalIgnoreCase));
+            if (_smokeEtlRequested)
+            {
+                _smokeEtlOrg = ReadOption(e.Args, "--smoke-etl");
+                if (_smokeEtlOrg is not null && _smokeEtlOrg.StartsWith("--", StringComparison.Ordinal))
+                {
+                    _smokeEtlOrg = null;
+                }
             }
         }
 
@@ -328,6 +350,11 @@ public partial class App : Application
             }
 
             if (!string.IsNullOrWhiteSpace(_smokeFieldUsageOrg) && !await RunFieldUsageSmokeAsync())
+            {
+                exitCode = 1;
+            }
+
+            if (_smokeEtlRequested && !await RunEtlSmokeAsync(_smokeEtlOrg))
             {
                 exitCode = 1;
             }
@@ -1095,6 +1122,232 @@ public partial class App : Application
         }
 
         e.Handled = true;
+    }
+
+    /// <summary>
+    /// --smoke-etl [org]: ETL の検証。オフライン（CSV → マッピング → CSV 出力 + dry-run）を常に実行し、
+    /// 組織指定時は Contact への小規模適用（1 行を意図的に失敗させてエラー率停止 → ロールバック →
+    /// 全行成功 → 成功後巻き戻し）を行う。
+    /// </summary>
+    private async Task<bool> RunEtlSmokeAsync(string? org)
+    {
+        var success = true;
+        try
+        {
+            var paths = Services.GetRequiredService<AppPaths>();
+            var tmp = Path.Combine(paths.TempDirectory, "etl-smoke");
+            Directory.CreateDirectory(tmp);
+
+            // ---- オフライン: CSV → マッピング → CSV（dry-run → 実行）----
+            var csvIn = Path.Combine(tmp, "in.csv");
+            var csvOut = Path.Combine(tmp, "out.csv");
+            File.WriteAllText(csvIn, "Id,Name\r\n1,Alpha\r\n2,Beta\r\n3,Gamma\r\n", new UTF8Encoding(false));
+            if (File.Exists(csvOut))
+            {
+                File.Delete(csvOut);
+            }
+
+            var offlineDir = Path.Combine(paths.EtlRunsRoot, "run-smoke-offline");
+            using (var store = RunStagingStore.Create(offlineDir, "run-smoke-offline"))
+            {
+                var source = new CsvFileSource(csvIn);
+                var mapper = new RowMapper(
+                    source.Columns,
+                    new[] { new FieldMapping("Id", "[Id]"), new FieldMapping("Name", "[Name]") },
+                    new ExpressionEngine());
+                var plan = new EtlStepPlan
+                {
+                    StepId = "step1",
+                    ObjectName = "Offline",
+                    Source = source,
+                    Mapper = mapper,
+                    Target = new CsvFileTarget(csvOut, new[] { "Id", "Name" }),
+                };
+                var step = new EtlStepRun(store, plan);
+                step.Prepare();
+
+                var dry = await step.ApplyAsync(dryRun: true);
+                var dryOk = dry.StopReason == "dry-run" && dry.Pending == 3 && !File.Exists(csvOut);
+                _log.Info($"--smoke-etl: [offline] dry-run pending={dry.Pending}（期待 3）/ 出力なし={!File.Exists(csvOut)}");
+                if (!dryOk)
+                {
+                    success = false;
+                    _log.Error("--smoke-etl: [offline] dry-run の検証に失敗しました");
+                }
+
+                var run = await step.ApplyAsync();
+                var lines = File.Exists(csvOut) ? File.ReadAllLines(csvOut).Length : 0;
+                var runOk = run.Success == 3 && run.Pending == 0 && !run.Stopped && lines == 4;
+                _log.Info($"--smoke-etl: [offline] 適用 success={run.Success} / 出力行数（ヘッダー含む）={lines}（期待 4）");
+                if (!runOk)
+                {
+                    success = false;
+                    _log.Error("--smoke-etl: [offline] 適用の検証に失敗しました");
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(org))
+            {
+                _log.Info("--smoke-etl: 実組織テストはスキップ（組織未指定。--smoke-etl <org> で実行）");
+                return success;
+            }
+
+            // ---- 実組織 ----
+            var orgs = await Services.GetRequiredService<OrgService>().ListOrgsAsync();
+            var orgInfo = orgs.FirstOrDefault(o =>
+                string.Equals(o.Alias, org, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(o.Username, org, StringComparison.OrdinalIgnoreCase));
+            if (orgInfo is null)
+            {
+                _log.Error($"--smoke-etl: 組織が見つかりません: {org}");
+                return false;
+            }
+
+            var rest = Services.GetRequiredService<SalesforceRestClient>();
+            var apiVersion = await rest.GetApiVersionAsync(org!);
+            var cleaned = await DeleteMarkersAsync(rest, org!, apiVersion, "Contact", "LastName", "SfUiEtlE2E%");
+            if (cleaned > 0)
+            {
+                _log.Info($"--smoke-etl: 残骸を掃除 {cleaned} 件");
+            }
+
+            async Task<int> CountMarkersAsync(string pattern)
+            {
+                using var document = await rest.QueryAsync(org!, $"SELECT Id FROM Contact WHERE LastName LIKE '{pattern}'");
+                return document.RootElement.TryGetProperty("records", out var records) ? records.GetArrayLength() : 0;
+            }
+
+            var marker = "SfUiEtlE2E" + DateTime.Now.ToString("MMddHHmmss", CultureInfo.InvariantCulture);
+            var applyOptions = new EtlApplyOptions
+            {
+                BatchSize = 200,
+                MaxErrorRate = 0.25,
+                MinRowsForErrorRate = 0,
+                MaxConsecutiveFailures = 0,
+            };
+
+            // ---- B) 1 行失敗（Email が 80 文字超）→ エラー率停止 → ロールバック ----
+            var longEmail = new string('a', 90) + "@example.com";
+            var badCsv = Path.Combine(tmp, "bad.csv");
+            File.WriteAllText(
+                badCsv,
+                $"LastName,Email\r\n{marker}_1,ok1@example.com\r\n{marker}_2,ok2@example.com\r\n{marker}_3,{longEmail}\r\n",
+                new UTF8Encoding(false));
+
+            var rollbackDir = Path.Combine(paths.EtlRunsRoot, "run-smoke-rollback");
+            using (var store = RunStagingStore.Create(rollbackDir, "run-smoke-rollback"))
+            {
+                var source = new CsvFileSource(badCsv);
+                var mapper = new RowMapper(
+                    source.Columns,
+                    new[] { new FieldMapping("LastName", "[LastName]"), new FieldMapping("Email", "[Email]") },
+                    new ExpressionEngine());
+                var target = new SalesforceTarget(rest, org!, new SalesforceTargetOptions
+                {
+                    ObjectName = "Contact",
+                    Fields = new[] { "LastName", "Email" },
+                    Op = RowOp.Insert,
+                }, _log);
+                var plan = new EtlStepPlan
+                {
+                    StepId = "step1",
+                    ObjectName = "Contact",
+                    Source = source,
+                    Mapper = mapper,
+                    Target = target,
+                    Revertable = target,
+                };
+                var step = new EtlStepRun(store, plan, applyOptions);
+                step.Prepare();
+                var apply = await step.ApplyAsync();
+                var stopOk = apply.Stopped && apply.StopReason == "error-rate" && apply.Success == 2 && apply.Failed == 1;
+                _log.Info($"--smoke-etl: [org] 失敗行あり適用 success={apply.Success} / failed={apply.Failed} / stop={apply.StopReason}");
+                if (!stopOk)
+                {
+                    success = false;
+                    _log.Error("--smoke-etl: [org] エラー率停止の検証に失敗しました");
+                }
+
+                var rollback = await step.RollbackAsync();   // RunAsync の自動ロールバックと同じ処理
+                var remaining = await CountMarkersAsync(marker + "%");
+                var rollbackOk = rollback.Reverted == 2 && rollback.Failed == 0 && remaining == 0;
+                _log.Info($"--smoke-etl: [org] ロールバック reverted={rollback.Reverted} / failed={rollback.Failed} / 残件={remaining}（期待 0）");
+                if (!rollbackOk)
+                {
+                    success = false;
+                    _log.Error("--smoke-etl: [org] ロールバックの検証に失敗しました");
+                }
+            }
+
+            // ---- C) 全行成功 → 成功後巻き戻し（手動リストア）----
+            var goodCsv = Path.Combine(tmp, "good.csv");
+            File.WriteAllText(
+                goodCsv,
+                $"LastName,Email\r\n{marker}_1,ok1@example.com\r\n{marker}_2,ok2@example.com\r\n{marker}_3,ok3@example.com\r\n",
+                new UTF8Encoding(false));
+
+            var successDir = Path.Combine(paths.EtlRunsRoot, "run-smoke-success");
+            using (var store = RunStagingStore.Create(successDir, "run-smoke-success"))
+            {
+                var source = new CsvFileSource(goodCsv);
+                var mapper = new RowMapper(
+                    source.Columns,
+                    new[] { new FieldMapping("LastName", "[LastName]"), new FieldMapping("Email", "[Email]") },
+                    new ExpressionEngine());
+                var target = new SalesforceTarget(rest, org!, new SalesforceTargetOptions
+                {
+                    ObjectName = "Contact",
+                    Fields = new[] { "LastName", "Email" },
+                    Op = RowOp.Insert,
+                }, _log);
+                var plan = new EtlStepPlan
+                {
+                    StepId = "step1",
+                    ObjectName = "Contact",
+                    Source = source,
+                    Mapper = mapper,
+                    Target = target,
+                    Revertable = target,
+                };
+                var step = new EtlStepRun(store, plan, applyOptions);
+                step.Prepare();
+                var apply = await step.ApplyAsync();
+                var appliedCount = await CountMarkersAsync(marker + "%");
+                var applyOk = !apply.Stopped && apply.Success == 3 && appliedCount == 3;
+                _log.Info($"--smoke-etl: [org] 全行適用 success={apply.Success} / 組織内マーカー={appliedCount}（期待 3）");
+                if (!applyOk)
+                {
+                    success = false;
+                    _log.Error("--smoke-etl: [org] 適用の検証に失敗しました");
+                }
+
+                var rollback = await step.RollbackAsync();
+                var remaining = await CountMarkersAsync(marker + "%");
+                var rollbackOk = rollback.Reverted == 3 && remaining == 0;
+                _log.Info($"--smoke-etl: [org] 成功後巻き戻し reverted={rollback.Reverted} / 残件={remaining}（期待 0）");
+                if (!rollbackOk)
+                {
+                    success = false;
+                    _log.Error("--smoke-etl: [org] 巻き戻しの検証に失敗しました");
+                }
+            }
+
+            // 後片付け（保険）
+            var leftovers = await DeleteMarkersAsync(rest, org!, apiVersion, "Contact", "LastName", marker + "%");
+            if (leftovers > 0)
+            {
+                _log.Info($"--smoke-etl: 後片付け {leftovers} 件を削除");
+            }
+
+            _log.Info(success ? "--smoke-etl: すべての検証に成功しました" : "--smoke-etl: 一部の検証に失敗しました");
+        }
+        catch (Exception ex)
+        {
+            _log.Error("--smoke-etl: 検証に失敗しました", ex);
+            return false;
+        }
+
+        return success;
     }
 
     private static string? ReadOption(string[] args, string name)
