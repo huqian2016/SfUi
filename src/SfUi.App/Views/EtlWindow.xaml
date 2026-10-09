@@ -102,6 +102,8 @@
                                     <TextBlock Text="{loc:Tr Etl_BatchSize}" Margin="16,0,4,0" VerticalAlignment="Center" />
                                     <TextBox x:Name="EtlBatchSizeBox" Width="70" VerticalContentAlignment="Center"
                                              Text="{Binding BatchSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <CheckBox x:Name="EtlBackupBeforeBox" Content="{loc:Tr Etl_BackupBefore}" Margin="16,0,0,0" VerticalAlignment="Center"
+                                              IsChecked="{Binding RunBackupBefore, Mode=TwoWay}" />
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                                     <TextBlock Text="{loc:Tr Etl_OutputPath}" VerticalAlignment="Center" />

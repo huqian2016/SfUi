@@ -108,6 +108,7 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
     private readonly IFilePickerService _files;
     private readonly IUiDispatcher _dispatcher;
     private readonly SalesforceRestClient _rest;
+    private readonly BackupService _backup;
     private CancellationTokenSource? _cts;
     private RunStagingStore? _store;
 
@@ -117,7 +118,8 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
         IDialogService dialogs,
         IFilePickerService files,
         IUiDispatcher dispatcher,
-        SalesforceRestClient rest)
+        SalesforceRestClient rest,
+        BackupService backup)
     {
         _log = log;
         _paths = paths;
@@ -125,6 +127,7 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
         _files = files;
         _dispatcher = dispatcher;
         _rest = rest;
+        _backup = backup;
     }
 
     public string Title => UiText.T("Etl_Title");
@@ -180,6 +183,10 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private int _batchSize = 200;
+
+    /// <summary>Salesforce 出力の実行前に、対象オブジェクトをバックアップするか（既定: 有効）。</summary>
+    [ObservableProperty]
+    private bool _runBackupBefore = true;
 
     // ---- 実行モニター ----
 
@@ -362,6 +369,24 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
             var stepRun = new EtlStepRun(_store, plan, options);
             stepRun.Progress += p => _dispatcher.Post(() =>
                 CountsText = UiText.T("Etl_ProgressFmt", p.Attempted, p.Success, p.Failed, p.Skipped));
+
+            if (!dryRun && SelectedTargetType == "Salesforce" && RunBackupBefore)
+            {
+                var orgInfo = Org!;
+                var objectName = plan.ObjectName;
+                stepRun.PreRunBackup = async backupCt =>
+                {
+                    var appVersion = typeof(EtlViewModel).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
+                    var progress = new Progress<BackupProgress>(p => _dispatcher.Post(() =>
+                        StatusMessage = UiText.T("Etl_BackupProgressFmt", p.Done, p.Total, p.ObjectName)));
+                    var metadata = await _backup.RunBackupAsync(
+                        TargetOrg, orgInfo.DisplayName, orgInfo.Username, orgInfo.OrgId, appVersion,
+                        UiText.T("Etl_BackupLabel"), runId + " / " + objectName,
+                        new[] { objectName }, progress, backupCt);
+                    AppendLog(UiText.T("Etl_BackupDoneFmt", metadata.Id, metadata.TotalRecords));
+                    return metadata.Id;
+                };
+            }
 
             var result = await Task.Run(() => stepRun.RunAsync(dryRun, autoRollbackOnFailure: true, ct), ct);
 
