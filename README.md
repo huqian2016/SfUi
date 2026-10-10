@@ -1,6 +1,6 @@
 # SfUi — Salesforce CLI Launcher
 
-A Windows desktop tool that wraps the Salesforce CLI (`sf`) with a fast, click-light UI.
+A desktop tool for Windows and macOS that wraps the Salesforce CLI (`sf`) with a fast, click-light UI.
 Run SOQL, anonymous Apex, debug logs, deploys, free-form `sf` commands and raw REST API calls —
 with history/favorites, quick switching between orgs and project folders, one-click tool launcher,
 an **Org Info** window for each org (with one-click **definition-document export** to Excel / CSV), side-by-side comparison of 2–4 orgs, **record backup / restore** with backup-to-backup comparison,
@@ -158,9 +158,9 @@ Built with C# / .NET 9, CommunityToolkit.Mvvm and AvalonEdit (WPF) / AvaloniaEdi
 
 ## Requirements
 
-- Windows 10 / 11 (x64)
+- Windows 10 / 11 (x64), or macOS 11 or later (Apple Silicon)
 - **Salesforce CLI (`sf`)** installed and at least one org authenticated (`sf org login web`)
-  - The app runs `sf` behind the scenes; default path is `C:\Program Files\sf\bin\sf.cmd` (configurable in Settings, or via the `SFUI_SF_PATH` environment variable)
+  - The app runs `sf` behind the scenes; default path on Windows is `C:\Program Files\sf\bin\sf.cmd` (configurable in Settings, or via the `SFUI_SF_PATH` environment variable)
 - Running the released EXE requires **no .NET runtime** (self-contained)
 
 ## Screens & tabs
@@ -222,7 +222,7 @@ MIT — see [LICENSE](LICENSE). You are free to use, modify and redistribute SfU
 
 # SfUi — Salesforce CLI ランチャー（日本語）
 
-Salesforce CLI（`sf`）の操作を Windows デスクトップ UI から行えるツールです。
+Salesforce CLI（`sf`）の操作を Windows / macOS のデスクトップ UI から行えるツールです。
 SOQL・匿名Apex・デバッグログ・デプロイ・自由コマンド・REST API 呼び出しを、履歴とお気に入り付きで
 少ないクリックで実行できます。組織とフォルダの切替、外部ツールの起動もワンクリック。
 組織情報の閲覧（別ウィンドウ。オブジェクト / 項目 / 画面レイアウト / リストビュー / フローの**定義書エクスポート** = xlsx / CSV 付き）・複数組織の一括比較・データの入出力（CSV / JSON・REST / Bulk API）・
@@ -382,9 +382,9 @@ JSON はすべて原子的書き込み（`AtomicJsonFile`: 一時ファイル �
 
 ## 前提条件
 
-- Windows 10 / 11（x64）
+- Windows 10 / 11（x64）、または macOS 11 以降（Apple Silicon）
 - **Salesforce CLI（`sf`）** がインストール済みで、いずれかの組織にログイン済みであること
-  - 既定のパスは `C:\Program Files\sf\bin\sf.cmd`（設定画面または環境変数 `SFUI_SF_PATH` で変更可）
+  - 既定のパスは `C:\Program Files\sf\bin\sf.cmd`（Windows。設定画面または環境変数 `SFUI_SF_PATH` で変更可）
 - 単一 EXE 版の実行に .NET ランタイムは不要（自己完結）
 
 ## 主なショートカット
