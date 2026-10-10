@@ -1,6 +1,6 @@
 # SfUi ソース エディタ機能 設計書
 
-最終更新: 2026-10-10 / ステータス: **Phase 2 完了（編集 + 未反映ハイライト + 組織反映）** — Phase 1（閲覧）+ 編集・baseline/working ドラフト自動保存・未反映行の背景色（緑=追加/黄=変更）・組織へ反映（Ctrl+S）・検証のみ（dry-run）・削除・反映エラーの行ジャンプ、を両アプリで実装済み。`--smoke-source` は反映の往復（作成→検証→構文エラー→更新→削除）まで検証
+最終更新: 2026-10-10 / ステータス: **Phase 3 完了（新規作成テンプレート）** — Phase 1（閲覧）+ 編集・baseline/working ドラフト自動保存・未反映行の背景色（緑=追加/黄=変更）・組織へ反映（Ctrl+S）・検証のみ（dry-run）・削除・反映エラーの行ジャンプに加え、**テンプレートからの新規作成（Apex クラス / トリガー / VF / LWC）+ API 名検証 + 重複の事前確認**を両アプリで実装済み。`--smoke-source` はクラス テンプレート作成と LWC バンドルの作成→取得→削除まで検証
 対象: WPF (`SfUi.App`) + Avalonia (`SfUi.Avalonia`) の両方
 
 ---
@@ -90,7 +90,7 @@ src/SfUi.Avalonia/Views/SourceEditorWindow.axaml
 |---|---|---|---|
 | **P1 閲覧** | ウィンドウ + 4 種の列挙（Tooling）/ 選択で本文取得 / タブ表示 / 行番号 + 色付き / ステータス バー / 両アプリ + ツールバー導線 + UiText 4 言語 | 実組織でクラス・トリガー・VF・LWC が表示できる → **完了**（186→184 クラス等の実測、LWC 479 件） | 単体テスト（25）+ `--smoke-source` + UI E2E（両アプリ）+ スクショ |
 | **P2 編集 + 反映** | 編集可 / working・baseline 保存（自動ドラフト）/ **未反映行ハイライト** / 反映（Ctrl+S・ボタン、sf deploy）/ 検証のみ / 削除 / エラー行ジャンプ | クラスを編集 → 未反映表示 → 反映 → 組織に反映され表示が「一致」に / 構文エラーは行付きで表示 → **完了**（E2E: 実組織で編集→反映→組織検証→戻し） | 単体テスト（+28）+ スモーク（往復）+ UI E2E |
-| **P3 新規作成** | テンプレート（クラス / トリガー / VF / LWC）+ API 名検証 + deploy で新規作成 | テンプレートから新規クラスを作成し組織に作成できる（スモークで往復 + 後始末） | 単体テスト + スモーク + UI E2E |
+| **P3 新規作成** | テンプレート（クラス / トリガー / VF / LWC）+ API 名検証 + deploy で新規作成 | テンプレートから新規クラスを作成し組織に作成できる（スモークで往復 + 後始末）→ **完了**（スモーク: クラス テンプレート作成 + LWC バンドル 作成→取得→削除、E2E: ダイアログ→名前入力→作成→組織確認→タブ / Avalonia は開閉） | 単体テスト（+39）+ スモーク + UI E2E |
 | **P4 Flow グラフ** | Flow 一覧（FlowDefinitionView）+ Metadata(XML) 解析 + **ノード/エッジのグラフ表示**（読み取り専用。start / decision / record 操作 / action / loop / screen 等を色分け）+ ノード詳細 + ズーム/スクロール | 実組織のフローが要素数どおりのグラフで表示される | パーサー単体テスト + 実組織スモーク + UI E2E + スクショ |
 | **P5 自動補完** | Apex: 既存 `ApexCompletion`（スニペット / System / クラス / sObject / 項目 / SOQL）を再利用。LWC JS: キーワード + `lwc` API 基本。VF/HTML: タグ基本 | 入力中に候補が表示され、選択で挿入される | コンテキスト解析の単体テスト + 手動/UI 確認 |
 | **P6 AI 支援** | パネル: 現在のソースについて**質問 / 説明 / 改善提案 / エラー修正**（AiChatClient 再利用。コンテキスト = 開いているファイル + 反映エラー）。提案コードのエディタ挿入 | AI 設定済み環境で応答が表示され、提案を挿入できる | 手動 + `--smoke-ai` 流用 |
@@ -107,6 +107,7 @@ src/SfUi.Avalonia/Views/SourceEditorWindow.axaml
 - `--dry-run` = 検証のみ（アップロードなし、checkOnly true）。
 - **削除**: Apex / トリガー / VF = Tooling DELETE（204）・LWC = `sf project delete source --no-prompt`。
 - ドラフトは `data/source-editor/<orgKey>/<kind>/<name>/` の baseline / working に保存（編集は 800ms デバウンスで自動保存。開くときに baseline が組織内容と一致すれば working を復元、不一致なら破棄）。
+- **新規作成（P3）**: テンプレート = `SourceEditorTemplates`（LWC は js/html/css の 3 ファイル + 反映時に `.js-meta.xml` を自動生成。JS クラス名はフォルダー名の先頭大文字化）。API 名 = `SourceEditorNameValidator`（英字始まり・英数字とアンダースコア・`__` 不可・末尾 `_` 不可。LWC は小文字始まり英数字のみ 40 文字まで）。**作成前に組織の最新一覧で重複を確認**（ローカル一覧が古い場合の上書き事故防止）。トリガーは対象オブジェクト名が必須（カスタム オブジェクトの `__c` を許す）。
 - **sf CLI の偽失敗への耐性**: sf CLI（2.94.6 で確認）はまれに、デプロイが**組織に反映された後**に `Metadata API request failed: Missing message metadata.transfer:Finalizing for locale en_US.` を返して失敗扱いになる（ポーリング中のメッセージ解決の問題。検証のみは影響を受けにくい）。アプリはコンパイル エラーなしの CLI レベル失敗を検出すると、組織から本文を再取得して意図した内容と一致するか確認し、一致すれば成功として扱う（`ShouldVerifyAgainstOrg` / `ContentMatches`。retrieve / LWC 削除にも同様の確認あり）。
 
 ### スパイクの生メモ（2026-10-10）

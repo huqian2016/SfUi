@@ -1225,8 +1225,8 @@ public partial class App : Application
 
             var smokeName = "SfUiSmokeSrc" + DateTime.Now.ToString("HHmmss");
             var smokeMember = new SourceMemberInfo(SourceMemberKind.ApexClass, smokeName, string.Empty);
-            var v1 = $"public with sharing class {smokeName} {{ public static String Hi() {{ return 'sfui-v1'; }} }}";
-            var create = await service.DeployAsync(org, smokeMember, new[] { new SourceFileInfo(smokeName + ".cls", "C#", v1) }, dryRun: false);
+            // 新規作成と同じテンプレート経路で作成する
+            var create = await service.DeployAsync(org, smokeMember, SourceEditorTemplates.BuildFiles(SourceMemberKind.ApexClass, smokeName), dryRun: false);
             _log.Info($"--smoke-source: [deploy] 作成 = {create.Success}（{create.Message}）");
             if (!create.Success)
             {
@@ -1242,14 +1242,15 @@ public partial class App : Application
             else
             {
                 var body = await service.GetSourceAsync(org, created);
-                var bodyOk = body.Count == 1 && body[0].Text.Contains("sfui-v1", StringComparison.Ordinal);
+                var bodyOk = body.Count == 1
+                             && body[0].Text.Contains("public with sharing class " + smokeName, StringComparison.Ordinal);
                 _log.Info($"--smoke-source: [deploy] 作成後の取得 = {bodyOk}");
                 if (!bodyOk)
                 {
                     success = false;
                 }
 
-                var dry = await service.DeployAsync(org, created, new[] { new SourceFileInfo(smokeName + ".cls", "C#", v1) }, dryRun: true);
+                var dry = await service.DeployAsync(org, created, SourceEditorTemplates.BuildFiles(SourceMemberKind.ApexClass, smokeName), dryRun: true);
                 _log.Info($"--smoke-source: [deploy] 検証のみ = {dry.Success}");
                 if (!dry.Success)
                 {
@@ -1294,6 +1295,52 @@ public partial class App : Application
                 if (!deletedOk)
                 {
                     success = false;
+                }
+            }
+
+            // ---- LWC バンドルの作成 → 取得 → 削除（テンプレート + バンドル deploy + 削除 source）----
+            foreach (var leftover in (await service.ListAsync(org, SourceMemberKind.LightningComponentBundle))
+                         .Where(m => m.Name.StartsWith("sfuiSmoke", StringComparison.Ordinal)))
+            {
+                await service.DeleteAsync(org, leftover);
+            }
+
+            var lwcName = "sfuiSmoke" + DateTime.Now.ToString("HHmmss");
+            var lwcMember = new SourceMemberInfo(SourceMemberKind.LightningComponentBundle, lwcName, string.Empty);
+            var lwcCreate = await service.DeployAsync(org, lwcMember, SourceEditorTemplates.BuildFiles(SourceMemberKind.LightningComponentBundle, lwcName), dryRun: false);
+            _log.Info($"--smoke-source: [deploy] LWC 作成 = {lwcCreate.Success}（{lwcCreate.Message}）");
+            if (!lwcCreate.Success)
+            {
+                success = false;
+            }
+            else
+            {
+                var lwcListed = (await service.ListAsync(org, SourceMemberKind.LightningComponentBundle)).FirstOrDefault(m => m.Name == lwcName);
+                if (lwcListed is null)
+                {
+                    success = false;
+                    _log.Error("--smoke-source: [deploy] 作成した LWC が一覧に見つかりません");
+                }
+                else
+                {
+                    var lwcFiles = await service.GetSourceAsync(org, lwcListed);
+                    var lwcOk = lwcFiles.Count == 4
+                                && lwcFiles.Any(f => f.FileName.EndsWith(".js", StringComparison.OrdinalIgnoreCase))
+                                && lwcFiles.Any(f => f.FileName.EndsWith(".js-meta.xml", StringComparison.OrdinalIgnoreCase));
+                    _log.Info($"--smoke-source: [deploy] LWC 作成後の取得 = {lwcOk}（{string.Join(", ", lwcFiles.Select(f => f.FileName))}）");
+                    if (!lwcOk)
+                    {
+                        success = false;
+                    }
+
+                    var lwcDeleted = await service.DeleteAsync(org, lwcListed);
+                    var lwcGone = !(await service.ListAsync(org, SourceMemberKind.LightningComponentBundle)).Any(m => m.Name == lwcName);
+                    var lwcDeletedOk = lwcDeleted.Success && lwcGone;
+                    _log.Info($"--smoke-source: [deploy] LWC 削除 = {lwcDeletedOk}");
+                    if (!lwcDeletedOk)
+                    {
+                        success = false;
+                    }
                 }
             }
         }

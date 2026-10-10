@@ -70,6 +70,15 @@ public partial class SourceEditorWindow : Window
         }
     }
 
+    private void NewMember_Click(object sender, RoutedEventArgs e)
+    {
+        var result = NewMemberDialog.Show(this, ViewModel.GetExistingNames);
+        if (result is { } choice)
+        {
+            _ = ViewModel.CreateMemberAsync(choice.Kind, choice.Name, choice.SObject);
+        }
+    }
+
     private void Editor_Loaded(object sender, RoutedEventArgs e)
     {
         if (sender is not TextEditor editor)

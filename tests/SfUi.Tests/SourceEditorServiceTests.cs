@@ -283,6 +283,16 @@ public class SourceEditorServiceTests
     }
 
     [Fact]
+    public void ContentMatches_IgnoresTrailingNewline()
+    {
+        // 組織は末尾の改行を落とすことがある（deploy したテンプレートとの比較で必要）
+        var intended = new[] { new SourceFileInfo("Alpha.cls", "C#", "class Alpha {\n}\n") };
+        Assert.True(SourceEditorService.ContentMatches(intended, new[] { new SourceFileInfo("Alpha.cls", "C#", "class Alpha {\n}") }));
+        Assert.True(SourceEditorService.ContentMatches(new[] { new SourceFileInfo("Alpha.cls", "C#", "a\n") }, new[] { new SourceFileInfo("Alpha.cls", "C#", "a") }));
+        Assert.False(SourceEditorService.ContentMatches(intended, new[] { new SourceFileInfo("Alpha.cls", "C#", "class Alpha {\n} changed") }));
+    }
+
+    [Fact]
     public void ContentMatches_LwcBundle_ComparesAllFilesInAnyOrder()
     {
         var intended = new[]

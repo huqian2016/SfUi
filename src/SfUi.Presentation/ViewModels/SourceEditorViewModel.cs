@@ -71,6 +71,9 @@ public sealed partial class SourceMemberGroupViewModel : ObservableObject
         OnPropertyChanged(nameof(HeaderText));
         OnPropertyChanged(nameof(DisplayNodeName));
     }
+
+    /// <summary>全メンバー名（新規作成の重複チェック用。フィルタの影響を受けない）。</summary>
+    public IReadOnlyCollection<string> AllNames => _all.Select(m => m.Name).ToArray();
 }
 
 /// <summary>開いている 1 ファイル（タブ）。baseline = 組織と一致した内容、Text = 編集中の内容。</summary>
@@ -507,6 +510,77 @@ public sealed partial class SourceEditorViewModel : ObservableObject
             {
                 StatusMessage = UiText.T("Common_FailedFmt", result.Message);
             }
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    /// <summary>グループ内の既存メンバー名（新規作成ダイアログの重複チェック用）。</summary>
+    public IReadOnlyCollection<string> GetExistingNames(SourceMemberKind kind)
+        => Groups.FirstOrDefault(g => g.Kind == kind)?.AllNames ?? Array.Empty<string>();
+
+    /// <summary>テンプレートからメンバーを新規作成して組織へ反映し、一覧を更新して開く（Phase 3）。</summary>
+    public async Task CreateMemberAsync(SourceMemberKind kind, string name, string? sobjectName)
+    {
+        if (Org is null)
+        {
+            StatusMessage = UiText.T("SourceEditor_NoOrg");
+            return;
+        }
+
+        var trimmed = name.Trim();
+        IsBusy = true;
+        DeployErrors.Clear();
+        OnPropertyChanged(nameof(HasDeployErrors));
+        OnPropertyChanged(nameof(ErrorsHeaderText));
+        StatusMessage = UiText.T("SourceEditor_NewCreatingFmt", trimmed);
+        try
+        {
+            // 組織の最新一覧で重複を確認する（ローカルの一覧が古い場合の上書き事故を防ぐ）
+            var current = await _service.ListAsync(TargetOrg, kind).ConfigureAwait(true);
+            if (current.Any(m => string.Equals(m.Name, trimmed, StringComparison.OrdinalIgnoreCase)))
+            {
+                StatusMessage = UiText.T("Common_FailedFmt", UiText.T("SourceEditor_NameExistsFmt", trimmed));
+                return;
+            }
+
+            var files = SourceEditorTemplates.BuildFiles(kind, trimmed, sobjectName);
+            var placeholder = new SourceMemberInfo(kind, trimmed, string.Empty);
+            var result = await _service.DeployAsync(TargetOrg, placeholder, files, dryRun: false).ConfigureAwait(true);
+            if (!result.Success)
+            {
+                foreach (var error in result.Errors)
+                {
+                    DeployErrors.Add(new SourceDeployErrorRow(error));
+                }
+
+                OnPropertyChanged(nameof(HasDeployErrors));
+                OnPropertyChanged(nameof(ErrorsHeaderText));
+                StatusMessage = result.Errors.Count > 0
+                    ? UiText.T("SourceEditor_DeployFailedFmt", result.Errors.Count)
+                    : UiText.T("Common_FailedFmt", result.Message);
+                return;
+            }
+
+            _log.Info($"ソース エディタ: {kind} {trimmed} を新規作成しました。");
+
+            var members = await _service.ListAsync(TargetOrg, kind).ConfigureAwait(true);
+            Groups.FirstOrDefault(g => g.Kind == kind)?.SetAll(members, FilterText);
+
+            var created = members.FirstOrDefault(m => string.Equals(m.Name, trimmed, StringComparison.Ordinal));
+            if (created is not null)
+            {
+                await OpenMemberAsync(created).ConfigureAwait(true);
+            }
+
+            StatusMessage = UiText.T("SourceEditor_NewCreatedFmt", trimmed);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _log.Error($"ソース エディタ: {trimmed} の新規作成に失敗しました", ex);
+            StatusMessage = UiText.T("Common_FailedFmt", ex.Message);
         }
         finally
         {

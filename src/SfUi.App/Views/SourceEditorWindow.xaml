@@ -31,7 +31,11 @@
                 <Button x:Name="SourceEditorReloadButton" Content="{loc:Tr SourceEditor_Refresh}" Padding="12,3" Margin="16,0,0,0"
                         Command="{Binding RefreshCommand}"
                         AutomationProperties.Name="{loc:Tr SourceEditor_Refresh}" />
-                <Button x:Name="SourceEditorDeployButton" Content="{loc:Tr SourceEditor_Deploy}" Padding="14,3" Margin="16,0,0,0"
+                <Button x:Name="SourceEditorNewButton" Content="{loc:Tr SourceEditor_New}" Padding="12,3" Margin="16,0,0,0"
+                        IsEnabled="{Binding IsNotBusy}"
+                        Click="NewMember_Click"
+                        AutomationProperties.Name="{loc:Tr SourceEditor_New}" />
+                <Button x:Name="SourceEditorDeployButton" Content="{loc:Tr SourceEditor_Deploy}" Padding="14,3" Margin="8,0,0,0"
                         FontWeight="SemiBold"
                         Command="{Binding DeployCommand}"
                         AutomationProperties.Name="{loc:Tr SourceEditor_Deploy}" />

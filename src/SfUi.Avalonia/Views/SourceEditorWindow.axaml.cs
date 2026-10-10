@@ -2,6 +2,7 @@ using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using AvaloniaEdit;
 using AvaloniaEdit.Highlighting;
 using SfUi.App.ViewModels;
@@ -71,6 +72,15 @@ public partial class SourceEditorWindow : Window
         if (e.AddedItems.Count > 0 && e.AddedItems[0] is SourceMemberInfo member)
         {
             ViewModel.OpenMemberCommand.Execute(member);
+        }
+    }
+
+    private void NewMember_Click(object? sender, RoutedEventArgs e)
+    {
+        var result = NewMemberDialog.Show(this, ViewModel.GetExistingNames);
+        if (result is { } choice)
+        {
+            _ = ViewModel.CreateMemberAsync(choice.Kind, choice.Name, choice.SObject);
         }
     }
 

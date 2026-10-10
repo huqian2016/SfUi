@@ -294,7 +294,7 @@ public sealed class SourceEditorService : ISourceEditorService
     public static bool ShouldVerifyAgainstOrg(SourceDeployResult parsed, bool dryRun)
         => !parsed.Success && !dryRun && parsed.Errors.Count == 0;
 
-    /// <summary>意図したファイルと組織のファイルが一致するか（ファイル名は大文字小文字を無視、改行コードの差は無視）。</summary>
+    /// <summary>意図したファイルと組織のファイルが一致するか（ファイル名は大文字小文字を無視、改行コードと末尾改行の差は無視）。</summary>
     public static bool ContentMatches(IReadOnlyList<SourceFileInfo> intended, IReadOnlyList<SourceFileInfo> actual)
     {
         if (intended.Count == 0 || intended.Count != actual.Count)
@@ -311,7 +311,7 @@ public sealed class SourceEditorService : ISourceEditorService
         foreach (var file in intended)
         {
             if (!byName.TryGetValue(file.FileName, out var orgFile)
-                || NormalizeNewlines(file.Text) != NormalizeNewlines(orgFile.Text))
+                || NormalizeNewlines(file.Text).TrimEnd('\n') != NormalizeNewlines(orgFile.Text).TrimEnd('\n'))
             {
                 return false;
             }
@@ -331,7 +331,21 @@ public sealed class SourceEditorService : ISourceEditorService
     {
         try
         {
-            var orgFiles = await GetSourceAsync(targetOrg, member, cancellationToken).ConfigureAwait(false);
+            var target = member;
+            if (string.IsNullOrWhiteSpace(member.Id) && member.Kind != SourceMemberKind.LightningComponentBundle)
+            {
+                // 新規メンバーは Id が無いため、一覧から Id を解決してから本文を取得する
+                var listed = (await ListAsync(targetOrg, member.Kind, cancellationToken).ConfigureAwait(false))
+                    .FirstOrDefault(m => string.Equals(m.Name, member.Name, StringComparison.OrdinalIgnoreCase));
+                if (listed is null)
+                {
+                    return null;
+                }
+
+                target = listed;
+            }
+
+            var orgFiles = await GetSourceAsync(targetOrg, target, cancellationToken).ConfigureAwait(false);
             if (ContentMatches(files, orgFiles))
             {
                 return SourceDeployResult.Ok(false, "Succeeded (verified in org)");
@@ -412,6 +426,21 @@ public sealed class SourceEditorService : ISourceEditorService
                     file.Text,
                     new UTF8Encoding(false),
                     cancellationToken).ConfigureAwait(false);
+            }
+
+            if (isBundle)
+            {
+                // 新規 LWC バンドル: メタデータ（.js-meta.xml）が無ければ生成する（既存編集時は working に含まれる）。
+                var bundleMetaPath = Path.Combine(memberDir, member.Name + ".js-meta.xml");
+                if (!File.Exists(bundleMetaPath))
+                {
+                    var bundleApiVersion = await _rest.GetApiVersionAsync(targetOrg, cancellationToken).ConfigureAwait(false);
+                    await File.WriteAllTextAsync(
+                        bundleMetaPath,
+                        BuildDefaultMeta(SourceMemberKind.LightningComponentBundle, member.Name, bundleApiVersion),
+                        new UTF8Encoding(false),
+                        cancellationToken).ConfigureAwait(false);
+                }
             }
 
             var sourceDir = isBundle
@@ -553,6 +582,8 @@ public sealed class SourceEditorService : ISourceEditorService
                 $"<?xml version=\"1.0\" encoding=\"UTF-8\"?><ApexTrigger xmlns=\"{ns}\"><apiVersion>{apiVersion}</apiVersion><status>Active</status></ApexTrigger>",
             SourceMemberKind.VisualforcePage =>
                 $"<?xml version=\"1.0\" encoding=\"UTF-8\"?><ApexPage xmlns=\"{ns}\"><apiVersion>{apiVersion}</apiVersion><label>{name}</label></ApexPage>",
+            SourceMemberKind.LightningComponentBundle =>
+                $"<?xml version=\"1.0\" encoding=\"UTF-8\"?><LightningComponentBundle xmlns=\"{ns}\"><apiVersion>{apiVersion}</apiVersion><isExposed>false</isExposed></LightningComponentBundle>",
             _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null),
         };
     }

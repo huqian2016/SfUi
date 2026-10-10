@@ -341,6 +341,86 @@ public class SourceEditorViewModelTests : IDisposable
         public string? Prompt(string title, string prompt, string defaultValue = "") => defaultValue;
     }
 
+    // ---- Phase 3: 新規作成（テンプレート）----
+
+    [Fact]
+    public async Task CreateMember_Success_DeploysTemplateReloadsGroupAndOpensTab()
+    {
+        IReadOnlyList<SourceFileInfo>? deployed = null;
+        _service.OnDeploy = (member, files, _) =>
+        {
+            deployed = files;
+            _service.Members[member.Kind] = new[] { new SourceMemberInfo(member.Kind, member.Name, "01pNEW") };
+            _service.GetSource = m => new[] { new SourceFileInfo(m.Name + ".cls", "C#", "public with sharing class " + m.Name + " {\n}\n") };
+            return SourceDeployResult.Ok(false, "Succeeded");
+        };
+
+        var viewModel = CreateViewModel();
+        viewModel.Initialize(CreateOrg());
+        await viewModel.CreateMemberAsync(SourceMemberKind.ApexClass, "NewClass", null);
+
+        Assert.NotNull(deployed);
+        Assert.Equal("NewClass.cls", deployed![0].FileName);
+        Assert.Contains("public with sharing class NewClass", deployed[0].Text);
+        Assert.Equal("Apex Classes (1)", viewModel.Groups[0].HeaderText);
+        Assert.Single(viewModel.OpenFiles);
+        Assert.Equal("NewClass", viewModel.SelectedFile!.Member.Name);
+        Assert.Equal(UiText.T("SourceEditor_NewCreatedFmt", "NewClass"), viewModel.StatusMessage);
+        Assert.False(viewModel.IsBusy);
+    }
+
+    [Fact]
+    public async Task CreateMember_ExistingName_IsRejectedWithoutDeploy()
+    {
+        _service.Members[SourceMemberKind.ApexClass] = new[] { new SourceMemberInfo(SourceMemberKind.ApexClass, "Alpha", "01p1") };
+        var deployCalled = false;
+        _service.OnDeploy = (_, _, _) => { deployCalled = true; return SourceDeployResult.Ok(false, "Succeeded"); };
+
+        var viewModel = CreateViewModel();
+        viewModel.Initialize(CreateOrg());
+        await viewModel.CreateMemberAsync(SourceMemberKind.ApexClass, "alpha", null);
+
+        Assert.False(deployCalled);
+        Assert.Contains(UiText.T("SourceEditor_NameExistsFmt", "alpha"), viewModel.StatusMessage);
+        Assert.Empty(viewModel.OpenFiles);
+    }
+
+    [Fact]
+    public async Task CreateMember_DeployFailure_PopulatesErrorPanel()
+    {
+        _service.OnDeploy = (_, _, _) => SourceDeployResult.Fail("bad", new[]
+        {
+            new SourceDeployError("classes/NewClass.cls", 2, 1, "problem"),
+        });
+
+        var viewModel = CreateViewModel();
+        viewModel.Initialize(CreateOrg());
+        await viewModel.CreateMemberAsync(SourceMemberKind.ApexClass, "NewClass", null);
+
+        Assert.True(viewModel.HasDeployErrors);
+        Assert.Single(viewModel.DeployErrors);
+        Assert.Equal(UiText.T("SourceEditor_DeployFailedFmt", 1), viewModel.StatusMessage);
+        Assert.Empty(viewModel.OpenFiles);
+    }
+
+    [Fact]
+    public async Task GetExistingNames_ReturnsAllNamesOfKind()
+    {
+        _service.Members[SourceMemberKind.ApexClass] = new[]
+        {
+            new SourceMemberInfo(SourceMemberKind.ApexClass, "Alpha", "01p1"),
+            new SourceMemberInfo(SourceMemberKind.ApexClass, "Beta", "01p2"),
+        };
+
+        var viewModel = CreateViewModel();
+        viewModel.Initialize(CreateOrg());
+        await viewModel.RefreshCommand.ExecuteAsync(null);
+        viewModel.FilterText = "alpha";
+
+        // フィルタ中でも全件を返す（重複チェックはフィルタの影響を受けない）
+        Assert.Equal(new[] { "Alpha", "Beta" }, viewModel.GetExistingNames(SourceMemberKind.ApexClass));
+    }
+
     private sealed class FakeSourceEditorService : ISourceEditorService
     {
         public Dictionary<SourceMemberKind, IReadOnlyList<SourceMemberInfo>> Members { get; } = new();
