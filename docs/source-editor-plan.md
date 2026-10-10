@@ -1,6 +1,6 @@
 # SfUi ソース エディタ機能 設計書
 
-最終更新: 2026-10-10 / ステータス: **Phase 4 完了（Flow グラフ）** — Phase 1–3（閲覧・編集・反映・新規作成）に加え、**Flow の読み取り専用グラフ表示**（FlowDefinitionView 一覧 + Tooling `Flow.Metadata` 解析 / ノード色分け / エッジ種別（通常・フォールト・決定分岐・ループ）/ ノード詳細 / ズーム / 階層レイアウト）を両アプリで実装済み。`--smoke-source` は実組織 318 フローの一覧 + グラフ検証、UI E2E は WPF / Avalonia 両方でグラフ表示→閉じるまで検証
+最終更新: 2026-10-10 / ステータス: **Phase 5 完了（自動補完）** — Phase 1–4（閲覧・編集・反映・新規作成・Flow グラフ）に加え、**入力中の候補チップ**（Apex = 既存の ApexCompletion 一式（スニペット / System / クラス / sObject / 項目 / SOQL）、LWC JS = キーワード + lwc スニペット、VF・HTML = タグ + apex: タグ）を両アプリで実装済み。候補は言語別パーサー（ApexCompletionParser / JsCompletion / HtmlCompletion）で出し分け、クリックでカーソル位置の語を置換。`--smoke-source` は [suggest] でオフライン 3 言語 + 実組織 sObject 候補を検証、UI E2E は両アプリで System. → 候補チップ → 挿入 → 復元まで検証
 対象: WPF (`SfUi.App`) + Avalonia (`SfUi.Avalonia`) の両方
 
 ---
@@ -92,7 +92,7 @@ src/SfUi.Avalonia/Views/SourceEditorWindow.axaml
 | **P2 編集 + 反映** | 編集可 / working・baseline 保存（自動ドラフト）/ **未反映行ハイライト** / 反映（Ctrl+S・ボタン、sf deploy）/ 検証のみ / 削除 / エラー行ジャンプ | クラスを編集 → 未反映表示 → 反映 → 組織に反映され表示が「一致」に / 構文エラーは行付きで表示 → **完了**（E2E: 実組織で編集→反映→組織検証→戻し） | 単体テスト（+28）+ スモーク（往復）+ UI E2E |
 | **P3 新規作成** | テンプレート（クラス / トリガー / VF / LWC）+ API 名検証 + deploy で新規作成 | テンプレートから新規クラスを作成し組織に作成できる（スモークで往復 + 後始末）→ **完了**（スモーク: クラス テンプレート作成 + LWC バンドル 作成→取得→削除、E2E: ダイアログ→名前入力→作成→組織確認→タブ / Avalonia は開閉） | 単体テスト（+39）+ スモーク + UI E2E |
 | **P4 Flow グラフ** | Flow 一覧（FlowDefinitionView）+ Metadata（Tooling の JSON）解析 + **ノード/エッジのグラフ表示**（読み取り専用。start / decision / record 操作 / action / loop / screen 等を色分け）+ ノード詳細 + ズーム/スクロール | 実組織のフローが要素数どおりのグラフで表示される → **完了**（スモーク: 318 フロー一覧 + 実フロー 7 ノード / 8 接続（端点整合・Start 存在・ラベル全付与）、E2E: `admission_process_survey` で 8 ノード / 8 接続表示 → 閉じてタブ復帰（WPF・Avalonia 両方）） | 単体テスト（+12）+ 実組織スモーク + UI E2E + スクショ |
-| **P5 自動補完** | Apex: 既存 `ApexCompletion`（スニペット / System / クラス / sObject / 項目 / SOQL）を再利用。LWC JS: キーワード + `lwc` API 基本。VF/HTML: タグ基本 | 入力中に候補が表示され、選択で挿入される | コンテキスト解析の単体テスト + 手動/UI 確認 |
+| **P5 自動補完** | Apex: 既存 `ApexCompletion`（スニペット / System / クラス / sObject / 項目 / SOQL）を再利用。LWC JS: キーワード + `lwc` API 基本。VF/HTML: タグ基本 | 入力中に候補が表示され、選択で挿入される → **完了**（候補計算を `ApexSuggestionProvider` へ抽出して匿名Apex タブと共有 / 言語判定は `SourceCompletionLanguages`。スモーク [suggest]: JS 2 / HTML 1 / Apex 16 / 実組織 sObject 133 候補。E2E: 両アプリで `System.` → 「System members:」→ `debug()` チップ挿入 → 元に戻して同期復帰） | 単体テスト（+21）+ 実組織スモーク + UI E2E + スクショ |
 | **P6 AI 支援** | パネル: 現在のソースについて**質問 / 説明 / 改善提案 / エラー修正**（AiChatClient 再利用。コンテキスト = 開いているファイル + 反映エラー）。提案コードのエディタ挿入 | AI 設定済み環境で応答が表示され、提案を挿入できる | 手動 + `--smoke-ai` 流用 |
 | **P7 追加機能** | **ローカル履歴**（反映ごとにスナップショット → 一覧 / 差分 / ワンクリック巻き戻し=再反映）、横断検索（キャッシュ + 取得済み本文）、ファイル エクスポート、タブ操作改善 ほか | 反映 → 履歴から 1 つ前の版に戻せる | 単体テスト + UI E2E |
 

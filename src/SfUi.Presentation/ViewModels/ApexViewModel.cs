@@ -17,8 +17,7 @@ public partial class ApexViewModel : ObservableObject
     private readonly FavoritesStore _favorites;
     private readonly IFilePickerService _filePicker;
     private readonly AppSettingsStore _settings;
-    private readonly SObjectDescribeService _describes;
-    private readonly OrgMetadataService _metadata;
+    private readonly ApexSuggestionProvider _suggestions;
     private readonly AppLog _log;
 
     [ObservableProperty]
@@ -54,8 +53,7 @@ public partial class ApexViewModel : ObservableObject
         _favorites = favorites;
         _filePicker = filePicker;
         _settings = settings;
-        _describes = describes;
-        _metadata = metadata;
+        _suggestions = new ApexSuggestionProvider(describes, metadata);
         _log = log;
         _aiAssistEnabled = settings.Current.ApexAiAssist;
         RefreshHistory();
@@ -331,119 +329,30 @@ public partial class ApexViewModel : ObservableObject
 
         try
         {
-            IReadOnlyList<SoqlCompletionItem> items;
-            string header;
-
-            switch (context.Kind)
-            {
-                case ApexCompletionKind.Soql when context.Soql is { } soql:
-                    if (string.IsNullOrWhiteSpace(CurrentOrg)
-                        || soql.InsideString
-                        || soql.Clause is SoqlClause.None or SoqlClause.Other or SoqlClause.Limit or SoqlClause.Offset)
-                    {
-                        HideSuggestions();
-                        return;
-                    }
-
-                    if (soql.Clause == SoqlClause.From)
-                    {
-                        header = UiText.T("Soql_SuggestObjects");
-                        var objects = await _describes.ListObjectsAsync(CurrentOrg!, cancellationToken: cts.Token).ConfigureAwait(true);
-                        items = SoqlCompletionEngine.ObjectItems(objects, soql.Prefix);
-                    }
-                    else
-                    {
-                        var target = await SoqlCompletionEngine.ResolveTargetAsync(_describes, CurrentOrg!, soql, cts.Token).ConfigureAwait(true);
-                        if (target is null)
-                        {
-                            if (!cts.IsCancellationRequested)
-                            {
-                                HideSuggestions();
-                            }
-
-                            return;
-                        }
-
-                        header = UiText.T("Soql_SuggestFieldsFmt", target);
-                        var describe = await _describes.DescribeAsync(CurrentOrg!, target, cancellationToken: cts.Token).ConfigureAwait(true);
-                        var includeFunctions = soql.IncludeFunctions && soql.Path.Count == 0;
-                        items = SoqlCompletionEngine.FieldItems(describe, soql.Prefix, includeFunctions);
-                    }
-
-                    break;
-
-                case ApexCompletionKind.Objects:
-                    if (string.IsNullOrWhiteSpace(CurrentOrg))
-                    {
-                        HideSuggestions();
-                        return;
-                    }
-
-                    header = UiText.T("Soql_SuggestObjects");
-                    var objectList = await _describes.ListObjectsAsync(CurrentOrg!, cancellationToken: cts.Token).ConfigureAwait(true);
-                    var objectItems = new List<SoqlCompletionItem>(SoqlCompletionEngine.ObjectItems(objectList, context.Prefix));
-                    var metadataTypes = await _metadata.ListCustomMetadataTypesAsync(CurrentOrg!, cancellationToken: cts.Token).ConfigureAwait(true);
-                    objectItems.AddRange(ApexCompletionEngine.NameItems(metadataTypes, context.Prefix, "Custom metadata"));
-                    var classNames = await _metadata.ListApexClassesAsync(CurrentOrg!, cancellationToken: cts.Token).ConfigureAwait(true);
-                    objectItems.AddRange(ApexCompletionEngine.NameItems(classNames, context.Prefix, "Apex class"));
-                    items = objectItems.Take(ApexCompletionEngine.MaxItems).ToList();
-                    break;
-
-                case ApexCompletionKind.Variables:
-                    if (string.IsNullOrWhiteSpace(CurrentOrg))
-                    {
-                        HideSuggestions();
-                        return;
-                    }
-
-                    header = UiText.T("Apex_SuggestVariables");
-                    items = await ResolveVariableItemsAsync(text, caret, context.Prefix, cts.Token).ConfigureAwait(true);
-                    break;
-
-                case ApexCompletionKind.Members:
-                {
-                    var resolved = await ResolveMemberItemsAsync(text, caret, context, cts.Token).ConfigureAwait(true);
-                    if (resolved is null)
-                    {
-                        if (!cts.IsCancellationRequested)
-                        {
-                            HideSuggestions();
-                        }
-
-                        return;
-                    }
-
-                    (header, items) = resolved.Value;
-                    break;
-                }
-
-                default:
-                    header = UiText.T("Apex_SuggestSnippets");
-                    var snippetItems = new List<SoqlCompletionItem>(ApexCompletionEngine.Snippets(context.Prefix));
-                    if (!string.IsNullOrWhiteSpace(CurrentOrg))
-                    {
-                        var orgClasses = await _metadata.ListApexClassesAsync(CurrentOrg!, cancellationToken: cts.Token).ConfigureAwait(true);
-                        snippetItems.AddRange(ApexCompletionEngine.NameItems(orgClasses, context.Prefix, "Apex class"));
-                    }
-
-                    items = snippetItems.Take(ApexCompletionEngine.MaxItems).ToList();
-                    break;
-            }
+            var result = await _suggestions
+                .GetAsync(CurrentOrg, text, caret, context, cts.Token)
+                .ConfigureAwait(true);
 
             if (cts.IsCancellationRequested)
             {
                 return;
             }
 
-            SuggestionsHeader = header;
+            if (result is null)
+            {
+                HideSuggestions();
+                return;
+            }
+
+            SuggestionsHeader = result.Value.Header;
             Suggestions.Clear();
-            foreach (var item in items)
+            foreach (var item in result.Value.Items)
             {
                 Suggestions.Add(item);
             }
 
             IsFetchingSuggestions = false;
-            IsSuggestionsVisible = items.Count > 0;
+            IsSuggestionsVisible = result.Value.Items.Count > 0;
         }
         catch (OperationCanceledException)
         {
@@ -464,120 +373,6 @@ public partial class ApexViewModel : ObservableObject
         IsFetchingSuggestions = false;
         IsSuggestionsVisible = false;
         Suggestions.Clear();
-    }
-
-    /// <summary>DML（insert / update …）の直後: 宣言済みの sObject / コレクション変数を候補にする。</summary>
-    private async Task<IReadOnlyList<SoqlCompletionItem>> ResolveVariableItemsAsync(
-        string text, int caret, string prefix, CancellationToken cancellationToken)
-    {
-        var objects = await _describes.ListObjectsAsync(CurrentOrg!, cancellationToken: cancellationToken).ConfigureAwait(true);
-        var names = objects.Select(o => o.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var declarations = ApexCompletionParser.ScanDeclarations(text[..caret]);
-
-        var items = new List<SoqlCompletionItem>();
-        foreach (var (name, declaredType) in declarations.OrderBy(d => d.Key, StringComparer.Ordinal))
-        {
-            if (prefix.Length > 0 && !name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
-
-            var isSObject = names.Contains(declaredType)
-                || (ApexCompletionEngine.TryParseCollectionType(declaredType, out _, out var element) && names.Contains(element));
-            if (isSObject)
-            {
-                items.Add(new SoqlCompletionItem(name, declaredType));
-            }
-        }
-
-        return items.Take(ApexCompletionEngine.MaxItems).ToList();
-    }
-
-    /// <summary>メンバーアクセス（X. / a.Owner.）: 静的クラス / コレクション変数 / sObject 変数の候補を解決する。</summary>
-    private async Task<(string Header, IReadOnlyList<SoqlCompletionItem> Items)?> ResolveMemberItemsAsync(
-        string text, int caret, ApexCompletionContext context, CancellationToken cancellationToken)
-    {
-        var root = context.Root ?? string.Empty;
-        var parentPath = context.Path ?? Array.Empty<string>();
-
-        // System.Label.<名前> はカスタムラベル候補
-        if (root.Equals("System", StringComparison.OrdinalIgnoreCase)
-            && parentPath.Count == 1
-            && parentPath[0].Equals("Label", StringComparison.OrdinalIgnoreCase))
-        {
-            if (string.IsNullOrWhiteSpace(CurrentOrg))
-            {
-                return null;
-            }
-
-            var labels = await _metadata.ListCustomLabelsAsync(CurrentOrg!, cancellationToken: cancellationToken).ConfigureAwait(true);
-            var labelItems = labels
-                .Where(p => context.Prefix.Length == 0 || p.Name.StartsWith(context.Prefix, StringComparison.OrdinalIgnoreCase))
-                .Take(ApexCompletionEngine.MaxItems)
-                .Select(p => new SoqlCompletionItem(p.Name, string.IsNullOrEmpty(p.Label) ? "Label" : p.Label))
-                .ToList();
-            return (UiText.T("Apex_SuggestLabels"), labelItems);
-        }
-
-        // 1) 静的クラス（System / Database …）
-        if (ApexCompletionEngine.HasStaticClass(root))
-        {
-            return parentPath.Count == 0
-                ? (UiText.T("Apex_SuggestMembersFmt", root), ApexCompletionEngine.StaticMembers(root, context.Prefix))
-                : null;
-        }
-
-        // 2) 宣言から型を推定した変数
-        var declarations = ApexCompletionParser.ScanDeclarations(text[..caret]);
-        if (!declarations.TryGetValue(root, out var declaredType))
-        {
-            return null;
-        }
-
-        if (ApexCompletionEngine.TryParseCollectionType(declaredType, out var kind, out _))
-        {
-            return parentPath.Count == 0
-                ? (UiText.T("Apex_SuggestMembersFmt", kind), ApexCompletionEngine.CollectionMethods(kind, context.Prefix))
-                : null;
-        }
-
-        if (string.IsNullOrWhiteSpace(CurrentOrg))
-        {
-            return null;
-        }
-
-        var objects = await _describes.ListObjectsAsync(CurrentOrg!, cancellationToken: cancellationToken).ConfigureAwait(true);
-        var isKnownType = objects.Any(o => string.Equals(o.Name, declaredType, StringComparison.OrdinalIgnoreCase));
-        if (!isKnownType)
-        {
-            var metadataTypes = await _metadata.ListCustomMetadataTypesAsync(CurrentOrg!, cancellationToken: cancellationToken).ConfigureAwait(true);
-            isKnownType = metadataTypes.Any(n => string.Equals(n, declaredType, StringComparison.OrdinalIgnoreCase));
-        }
-
-        if (!isKnownType)
-        {
-            return null;   // sObject / カスタムメタデータ型以外は対象外
-        }
-
-        // 参照の連鎖（a.Owner.）を describe で解決する
-        var target = declaredType;
-        foreach (var segment in parentPath)
-        {
-            var describe = await _describes.DescribeAsync(CurrentOrg!, target, cancellationToken: cancellationToken).ConfigureAwait(true);
-            var relationship = SoqlCompletionEngine.ResolveRelationship(describe, segment);
-            if (relationship is null)
-            {
-                return null;
-            }
-
-            target = relationship;
-        }
-
-        var targetDescribe = await _describes.DescribeAsync(CurrentOrg!, target, cancellationToken: cancellationToken).ConfigureAwait(true);
-        var items = new List<SoqlCompletionItem>();
-        items.AddRange(SoqlCompletionEngine.FieldItems(targetDescribe, context.Prefix, includeFunctions: false));
-        items.AddRange(ApexCompletionEngine.SObjectMethods(context.Prefix));
-        return (UiText.T("Soql_SuggestFieldsFmt", target), items);
     }
 
     // ---- 実行後の AI 支援 ----

@@ -100,7 +100,12 @@
             <GridSplitter Grid.Column="1" Background="#EEEEEE" ResizeDirection="Columns" />
 
             <Grid Grid.Column="2" Margin="6,0,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
             <TabControl x:Name="SourceEditorTabs"
+                        Grid.Row="0"
                         IsVisible="{Binding HasNoGraph}"
                         ItemsSource="{Binding OpenFiles}"
                         SelectedItem="{Binding SelectedFile, Mode=TwoWay}">
@@ -129,9 +134,38 @@
                     </DataTemplate>
                 </TabControl.ContentTemplate>
             </TabControl>
-            <Panel IsVisible="{Binding HasGraph}">
+            <Panel Grid.Row="0" IsVisible="{Binding HasGraph}">
                 <views:FlowGraphControl x:Name="SourceEditorFlowGraph" DataContext="{Binding CurrentGraph}" />
             </Panel>
+
+            <!-- 自動補完（Phase 5: 候補チップ。選択でカーソル位置の語を置き換え） -->
+            <Border Grid.Row="1" x:Name="SourceEditorSuggestions" Background="#F7F9FC" BorderBrush="#E1E6EE" BorderThickness="0,1,0,0" Padding="8,6"
+                    IsVisible="{Binding IsSuggestionsVisible}">
+                <DockPanel>
+                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,4">
+                        <TextBlock DockPanel.Dock="Right" Text="{loc:Tr Soql_SuggestFetching}" Foreground="#888888" FontStyle="Italic"
+                                   IsVisible="{Binding IsFetchingSuggestions}" />
+                        <TextBlock x:Name="SourceEditorSuggestionHeader" Text="{Binding SuggestionsHeader}" FontWeight="SemiBold" Foreground="#445577" />
+                    </DockPanel>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" MaxHeight="120">
+                        <ItemsControl ItemsSource="{Binding Suggestions}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Content="{Binding Text}" Padding="8,2" Margin="0,0,6,6"
+                                            FontFamily="Consolas"
+                                            ToolTip.Tip="{Binding Description}"
+                                            Click="Suggestion_Click" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
             </Grid>
         </Grid>
     </DockPanel>

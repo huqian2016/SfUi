@@ -77,6 +77,7 @@ public partial class App : Application
             services.AddTransient<OrgHealthViewModel>();
             services.AddTransient<MigrationInventoryViewModel>();
             services.AddTransient<EtlViewModel>();
+            services.AddTransient<ApexSuggestionProvider>();
             services.AddTransient<SourceEditorViewModel>();
             services.AddSingleton<ISourceEditorService, SourceEditorService>();
             services.AddSingleton(new StartupOptions { SimulateSfMissing = simulateSfMissing });

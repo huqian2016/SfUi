@@ -139,6 +139,7 @@ public partial class App : Application
         services.AddTransient<EtlViewModel>();
         services.AddTransient<EtlWindow>();
         services.AddSingleton<SourceEditorWindowFactory>();
+        services.AddTransient<ApexSuggestionProvider>();
         services.AddTransient<SourceEditorViewModel>();
         services.AddTransient<Views.SourceEditorWindow>();
         services.AddSingleton<ISourceEditorService, SourceEditorService>();
@@ -1404,6 +1405,48 @@ public partial class App : Application
                         .Select(g => $"{g.Key}×{g.Count()}"));
                     _log.Info($"--smoke-source: [flow] カテゴリ = {categories}");
                 }
+            }
+
+            // ---- 自動補完（Phase 5: コンテキスト解析 + 候補）----
+            var jsText = "const x = cons";
+            var jsContext = JsCompletion.Parse(jsText, jsText.Length);
+            var jsItems = JsCompletion.Items(jsContext.Prefix);
+            var jsOk = jsContext.InCode && jsContext.Prefix == "cons" && jsItems.Any(i => i.Text == "const");
+            _log.Info($"--smoke-source: [suggest] JS コンテキスト = {jsOk}（{jsItems.Count} 候補）");
+
+            var htmlText = "<tem";
+            var htmlContext = HtmlCompletion.Parse(htmlText, htmlText.Length);
+            var htmlItems = HtmlCompletion.Items(htmlContext.Prefix, isVisualforce: false);
+            var htmlOk = htmlContext.InTag && htmlContext.Prefix == "tem" && htmlItems.Any(i => i.Text == "<template></template>");
+            _log.Info($"--smoke-source: [suggest] HTML コンテキスト = {htmlOk}（{htmlItems.Count} 候補）");
+
+            var apexText = "System.";
+            var apexContext = ApexCompletionParser.Parse(apexText, apexText.Length);
+            var apexItems = ApexCompletionEngine.StaticMembers("System", apexContext.Prefix);
+            var apexOk = apexContext.Kind == ApexCompletionKind.Members
+                         && apexItems.Any(i => i.Text.StartsWith("debug", StringComparison.Ordinal));
+            _log.Info($"--smoke-source: [suggest] Apex コンテキスト = {apexOk}（{apexItems.Count} 候補）");
+            if (!jsOk || !htmlOk || !apexOk)
+            {
+                success = false;
+                _log.Error("--smoke-source: [suggest] オフライン検証に失敗しました");
+            }
+
+            // 実組織: new の直後の sObject 候補（describe 経由）
+            var suggestionProvider = Services.GetRequiredService<ApexSuggestionProvider>();
+            var orgText = "Account a = new Ac";
+            var orgContext = ApexCompletionParser.Parse(orgText, orgText.Length);
+            var orgResult = await suggestionProvider.GetAsync(org, orgText, orgText.Length, orgContext, CancellationToken.None);
+            var orgCount = orgResult is null ? 0 : orgResult.Value.Items.Count;
+            var orgFirst = orgResult is null ? "(none)" : (orgResult.Value.Items.FirstOrDefault()?.Text ?? "(none)");
+            var orgOk = orgResult is not null
+                        && orgResult.Value.Items.Count > 0
+                        && orgResult.Value.Items.Any(i => i.Text.StartsWith("Ac", StringComparison.OrdinalIgnoreCase));
+            _log.Info($"--smoke-source: [suggest] 組織の sObject 候補 = {orgOk}（{orgCount} 候補 / 先頭 {orgFirst}）");
+            if (!orgOk)
+            {
+                success = false;
+                _log.Error("--smoke-source: [suggest] 組織候補の検証に失敗しました");
             }
         }
         catch (Exception ex)

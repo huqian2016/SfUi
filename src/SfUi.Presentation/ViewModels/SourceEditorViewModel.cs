@@ -164,13 +164,16 @@ public sealed partial class SourceEditorViewModel : ObservableObject
     private readonly ISourceEditorService _service;
     private readonly IDialogService _dialogs;
     private readonly AppLog _log;
+    private readonly ApexSuggestionProvider _suggestions;
     private CancellationTokenSource? _draftCts;
+    private CancellationTokenSource? _suggestCts;
 
-    public SourceEditorViewModel(ISourceEditorService service, IDialogService dialogs, AppLog log)
+    public SourceEditorViewModel(ISourceEditorService service, IDialogService dialogs, AppLog log, ApexSuggestionProvider suggestions)
     {
         _service = service;
         _dialogs = dialogs;
         _log = log;
+        _suggestions = suggestions;
 
         Groups.Add(new SourceMemberGroupViewModel(SourceMemberKind.ApexClass, UiText.T("SourceEditor_GroupApexClass")));
         Groups.Add(new SourceMemberGroupViewModel(SourceMemberKind.ApexTrigger, UiText.T("SourceEditor_GroupApexTrigger")));
@@ -210,6 +213,7 @@ public sealed partial class SourceEditorViewModel : ObservableObject
             newValue.PropertyChanged += File_PropertyChanged;
         }
 
+        HideSuggestions();
         UpdateFileStatus();
     }
 
@@ -437,6 +441,7 @@ public sealed partial class SourceEditorViewModel : ObservableObject
     private async Task OpenFlowGraphAsync(SourceMemberInfo member)
     {
         IsBusy = true;
+        HideSuggestions();
         StatusMessage = UiText.T("SourceEditor_FlowLoadingFmt", member.Name);
         try
         {
@@ -460,6 +465,176 @@ public sealed partial class SourceEditorViewModel : ObservableObject
 
     /// <summary>グラフ表示を閉じてファイル タブに戻る。</summary>
     public void CloseGraph() => CurrentGraph = null;
+
+    // ---- 自動補完（Phase 5: Apex / LWC JS / VF・HTML の候補チップ）----
+
+    /// <summary>候補チップの一覧。</summary>
+    public ObservableCollection<SoqlCompletionItem> Suggestions { get; } = new();
+
+    /// <summary>候補エリアの見出し（例: 「System のメンバー:」）。</summary>
+    [ObservableProperty]
+    private string _suggestionsHeader = string.Empty;
+
+    /// <summary>候補エリアを表示するか。</summary>
+    [ObservableProperty]
+    private bool _isSuggestionsVisible;
+
+    /// <summary>候補を取得中か。</summary>
+    [ObservableProperty]
+    private bool _isFetchingSuggestions;
+
+    /// <summary>
+    /// カーソル位置の候補を計算して候補エリアへ反映する（ウィンドウのコードビハインドから呼ばれる）。
+    /// 言語はファイル名で判定する（.cls/.trigger = Apex、.js = JavaScript、.html/.page = HTML）。
+    /// </summary>
+    public async Task UpdateSuggestionsAsync(SourceFileViewModel? file, int caret)
+    {
+        _suggestCts?.Cancel();
+        _suggestCts?.Dispose();
+        _suggestCts = null;
+
+        if (file is null || CurrentGraph is not null)
+        {
+            HideSuggestions();
+            return;
+        }
+
+        var language = SourceCompletionLanguages.ForFileName(file.FileName);
+        if (language == SourceCompletionLanguage.None)
+        {
+            HideSuggestions();
+            return;
+        }
+
+        caret = Math.Clamp(caret, 0, file.Text.Length);
+        var cts = new CancellationTokenSource();
+        _suggestCts = cts;
+        IsSuggestionsVisible = true;
+        IsFetchingSuggestions = true;
+
+        try
+        {
+            string header;
+            IReadOnlyList<SoqlCompletionItem> items;
+
+            switch (language)
+            {
+                case SourceCompletionLanguage.Apex:
+                {
+                    var context = ApexCompletionParser.Parse(file.Text, caret);
+                    if (context.Kind == ApexCompletionKind.None)
+                    {
+                        HideSuggestions();
+                        return;
+                    }
+
+                    var result = await _suggestions
+                        .GetAsync(TargetOrg, file.Text, caret, context, cts.Token)
+                        .ConfigureAwait(true);
+                    if (result is null)
+                    {
+                        HideSuggestions();
+                        return;
+                    }
+
+                    (header, items) = result.Value;
+                    break;
+                }
+
+                case SourceCompletionLanguage.JavaScript:
+                {
+                    var context = JsCompletion.Parse(file.Text, caret);
+                    if (!context.InCode || context.Prefix.Length == 0)
+                    {
+                        HideSuggestions();
+                        return;
+                    }
+
+                    header = UiText.T("SourceEditor_SuggestJs");
+                    items = JsCompletion.Items(context.Prefix);
+                    break;
+                }
+
+                case SourceCompletionLanguage.Html:
+                {
+                    var context = HtmlCompletion.Parse(file.Text, caret);
+                    if (!context.InTag)
+                    {
+                        HideSuggestions();
+                        return;
+                    }
+
+                    var isVf = SourceCompletionLanguages.IsVisualforce(file.FileName);
+                    header = UiText.T(isVf ? "SourceEditor_SuggestVf" : "SourceEditor_SuggestHtml");
+                    items = HtmlCompletion.Items(context.Prefix, isVf);
+                    break;
+                }
+
+                default:
+                    HideSuggestions();
+                    return;
+            }
+
+            if (cts.IsCancellationRequested)
+            {
+                return;
+            }
+
+            if (items.Count == 0)
+            {
+                HideSuggestions();
+                return;
+            }
+
+            SuggestionsHeader = header;
+            Suggestions.Clear();
+            foreach (var item in items)
+            {
+                Suggestions.Add(item);
+            }
+
+            IsFetchingSuggestions = false;
+            IsSuggestionsVisible = true;
+        }
+        catch (OperationCanceledException)
+        {
+            // 次の入力・カーソル移動で破棄された
+        }
+        catch (Exception ex)
+        {
+            if (!cts.IsCancellationRequested)
+            {
+                HideSuggestions();
+                _log.Warn($"ソース エディタ: 補完候補の取得に失敗しました（{file.FileName}）: {ex.Message}");
+            }
+        }
+    }
+
+    /// <summary>候補チップのクリック時に、カーソル位置の語の置換開始位置を返す（言語別のパーサーを使用）。</summary>
+    public int GetSuggestionSegmentStart(SourceFileViewModel? file, string text, int caret)
+    {
+        if (file is null)
+        {
+            return caret;
+        }
+
+        caret = Math.Clamp(caret, 0, text.Length);
+        return SourceCompletionLanguages.ForFileName(file.FileName) switch
+        {
+            SourceCompletionLanguage.Apex => ApexCompletionParser.Parse(text, caret).SegmentStart,
+            SourceCompletionLanguage.JavaScript => JsCompletion.Parse(text, caret).Start,
+            SourceCompletionLanguage.Html => HtmlCompletion.Parse(text, caret).Start,
+            _ => caret,
+        };
+    }
+
+    /// <summary>候補エリアを消す。</summary>
+    public void HideSuggestions()
+    {
+        IsFetchingSuggestions = false;
+        IsSuggestionsVisible = false;
+        Suggestions.Clear();
+    }
 
     /// <summary>選択中ファイルのメンバーを組織へ反映する（Ctrl+S）。</summary>
     [RelayCommand(CanExecute = nameof(CanEdit))]
@@ -762,6 +937,7 @@ public sealed partial class SourceEditorViewModel : ObservableObject
         }
 
         OpenFiles.Remove(file);
+        HideSuggestions();
         if (ReferenceEquals(SelectedFile, file))
         {
             SelectedFile = OpenFiles.Count == 0 ? null : OpenFiles[Math.Min(index, OpenFiles.Count - 1)];

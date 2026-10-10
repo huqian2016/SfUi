@@ -42,7 +42,11 @@ public class SourceEditorViewModelTests : IDisposable
     }
 
     private SourceEditorViewModel CreateViewModel()
-        => new(_service, _dialogs, _log);
+    {
+        var rest = new SalesforceRestClient(new OrgService(new SfCliRunner()), _log);
+        var suggestions = new ApexSuggestionProvider(new SObjectDescribeService(rest, _log), new OrgMetadataService(rest, _log));
+        return new(_service, _dialogs, _log, suggestions);
+    }
 
     private static OrgInfo CreateOrg() => new(
         Username: "user@example.com.hks4sand1",
@@ -495,6 +499,101 @@ public class SourceEditorViewModelTests : IDisposable
         Assert.Null(viewModel.CurrentGraph);
         Assert.Contains("flow boom", viewModel.StatusMessage);
         Assert.Equal(1, _dialogs.WarningCount);
+    }
+
+    [Fact]
+    public async Task UpdateSuggestions_JavaScript_ShowsKeywords()
+    {
+        var viewModel = CreateViewModel();
+        var text = "const x = cons";
+        var file = new SourceFileViewModel(
+            new SourceMemberInfo(SourceMemberKind.LightningComponentBundle, "cmp", "id1"), "cmp.js", "JavaScript", text, text);
+
+        await viewModel.UpdateSuggestionsAsync(file, text.Length);
+
+        Assert.True(viewModel.IsSuggestionsVisible);
+        Assert.False(viewModel.IsFetchingSuggestions);
+        Assert.Contains(viewModel.Suggestions, i => i.Text == "const");
+        Assert.Equal(UiText.T("SourceEditor_SuggestJs"), viewModel.SuggestionsHeader);
+    }
+
+    [Fact]
+    public async Task UpdateSuggestions_Html_ShowsTags()
+    {
+        var viewModel = CreateViewModel();
+        var text = "<tem";
+        var file = new SourceFileViewModel(
+            new SourceMemberInfo(SourceMemberKind.LightningComponentBundle, "cmp", "id2"), "cmp.html", "HTML", text, text);
+
+        await viewModel.UpdateSuggestionsAsync(file, text.Length);
+
+        Assert.True(viewModel.IsSuggestionsVisible);
+        Assert.Contains(viewModel.Suggestions, i => i.Text == "<template></template>");
+        Assert.DoesNotContain(viewModel.Suggestions, i => i.Text.StartsWith("apex:", StringComparison.Ordinal));
+        Assert.Equal(UiText.T("SourceEditor_SuggestHtml"), viewModel.SuggestionsHeader);
+    }
+
+    [Fact]
+    public async Task UpdateSuggestions_Visualforce_ShowsApexTags()
+    {
+        var viewModel = CreateViewModel();
+        var text = "<apex:inp";
+        var file = new SourceFileViewModel(
+            new SourceMemberInfo(SourceMemberKind.VisualforcePage, "MyPage", "id2b"), "MyPage.page", "HTML", text, text);
+
+        await viewModel.UpdateSuggestionsAsync(file, text.Length);
+
+        Assert.True(viewModel.IsSuggestionsVisible);
+        Assert.Contains(viewModel.Suggestions, i => i.Text == "<apex:inputText></apex:inputText>");
+        Assert.Contains(viewModel.Suggestions, i => i.Text == "<apex:inputField></apex:inputField>");
+        Assert.Equal(UiText.T("SourceEditor_SuggestVf"), viewModel.SuggestionsHeader);
+    }
+
+    [Fact]
+    public async Task UpdateSuggestions_Apex_SystemMembersWithoutOrg()
+    {
+        var viewModel = CreateViewModel();
+        var text = "System.";
+        var file = new SourceFileViewModel(
+            new SourceMemberInfo(SourceMemberKind.ApexClass, "Alpha", "01p1"), "Alpha.cls", "C#", text, text);
+
+        await viewModel.UpdateSuggestionsAsync(file, text.Length);
+
+        Assert.True(viewModel.IsSuggestionsVisible);
+        Assert.Contains(viewModel.Suggestions, i => i.Text == "debug()");
+        Assert.Equal(UiText.T("Apex_SuggestMembersFmt", "System"), viewModel.SuggestionsHeader);
+    }
+
+    [Fact]
+    public async Task UpdateSuggestions_Css_Hides()
+    {
+        var viewModel = CreateViewModel();
+        var text = "color: red";
+        var file = new SourceFileViewModel(
+            new SourceMemberInfo(SourceMemberKind.LightningComponentBundle, "cmp", "id3"), "cmp.css", "CSS", text, text);
+
+        await viewModel.UpdateSuggestionsAsync(file, text.Length);
+
+        Assert.False(viewModel.IsSuggestionsVisible);
+        Assert.Empty(viewModel.Suggestions);
+    }
+
+    [Fact]
+    public void GetSuggestionSegmentStart_PerLanguage()
+    {
+        var viewModel = CreateViewModel();
+
+        var js = new SourceFileViewModel(
+            new SourceMemberInfo(SourceMemberKind.LightningComponentBundle, "cmp", "id4"), "cmp.js", "JavaScript", "ab = cons", "ab = cons");
+        Assert.Equal(5, viewModel.GetSuggestionSegmentStart(js, "ab = cons", 8));
+
+        var html = new SourceFileViewModel(
+            new SourceMemberInfo(SourceMemberKind.LightningComponentBundle, "cmp", "id5"), "cmp.html", "HTML", "<tem", "<tem");
+        Assert.Equal(1, viewModel.GetSuggestionSegmentStart(html, "<tem", 4));
+
+        var apex = new SourceFileViewModel(
+            new SourceMemberInfo(SourceMemberKind.ApexClass, "Alpha", "01p2"), "Alpha.cls", "C#", "x.Sy", "x.Sy");
+        Assert.Equal(2, viewModel.GetSuggestionSegmentStart(apex, "x.Sy", 4));
     }
 
     private sealed class FakeSourceEditorService : ISourceEditorService
