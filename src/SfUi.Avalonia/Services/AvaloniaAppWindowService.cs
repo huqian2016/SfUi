@@ -100,6 +100,15 @@ public sealed class AvaloniaAppWindowService : IAppWindowService
         ShowOwned(new EtlWindow(viewModel));
     }
 
+    /// <summary>ソース エディタ ウィンドウを開く（非モーダル・複数同時表示可）。</summary>
+    public void OpenSourceEditor(OrgInfo org)
+    {
+        var viewModel = _services.GetRequiredService<SourceEditorViewModel>();
+        viewModel.Initialize(org);
+        ShowOwned(new SourceEditorWindow(viewModel));
+        viewModel.RefreshCommand.Execute(null);
+    }
+
     public void OpenBackupRecords(string backupId, BackupObjectInfo info, string displayName, OrgInfo? currentOrg)
     {
         var viewModel = _services.GetRequiredService<BackupRecordsViewModel>();

@@ -125,6 +125,19 @@
                 </Button>
 
                 <Button Style="{StaticResource IconButton}" Margin="0,0,10,0"
+                        Command="{Binding OpenSourceEditorCommand}"
+                        IsEnabled="{Binding CanUseOrgFeature}"
+                        AutomationProperties.Name="{loc:Tr Main_SourceEditor}">
+                    <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconCode}" />
+                    <Button.ToolTip>
+                        <StackPanel MaxWidth="360">
+                            <TextBlock Text="{loc:Tr Main_SourceEditor}" FontWeight="SemiBold" />
+                            <TextBlock Text="{loc:Tr Main_SourceEditorTip}" TextWrapping="Wrap" Foreground="#555555" Margin="0,2,0,0" />
+                        </StackPanel>
+                    </Button.ToolTip>
+                </Button>
+
+                <Button Style="{StaticResource IconButton}" Margin="0,0,10,0"
                         Command="{Binding OpenOrgManageCommand}"
                         AutomationProperties.Name="{loc:Tr Main_OrgManage}">
                     <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconBuilding}" />

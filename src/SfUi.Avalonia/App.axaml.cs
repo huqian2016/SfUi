@@ -77,6 +77,8 @@ public partial class App : Application
             services.AddTransient<OrgHealthViewModel>();
             services.AddTransient<MigrationInventoryViewModel>();
             services.AddTransient<EtlViewModel>();
+            services.AddTransient<SourceEditorViewModel>();
+            services.AddSingleton<ISourceEditorService, SourceEditorService>();
             services.AddSingleton(new StartupOptions { SimulateSfMissing = simulateSfMissing });
             services.AddTransient<WelcomeViewModel>();
             services.AddSingleton<MainWindow>();
@@ -169,6 +171,12 @@ public partial class App : Application
                     {
                         Services.GetRequiredService<IAppWindowService>().OpenOrgManage(mainViewModel.SelectedOrg);
                         _log?.Info("--open orgmanage: 組織管理ウィンドウを開きました");
+                    }
+                    else if (string.Equals(openTarget, "sourceeditor", StringComparison.OrdinalIgnoreCase)
+                        && (mainViewModel.SelectedOrg ?? mainViewModel.Orgs.FirstOrDefault()) is { } sourceOrg)
+                    {
+                        Services.GetRequiredService<IAppWindowService>().OpenSourceEditor(sourceOrg);
+                        _log?.Info("--open sourceeditor: ソース エディタ ウィンドウを開きました");
                     }
                 };
             }

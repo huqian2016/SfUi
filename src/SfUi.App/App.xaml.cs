@@ -47,6 +47,7 @@ public partial class App : Application
     private string? _smokeFieldUsageField;
     private bool _smokeEtlRequested;
     private string? _smokeEtlOrg;
+    private string? _smokeSource;
     private bool _noWelcome;
     private bool _forceWelcome;
     private bool _simulateSfMissing;
@@ -68,6 +69,7 @@ public partial class App : Application
         _smokeBackup = _smokeTest ? ReadOption(e.Args, "--smoke-backup") : null;
         _smokeOrgManage = _smokeTest ? ReadOption(e.Args, "--smoke-orgmanage") : null;
         _smokeLogAnalyzer = _smokeTest ? ReadOption(e.Args, "--smoke-loganalyzer") : null;
+        _smokeSource = _smokeTest ? ReadOption(e.Args, "--smoke-source") : null;
         if (_smokeTest)
         {
             var fieldUsageIndex = Array.FindIndex(e.Args, a => string.Equals(a, "--smoke-fieldusage", StringComparison.OrdinalIgnoreCase));
@@ -136,6 +138,10 @@ public partial class App : Application
         services.AddSingleton<EtlWindowFactory>();
         services.AddTransient<EtlViewModel>();
         services.AddTransient<EtlWindow>();
+        services.AddSingleton<SourceEditorWindowFactory>();
+        services.AddTransient<SourceEditorViewModel>();
+        services.AddTransient<Views.SourceEditorWindow>();
+        services.AddSingleton<ISourceEditorService, SourceEditorService>();
         services.AddSingleton<BackupWindowFactory>();
         services.AddTransient<BackupViewModel>();
         services.AddTransient<BackupTabViewModel>();
@@ -357,6 +363,11 @@ public partial class App : Application
             }
 
             if (_smokeEtlRequested && !await RunEtlSmokeAsync(_smokeEtlOrg))
+            {
+                exitCode = 1;
+            }
+
+            if (!string.IsNullOrWhiteSpace(_smokeSource) && !await RunSourceEditorSmokeAsync(_smokeSource))
             {
                 exitCode = 1;
             }
@@ -1124,6 +1135,93 @@ public partial class App : Application
         }
 
         e.Handled = true;
+    }
+
+    /// <summary>
+    /// --smoke-source &lt;org&gt;: ソース エディタ（Phase 1 閲覧）の検証。
+    /// 4 種別の列挙（Tooling REST）と、Apex クラス / LWC バンドルの本文取得を実組織で行う。
+    /// </summary>
+    private async Task<bool> RunSourceEditorSmokeAsync(string org)
+    {
+        var success = true;
+        try
+        {
+            var service = Services.GetRequiredService<ISourceEditorService>();
+            var counts = new Dictionary<SourceMemberKind, int>();
+            foreach (var kind in new[]
+                     {
+                         SourceMemberKind.ApexClass, SourceMemberKind.ApexTrigger,
+                         SourceMemberKind.VisualforcePage, SourceMemberKind.LightningComponentBundle,
+                     })
+            {
+                var members = await service.ListAsync(org, kind);
+                counts[kind] = members.Count;
+                _log.Info($"--smoke-source: {kind} = {members.Count} 件");
+            }
+
+            if (counts[SourceMemberKind.ApexClass] == 0)
+            {
+                success = false;
+                _log.Error("--smoke-source: Apex クラスが 0 件です");
+            }
+            else
+            {
+                var members = await service.ListAsync(org, SourceMemberKind.ApexClass);
+                var files = await service.GetSourceAsync(org, members[0]);
+                var text = files.Count > 0 ? files[0].Text : string.Empty;
+                var ok = files.Count == 1 && text.Length > 10 && text.Contains("class", StringComparison.OrdinalIgnoreCase);
+                _log.Info($"--smoke-source: {members[0].Name} 本文 = {files.Count} ファイル / {text.Length} 文字 / 検証={ok}");
+                if (!ok)
+                {
+                    success = false;
+                    _log.Error("--smoke-source: Apex クラス本文の検証に失敗しました");
+                }
+            }
+
+            if (counts[SourceMemberKind.LightningComponentBundle] == 0)
+            {
+                success = false;
+                _log.Error("--smoke-source: LWC が 0 件です");
+            }
+            else
+            {
+                var members = await service.ListAsync(org, SourceMemberKind.LightningComponentBundle);
+                var verified = false;
+                foreach (var member in members.Take(5))
+                {
+                    var files = await service.GetSourceAsync(org, member);
+                    if (files.Count < 2)
+                    {
+                        continue;
+                    }
+
+                    var ok = files.Any(f => f.FileName.EndsWith(".js", StringComparison.OrdinalIgnoreCase));
+                    _log.Info($"--smoke-source: LWC {member.Name} = {string.Join(", ", files.Select(f => f.FileName))} / 検証={ok}");
+                    if (!ok)
+                    {
+                        success = false;
+                        _log.Error("--smoke-source: LWC のファイル構成の検証に失敗しました");
+                    }
+
+                    verified = true;
+                    break;
+                }
+
+                if (!verified)
+                {
+                    success = false;
+                    _log.Error("--smoke-source: 検証可能な LWC バンドル（複数ファイル）が見つかりません");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            success = false;
+            _log.Error("--smoke-source: 検証に失敗", ex);
+        }
+
+        _log.Info(success ? "--smoke-source: OK" : "--smoke-source: NG");
+        return success;
     }
 
     /// <summary>

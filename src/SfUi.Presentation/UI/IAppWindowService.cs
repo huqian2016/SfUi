@@ -29,6 +29,9 @@ public interface IAppWindowService
     /// <summary>ETL 移行ウィンドウを開く（組織未選択でも可）。</summary>
     void OpenEtl(OrgInfo? org);
 
+    /// <summary>ソース エディタ ウィンドウを開く（組織必須）。</summary>
+    void OpenSourceEditor(OrgInfo org);
+
     /// <summary>バックアップ内のレコード詳細ウィンドウを開く。</summary>
     void OpenBackupRecords(string backupId, BackupObjectInfo info, string displayName, OrgInfo? currentOrg);
 

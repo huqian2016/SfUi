@@ -635,6 +635,34 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
+    /// <summary>ソース エディタ ウィンドウを新しいウィンドウで開く（組織を選択している場合のみ）。</summary>
+    [RelayCommand]
+    private void OpenSourceEditor()
+    {
+        if (IsLoadingOrgs)
+        {
+            StatusMessage = UiText.T("Msg_OrgsLoadingWait");
+            return;
+        }
+
+        if (SelectedOrg is null)
+        {
+            StatusMessage = UiText.T("Msg_SelectOrg");
+            return;
+        }
+
+        try
+        {
+            _windows.OpenSourceEditor(SelectedOrg);
+            StatusMessage = UiText.T("Msg_SourceEditorOpenedFmt", SelectedOrg.DisplayName);
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = UiText.T("Common_FailedFmt", ex.Message);
+            _log.Error("ソース エディタ ウィンドウを開けませんでした", ex);
+        }
+    }
+
     /// <summary>設定タブのインデックス（ようこそ画面の「設定を開く」遷移先）。</summary>
     private const int SettingsTabIndex = 7;
 
