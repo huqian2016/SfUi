@@ -36,6 +36,16 @@ public partial class SourceEditorWindow : Window
             Command = viewModel.DeployCommand,
         });
 
+        // Ctrl+W = 現在のタブを閉じる
+        KeyDown += (_, e) =>
+        {
+            if (e.Key == Key.W && e.KeyModifiers == KeyModifiers.Control && ViewModel.SelectedFile is not null)
+            {
+                ViewModel.CloseFileCommand.Execute(ViewModel.SelectedFile);
+                e.Handled = true;
+            }
+        };
+
         // 入力・カーソル移動のたびに補完候補を更新（少し待ってからまとめて）
         _suggestTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
         _suggestTimer.Tick += (_, _) =>

@@ -38,6 +38,13 @@ public sealed record SourceDraft(
     IReadOnlyList<SourceFileInfo> Baseline,
     IReadOnlyList<SourceFileInfo> Working);
 
+/// <summary>ローカル履歴の 1 版（反映成功時のスナップショット。Phase 7）。</summary>
+public sealed record SourceHistoryEntry(DateTime DeployedAt, IReadOnlyList<SourceFileInfo> Files)
+{
+    /// <summary>合計文字数（一覧のサイズ表示用）。</summary>
+    public int TotalChars => Files.Sum(f => f.Text.Length);
+}
+
 /// <summary>反映エラー（Apex のコンパイル エラーは行・列付きで返る）。</summary>
 public sealed record SourceDeployError(string FileName, int Line, int Column, string Problem)
 {
@@ -87,4 +94,13 @@ public interface ISourceEditorService
 
     /// <summary>ローカル ドラフトを削除する。</summary>
     Task ClearDraftAsync(string orgKey, SourceMemberInfo member, CancellationToken cancellationToken = default);
+
+    /// <summary>ローカル履歴（反映成功時のスナップショット）を新しい順で取得する（最大 20 版）。</summary>
+    Task<IReadOnlyList<SourceHistoryEntry>> ListHistoryAsync(string orgKey, SourceMemberInfo member, CancellationToken cancellationToken = default);
+
+    /// <summary>ローカル履歴へ 1 版を追加する（上限を超えた古い版は破棄）。</summary>
+    Task SaveHistoryAsync(string orgKey, SourceMemberInfo member, IReadOnlyList<SourceFileInfo> files, CancellationToken cancellationToken = default);
+
+    /// <summary>ローカル履歴を消去する。</summary>
+    Task ClearHistoryAsync(string orgKey, SourceMemberInfo member, CancellationToken cancellationToken = default);
 }

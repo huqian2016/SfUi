@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 
 namespace SfUi.Core;
 
@@ -102,6 +103,75 @@ public sealed class SourceEditorWorkspace
 
         return Task.CompletedTask;
     }
+
+    // ---- ローカル履歴（Phase 7: 反映成功時のスナップショット）----
+
+    /// <summary>ローカル履歴の上限（これより古い版は破棄）。</summary>
+    public const int MaxHistoryEntries = 20;
+
+    /// <summary>ローカル履歴（新しい順）を読み込む。</summary>
+    public async Task<IReadOnlyList<SourceHistoryEntry>> LoadHistoryAsync(string orgKey, SourceMemberInfo member, CancellationToken cancellationToken = default)
+    {
+        var path = HistoryPath(orgKey, member);
+        if (!File.Exists(path))
+        {
+            return Array.Empty<SourceHistoryEntry>();
+        }
+
+        try
+        {
+            var json = await File.ReadAllTextAsync(path, new UTF8Encoding(false), cancellationToken).ConfigureAwait(false);
+            var entries = JsonSerializer.Deserialize<List<SourceHistoryEntry>>(json);
+            return entries is null
+                ? Array.Empty<SourceHistoryEntry>()
+                : entries.OrderByDescending(e => e.DeployedAt).ToList();
+        }
+        catch (Exception ex)
+        {
+            _log.Warn($"ソース エディタ: 履歴を読み込めませんでした（{path}）: {ex.Message}");
+            return Array.Empty<SourceHistoryEntry>();
+        }
+    }
+
+    /// <summary>反映成功時のスナップショットを履歴の先頭へ追加する（上限 20 版）。</summary>
+    public async Task SaveHistoryAsync(string orgKey, SourceMemberInfo member, IReadOnlyList<SourceFileInfo> files, CancellationToken cancellationToken = default)
+    {
+        if (files.Count == 0)
+        {
+            return;
+        }
+
+        var existing = await LoadHistoryAsync(orgKey, member, cancellationToken).ConfigureAwait(false);
+        var entries = new List<SourceHistoryEntry> { new(DateTime.Now, files) };
+        entries.AddRange(existing.Take(MaxHistoryEntries - 1));
+
+        var path = HistoryPath(orgKey, member);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        var json = JsonSerializer.Serialize(entries);
+        await File.WriteAllTextAsync(path, json, new UTF8Encoding(false), cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>ローカル履歴を消去する。</summary>
+    public Task ClearHistoryAsync(string orgKey, SourceMemberInfo member, CancellationToken cancellationToken = default)
+    {
+        var path = HistoryPath(orgKey, member);
+        try
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+        catch (Exception ex)
+        {
+            _log.Warn($"ソース エディタ: 履歴を削除できませんでした（{path}）: {ex.Message}");
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private string HistoryPath(string orgKey, SourceMemberInfo member)
+        => Path.Combine(MemberFolder(orgKey, member), "history.json");
 
     private async Task<IReadOnlyList<SourceFileInfo>> ReadFolderAsync(string folder, CancellationToken cancellationToken)
     {

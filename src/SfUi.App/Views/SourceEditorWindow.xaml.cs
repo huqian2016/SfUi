@@ -31,6 +31,16 @@ public partial class SourceEditorWindow : Window
         // Ctrl+S = 組織へ反映（InputBindings は DataContext を継承しないためコードで設定）
         InputBindings.Add(new KeyBinding(viewModel.DeployCommand, Key.S, ModifierKeys.Control));
 
+        // Ctrl+W = 現在のタブを閉じる（KeyBinding はパラメーターを渡せないため PreviewKeyDown で処理）
+        PreviewKeyDown += (_, e) =>
+        {
+            if (e.Key == Key.W && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                ViewModel.CloseFileCommand.Execute(ViewModel.SelectedFile);
+                e.Handled = true;
+            }
+        };
+
         // 入力・カーソル移動のたびに補完候補を更新（少し待ってからまとめて）
         _suggestTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
         _suggestTimer.Tick += (_, _) =>

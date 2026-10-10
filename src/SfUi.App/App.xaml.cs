@@ -1448,6 +1448,31 @@ public partial class App : Application
                 success = false;
                 _log.Error("--smoke-source: [suggest] 組織候補の検証に失敗しました");
             }
+
+            // ---- ローカル履歴（Phase 7: スナップショットの保存 → 読込 → 消去）----
+            var historyKey = SourceEditorWorkspace.KeyFor("smoke-history");
+            var historyMember = new SourceMemberInfo(SourceMemberKind.ApexClass, "SfUiSmokeHistory", "0");
+            await service.SaveHistoryAsync(historyKey, historyMember, new[] { new SourceFileInfo("SfUiSmokeHistory.cls", "C#", "class A {} // v1") });
+            await service.SaveHistoryAsync(historyKey, historyMember, new[] { new SourceFileInfo("SfUiSmokeHistory.cls", "C#", "class A {} // v2") });
+            var historyEntries = await service.ListHistoryAsync(historyKey, historyMember);
+            var historyOk = historyEntries.Count == 2
+                            && historyEntries[0].Files[0].Text.Contains("// v2", StringComparison.Ordinal)
+                            && historyEntries[1].Files[0].Text.Contains("// v1", StringComparison.Ordinal);
+            _log.Info($"--smoke-source: [history] スナップショット = {historyOk}（{historyEntries.Count} 版 / 最新 {historyEntries.FirstOrDefault()?.TotalChars} 文字）");
+            if (!historyOk)
+            {
+                success = false;
+                _log.Error("--smoke-source: [history] 履歴の検証に失敗しました");
+            }
+
+            await service.ClearHistoryAsync(historyKey, historyMember);
+            var historyCleared = (await service.ListHistoryAsync(historyKey, historyMember)).Count == 0;
+            _log.Info($"--smoke-source: [history] 消去 = {historyCleared}");
+            if (!historyCleared)
+            {
+                success = false;
+                _log.Error("--smoke-source: [history] 履歴の消去に失敗しました");
+            }
         }
         catch (Exception ex)
         {

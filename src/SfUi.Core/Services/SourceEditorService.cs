@@ -695,6 +695,15 @@ public sealed class SourceEditorService : ISourceEditorService
     public Task ClearDraftAsync(string orgKey, SourceMemberInfo member, CancellationToken cancellationToken = default)
         => _workspace.ClearDraftAsync(orgKey, member, cancellationToken);
 
+    public Task<IReadOnlyList<SourceHistoryEntry>> ListHistoryAsync(string orgKey, SourceMemberInfo member, CancellationToken cancellationToken = default)
+        => _workspace.LoadHistoryAsync(orgKey, member, cancellationToken);
+
+    public Task SaveHistoryAsync(string orgKey, SourceMemberInfo member, IReadOnlyList<SourceFileInfo> files, CancellationToken cancellationToken = default)
+        => _workspace.SaveHistoryAsync(orgKey, member, files, cancellationToken);
+
+    public Task ClearHistoryAsync(string orgKey, SourceMemberInfo member, CancellationToken cancellationToken = default)
+        => _workspace.ClearHistoryAsync(orgKey, member, cancellationToken);
+
     /// <summary>新規メンバー用の既定メタデータ（-meta.xml）を生成する。</summary>
     public static string BuildDefaultMeta(SourceMemberKind kind, string name, string apiVersion)
     {

@@ -17,6 +17,7 @@ public class SourceEditorViewModelTests : IDisposable
     private readonly AppLog _log;
     private readonly FakeDialogs _dialogs = new();
     private readonly FakeSourceEditorService _service = new();
+    private readonly FakeFilePicker _filePicker = new();
 
     public SourceEditorViewModelTests()
     {
@@ -47,7 +48,7 @@ public class SourceEditorViewModelTests : IDisposable
         var suggestions = new ApexSuggestionProvider(new SObjectDescribeService(rest, _log), new OrgMetadataService(rest, _log));
         var settings = new AppSettingsStore(_paths, _log);
         var ai = new AiChatViewModel(new AiChatClient(settings, _log), new HistoryStore(_paths, _log, settings), _log);
-        return new(_service, _dialogs, _log, suggestions, ai);
+        return new(_service, _dialogs, _log, suggestions, ai, _filePicker);
     }
 
     private static OrgInfo CreateOrg() => new(
@@ -666,6 +667,107 @@ public class SourceEditorViewModelTests : IDisposable
         Assert.False(viewModel.IsAiPanelOpen);
     }
 
+    [Fact]
+    public async Task History_SnapshotOnDeploy_AndRedeployRollsBack()
+    {
+        var viewModel = CreateViewModel();
+        viewModel.Initialize(CreateOrg());
+        var member = new SourceMemberInfo(SourceMemberKind.ApexClass, "Alpha", "01p1");
+        _service.Members[SourceMemberKind.ApexClass] = new[] { member };
+        _service.GetSource = _ => new[] { new SourceFileInfo("Alpha.cls", "C#", "v0") };
+
+        await viewModel.OpenMemberCommand.ExecuteAsync(member);
+        var file = viewModel.SelectedFile!;
+
+        // v1 → v2 を反映（履歴: [v2, v1]）
+        file.Text = "v1 content";
+        await viewModel.DeployCommand.ExecuteAsync(null);
+        file.Text = "v2 content";
+        await viewModel.DeployCommand.ExecuteAsync(null);
+        Assert.Equal(2, _service.History["Alpha"].Count);
+        Assert.Equal("v2 content", _service.History["Alpha"][0].Files[0].Text);
+
+        // 履歴パネルを開く（新しい順）
+        await viewModel.ToggleHistoryPanelCommand.ExecuteAsync(null);
+        Assert.True(viewModel.IsHistoryPanelOpen);
+        Assert.Equal(2, viewModel.HistoryRows.Count);
+        Assert.Equal(UiText.T("SourceEditor_HistoryCountFmt", 2), viewModel.HistoryStatusText);
+
+        // 最古（= v1）を選択 → 現在（v2）との差分行数が出る
+        viewModel.SelectedHistoryRow = viewModel.HistoryRows[1];
+        Assert.Equal(UiText.T("SourceEditor_HistoryDiffFmt", 0, 1), viewModel.HistoryDiffText);
+
+        // 読み込み → エディタが v1 へ戻る（未反映）
+        viewModel.LoadHistoryEntryCommand.Execute(null);
+        Assert.Equal("v1 content", file.Text);
+
+        // 再反映 → 組織に送る内容が v1 になり、履歴に新しい版が追加される
+        await viewModel.RedeployHistoryCommand.ExecuteAsync(null);
+        Assert.Equal("v1 content", file.Text);
+        Assert.False(file.IsDirty);
+        Assert.Equal(3, _service.History["Alpha"].Count);
+        Assert.Equal(3, viewModel.HistoryRows.Count);
+    }
+
+    [Fact]
+    public void Search_FindsHitsAcrossOpenFiles_AndNavigates()
+    {
+        var viewModel = CreateViewModel();
+        var alpha = new SourceFileViewModel(
+            new SourceMemberInfo(SourceMemberKind.ApexClass, "Alpha", "1"), "Alpha.cls", "C#",
+            "line1\nSystem.debug('hit');\nline3", "line1\nSystem.debug('hit');\nline3");
+        var cmp = new SourceFileViewModel(
+            new SourceMemberInfo(SourceMemberKind.LightningComponentBundle, "cmp", "2"), "cmp.js", "JavaScript",
+            "// no match\nconst hit = 1;", "// no match\nconst hit = 1;");
+        viewModel.OpenFiles.Add(alpha);
+        viewModel.OpenFiles.Add(cmp);
+
+        viewModel.SearchQuery = "hit";
+        viewModel.RunSearchCommand.Execute(null);
+
+        Assert.Equal(2, viewModel.SearchResults.Count);
+        Assert.Equal("Alpha.cls", viewModel.SearchResults[0].File.FileName);
+        Assert.Equal(2, viewModel.SearchResults[0].Line);
+        Assert.Equal(UiText.T("SourceEditor_SearchCountFmt", 2), viewModel.SearchStatusText);
+
+        // 2 件目（cmp.js）を選択 → タブ切替 + 行ジャンプ要求
+        viewModel.SelectedSearchHit = viewModel.SearchResults[1];
+        Assert.Same(cmp, viewModel.SelectedFile);
+        Assert.NotNull(viewModel.PendingNavigation);
+        Assert.Equal(2, viewModel.PendingNavigation!.Line);
+        Assert.Equal("cmp.js", viewModel.PendingNavigation.FileName);
+    }
+
+    [Fact]
+    public async Task Export_SavesCurrentFileText()
+    {
+        var viewModel = CreateViewModel();
+        var path = Path.Combine(_sandbox, "export.cls");
+        _filePicker.SavePath = path;
+        viewModel.SelectedFile = new SourceFileViewModel(
+            new SourceMemberInfo(SourceMemberKind.ApexClass, "Alpha", "1"), "Alpha.cls", "C#", "class A {}", "class A {}");
+
+        await viewModel.ExportFileCommand.ExecuteAsync(null);
+
+        Assert.True(File.Exists(path));
+        Assert.Equal("class A {}", File.ReadAllText(path));
+        Assert.Contains(path, viewModel.StatusMessage);
+    }
+
+    [Fact]
+    public void CloseAllFiles_ClearsTabs()
+    {
+        var viewModel = CreateViewModel();
+        viewModel.OpenFiles.Add(new SourceFileViewModel(
+            new SourceMemberInfo(SourceMemberKind.ApexClass, "Alpha", "1"), "Alpha.cls", "C#", "a", "a"));
+        viewModel.SelectedFile = viewModel.OpenFiles[0];
+
+        viewModel.CloseAllFilesCommand.Execute(null);
+
+        Assert.Empty(viewModel.OpenFiles);
+        Assert.Null(viewModel.SelectedFile);
+    }
+
     private sealed class FakeSourceEditorService : ISourceEditorService
     {
         public Dictionary<SourceMemberKind, IReadOnlyList<SourceMemberInfo>> Members { get; } = new();
@@ -728,5 +830,50 @@ public class SourceEditorViewModelTests : IDisposable
             ClearedDrafts.Add(member);
             return Task.CompletedTask;
         }
+
+        public Dictionary<string, List<SourceHistoryEntry>> History { get; } = new(StringComparer.Ordinal);
+
+        public List<string> ClearedHistory { get; } = new();
+
+        public Task<IReadOnlyList<SourceHistoryEntry>> ListHistoryAsync(string orgKey, SourceMemberInfo member, CancellationToken cancellationToken = default)
+        {
+            IReadOnlyList<SourceHistoryEntry> entries = History.TryGetValue(member.Name, out var list)
+                ? list.OrderByDescending(e => e.DeployedAt).ToList()
+                : new List<SourceHistoryEntry>();
+            return Task.FromResult(entries);
+        }
+
+        public Task SaveHistoryAsync(string orgKey, SourceMemberInfo member, IReadOnlyList<SourceFileInfo> files, CancellationToken cancellationToken = default)
+        {
+            if (!History.TryGetValue(member.Name, out var list))
+            {
+                list = new List<SourceHistoryEntry>();
+                History[member.Name] = list;
+            }
+
+            list.Insert(0, new SourceHistoryEntry(DateTime.Now, files));
+            return Task.CompletedTask;
+        }
+
+        public Task ClearHistoryAsync(string orgKey, SourceMemberInfo member, CancellationToken cancellationToken = default)
+        {
+            History.Remove(member.Name);
+            ClearedHistory.Add(member.Name);
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class FakeFilePicker : IFilePickerService
+    {
+        public string? SavePath { get; set; }
+
+        public Task<string?> OpenFileAsync(string title, string filter, string? initialDirectory = null)
+            => Task.FromResult<string?>(null);
+
+        public Task<string?> SaveFileAsync(string title, string suggestedFileName, string filter, string? initialDirectory = null)
+            => Task.FromResult(SavePath);
+
+        public Task<string?> PickFolderAsync(string title, string? initialDirectory = null)
+            => Task.FromResult<string?>(null);
     }
 }

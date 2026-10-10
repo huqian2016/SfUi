@@ -154,6 +154,48 @@ public sealed class SourceDeployErrorRow
     public override string ToString() => DisplayText;
 }
 
+/// <summary>履歴パネルの 1 行（表示用の整形付き。Phase 7）。</summary>
+public sealed class SourceHistoryRow
+{
+    public SourceHistoryRow(SourceHistoryEntry entry)
+    {
+        Entry = entry;
+        DisplayText = UiText.T(
+            "SourceEditor_HistoryRowFmt",
+            entry.DeployedAt.ToString("yyyy-MM-dd HH:mm:ss"),
+            entry.Files.Count,
+            entry.TotalChars);
+    }
+
+    public SourceHistoryEntry Entry { get; }
+
+    public string DisplayText { get; }
+
+    public override string ToString() => DisplayText;
+}
+
+/// <summary>横断検索（開いているファイル内）の 1 件（Phase 7）。</summary>
+public sealed class SourceSearchHit
+{
+    public SourceSearchHit(SourceFileViewModel file, int line, string text)
+    {
+        File = file;
+        Line = line;
+        Text = text;
+        DisplayText = UiText.T("SourceEditor_SearchRowFmt", file.FileName, line, text);
+    }
+
+    public SourceFileViewModel File { get; }
+
+    public int Line { get; }
+
+    public string Text { get; }
+
+    public string DisplayText { get; }
+
+    public override string ToString() => DisplayText;
+}
+
 /// <summary>エディタへ行ジャンプする要求（ウィンドウのコードビハインドが処理）。</summary>
 public sealed record SourceNavigation(string MemberKey, string FileName, int Line);
 
@@ -167,16 +209,18 @@ public sealed partial class SourceEditorViewModel : ObservableObject
     private readonly AppLog _log;
     private readonly ApexSuggestionProvider _suggestions;
     private readonly AiChatViewModel _ai;
+    private readonly IFilePickerService _filePicker;
     private CancellationTokenSource? _draftCts;
     private CancellationTokenSource? _suggestCts;
 
-    public SourceEditorViewModel(ISourceEditorService service, IDialogService dialogs, AppLog log, ApexSuggestionProvider suggestions, AiChatViewModel ai)
+    public SourceEditorViewModel(ISourceEditorService service, IDialogService dialogs, AppLog log, ApexSuggestionProvider suggestions, AiChatViewModel ai, IFilePickerService filePicker)
     {
         _service = service;
         _dialogs = dialogs;
         _log = log;
         _suggestions = suggestions;
         _ai = ai;
+        _filePicker = filePicker;
         _ai.ApplyRequested += ApplyAiSnippet;
 
         Groups.Add(new SourceMemberGroupViewModel(SourceMemberKind.ApexClass, UiText.T("SourceEditor_GroupApexClass")));
@@ -219,6 +263,10 @@ public sealed partial class SourceEditorViewModel : ObservableObject
 
         HideSuggestions();
         UpdateFileStatus();
+        if (IsHistoryPanelOpen)
+        {
+            _ = RefreshHistoryAsync();
+        }
     }
 
     private void File_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -722,6 +770,280 @@ public sealed partial class SourceEditorViewModel : ObservableObject
         StatusMessage = UiText.T("SourceEditor_Ai_AppliedFmt", file.FileName, snippet.Code.Length);
     }
 
+    // ---- ローカル履歴（Phase 7: 反映ごとのスナップショット → 読み込み / 再反映）----
+
+    /// <summary>履歴パネルの行（新しい順）。</summary>
+    public ObservableCollection<SourceHistoryRow> HistoryRows { get; } = new();
+
+    /// <summary>履歴パネルの表示状態。</summary>
+    [ObservableProperty]
+    private bool _isHistoryPanelOpen;
+
+    /// <summary>履歴の選択行（差分表示とアクションの対象）。</summary>
+    [ObservableProperty]
+    private SourceHistoryRow? _selectedHistoryRow;
+
+    partial void OnSelectedHistoryRowChanged(SourceHistoryRow? value) => UpdateHistoryDiff();
+
+    [ObservableProperty]
+    private string _historyStatusText = string.Empty;
+
+    [ObservableProperty]
+    private string _historyDiffText = string.Empty;
+
+    public string HistoryTitle => UiText.T("SourceEditor_HistoryTitle");
+
+    [RelayCommand]
+    private async Task ToggleHistoryPanelAsync()
+    {
+        IsHistoryPanelOpen = !IsHistoryPanelOpen;
+        if (IsHistoryPanelOpen)
+        {
+            await RefreshHistoryAsync().ConfigureAwait(true);
+        }
+    }
+
+    /// <summary>選択中メンバーの履歴を読み直す（新しい順・最大 20 版）。</summary>
+    public async Task RefreshHistoryAsync()
+    {
+        try
+        {
+            var file = SelectedFile;
+            HistoryRows.Clear();
+            SelectedHistoryRow = null;
+            if (file is null || Org is null)
+            {
+                HistoryStatusText = UiText.T("SourceEditor_HistoryEmptyFmt");
+                UpdateHistoryDiff();
+                return;
+            }
+
+            var entries = await _service.ListHistoryAsync(OrgKey, file.Member).ConfigureAwait(true);
+            foreach (var entry in entries)
+            {
+                HistoryRows.Add(new SourceHistoryRow(entry));
+            }
+
+            HistoryStatusText = HistoryRows.Count == 0
+                ? UiText.T("SourceEditor_HistoryEmptyFmt")
+                : UiText.T("SourceEditor_HistoryCountFmt", HistoryRows.Count);
+            UpdateHistoryDiff();
+        }
+        catch (Exception ex)
+        {
+            _log.Warn($"ソース エディタ: 履歴の読み込みに失敗しました: {ex.Message}");
+            HistoryStatusText = UiText.T("Common_FailedFmt", ex.Message);
+        }
+    }
+
+    /// <summary>選択中の版をエディタへ読み込む（未反映状態になる。反映は別操作）。</summary>
+    [RelayCommand]
+    private void LoadHistoryEntry()
+    {
+        if (SelectedHistoryRow is not { } row)
+        {
+            StatusMessage = UiText.T("SourceEditor_HistoryNoneSelected");
+            return;
+        }
+
+        ApplyHistoryEntry(row);
+        StatusMessage = UiText.T("SourceEditor_HistoryLoadedFmt", row.DisplayText);
+    }
+
+    /// <summary>ワンクリック巻き戻し: 選択中の版を読み込んで組織へ再反映する。</summary>
+    [RelayCommand]
+    private async Task RedeployHistoryAsync()
+    {
+        if (SelectedHistoryRow is not { } row)
+        {
+            StatusMessage = UiText.T("SourceEditor_HistoryNoneSelected");
+            return;
+        }
+
+        ApplyHistoryEntry(row);
+        await DeployCommand.ExecuteAsync(null).ConfigureAwait(true);
+        if (IsHistoryPanelOpen)
+        {
+            await RefreshHistoryAsync().ConfigureAwait(true);
+        }
+    }
+
+    [RelayCommand]
+    private async Task ClearHistoryAsync()
+    {
+        var file = SelectedFile;
+        if (file is null || Org is null)
+        {
+            return;
+        }
+
+        if (!_dialogs.ConfirmDestructive(UiText.T("SourceEditor_HistoryClearConfirm"), UiText.T("SourceEditor_Title")))
+        {
+            return;
+        }
+
+        await _service.ClearHistoryAsync(OrgKey, file.Member).ConfigureAwait(true);
+        await RefreshHistoryAsync().ConfigureAwait(true);
+        StatusMessage = UiText.T("SourceEditor_HistoryClearedFmt");
+    }
+
+    /// <summary>スナップショットを同じメンバーの開いているタブへ書き戻す（変更多数）。</summary>
+    private int ApplyHistoryEntry(SourceHistoryRow row)
+    {
+        var file = SelectedFile;
+        if (file is null)
+        {
+            return 0;
+        }
+
+        var changed = 0;
+        foreach (var tab in OpenFiles.Where(f => f.MemberKey == file.MemberKey))
+        {
+            var snapshot = row.Entry.Files.FirstOrDefault(f => string.Equals(f.FileName, tab.FileName, StringComparison.OrdinalIgnoreCase));
+            if (snapshot is null || string.Equals(tab.Text, snapshot.Text, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            tab.Text = snapshot.Text;
+            changed++;
+        }
+
+        return changed;
+    }
+
+    /// <summary>選択中の版と現在のエディタ内容との差分行数を表示する。</summary>
+    private void UpdateHistoryDiff()
+    {
+        HistoryDiffText = string.Empty;
+        if (SelectedHistoryRow is not { } row || SelectedFile is not { } file)
+        {
+            return;
+        }
+
+        var snapshot = row.Entry.Files.FirstOrDefault(f => string.Equals(f.FileName, file.FileName, StringComparison.OrdinalIgnoreCase));
+        if (snapshot is null)
+        {
+            return;
+        }
+
+        var diff = LineDiff.Compute(snapshot.Text, file.Text);
+        var added = diff.Values.Count(kind => kind == LineChangeKind.Added);
+        var modified = diff.Values.Count(kind => kind == LineChangeKind.Modified);
+        HistoryDiffText = UiText.T("SourceEditor_HistoryDiffFmt", added, modified);
+    }
+
+    // ---- 横断検索（Phase 7: 開いているファイルの本文）----
+
+    /// <summary>検索パネルの表示状態。</summary>
+    [ObservableProperty]
+    private bool _isSearchPanelOpen;
+
+    /// <summary>検索語。</summary>
+    [ObservableProperty]
+    private string _searchQuery = string.Empty;
+
+    /// <summary>検索結果（開いているファイル内の一致行。最大 200 件）。</summary>
+    public ObservableCollection<SourceSearchHit> SearchResults { get; } = new();
+
+    /// <summary>選択したヒットへジャンプする。</summary>
+    [ObservableProperty]
+    private SourceSearchHit? _selectedSearchHit;
+
+    partial void OnSelectedSearchHitChanged(SourceSearchHit? value)
+    {
+        if (value is null)
+        {
+            return;
+        }
+
+        SelectedFile = value.File;
+        PendingNavigation = new SourceNavigation(value.File.MemberKey, value.File.FileName, value.Line);
+    }
+
+    [ObservableProperty]
+    private string _searchStatusText = string.Empty;
+
+    [RelayCommand]
+    private void ToggleSearchPanel() => IsSearchPanelOpen = !IsSearchPanelOpen;
+
+    /// <summary>開いている全タブの本文を行単位で検索する（大文字小文字を無視）。</summary>
+    [RelayCommand]
+    private void RunSearch()
+    {
+        const int maxHits = 200;
+        SearchResults.Clear();
+        var query = SearchQuery.Trim();
+        if (query.Length == 0)
+        {
+            SearchStatusText = string.Empty;
+            return;
+        }
+
+        foreach (var file in OpenFiles)
+        {
+            var lines = file.Text.Split('\n');
+            for (var i = 0; i < lines.Length && SearchResults.Count < maxHits; i++)
+            {
+                if (lines[i].Contains(query, StringComparison.OrdinalIgnoreCase))
+                {
+                    SearchResults.Add(new SourceSearchHit(file, i + 1, lines[i].Trim()));
+                }
+            }
+
+            if (SearchResults.Count >= maxHits)
+            {
+                break;
+            }
+        }
+
+        SearchStatusText = SearchResults.Count == 0
+            ? UiText.T("SourceEditor_SearchEmpty")
+            : UiText.T("SourceEditor_SearchCountFmt", SearchResults.Count);
+    }
+
+    // ---- ファイル エクスポート / タブ操作（Phase 7）----
+
+    /// <summary>選択中ファイルの本文をローカルへ保存する。</summary>
+    [RelayCommand]
+    private async Task ExportFileAsync()
+    {
+        var file = SelectedFile;
+        if (file is null)
+        {
+            StatusMessage = UiText.T("SourceEditor_NoSelection");
+            return;
+        }
+
+        var path = await _filePicker
+            .SaveFileAsync(UiText.T("SourceEditor_ExportTitle"), file.FileName, UiText.T("SourceEditor_ExportFilter"))
+            .ConfigureAwait(true);
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return;
+        }
+
+        try
+        {
+            await File.WriteAllTextAsync(path, file.Text, new UTF8Encoding(false)).ConfigureAwait(true);
+            StatusMessage = UiText.T("SourceEditor_ExportedFmt", path);
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = UiText.T("Common_FailedFmt", ex.Message);
+            _log.Warn($"ソース エディタ: ファイルの保存に失敗しました（{path}）: {ex.Message}");
+        }
+    }
+
+    /// <summary>開いているタブをすべて閉じる。</summary>
+    [RelayCommand]
+    private void CloseAllFiles()
+    {
+        OpenFiles.Clear();
+        SelectedFile = null;
+        HideSuggestions();
+    }
+
     /// <summary>選択中ファイルのメンバーを組織へ反映する（Ctrl+S）。</summary>
     [RelayCommand(CanExecute = nameof(CanEdit))]
     private Task DeployAsync() => DeployCoreAsync(dryRun: false);
@@ -761,6 +1083,11 @@ public sealed partial class SourceEditorViewModel : ObservableObject
                     }
 
                     await SaveDraftForAsync(member, CancellationToken.None).ConfigureAwait(true);
+                    await _service.SaveHistoryAsync(OrgKey, member, sourceFiles).ConfigureAwait(true);
+                    if (IsHistoryPanelOpen)
+                    {
+                        await RefreshHistoryAsync().ConfigureAwait(true);
+                    }
                 }
 
                 StatusMessage = dryRun
@@ -819,6 +1146,7 @@ public sealed partial class SourceEditorViewModel : ObservableObject
                 SelectedFile = OpenFiles.Count == 0 ? null : OpenFiles[^1];
                 Groups.First(g => g.Kind == member.Kind).RemoveMember(member.Name);
                 await _service.ClearDraftAsync(OrgKey, member).ConfigureAwait(true);
+                await _service.ClearHistoryAsync(OrgKey, member).ConfigureAwait(true);
                 DeployErrors.Clear();
                 OnPropertyChanged(nameof(HasDeployErrors));
                 OnPropertyChanged(nameof(ErrorsHeaderText));
@@ -883,6 +1211,7 @@ public sealed partial class SourceEditorViewModel : ObservableObject
             }
 
             _log.Info($"ソース エディタ: {kind} {trimmed} を新規作成しました。");
+            await _service.SaveHistoryAsync(OrgKey, placeholder, files).ConfigureAwait(true);
 
             var members = await _service.ListAsync(TargetOrg, kind).ConfigureAwait(true);
             Groups.FirstOrDefault(g => g.Kind == kind)?.SetAll(members, FilterText);

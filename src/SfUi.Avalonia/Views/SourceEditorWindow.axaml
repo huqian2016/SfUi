@@ -46,6 +46,16 @@
                         Command="{Binding ToggleAiPanelCommand}"
                         ToolTip.Tip="{loc:Tr OrgInfo_Ai_ToggleTip}"
                         AutomationProperties.Name="{loc:Tr OrgInfo_Ai_Title}" />
+                <Button x:Name="SourceEditorSearchButton" Content="{loc:Tr SourceEditor_SearchButton}" Padding="12,3" Margin="8,0,0,0"
+                        Command="{Binding ToggleSearchPanelCommand}"
+                        ToolTip.Tip="{loc:Tr SourceEditor_SearchTip}" />
+                <Button x:Name="SourceEditorHistoryButton" Content="{loc:Tr SourceEditor_HistoryButton}" Padding="12,3" Margin="8,0,0,0"
+                        Command="{Binding ToggleHistoryPanelCommand}"
+                        ToolTip.Tip="{loc:Tr SourceEditor_HistoryTitle}" />
+                <Button x:Name="SourceEditorExportButton" Content="{loc:Tr SourceEditor_ExportFile}" Padding="12,3" Margin="8,0,0,0"
+                        Command="{Binding ExportFileCommand}" />
+                <Button x:Name="SourceEditorCloseAllButton" Content="{loc:Tr SourceEditor_CloseAll}" Padding="12,3" Margin="8,0,0,0"
+                        Command="{Binding CloseAllFilesCommand}" />
                 <TextBlock Text="{loc:Tr SourceEditor_FilterTip}" Margin="16,0,4,0" VerticalAlignment="Center" />
                 <TextBox x:Name="SourceEditorFilterBox" Width="220" VerticalContentAlignment="Center"
                          ToolTip.Tip="{loc:Tr SourceEditor_FilterTip}"
@@ -75,6 +85,64 @@
         </Border>
 
         <!-- メタデータ エクスプローラー + エディタ -->
+        <!-- 横断検索パネル（Phase 7: 開いているファイル内） -->
+        <Border DockPanel.Dock="Bottom" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="10,6"
+                IsVisible="{Binding IsSearchPanelOpen}">
+            <StackPanel>
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Content="✕" Padding="6,0"
+                            Command="{Binding ToggleSearchPanelCommand}" />
+                    <TextBlock x:Name="SourceEditorSearchHeader" Text="{loc:Tr SourceEditor_SearchTip}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    <TextBox x:Name="SourceEditorSearchBox" Width="240" Margin="10,0,0,0" VerticalContentAlignment="Center"
+                             Text="{Binding SearchQuery, Mode=TwoWay}"
+                             AutomationProperties.Name="{loc:Tr SourceEditor_SearchTip}" />
+                    <Button x:Name="SourceEditorSearchGoButton" Content="{loc:Tr SourceEditor_SearchGo}" Padding="12,2" Margin="6,0,12,0"
+                            Command="{Binding RunSearchCommand}" />
+                    <TextBlock x:Name="SourceEditorSearchStatusText" Text="{Binding SearchStatusText}" VerticalAlignment="Center" Foreground="#666666" />
+                </DockPanel>
+                <ListBox x:Name="SourceEditorSearchResults" MaxHeight="140" Margin="0,4,0,0"
+                         ItemsSource="{Binding SearchResults}"
+                         SelectedItem="{Binding SelectedSearchHit, Mode=TwoWay}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding DisplayText}" FontFamily="Consolas" />
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </StackPanel>
+        </Border>
+
+        <!-- ローカル履歴パネル（Phase 7: 反映ごとのスナップショット → 読込 / 再反映） -->
+        <Border DockPanel.Dock="Bottom" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="10,6"
+                IsVisible="{Binding IsHistoryPanelOpen}">
+            <DockPanel>
+                <DockPanel DockPanel.Dock="Top">
+                    <Button DockPanel.Dock="Right" Content="✕" Padding="6,0"
+                            Command="{Binding ToggleHistoryPanelCommand}" />
+                    <TextBlock x:Name="SourceEditorHistoryHeader" Text="{Binding HistoryTitle}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    <TextBlock x:Name="SourceEditorHistoryCountText" Text="{Binding HistoryStatusText}" Margin="10,0,0,0" VerticalAlignment="Center" Foreground="#666666" />
+                </DockPanel>
+                <DockPanel DockPanel.Dock="Bottom" Margin="0,6,0,0">
+                    <Button x:Name="SourceEditorHistoryLoadButton" Content="{loc:Tr SourceEditor_HistoryLoad}" Padding="12,2"
+                            Command="{Binding LoadHistoryEntryCommand}" />
+                    <Button x:Name="SourceEditorHistoryRedeployButton" Content="{loc:Tr SourceEditor_HistoryRedeploy}" Padding="12,2" Margin="6,0,0,0"
+                            Command="{Binding RedeployHistoryCommand}" />
+                    <Button x:Name="SourceEditorHistoryClearButton" Content="{loc:Tr SourceEditor_HistoryClear}" Padding="12,2" Margin="6,0,0,0"
+                            Command="{Binding ClearHistoryCommand}" />
+                    <TextBlock x:Name="SourceEditorHistoryDiffText" Text="{Binding HistoryDiffText}" Margin="12,0,0,0" VerticalAlignment="Center" Foreground="#666666" />
+                </DockPanel>
+                <ListBox x:Name="SourceEditorHistoryList" MaxHeight="150" Margin="0,4,0,0"
+                         ItemsSource="{Binding HistoryRows}"
+                         SelectedItem="{Binding SelectedHistoryRow, Mode=TwoWay}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding DisplayText}" />
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+        </Border>
+
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="320" MinWidth="200" />
