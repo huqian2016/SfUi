@@ -421,9 +421,96 @@ public class SourceEditorViewModelTests : IDisposable
         Assert.Equal(new[] { "Alpha", "Beta" }, viewModel.GetExistingNames(SourceMemberKind.ApexClass));
     }
 
+    // ---- Phase 4: フロー グラフ ----
+
+    private static FlowGraph CreateSampleGraph(string label = "My Flow")
+        => new(label, "my_flow", "v3 Active",
+            new[]
+            {
+                new FlowNodeInfo("Start:start", "start", "Start", "Start", 40, 100, Array.Empty<FlowDetailInfo>()),
+                new FlowNodeInfo("Screen:s1", "s1", "Confirm", "Screen", 400, 100, new[] { new FlowDetailInfo("Fields", "2") }),
+            },
+            new[] { new FlowEdgeInfo("Start:start", "Screen:s1", "normal", null) });
+
+    [Fact]
+    public async Task Refresh_LoadsFlowGroup()
+    {
+        _service.Flows = new[]
+        {
+            new SourceMemberInfo(SourceMemberKind.Flow, "flow_a", "300x1"),
+            new SourceMemberInfo(SourceMemberKind.Flow, "flow_b", "300x2"),
+        };
+
+        var viewModel = CreateViewModel();
+        viewModel.Initialize(CreateOrg());
+        await viewModel.RefreshCommand.ExecuteAsync(null);
+
+        Assert.Equal("Flows (2)", viewModel.Groups[4].HeaderText);
+        Assert.Equal(2, viewModel.Groups[4].Members.Count);
+        Assert.Contains("2", viewModel.StatusMessage);
+    }
+
+    [Fact]
+    public async Task OpenMember_Flow_ShowsGraphAndCanBeClosedByFileOpen()
+    {
+        _service.OnGetFlowGraph = _ => CreateSampleGraph();
+        _service.GetSource = _ => new[] { new SourceFileInfo("A.cls", "C#", "class A {}") };
+
+        var viewModel = CreateViewModel();
+        viewModel.Initialize(CreateOrg());
+        await viewModel.OpenMemberCommand.ExecuteAsync(new SourceMemberInfo(SourceMemberKind.Flow, "my_flow", "300x1"));
+
+        Assert.NotNull(viewModel.CurrentGraph);
+        Assert.True(viewModel.HasGraph);
+        Assert.False(viewModel.HasNoGraph);
+        Assert.Equal(2, viewModel.CurrentGraph!.Nodes.Count);
+        Assert.Single(viewModel.CurrentGraph.Edges);
+        Assert.Equal(UiText.T("SourceEditor_FlowLoadedFmt", "My Flow", "v3 Active", 2, 1), viewModel.StatusMessage);
+
+        // グラフ表示中は反映系が無効（タブのファイルを誤操作しない）
+        Assert.False(viewModel.CanEdit);
+        Assert.False(viewModel.DeployCommand.CanExecute(null));
+
+        // グラフ側の閉じる要求でファイル タブに戻る
+        viewModel.CurrentGraph.Close();
+        Assert.Null(viewModel.CurrentGraph);
+        Assert.True(viewModel.HasNoGraph);
+        Assert.True(viewModel.CanEdit);
+
+        // フローを開いた後にファイルを開くとグラフが閉じてタブが選択される
+        await viewModel.OpenMemberCommand.ExecuteAsync(new SourceMemberInfo(SourceMemberKind.Flow, "my_flow", "300x1"));
+        await viewModel.OpenMemberCommand.ExecuteAsync(new SourceMemberInfo(SourceMemberKind.ApexClass, "Alpha", "01p1"));
+        Assert.Null(viewModel.CurrentGraph);
+        Assert.Single(viewModel.OpenFiles);
+    }
+
+    [Fact]
+    public async Task OpenFlow_Failure_WarnsAndKeepsTabs()
+    {
+        _service.OnGetFlowGraph = _ => throw new SalesforceApiException("flow boom");
+        var viewModel = CreateViewModel();
+        viewModel.Initialize(CreateOrg());
+        await viewModel.OpenMemberCommand.ExecuteAsync(new SourceMemberInfo(SourceMemberKind.Flow, "my_flow", "300x1"));
+
+        Assert.Null(viewModel.CurrentGraph);
+        Assert.Contains("flow boom", viewModel.StatusMessage);
+        Assert.Equal(1, _dialogs.WarningCount);
+    }
+
     private sealed class FakeSourceEditorService : ISourceEditorService
     {
         public Dictionary<SourceMemberKind, IReadOnlyList<SourceMemberInfo>> Members { get; } = new();
+
+        public IReadOnlyList<SourceMemberInfo> Flows { get; set; } = Array.Empty<SourceMemberInfo>();
+
+        public Func<SourceMemberInfo, FlowGraph>? OnGetFlowGraph { get; set; }
+
+        public Task<IReadOnlyList<SourceMemberInfo>> ListFlowsAsync(string targetOrg, CancellationToken cancellationToken = default)
+            => Task.FromResult(Flows);
+
+        public Task<FlowGraph> GetFlowGraphAsync(string targetOrg, SourceMemberInfo member, CancellationToken cancellationToken = default)
+            => Task.FromResult(OnGetFlowGraph?.Invoke(member)
+                               ?? new FlowGraph(member.Name, member.Name, "v1 Active", Array.Empty<FlowNodeInfo>(), Array.Empty<FlowEdgeInfo>()));
 
         public Func<SourceMemberInfo, IReadOnlyList<SourceFileInfo>>? GetSource { get; set; }
 

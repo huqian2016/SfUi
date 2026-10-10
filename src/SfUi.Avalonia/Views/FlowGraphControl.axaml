@@ -1,0 +1,54 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:SfUi.Avalonia"
+             xmlns:conv="clr-namespace:SfUi.Avalonia.Converters"
+             x:Class="SfUi.Avalonia.Views.FlowGraphControl">
+    <UserControl.Resources>
+        <conv:HexBrushConverter x:Key="HexBrush" />
+    </UserControl.Resources>
+    <DockPanel>
+
+        <!-- ヘッダー（タイトル / ズーム / 閉じる） -->
+        <Border DockPanel.Dock="Top" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
+            <DockPanel>
+                <Button x:Name="FlowCloseButton" DockPanel.Dock="Right" Content="{loc:Tr SourceEditor_FlowClose}"
+                        Padding="10,3" Margin="8,0,0,0" Click="Close_Click"
+                        AutomationProperties.Name="{loc:Tr SourceEditor_FlowClose}" />
+                <TextBlock x:Name="FlowGraphStatusText" DockPanel.Dock="Right" Text="{Binding CountText}"
+                           Margin="12,0,0,0" VerticalAlignment="Center" Foreground="#666666" />
+                <TextBlock DockPanel.Dock="Right" Text="Zoom" Margin="16,0,6,0" VerticalAlignment="Center" Foreground="#666666" />
+                <Slider x:Name="FlowZoomSlider" DockPanel.Dock="Right" Width="130" Minimum="0.5" Maximum="1.5"
+                        VerticalAlignment="Center" Value="{Binding Zoom, Mode=TwoWay}" />
+                <TextBlock Text="{Binding HeaderText}" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+            </DockPanel>
+        </Border>
+
+        <!-- ノード詳細 -->
+        <Border DockPanel.Dock="Bottom" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="10,6">
+            <StackPanel>
+                <TextBlock x:Name="FlowDetailsHeader" Text="{Binding SelectedNodeTitle}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                <ItemsControl x:Name="FlowDetailsList" ItemsSource="{Binding SelectedNodeDetails}" Margin="0,4,0,0">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" Margin="0,1">
+                                <TextBlock Text="{Binding Label}" Width="150" Foreground="#666666" />
+                                <TextBlock Text="{Binding Value}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </Border>
+
+        <!-- グラフ キャンバス -->
+        <ScrollViewer x:Name="FlowGraphScroller" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Background="#FAFAFA">
+            <LayoutTransformControl HorizontalAlignment="Left" VerticalAlignment="Top">
+                <LayoutTransformControl.LayoutTransform>
+                    <ScaleTransform ScaleX="{Binding Zoom}" ScaleY="{Binding Zoom}" />
+                </LayoutTransformControl.LayoutTransform>
+                <Canvas x:Name="GraphCanvas" Width="{Binding CanvasWidth}" Height="{Binding CanvasHeight}"
+                        Margin="10" Background="Transparent" />
+            </LayoutTransformControl>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>

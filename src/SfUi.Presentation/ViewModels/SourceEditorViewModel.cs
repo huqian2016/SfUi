@@ -176,6 +176,7 @@ public sealed partial class SourceEditorViewModel : ObservableObject
         Groups.Add(new SourceMemberGroupViewModel(SourceMemberKind.ApexTrigger, UiText.T("SourceEditor_GroupApexTrigger")));
         Groups.Add(new SourceMemberGroupViewModel(SourceMemberKind.VisualforcePage, UiText.T("SourceEditor_GroupVfPage")));
         Groups.Add(new SourceMemberGroupViewModel(SourceMemberKind.LightningComponentBundle, UiText.T("SourceEditor_GroupLwc")));
+        Groups.Add(new SourceMemberGroupViewModel(SourceMemberKind.Flow, UiText.T("SourceEditor_GroupFlow")));
     }
 
     public string Title => UiText.T("SourceEditor_Title");
@@ -234,6 +235,7 @@ public sealed partial class SourceEditorViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsNotBusy))]
+    [NotifyPropertyChangedFor(nameof(CanEdit))]
     [NotifyCanExecuteChangedFor(nameof(RefreshCommand))]
     [NotifyCanExecuteChangedFor(nameof(OpenMemberCommand))]
     [NotifyCanExecuteChangedFor(nameof(DeployCommand))]
@@ -242,6 +244,9 @@ public sealed partial class SourceEditorViewModel : ObservableObject
     private bool _isBusy;
 
     public bool IsNotBusy => !IsBusy;
+
+    /// <summary>反映系の操作が可能か（ビジー中とグラフ表示中は不可）。</summary>
+    public bool CanEdit => !IsBusy && CurrentGraph is null;
 
     [ObservableProperty]
     private string _statusMessage = string.Empty;
@@ -253,6 +258,20 @@ public sealed partial class SourceEditorViewModel : ObservableObject
     /// <summary>選択中ファイルの反映状態（未反映 N 行 / 組織と一致）。</summary>
     [ObservableProperty]
     private string _fileStatusText = string.Empty;
+
+    /// <summary>開いているフロー グラフ（null = ファイル タブ表示）。</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasGraph))]
+    [NotifyPropertyChangedFor(nameof(HasNoGraph))]
+    [NotifyPropertyChangedFor(nameof(CanEdit))]
+    [NotifyCanExecuteChangedFor(nameof(DeployCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ValidateCommand))]
+    [NotifyCanExecuteChangedFor(nameof(DeleteMemberCommand))]
+    private FlowGraphViewModel? _currentGraph;
+
+    public bool HasGraph => CurrentGraph is not null;
+
+    public bool HasNoGraph => CurrentGraph is null;
 
     /// <summary>反映エラー（パネル表示用）。</summary>
     public ObservableCollection<SourceDeployErrorRow> DeployErrors { get; } = new();
@@ -300,7 +319,9 @@ public sealed partial class SourceEditorViewModel : ObservableObject
                 var group = Groups[i];
                 try
                 {
-                    var members = await _service.ListAsync(TargetOrg, group.Kind).ConfigureAwait(true);
+                    var members = group.Kind == SourceMemberKind.Flow
+                        ? await _service.ListFlowsAsync(TargetOrg).ConfigureAwait(true)
+                        : await _service.ListAsync(TargetOrg, group.Kind).ConfigureAwait(true);
                     group.SetAll(members, FilterText);
                     counts[i] = members.Count;
                 }
@@ -312,7 +333,7 @@ public sealed partial class SourceEditorViewModel : ObservableObject
             }
 
             StatusMessage = errors.Count == 0
-                ? UiText.T("SourceEditor_LoadedFmt", counts[0], counts[1], counts[2], counts[3])
+                ? UiText.T("SourceEditor_LoadedFmt", counts[0], counts[1], counts[2], counts[3], counts[4])
                 : UiText.T("Common_FailedFmt", string.Join(" / ", errors));
         }
         finally
@@ -336,6 +357,14 @@ public sealed partial class SourceEditorViewModel : ObservableObject
             return;
         }
 
+        if (member.Kind == SourceMemberKind.Flow)
+        {
+            await OpenFlowGraphAsync(member).ConfigureAwait(true);
+            return;
+        }
+
+        // ファイルを開くときはグラフ表示を解除する
+        CurrentGraph = null;
         var key = member.Kind + ":" + member.Name;
         IsBusy = true;
         StatusMessage = UiText.T("SourceEditor_FetchingFmt", member.Name);
@@ -404,12 +433,40 @@ public sealed partial class SourceEditorViewModel : ObservableObject
         }
     }
 
+    /// <summary>フロー 1 件のグラフを読み込んで表示する（Phase 4）。</summary>
+    private async Task OpenFlowGraphAsync(SourceMemberInfo member)
+    {
+        IsBusy = true;
+        StatusMessage = UiText.T("SourceEditor_FlowLoadingFmt", member.Name);
+        try
+        {
+            var graph = await _service.GetFlowGraphAsync(TargetOrg, member).ConfigureAwait(true);
+            var graphViewModel = new FlowGraphViewModel(graph);
+            graphViewModel.CloseRequested += CloseGraph;
+            CurrentGraph = graphViewModel;
+            StatusMessage = UiText.T("SourceEditor_FlowLoadedFmt", graph.Label, graph.VersionLabel, graph.Nodes.Count, graph.Edges.Count);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _log.Error($"ソース エディタ: フロー {member.Name} の取得に失敗しました", ex);
+            StatusMessage = UiText.T("Common_FailedFmt", ex.Message);
+            _dialogs.Warning(ex.Message, UiText.T("SourceEditor_Title"));
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    /// <summary>グラフ表示を閉じてファイル タブに戻る。</summary>
+    public void CloseGraph() => CurrentGraph = null;
+
     /// <summary>選択中ファイルのメンバーを組織へ反映する（Ctrl+S）。</summary>
-    [RelayCommand(CanExecute = nameof(IsNotBusy))]
+    [RelayCommand(CanExecute = nameof(CanEdit))]
     private Task DeployAsync() => DeployCoreAsync(dryRun: false);
 
     /// <summary>検証のみ（dry-run deploy）。</summary>
-    [RelayCommand(CanExecute = nameof(IsNotBusy))]
+    [RelayCommand(CanExecute = nameof(CanEdit))]
     private Task ValidateAsync() => DeployCoreAsync(dryRun: true);
 
     private async Task DeployCoreAsync(bool dryRun)
@@ -470,7 +527,7 @@ public sealed partial class SourceEditorViewModel : ObservableObject
     }
 
     /// <summary>選択中ファイルのメンバーを組織から削除する。</summary>
-    [RelayCommand(CanExecute = nameof(IsNotBusy))]
+    [RelayCommand(CanExecute = nameof(CanEdit))]
     private async Task DeleteMemberAsync()
     {
         var file = SelectedFile;

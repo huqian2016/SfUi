@@ -4,6 +4,7 @@
         xmlns:vm="clr-namespace:SfUi.App.ViewModels;assembly=SfUi.Presentation"
         xmlns:core="clr-namespace:SfUi.Core;assembly=SfUi.Core"
         xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+        xmlns:views="clr-namespace:SfUi.Avalonia.Views"
         x:Class="SfUi.Avalonia.Views.SourceEditorWindow"
         Title="{Binding Title}"
         Height="820" Width="1280" MinWidth="980" MinHeight="600"
@@ -28,7 +29,7 @@
                         Command="{Binding RefreshCommand}"
                         AutomationProperties.Name="{loc:Tr SourceEditor_Refresh}" />
                 <Button x:Name="SourceEditorNewButton" Content="{loc:Tr SourceEditor_New}" Padding="12,3" Margin="16,0,0,0"
-                        IsEnabled="{Binding IsNotBusy}"
+                        IsEnabled="{Binding CanEdit}"
                         Click="NewMember_Click"
                         AutomationProperties.Name="{loc:Tr SourceEditor_New}" />
                 <Button x:Name="SourceEditorDeployButton" Content="{loc:Tr SourceEditor_Deploy}" Padding="14,3" Margin="8,0,0,0"
@@ -98,7 +99,9 @@
 
             <GridSplitter Grid.Column="1" Background="#EEEEEE" ResizeDirection="Columns" />
 
-            <TabControl x:Name="SourceEditorTabs" Grid.Column="2" Margin="6,0,0,0"
+            <Grid Grid.Column="2" Margin="6,0,0,0">
+            <TabControl x:Name="SourceEditorTabs"
+                        IsVisible="{Binding HasNoGraph}"
                         ItemsSource="{Binding OpenFiles}"
                         SelectedItem="{Binding SelectedFile, Mode=TwoWay}">
                 <TabControl.ItemTemplate>
@@ -126,6 +129,10 @@
                     </DataTemplate>
                 </TabControl.ContentTemplate>
             </TabControl>
+            <Panel IsVisible="{Binding HasGraph}">
+                <views:FlowGraphControl x:Name="SourceEditorFlowGraph" DataContext="{Binding CurrentGraph}" />
+            </Panel>
+            </Grid>
         </Grid>
     </DockPanel>
 </Window>

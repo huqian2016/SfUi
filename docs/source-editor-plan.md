@@ -1,6 +1,6 @@
 # SfUi ソース エディタ機能 設計書
 
-最終更新: 2026-10-10 / ステータス: **Phase 3 完了（新規作成テンプレート）** — Phase 1（閲覧）+ 編集・baseline/working ドラフト自動保存・未反映行の背景色（緑=追加/黄=変更）・組織へ反映（Ctrl+S）・検証のみ（dry-run）・削除・反映エラーの行ジャンプに加え、**テンプレートからの新規作成（Apex クラス / トリガー / VF / LWC）+ API 名検証 + 重複の事前確認**を両アプリで実装済み。`--smoke-source` はクラス テンプレート作成と LWC バンドルの作成→取得→削除まで検証
+最終更新: 2026-10-10 / ステータス: **Phase 4 完了（Flow グラフ）** — Phase 1–3（閲覧・編集・反映・新規作成）に加え、**Flow の読み取り専用グラフ表示**（FlowDefinitionView 一覧 + Tooling `Flow.Metadata` 解析 / ノード色分け / エッジ種別（通常・フォールト・決定分岐・ループ）/ ノード詳細 / ズーム / 階層レイアウト）を両アプリで実装済み。`--smoke-source` は実組織 318 フローの一覧 + グラフ検証、UI E2E は WPF / Avalonia 両方でグラフ表示→閉じるまで検証
 対象: WPF (`SfUi.App`) + Avalonia (`SfUi.Avalonia`) の両方
 
 ---
@@ -91,7 +91,7 @@ src/SfUi.Avalonia/Views/SourceEditorWindow.axaml
 | **P1 閲覧** | ウィンドウ + 4 種の列挙（Tooling）/ 選択で本文取得 / タブ表示 / 行番号 + 色付き / ステータス バー / 両アプリ + ツールバー導線 + UiText 4 言語 | 実組織でクラス・トリガー・VF・LWC が表示できる → **完了**（186→184 クラス等の実測、LWC 479 件） | 単体テスト（25）+ `--smoke-source` + UI E2E（両アプリ）+ スクショ |
 | **P2 編集 + 反映** | 編集可 / working・baseline 保存（自動ドラフト）/ **未反映行ハイライト** / 反映（Ctrl+S・ボタン、sf deploy）/ 検証のみ / 削除 / エラー行ジャンプ | クラスを編集 → 未反映表示 → 反映 → 組織に反映され表示が「一致」に / 構文エラーは行付きで表示 → **完了**（E2E: 実組織で編集→反映→組織検証→戻し） | 単体テスト（+28）+ スモーク（往復）+ UI E2E |
 | **P3 新規作成** | テンプレート（クラス / トリガー / VF / LWC）+ API 名検証 + deploy で新規作成 | テンプレートから新規クラスを作成し組織に作成できる（スモークで往復 + 後始末）→ **完了**（スモーク: クラス テンプレート作成 + LWC バンドル 作成→取得→削除、E2E: ダイアログ→名前入力→作成→組織確認→タブ / Avalonia は開閉） | 単体テスト（+39）+ スモーク + UI E2E |
-| **P4 Flow グラフ** | Flow 一覧（FlowDefinitionView）+ Metadata(XML) 解析 + **ノード/エッジのグラフ表示**（読み取り専用。start / decision / record 操作 / action / loop / screen 等を色分け）+ ノード詳細 + ズーム/スクロール | 実組織のフローが要素数どおりのグラフで表示される | パーサー単体テスト + 実組織スモーク + UI E2E + スクショ |
+| **P4 Flow グラフ** | Flow 一覧（FlowDefinitionView）+ Metadata（Tooling の JSON）解析 + **ノード/エッジのグラフ表示**（読み取り専用。start / decision / record 操作 / action / loop / screen 等を色分け）+ ノード詳細 + ズーム/スクロール | 実組織のフローが要素数どおりのグラフで表示される → **完了**（スモーク: 318 フロー一覧 + 実フロー 7 ノード / 8 接続（端点整合・Start 存在・ラベル全付与）、E2E: `admission_process_survey` で 8 ノード / 8 接続表示 → 閉じてタブ復帰（WPF・Avalonia 両方）） | 単体テスト（+12）+ 実組織スモーク + UI E2E + スクショ |
 | **P5 自動補完** | Apex: 既存 `ApexCompletion`（スニペット / System / クラス / sObject / 項目 / SOQL）を再利用。LWC JS: キーワード + `lwc` API 基本。VF/HTML: タグ基本 | 入力中に候補が表示され、選択で挿入される | コンテキスト解析の単体テスト + 手動/UI 確認 |
 | **P6 AI 支援** | パネル: 現在のソースについて**質問 / 説明 / 改善提案 / エラー修正**（AiChatClient 再利用。コンテキスト = 開いているファイル + 反映エラー）。提案コードのエディタ挿入 | AI 設定済み環境で応答が表示され、提案を挿入できる | 手動 + `--smoke-ai` 流用 |
 | **P7 追加機能** | **ローカル履歴**（反映ごとにスナップショット → 一覧 / 差分 / ワンクリック巻き戻し=再反映）、横断検索（キャッシュ + 取得済み本文）、ファイル エクスポート、タブ操作改善 ほか | 反映 → 履歴から 1 つ前の版に戻せる | 単体テスト + UI E2E |
@@ -134,7 +134,8 @@ src/SfUi.Avalonia/Views/SourceEditorWindow.axaml
 | ApexClass の Tooling PATCH が組織権限で拒否される（本組織で実測） | 書き込みは deploy に統一（権限差の影響を受けない） |
 | マネージド パッケージのメタデータ | 一覧から除外（NamespacePrefix=null / 対象 4 種のみ） |
 | 大きなファイル（数万行の生成クラス等） | エディタは遅延なしで表示できる範囲を想定。diff は行単位で軽量実装。極端に大きい場合はハイライト省略の検討（P2） |
-| Flow の Metadata XML は複雑（要素 100 種超） | 主要要素のみグラフ化（start / decision / recordX / actionCall / loop / screen / subflow / assignment / wait / connector）。未知要素はノード表示のみ |
+| Flow の Metadata は複雑（要素 100 種超、Tooling は JSON） | 主要要素のみグラフ化（start / decision / recordX / actionCall / loop / screen / subflow / assignment / wait / transform / step / stage / dataLookup / end）。未知要素はノード表示のみ |
+| マネージド パッケージ / システム提供のフロー（例: `runtime_*`）は一覧に出るが Tooling に `Flow` レコードが無くグラフ化できない | リストには表示し、開いた時に「フロー グラフとして読み込めません（マネージド / システム提供）」旨のメッセージを表示（スモークは読み込めるフローを自動選択、E2E は `ManageableState = 'unmanaged'` で選択） |
 | LWC の meta.xml 編集 | タブとして表示・編集可。ただし属性の意味は関知しない（簡易） |
 | 反映中の同時編集 | 反映中は編集ロック（IsBusy）。反映成功後に baseline 更新 |
 

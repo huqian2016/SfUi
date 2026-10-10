@@ -313,4 +313,63 @@ public class SourceEditorServiceTests
             new SourceFileInfo("bundle.html", "HTML", "<template></template>"),
         }));
     }
+
+    // ---- Phase 4: フロー（FlowDefinitionView / Tooling Flow）----
+
+    [Fact]
+    public void BuildFlowSoqls_EscapeNames()
+    {
+        var list = SourceEditorService.BuildFlowListSoql();
+        Assert.Contains("FROM FlowDefinitionView", list, StringComparison.Ordinal);
+        Assert.Contains("ORDER BY Label", list, StringComparison.Ordinal);
+
+        var versions = SourceEditorService.BuildFlowVersionsSoql("a'b");
+        Assert.Contains("Definition.DeveloperName = 'a\\'b'", versions, StringComparison.Ordinal);
+        Assert.Contains("ORDER BY VersionNumber DESC", versions, StringComparison.Ordinal);
+
+        var metadata = SourceEditorService.BuildFlowMetadataSoql("300x1");
+        Assert.Equal("SELECT Id, MasterLabel, FullName, Metadata FROM Flow WHERE Id = '300x1'", metadata);
+    }
+
+    [Fact]
+    public void ParseFlowMembers_ReadsApiNameAndId()
+    {
+        using var document = JsonDocument.Parse(
+            """
+            {
+              "records": [
+                { "Id": "300a", "ApiName": "Flow_A", "Label": "Flow A", "ProcessType": "Flow", "IsActive": true, "LastModifiedDate": "2026-10-01T00:00:00.000+0000" },
+                { "Id": "300b", "ApiName": "Flow_B", "Label": "Flow B", "IsActive": false, "LastModifiedDate": null },
+                { "Id": "", "ApiName": "Flow_C" }
+              ]
+            }
+            """);
+        var members = SourceEditorService.ParseFlowMembers(document);
+        Assert.Equal(2, members.Count);
+        Assert.Equal(SourceMemberKind.Flow, members[0].Kind);
+        Assert.Equal("Flow_A", members[0].Name);
+        Assert.Equal("300a", members[0].Id);
+        Assert.NotNull(members[0].LastModifiedDate);
+        Assert.Null(members[1].LastModifiedDate);
+    }
+
+    [Fact]
+    public void ParseFlowVersions_ReadsStatusAndVersion()
+    {
+        using var document = JsonDocument.Parse(
+            """
+            {
+              "records": [
+                { "Id": "301v2", "Status": "Active", "MasterLabel": "Flow A", "VersionNumber": 2 },
+                { "Id": "301v1", "Status": "Obsolete", "MasterLabel": "Flow A", "VersionNumber": 1 }
+              ]
+            }
+            """);
+        var versions = SourceEditorService.ParseFlowVersions(document);
+        Assert.Equal(2, versions.Count);
+        Assert.Equal("301v2", versions[0].Id);
+        Assert.Equal("Active", versions[0].Status);
+        Assert.Equal(2, versions[0].VersionNumber);
+        Assert.Equal("Obsolete", versions[1].Status);
+    }
 }

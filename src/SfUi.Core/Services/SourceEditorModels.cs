@@ -1,12 +1,15 @@
 namespace SfUi.Core;
 
-/// <summary>ソース エディタが扱うメタデータ種別（Phase 1: Apex クラス / トリガー / VF ページ / LWC）。</summary>
+/// <summary>ソース エディタが扱うメタデータ種別（P1-P3: Apex クラス / トリガー / VF ページ / LWC。P4: Flow = グラフ表示のみ）。</summary>
 public enum SourceMemberKind
 {
     ApexClass,
     ApexTrigger,
     VisualforcePage,
     LightningComponentBundle,
+
+    /// <summary>フロー（P4。一覧は FlowDefinitionView、本文の代わりに読み取り専用グラフを表示する）。</summary>
+    Flow,
 }
 
 /// <summary>一覧に表示する 1 コンポーネント。</summary>
@@ -63,6 +66,12 @@ public interface ISourceEditorService
 
     /// <summary>指定メンバーのソース本文を取得する（Apex/VF = Tooling GET、LWC = LightningComponentResource クエリ）。</summary>
     Task<IReadOnlyList<SourceFileInfo>> GetSourceAsync(string targetOrg, SourceMemberInfo member, CancellationToken cancellationToken = default);
+
+    /// <summary>フロー一覧を取得する（FlowDefinitionView = 標準 REST オブジェクト）。</summary>
+    Task<IReadOnlyList<SourceMemberInfo>> ListFlowsAsync(string targetOrg, CancellationToken cancellationToken = default);
+
+    /// <summary>フロー 1 件の読み取り専用グラフを取得する（Tooling の Flow.Metadata。Active 版→無ければ最新版）。</summary>
+    Task<FlowGraph> GetFlowGraphAsync(string targetOrg, SourceMemberInfo member, CancellationToken cancellationToken = default);
 
     /// <summary>ソースを組織へ反映する（sf deploy。初回はメタデータを retrieve して属性を保つ）。dryRun = 検証のみ。</summary>
     Task<SourceDeployResult> DeployAsync(string targetOrg, SourceMemberInfo member, IReadOnlyList<SourceFileInfo> files, bool dryRun, CancellationToken cancellationToken = default);

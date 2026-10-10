@@ -1343,6 +1343,68 @@ public partial class App : Application
                     }
                 }
             }
+
+            // ---- フロー グラフ（一覧 = REST / バージョン・Metadata = Tooling）----
+            var flows = await service.ListFlowsAsync(org);
+            _log.Info($"--smoke-source: [flow] 一覧 = {flows.Count} 件");
+            if (flows.Count == 0)
+            {
+                success = false;
+                _log.Error("--smoke-source: [flow] フローが 0 件です");
+            }
+            else
+            {
+                FlowGraph? graph = null;
+                var inspected = 0;
+                foreach (var flow in flows.Take(30))
+                {
+                    FlowGraph candidate;
+                    try
+                    {
+                        candidate = await service.GetFlowGraphAsync(org, flow);
+                    }
+                    catch (Exception ex) when (ex is not OperationCanceledException)
+                    {
+                        _log.Info($"--smoke-source: [flow] {flow.Name} は読み込めないためスキップ（{ex.Message}）");
+                        continue;
+                    }
+
+                    inspected++;
+                    if (candidate.Nodes.Count >= 5 && candidate.Edges.Count > 0)
+                    {
+                        graph = candidate;
+                        break;
+                    }
+                }
+
+                if (graph is null)
+                {
+                    success = false;
+                    _log.Error($"--smoke-source: [flow] 5 ノード以上のフローが見つかりません（{inspected} 件確認）");
+                }
+                else
+                {
+                    var ids = graph.Nodes.Select(n => n.Id).ToHashSet(StringComparer.Ordinal);
+                    var endpointsOk = graph.Edges.All(e => ids.Contains(e.FromId) && ids.Contains(e.ToId));
+                    var startOk = graph.Nodes.Any(n => n.Category == "Start");
+                    var labelsOk = graph.Nodes.All(n => !string.IsNullOrWhiteSpace(n.Label))
+                                   && !string.IsNullOrWhiteSpace(graph.Label)
+                                   && !string.IsNullOrWhiteSpace(graph.VersionLabel);
+                    var details = graph.Nodes.Count(n => n.Details.Count > 0);
+                    _log.Info($"--smoke-source: [flow] {graph.Label}（{graph.VersionLabel}）= {graph.Nodes.Count} ノード / {graph.Edges.Count} 接続 / 詳細付き {details} / 端点={endpointsOk} / Start={startOk} / ラベル={labelsOk}");
+                    if (!endpointsOk || !startOk || !labelsOk)
+                    {
+                        success = false;
+                        _log.Error("--smoke-source: [flow] グラフの検証に失敗しました");
+                    }
+
+                    var categories = string.Join(", ", graph.Nodes
+                        .GroupBy(n => n.Category)
+                        .OrderByDescending(g => g.Count())
+                        .Select(g => $"{g.Key}×{g.Count()}"));
+                    _log.Info($"--smoke-source: [flow] カテゴリ = {categories}");
+                }
+            }
         }
         catch (Exception ex)
         {

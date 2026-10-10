@@ -195,6 +195,131 @@ public sealed class SourceEditorService : ISourceEditorService
         return new[] { new SourceFileInfo(fileName, LanguageForFileName(fileName), text) };
     }
 
+    // ---- フロー（Phase 4: 読み取り専用グラフ） ----
+
+    /// <summary>フロー一覧 SOQL（FlowDefinitionView は標準 REST オブジェクト。Tooling では INVALID_TYPE）。</summary>
+    public static string BuildFlowListSoql() =>
+        "SELECT Id, ApiName, Label, ProcessType, IsActive, LastModifiedDate FROM FlowDefinitionView ORDER BY Label";
+
+    /// <summary>フロー バージョン一覧 SOQL（Tooling。Metadata を含まないので複数行可）。</summary>
+    public static string BuildFlowVersionsSoql(string developerName) =>
+        "SELECT Id, MasterLabel, Status, VersionNumber FROM Flow WHERE Definition.DeveloperName = '"
+        + EscapeSoql(developerName) + "' ORDER BY VersionNumber DESC";
+
+    /// <summary>フロー 1 件の Metadata SOQL（Metadata / FullName を含むため単一行のみ可）。</summary>
+    public static string BuildFlowMetadataSoql(string flowId) =>
+        $"SELECT Id, MasterLabel, FullName, Metadata FROM Flow WHERE Id = '{EscapeSoql(flowId)}'";
+
+    /// <summary>FlowDefinitionView のクエリ結果から一覧を組み立てる。</summary>
+    public static IReadOnlyList<SourceMemberInfo> ParseFlowMembers(JsonDocument document)
+    {
+        var list = new List<SourceMemberInfo>();
+        if (!document.RootElement.TryGetProperty("records", out var records) || records.ValueKind != JsonValueKind.Array)
+        {
+            return list;
+        }
+
+        foreach (var record in records.EnumerateArray())
+        {
+            var name = GetString(record, "ApiName");
+            var id = GetString(record, "Id");
+            if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(id))
+            {
+                continue;
+            }
+
+            DateTime? modified = null;
+            var raw = GetString(record, "LastModifiedDate");
+            if (!string.IsNullOrWhiteSpace(raw) && DateTime.TryParse(raw, null, System.Globalization.DateTimeStyles.AdjustToUniversal, out var parsed))
+            {
+                modified = parsed;
+            }
+
+            list.Add(new SourceMemberInfo(SourceMemberKind.Flow, name!, id!, modified));
+        }
+
+        return list;
+    }
+
+    /// <summary>フロー バージョン行（Id / Status / MasterLabel / VersionNumber）。</summary>
+    public sealed record FlowVersionRow(string Id, string Status, string MasterLabel, int VersionNumber);
+
+    /// <summary>Flow（Tooling）のバージョン クエリ結果を解析する。</summary>
+    public static IReadOnlyList<FlowVersionRow> ParseFlowVersions(JsonDocument document)
+    {
+        var list = new List<FlowVersionRow>();
+        if (!document.RootElement.TryGetProperty("records", out var records) || records.ValueKind != JsonValueKind.Array)
+        {
+            return list;
+        }
+
+        foreach (var record in records.EnumerateArray())
+        {
+            var id = GetString(record, "Id");
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                continue;
+            }
+
+            var version = 0;
+            if (record.TryGetProperty("VersionNumber", out var versionElement) && versionElement.ValueKind == JsonValueKind.Number)
+            {
+                version = versionElement.GetInt32();
+            }
+
+            list.Add(new FlowVersionRow(id!, GetString(record, "Status") ?? string.Empty, GetString(record, "MasterLabel") ?? string.Empty, version));
+        }
+
+        return list;
+    }
+
+    public async Task<IReadOnlyList<SourceMemberInfo>> ListFlowsAsync(string targetOrg, CancellationToken cancellationToken = default)
+    {
+        var document = await _rest.QueryAsync(targetOrg, BuildFlowListSoql(), useToolingApi: false, cancellationToken).ConfigureAwait(false);
+        var members = ParseFlowMembers(document);
+        _log.Info($"ソース エディタ: Flow を {members.Count} 件取得しました（{targetOrg}）。");
+        return members;
+    }
+
+    public async Task<FlowGraph> GetFlowGraphAsync(string targetOrg, SourceMemberInfo member, CancellationToken cancellationToken = default)
+    {
+        var versionDocument = await _rest
+            .QueryAsync(targetOrg, BuildFlowVersionsSoql(member.Name), useToolingApi: true, cancellationToken)
+            .ConfigureAwait(false);
+        var versions = ParseFlowVersions(versionDocument);
+        if (versions.Count == 0)
+        {
+            throw new SalesforceApiException(UiText.T("SourceEditor_FlowMissingFmt", member.Name));
+        }
+
+        var version = versions.FirstOrDefault(v => string.Equals(v.Status, "Active", StringComparison.OrdinalIgnoreCase)) ?? versions[0];
+        var metadataDocument = await _rest
+            .QueryAsync(targetOrg, BuildFlowMetadataSoql(version.Id), useToolingApi: true, cancellationToken)
+            .ConfigureAwait(false);
+        if (!metadataDocument.RootElement.TryGetProperty("records", out var records)
+            || records.ValueKind != JsonValueKind.Array
+            || records.GetArrayLength() == 0)
+        {
+            throw new SalesforceApiException(UiText.T("SourceEditor_FlowMissingFmt", member.Name));
+        }
+
+        var record = records[0];
+        var metadata = record.TryGetProperty("Metadata", out var metadataElement) && metadataElement.ValueKind == JsonValueKind.Object
+            ? metadataElement.Clone()
+            : default;
+        if (metadata.ValueKind != JsonValueKind.Object)
+        {
+            throw new SalesforceApiException(UiText.T("SourceEditor_FlowMissingFmt", member.Name));
+        }
+
+        var label = GetString(record, "MasterLabel") ?? member.Name;
+        var apiName = GetString(record, "FullName") ?? member.Name;
+        var versionLabel = $"v{version.VersionNumber} {version.Status}";
+        var graph = FlowGraphParser.Parse(metadata, label, apiName, versionLabel);
+        _log.Info($"ソース エディタ: フロー {member.Name} のグラフ = {graph.Nodes.Count} ノード / {graph.Edges.Count} 接続（{versionLabel}）。");
+        return graph;
+    }
+
     // ---- 反映 / 削除（sf CLI） ----
 
     /// <summary>種別ごとの force-app フォルダー名。</summary>
