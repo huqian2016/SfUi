@@ -1,6 +1,6 @@
 # SfUi User Manual (English)
 
-Applies to: SfUi v0.16.0 (Windows / macOS)  
+Applies to: SfUi v0.16.1 (Windows / macOS)  
 Last updated: 2026-10-10 / Status: third edition (ETL and Source editor)  
 This file is the shared source for the in-app manual and the GitHub-hosted manual (Japanese / Simplified Chinese / Korean versions: `ja.md` / `zh.md` / `ko.md`).
 
