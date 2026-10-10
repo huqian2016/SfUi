@@ -1,7 +1,7 @@
 # SfUi User Manual (English)
 
-Applies to: SfUi v0.14.0 (Windows / macOS)  
-Last updated: 2026-10-08 / Status: first draft  
+Applies to: SfUi v0.16.0 (Windows / macOS)  
+Last updated: 2026-10-10 / Status: third edition (ETL and Source editor)  
 This file is the shared source for the in-app manual and the GitHub-hosted manual (Japanese / Simplified Chinese / Korean versions: `ja.md` / `zh.md` / `ko.md`).
 
 ---
@@ -21,8 +21,10 @@ This file is the shared source for the in-app manual and the GitHub-hosted manua
 11. [AI assistant](#11-ai-assistant)
 12. [Quick panel & favorites](#12-quick-panel--favorites)
 13. [Settings reference](#13-settings-reference)
-14. [Troubleshooting / FAQ](#14-troubleshooting--faq)
-15. [Appendix (shortcuts, storage, privacy)](#15-appendix-shortcuts-storage-privacy)
+14. [ETL (data migration)](#14-etl-data-migration)
+15. [Source editor](#15-source-editor)
+16. [Troubleshooting / FAQ](#16-troubleshooting--faq)
+17. [Appendix (shortcuts, storage, privacy)](#17-appendix-shortcuts-storage-privacy)
 
 ---
 
@@ -48,6 +50,8 @@ Key features:
 - **Data I/O**: object-level export / import (CSV, mapping) and access inspection
 - **Backup & Restore**: object-level backups, restore by Id or key field, backup-to-backup compare
 - **Compare orgs**: side-by-side comparison of up to 8 orgs (including object fields and record-level diffs)
+- **ETL (data migration)**: move data between files, databases, REST APIs and Salesforce; steps & mappings, delta mode, preflight verification and rollback
+- **Source editor**: browse / edit Apex, triggers, Visualforce, LWC and Flow metadata, deploy to the org, Flow graph, autocompletion and AI assistance
 - **AI assistant**: generation and one-click apply of SOQL / Apex suggestions
 - **Productivity**: favorites (Ctrl+1..9), history replay, terminal / Explorer / VS Code / browser launch
 
@@ -147,7 +151,7 @@ History, settings, backups and logs are all stored in the local data folder. The
 | Org | The org used for operations (`--target-org`). "Reload orgs" refreshes the list |
 | SF folder | Working folder for deploy etc. Pick from history or use "Browse…" |
 | Language | Switch the UI language (instant) |
-| Buttons | Org Info / Compare / Data I/O / Backup & Restore / Org Management / Terminal / Explorer / VS Code / Browser / Quick / AI / About |
+| Buttons | Org Info / Compare / Data I/O / Backup & Restore / ETL / Source Editor / Org Management / Terminal / Explorer / VS Code / Browser / Quick / AI / About |
 
 The Terminal, Explorer, VS Code and Browser buttons support **right-click menus** (e.g. Terminal → Windows Terminal / PowerShell / Command Prompt / WSL; Browser → Org home / Setup / Login / Enter URL).
 
@@ -525,7 +529,111 @@ Configure endpoint / model / API key under "AI" in the Settings tab.
 
 ---
 
-## 14. Troubleshooting / FAQ
+## 14. ETL (data migration)
+
+Open it with "ETL" in the top bar. It migrates data between files, databases, REST APIs and Salesforce, with a strong focus on BCP (business continuity): preflight checks, restore on failure and job management all live in this one window. The window has four tabs: Job Editor / Run Monitor / Restore Manager / Connection Manager.
+
+![ETL job editor](images/en/24-etl-job.png)
+
+### 14.1 Job Editor
+
+- **Steps**: executed top to bottom. Switch between the canvas view (default) and the table view; use the ← → × buttons on a node to reorder or remove it, and "Add step" on the right to add one. The selected step's settings appear in the detail pane below.
+- **Source**: CSV / TSV / Excel / JSON / XML / Database (SQL Server / PostgreSQL / ODBC) / REST API / Salesforce (SOQL, Bulk API 2.0). For CSV you can treat the first row as a header; REST supports a URL, paging and authentication (Bearer / Basic / custom headers); databases take a provider, connection string and query.
+- **Mappings**: define source column → target field mappings in a grid, with a type (text / number / date, …) and an expression. Expressions can use 56 built-in functions (string, numeric, date, logical, system values, lookups, Salesforce Id conversion). The function hint stays visible below the mapping grid.
+- **Target**: Salesforce (insert / update / upsert / delete), CSV or a database. For Salesforce, specify the object, operation, match key and error-rate threshold.
+- **Delta mode**: with a delta column and delta state key, only changes since the previous run are migrated (for SOQL sources the condition is pushed down into the WHERE clause).
+- **Multi-step linking**: Ids created by an earlier step are recorded in a local crosswalk and can be referenced as match keys by later steps (e.g. parent → child migrations).
+- **Job management**: Save job / Load / Delete / Export… / Import…. Exported files never contain credentials.
+
+### 14.2 Running and monitoring
+
+Before a run, SfUi performs a preflight (schema validation, row counts, API limits, existing-key checks) and an automatic backup. Applying to a non-sandbox org asks for explicit confirmation, and delete operations are disabled by default. "Validate (dry-run)" checks everything without applying.
+
+![ETL run monitor](images/en/25-etl-monitor.png)
+
+- **Run Monitor**: processed / success / failed / skipped counts and a log. Drill into failed rows or export them to CSV, re-run only the failed rows, and stop or resume a run.
+- **Robustness**: transient errors are retried automatically with exponential backoff, and the run stops automatically once the error rate passes the threshold. Batch-level checkpoints let you resume after an interruption.
+- **Verification**: after a run, counts, sample values and numeric totals are compared automatically ("Verify after run", or press "Verify" manually). The report is saved as verification.json.
+- Run summaries are recorded in the History tab with the "ETL" type.
+
+### 14.3 Restore (rollback)
+
+Every applied change is recorded in a per-run journal (before / after images) and can be rolled back in reverse order (children → parents).
+
+- **Automatic rollback**: an option for failed applies (on / off). Unresolved rows are reported together with a link to manual recovery.
+- **Restore Manager**: pick a run → "Load journal" → review the changes → "Revert this step/object" or "Revert the whole run". **Reverting a successful run at any later point** also works here (within the journal retention, 90 days by default).
+- **Salesforce restore constraints** (also shown in the UI):
+
+| Operation | How it is restored | Constraints |
+|---|---|---|
+| Insert | Created Ids are deleted (to the recycle bin) | Hard deletes are out of scope |
+| Update | PATCHed back to the old values | Formula / roll-up fields are out of scope |
+| Delete | SOAP undelete (same Id) | Only within the 15-day recycle bin |
+| Everything | - | Side effects of triggers / flows (emails, callouts, …) cannot be undone |
+
+### 14.4 Connection Manager
+
+List, create and test connection profiles and explore schemas (database tables / columns / types, Salesforce objects / fields). Credentials are encrypted with OS protection (Windows: DPAPI) and never appear in logs or exports.
+
+### 14.5 Where ETL data lives
+
+- `data\etl\connections.json` … connection profiles (secret fields encrypted)
+- `data\etl\jobs\` … job definitions and state (delta watermarks, …)
+- `data\etl\runs\<runId>\` … per-run run.json / src.sqlite (source DB) / dst.sqlite (target DB) / logs
+
+---
+
+## 15. Source editor
+
+Open it with "Source Editor" in the top bar. It lets you browse and edit org metadata source (Apex classes, Apex triggers, Visualforce pages, Lightning Web Components, Flows) in a VS Code-like editor and deploy changes back to the org. Reads use the Tooling REST API; writes (deploys) use the `sf` CLI.
+
+![Source editor](images/en/26-source-editor.png)
+
+### 15.1 Browsing
+
+- The explorer on the left shows a tree per kind (with counts). The "Filter members" box filters by partial name.
+- Selecting a member opens a tab with line numbers and syntax highlighting. LWC bundles open their js / html / css / meta files together.
+- "Reload" refreshes the list and the sources.
+
+### 15.2 Editing and deploying
+
+- Edits are saved automatically as a local draft; close the window or the app and continue later.
+- **Pending-change highlight**: differences against the baseline (the last content that matched the org) are coloured (modified = yellow, added = green, removed = ▲ in the gutter).
+- **"Deploy to org" (Ctrl+S)**: deploys via the `sf` CLI. With no changes it does nothing. On success the highlights clear and a snapshot is added to the local history.
+- **"Validate only"**: a `deploy --dry-run` to check syntax and deployability.
+- **Deploy errors**: the status shows the error count; click a row in the error list to jump to the line and column.
+- **"New"**: create a class / trigger / Visualforce page / LWC from a template (the API name is validated).
+- **"Delete"**: removes the member from the org (with a confirmation; the local history is cleared too).
+- **"Save file…"**: writes the current file to disk. Close tabs with ×, Ctrl+W or "Close all".
+
+### 15.3 Autocompletion
+
+- Apex: the same candidates as the anonymous Apex tab (System, classes, sObjects, fields, SOQL snippets) appear while typing; pick a chip to insert it at the caret.
+- LWC (JavaScript / HTML / CSS) and Visualforce: keyword and tag candidates.
+
+### 15.4 Flow graph
+
+Selecting a Flow member shows a node / connection graph instead of code.
+
+![Flow graph](images/en/27-source-flow.png)
+
+- Nodes are colour-coded by type (start / decision / screen / record operations / loops / actions, …) and connections are labelled (branch names, …).
+- Click a node to see its details at the bottom. The zoom slider scales the graph; "Close graph" returns to the tab view.
+
+### 15.5 AI, search and local history
+
+- **AI**: open the panel with "AI" in the toolbar. Use the quick prompts (explain / suggest improvements / fix errors) and "attach current tab data" (the file being edited); "Apply to editor" inserts a suggested snippet at the caret.
+- **Search**: searches across the open files (up to 200 hits). Click a result to switch to that tab and jump to the line.
+- **History**: every successful deploy stores a local snapshot (up to 20 versions). Selecting one shows the diff line count against the current file; "Load" restores it into the editor and "Redeploy" pushes it back to the org (a one-click rollback). "Clear" deletes the history.
+
+### 15.6 Where Source Editor data lives
+
+- `data\source-editor\work\` … temporary project used for deploys
+- `data\source-editor\<orgKey>\<kind>\<member>\` … baseline (last content matching the org) / working (current draft) / history.json (local history)
+
+---
+
+## 16. Troubleshooting / FAQ
 
 | Symptom | Remedy |
 |---|---|
@@ -541,9 +649,9 @@ Configure endpoint / model / API key under "AI" in the Settings tab.
 
 ---
 
-## 15. Appendix (shortcuts, storage, privacy)
+## 17. Appendix (shortcuts, storage, privacy)
 
-### 15.1 Shortcuts
+### 17.1 Shortcuts
 
 | Key | Action |
 |---|---|
@@ -553,7 +661,7 @@ Configure endpoint / model / API key under "AI" in the Settings tab.
 | Ctrl+Space | SOQL / Apex completion |
 | Double-click | Replay history / open row details |
 
-### 15.2 Where data lives (inside the data folder)
+### 17.2 Where data lives (inside the data folder)
 
 | File / folder | Content |
 |---|---|
@@ -564,15 +672,17 @@ Configure endpoint / model / API key under "AI" in the Settings tab.
 | `org-manage.json` | Org tags / notes |
 | `backups\` | Backup payloads and metadata |
 | `orginfo\` | Org Info cache |
+| `etl\` | ETL connection profiles, job definitions and run data (run / journal) |
+| `source-editor\` | Source editor drafts (baseline / working) and local history |
 | `logs\` | Application logs |
 
-### 15.3 Privacy & security
+### 17.3 Privacy & security
 
 - Everything is stored locally; no telemetry is sent (`SF_DISABLE_TELEMETRY` is set for `sf`).
 - Only when you use the AI chat is your input sent to the configured AI service.
 - API keys are obfuscated, not encrypted — be careful on shared PCs.
 
-### 15.4 Links
+### 17.4 Links
 
 - GitHub: https://github.com/huqian2016/SfUi
 - Issues: https://github.com/huqian2016/SfUi/issues

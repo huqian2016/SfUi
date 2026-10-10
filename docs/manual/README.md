@@ -15,19 +15,20 @@ This folder contains the **user manual manuscripts** for SfUi. They are the sing
 
 ## Structure of each manuscript
 
-- 15 chapters: intro → install/setup → UI basics → SOQL/Apex/logs/deploy/command/REST → history → org management → Org Info → data I/O → backup & restore → compare → AI → quick panel → settings reference → troubleshooting → appendix
+- 17 chapters: intro → install/setup → UI basics → SOQL/Apex/logs/deploy/command/REST → history → org management → Org Info → data I/O → backup & restore → compare → AI → quick panel → settings reference → **ETL (data migration)** → **Source Editor** → troubleshooting → appendix
 - **Mermaid diagrams** for architecture and key flows (GitHub renders them natively; the future in-app viewer will render them via Markdig-based conversion — WebView2 is intentionally not used)
 - Image references are relative to the manuscript file (`images/<lang>/<file>.png`)
 
 ## Screenshots
 
-`images/ja/` and `images/en/` each contain 23 PNGs (1920x1080-class captures).
+`images/ja/` and `images/en/` each contain 27 PNGs (1920x1080-class captures).
 
 Sources:
 
 - Captured live on Windows with the automation script (`C:\huqian\sfui-manual-shots.ps1 -Lang ja|en` on the dev machine), using a prepared data folder with sample history/backups.
 - Store screenshots from `dist\SfUi-Store-Screenshots-v0.14.0\{lang}\` (results grid, log analyzer, org management, health, inventory, org info, backup, backup compare, org compare).
 - `docs/screenshots/orginfo-export-{lang}.png` for the document export shot.
+- **v0.16.0 captures** for chapters 14/15: 24-etl-job / 25-etl-monitor (ETL window) and 26-source-editor / 27-source-flow (Source Editor window), captured with the `sfui-v016-shots.ps1` automation against the hks4sand1 sandbox (EN and JA UI).
 
 To re-capture, run the script for each language after building `SfUi.exe` (Debug) and pass a valid `-Exe` path / data folder as configured inside the script.
 
