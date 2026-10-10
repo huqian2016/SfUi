@@ -9,28 +9,31 @@ namespace SfUi.App.ViewModels;
 /// <summary>AI 応答から抽出したコード片（タブへ適用する候補）。</summary>
 public sealed class AiSnippet
 {
-    public AiSnippet(string language, string code)
+    public AiSnippet(string language, string code, IReadOnlyList<string>? extraApplyLanguages = null, string? extraApplyLabel = null)
     {
         Language = language;
         Code = code;
+        var isExtra = extraApplyLanguages is not null
+                      && extraApplyLanguages.Contains(language, StringComparer.OrdinalIgnoreCase);
+        CanApply = language is "soql" or "apex" or "command" || isExtra;
         ApplyLabel = language switch
         {
             "soql" => UiText.T("Ai_ApplySoql"),
             "apex" => UiText.T("Ai_ApplyApex"),
             "command" => UiText.T("Ai_ApplyCommand"),
-            _ => string.Empty,
+            _ => isExtra ? extraApplyLabel ?? string.Empty : string.Empty,
         };
     }
 
-    /// <summary>soql / apex / command / text。</summary>
+    /// <summary>soql / apex / command / javascript / html / visualforce / css / text。</summary>
     public string Language { get; }
 
     public string Code { get; }
 
-    /// <summary>適用ボタンのラベル（text は空 = ボタン非表示）。</summary>
+    /// <summary>適用ボタンのラベル（空 = ボタン非表示）。</summary>
     public string ApplyLabel { get; }
 
-    public bool CanApply => Language is "soql" or "apex" or "command";
+    public bool CanApply { get; }
 }
 
 /// <summary>チャット 1 通分の表示用メッセージ。</summary>
@@ -86,6 +89,12 @@ public partial class AiChatViewModel : ObservableObject
 
     /// <summary>システムプロンプトへ追記する追加コンテキスト（組織情報ウィンドウ用）。</summary>
     public Func<string?>? ExtraSystemContextProvider { get; set; }
+
+    /// <summary>追加で「適用」を許可するコードブロック言語（ソース エディタ用。null = 既定のみ）。</summary>
+    public IReadOnlyList<string>? ExtraApplyLanguages { get; set; }
+
+    /// <summary>追加言語の「適用」ボタンのラベル（ソース エディタ用）。</summary>
+    public string? ExtraApplyLabel { get; set; }
 
     /// <summary>クイックプロンプト（組織情報ウィンドウ用。空なら表示しない）。</summary>
     public ObservableCollection<string> QuickPrompts { get; } = new();
@@ -238,7 +247,7 @@ public partial class AiChatViewModel : ObservableObject
                     IsUser = false,
                     Role = "assistant",
                     Content = content,
-                    Snippets = ParseSnippets(content),
+                    Snippets = ParseSnippets(content, ExtraApplyLanguages, ExtraApplyLabel),
                 });
                 StatusText = UiText.T("Ai_DoneFmt", result.Duration.TotalSeconds, result.PromptTokens ?? 0, result.CompletionTokens ?? 0);
             }
@@ -367,7 +376,7 @@ public partial class AiChatViewModel : ObservableObject
     }
 
     /// <summary>応答からコードブロックを抽出して適用候補にする。</summary>
-    internal static List<AiSnippet> ParseSnippets(string content)
+    internal static List<AiSnippet> ParseSnippets(string content, IReadOnlyList<string>? extraApplyLanguages = null, string? extraApplyLabel = null)
     {
         var snippets = new List<AiSnippet>();
         foreach (Match match in FenceRegex.Matches(content))
@@ -384,10 +393,14 @@ public partial class AiChatViewModel : ObservableObject
                 "soql" => "soql",
                 "apex" or "java" => "apex",
                 "bash" or "sh" or "shell" or "powershell" or "ps" or "cmd" or "console" => "command",
+                "javascript" or "js" => "javascript",
+                "html" => "html",
+                "visualforce" => "visualforce",
+                "css" => "css",
                 _ => code.StartsWith("sf ", StringComparison.OrdinalIgnoreCase) ? "command" : "text",
             };
 
-            snippets.Add(new AiSnippet(mapped, code));
+            snippets.Add(new AiSnippet(mapped, code, extraApplyLanguages, extraApplyLabel));
         }
 
         return snippets;

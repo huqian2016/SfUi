@@ -1,6 +1,6 @@
 # SfUi ソース エディタ機能 設計書
 
-最終更新: 2026-10-10 / ステータス: **Phase 5 完了（自動補完）** — Phase 1–4（閲覧・編集・反映・新規作成・Flow グラフ）に加え、**入力中の候補チップ**（Apex = 既存の ApexCompletion 一式（スニペット / System / クラス / sObject / 項目 / SOQL）、LWC JS = キーワード + lwc スニペット、VF・HTML = タグ + apex: タグ）を両アプリで実装済み。候補は言語別パーサー（ApexCompletionParser / JsCompletion / HtmlCompletion）で出し分け、クリックでカーソル位置の語を置換。`--smoke-source` は [suggest] でオフライン 3 言語 + 実組織 sObject 候補を検証、UI E2E は両アプリで System. → 候補チップ → 挿入 → 復元まで検証
+最終更新: 2026-10-10 / ステータス: **Phase 6 完了（AI 支援）** — Phase 1–5（閲覧・編集・反映・新規作成・Flow グラフ・自動補完）に加え、**ウィンドウ専用の AI アシスタント パネル**（質問 / 説明 / 改善提案 / 反映エラー修正。コンテキスト = 対象組織・開いているファイル・反映エラー + 言語に合うコードブロック指示。クイック プロンプト 3 種 / 現在のファイル添付 / コード片の「エディタへ適用」= カーソル位置挿入）を両アプリで実装済み。AI 応答のコードブロック（apex / javascript / html / visualforce / css）は適用ボタン付きで、挿入後は未反映ハイライトとドラフト保存にそのまま乗る。`--smoke-ai` は実測 OK（0.8 秒 / tokens 11+1）、UI E2E は両アプリで AI パネル開閉・クイック プロンプト入力・現在のファイル添付まで検証
 対象: WPF (`SfUi.App`) + Avalonia (`SfUi.Avalonia`) の両方
 
 ---
@@ -93,7 +93,7 @@ src/SfUi.Avalonia/Views/SourceEditorWindow.axaml
 | **P3 新規作成** | テンプレート（クラス / トリガー / VF / LWC）+ API 名検証 + deploy で新規作成 | テンプレートから新規クラスを作成し組織に作成できる（スモークで往復 + 後始末）→ **完了**（スモーク: クラス テンプレート作成 + LWC バンドル 作成→取得→削除、E2E: ダイアログ→名前入力→作成→組織確認→タブ / Avalonia は開閉） | 単体テスト（+39）+ スモーク + UI E2E |
 | **P4 Flow グラフ** | Flow 一覧（FlowDefinitionView）+ Metadata（Tooling の JSON）解析 + **ノード/エッジのグラフ表示**（読み取り専用。start / decision / record 操作 / action / loop / screen 等を色分け）+ ノード詳細 + ズーム/スクロール | 実組織のフローが要素数どおりのグラフで表示される → **完了**（スモーク: 318 フロー一覧 + 実フロー 7 ノード / 8 接続（端点整合・Start 存在・ラベル全付与）、E2E: `admission_process_survey` で 8 ノード / 8 接続表示 → 閉じてタブ復帰（WPF・Avalonia 両方）） | 単体テスト（+12）+ 実組織スモーク + UI E2E + スクショ |
 | **P5 自動補完** | Apex: 既存 `ApexCompletion`（スニペット / System / クラス / sObject / 項目 / SOQL）を再利用。LWC JS: キーワード + `lwc` API 基本。VF/HTML: タグ基本 | 入力中に候補が表示され、選択で挿入される → **完了**（候補計算を `ApexSuggestionProvider` へ抽出して匿名Apex タブと共有 / 言語判定は `SourceCompletionLanguages`。スモーク [suggest]: JS 2 / HTML 1 / Apex 16 / 実組織 sObject 133 候補。E2E: 両アプリで `System.` → 「System members:」→ `debug()` チップ挿入 → 元に戻して同期復帰） | 単体テスト（+21）+ 実組織スモーク + UI E2E + スクショ |
-| **P6 AI 支援** | パネル: 現在のソースについて**質問 / 説明 / 改善提案 / エラー修正**（AiChatClient 再利用。コンテキスト = 開いているファイル + 反映エラー）。提案コードのエディタ挿入 | AI 設定済み環境で応答が表示され、提案を挿入できる | 手動 + `--smoke-ai` 流用 |
+| **P6 AI 支援** | パネル: 現在のソースについて**質問 / 説明 / 改善提案 / エラー修正**（AiChatClient 再利用。コンテキスト = 開いているファイル + 反映エラー）。提案コードのエディタ挿入 | AI 設定済み環境で応答が表示され、提案を挿入できる → **完了**（ウィンドウ専用 AiChatViewModel + AiChatView 再利用。クイック プロンプト 3 種 /「現在のタブのデータを添付」= 現ファイル / 追加言語（javascript・html・visualforce・css）に「エディタへ適用」= カーソル位置挿入。スモーク `--smoke-ai` = OK（0.8 秒 / tokens 11+1）、E2E: 両アプリでパネル開閉 + クイック プロンプト + 添付（`Attached "SfUiE2E_SrcNew.cls" (80 chars)`）） | 単体テスト（+8）+ `--smoke-ai` + UI E2E + スクショ |
 | **P7 追加機能** | **ローカル履歴**（反映ごとにスナップショット → 一覧 / 差分 / ワンクリック巻き戻し=再反映）、横断検索（キャッシュ + 取得済み本文）、ファイル エクスポート、タブ操作改善 ほか | 反映 → 履歴から 1 つ前の版に戻せる | 単体テスト + UI E2E |
 
 各 Phase 完了時に: ビルド → 全テスト → オフライン/実組織スモーク → UI E2E（WPF + Avalonia）→ 設計書/メモ更新 → コミット → CI グリーン、の順で検証する。

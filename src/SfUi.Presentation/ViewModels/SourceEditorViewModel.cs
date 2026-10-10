@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Text;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SfUi.Core;
@@ -165,15 +166,18 @@ public sealed partial class SourceEditorViewModel : ObservableObject
     private readonly IDialogService _dialogs;
     private readonly AppLog _log;
     private readonly ApexSuggestionProvider _suggestions;
+    private readonly AiChatViewModel _ai;
     private CancellationTokenSource? _draftCts;
     private CancellationTokenSource? _suggestCts;
 
-    public SourceEditorViewModel(ISourceEditorService service, IDialogService dialogs, AppLog log, ApexSuggestionProvider suggestions)
+    public SourceEditorViewModel(ISourceEditorService service, IDialogService dialogs, AppLog log, ApexSuggestionProvider suggestions, AiChatViewModel ai)
     {
         _service = service;
         _dialogs = dialogs;
         _log = log;
         _suggestions = suggestions;
+        _ai = ai;
+        _ai.ApplyRequested += ApplyAiSnippet;
 
         Groups.Add(new SourceMemberGroupViewModel(SourceMemberKind.ApexClass, UiText.T("SourceEditor_GroupApexClass")));
         Groups.Add(new SourceMemberGroupViewModel(SourceMemberKind.ApexTrigger, UiText.T("SourceEditor_GroupApexTrigger")));
@@ -300,6 +304,7 @@ public sealed partial class SourceEditorViewModel : ObservableObject
         OnPropertyChanged(nameof(TargetOrg));
         OnPropertyChanged(nameof(OrgKey));
         StatusMessage = org is null ? UiText.T("SourceEditor_NoOrg") : string.Empty;
+        ConfigureAi();
     }
 
     /// <summary>4 種別のメンバー一覧を再読み込みする。</summary>
@@ -634,6 +639,87 @@ public sealed partial class SourceEditorViewModel : ObservableObject
         IsFetchingSuggestions = false;
         IsSuggestionsVisible = false;
         Suggestions.Clear();
+    }
+
+    // ---- AI 支援（Phase 6: 質問 / 説明 / 改善提案 / エラー修正 + コードのエディタ挿入）----
+
+    /// <summary>このウィンドウ専用の AI チャット（メインウィンドウとは独立した会話）。</summary>
+    public AiChatViewModel Ai => _ai;
+
+    /// <summary>AI パネルの表示状態。</summary>
+    [ObservableProperty]
+    private bool _isAiPanelOpen;
+
+    /// <summary>エディタのカーソル位置（AI コード挿入に使う。ウィンドウのコードビハインドが更新する）。</summary>
+    public int CaretOffset { get; set; }
+
+    [RelayCommand]
+    private void ToggleAiPanel() => IsAiPanelOpen = !IsAiPanelOpen;
+
+    /// <summary>AI へ渡すソース エディタ固有のコンテキスト（組織 / 開いているファイル / 反映エラー）を設定する。</summary>
+    private void ConfigureAi()
+    {
+        _ai.CurrentOrg = TargetOrg;
+        _ai.ExtraSystemContextProvider = BuildAiContext;
+        _ai.TabDataProvider = BuildCurrentFileAttachment;
+        _ai.ExtraApplyLanguages = new[] { "apex", "javascript", "html", "visualforce", "css" };
+        _ai.ExtraApplyLabel = UiText.T("SourceEditor_Ai_Apply");
+        _ai.ShowTabDataButton = true;
+
+        _ai.QuickPrompts.Clear();
+        _ai.QuickPrompts.Add(UiText.T("SourceEditor_Ai_ExplainPrompt"));
+        _ai.QuickPrompts.Add(UiText.T("SourceEditor_Ai_ImprovePrompt"));
+        _ai.QuickPrompts.Add(UiText.T("SourceEditor_Ai_FixErrorsPrompt"));
+        _ai.HasQuickPrompts = _ai.QuickPrompts.Count > 0;
+    }
+
+    private string? BuildAiContext()
+    {
+        var builder = new StringBuilder();
+        builder.AppendLine(UiText.T("SourceEditor_Ai_CtxHeader"));
+        if (SelectedFile is { } file)
+        {
+            builder.AppendLine(UiText.T("SourceEditor_Ai_CtxFileFmt", file.FileName, file.LanguageId));
+        }
+
+        if (DeployErrors.Count > 0)
+        {
+            var errors = string.Join("\n", DeployErrors.Take(10).Select(e => e.DisplayText));
+            builder.AppendLine(UiText.T("SourceEditor_Ai_CtxErrorsFmt", DeployErrors.Count, errors));
+        }
+
+        builder.Append(UiText.T("SourceEditor_Ai_CtxFence"));
+        return builder.ToString();
+    }
+
+    /// <summary>「現在のタブのデータを添付」= 選択中ファイルの本文（長すぎる場合は切り詰め）。</summary>
+    private (string Name, string Text)? BuildCurrentFileAttachment()
+    {
+        var file = SelectedFile;
+        if (file is null || file.Text.Length == 0)
+        {
+            return null;
+        }
+
+        const int maxChars = 12000;
+        var text = file.Text.Length > maxChars ? file.Text[..maxChars] + "\n…(truncated)" : file.Text;
+        return (file.FileName, text);
+    }
+
+    /// <summary>AI のコード片を選択中ファイルのカーソル位置へ挿入する（エディタ表示は本文変更に追従する）。</summary>
+    private void ApplyAiSnippet(AiSnippet snippet)
+    {
+        var file = SelectedFile;
+        if (file is null || !CanEdit)
+        {
+            StatusMessage = UiText.T("SourceEditor_NoSelection");
+            return;
+        }
+
+        var caret = Math.Clamp(CaretOffset, 0, file.Text.Length);
+        file.Text = file.Text.Insert(caret, snippet.Code);
+        CaretOffset = caret + snippet.Code.Length;
+        StatusMessage = UiText.T("SourceEditor_Ai_AppliedFmt", file.FileName, snippet.Code.Length);
     }
 
     /// <summary>選択中ファイルのメンバーを組織へ反映する（Ctrl+S）。</summary>

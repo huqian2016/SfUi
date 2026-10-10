@@ -45,7 +45,9 @@ public class SourceEditorViewModelTests : IDisposable
     {
         var rest = new SalesforceRestClient(new OrgService(new SfCliRunner()), _log);
         var suggestions = new ApexSuggestionProvider(new SObjectDescribeService(rest, _log), new OrgMetadataService(rest, _log));
-        return new(_service, _dialogs, _log, suggestions);
+        var settings = new AppSettingsStore(_paths, _log);
+        var ai = new AiChatViewModel(new AiChatClient(settings, _log), new HistoryStore(_paths, _log, settings), _log);
+        return new(_service, _dialogs, _log, suggestions, ai);
     }
 
     private static OrgInfo CreateOrg() => new(
@@ -594,6 +596,74 @@ public class SourceEditorViewModelTests : IDisposable
         var apex = new SourceFileViewModel(
             new SourceMemberInfo(SourceMemberKind.ApexClass, "Alpha", "01p2"), "Alpha.cls", "C#", "x.Sy", "x.Sy");
         Assert.Equal(2, viewModel.GetSuggestionSegmentStart(apex, "x.Sy", 4));
+    }
+
+    [Fact]
+    public void Ai_ApplySnippet_InsertsAtCaret()
+    {
+        var viewModel = CreateViewModel();
+        var text = "AB CD";
+        var file = new SourceFileViewModel(
+            new SourceMemberInfo(SourceMemberKind.ApexClass, "Alpha", "01p1"), "Alpha.cls", "C#", text, text);
+        viewModel.SelectedFile = file;
+        viewModel.CaretOffset = 3;
+
+        viewModel.Ai.ApplySnippetCommand.Execute(new AiSnippet("apex", "// ai"));
+
+        Assert.Equal("AB // aiCD", file.Text);
+        Assert.Equal(3 + "// ai".Length, viewModel.CaretOffset);
+        Assert.Contains("Alpha.cls", viewModel.StatusMessage);
+    }
+
+    [Fact]
+    public void Ai_BuildContext_IncludesFileAndErrors()
+    {
+        var viewModel = CreateViewModel();
+        viewModel.Initialize(CreateOrg());
+        var text = "public class Alpha {}";
+        var file = new SourceFileViewModel(
+            new SourceMemberInfo(SourceMemberKind.ApexClass, "Alpha", "01p1"), "Alpha.cls", "C#", text, text);
+        viewModel.SelectedFile = file;
+        viewModel.DeployErrors.Add(new SourceDeployErrorRow(new SourceDeployError("Alpha.cls", 1, 14, "Expected ';'")));
+
+        var context = viewModel.Ai.ExtraSystemContextProvider?.Invoke();
+
+        Assert.NotNull(context);
+        Assert.Contains("Alpha.cls", context);
+        Assert.Contains("Expected ';'", context);
+    }
+
+    [Fact]
+    public void Ai_Configure_AddsQuickPromptsAndAttachment()
+    {
+        var viewModel = CreateViewModel();
+        viewModel.Initialize(CreateOrg());
+
+        Assert.Equal(3, viewModel.Ai.QuickPrompts.Count);
+        Assert.True(viewModel.Ai.HasQuickPrompts);
+        Assert.True(viewModel.Ai.ShowTabDataButton);
+        Assert.Equal("hks4sand1", viewModel.Ai.CurrentOrg);
+
+        var text = "class X {}";
+        viewModel.SelectedFile = new SourceFileViewModel(
+            new SourceMemberInfo(SourceMemberKind.ApexClass, "X", "01p2"), "X.cls", "C#", text, text);
+        var attachment = viewModel.Ai.TabDataProvider?.Invoke();
+        Assert.True(attachment.HasValue);
+        Assert.Equal("X.cls", attachment!.Value.Name);
+        Assert.Equal(text, attachment.Value.Text);
+    }
+
+    [Fact]
+    public void Ai_TogglePanel_FlipsVisibility()
+    {
+        var viewModel = CreateViewModel();
+        Assert.False(viewModel.IsAiPanelOpen);
+
+        viewModel.ToggleAiPanelCommand.Execute(null);
+        Assert.True(viewModel.IsAiPanelOpen);
+
+        viewModel.ToggleAiPanelCommand.Execute(null);
+        Assert.False(viewModel.IsAiPanelOpen);
     }
 
     private sealed class FakeSourceEditorService : ISourceEditorService

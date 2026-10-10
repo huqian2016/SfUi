@@ -208,13 +208,27 @@ public partial class SourceEditorWindow : Window
 
     private void File_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (sender is not SourceFileViewModel file)
+        {
+            return;
+        }
+
         if (e.PropertyName == nameof(SourceFileViewModel.ChangedLines)
-            && sender is SourceFileViewModel file
             && _editors.TryGetValue(file, out var editor)
             && editor.Tag is SourceLineColorizer colorizer)
         {
             colorizer.ChangedLines = file.ChangedLines;
             editor.TextArea.TextView.Redraw();
+        }
+
+        // AI 適用など VM 側から本文が変わった場合はエディタへ反映する（TextChanged 経由の同期とループしない）
+        if (e.PropertyName == nameof(SourceFileViewModel.Text)
+            && _editors.TryGetValue(file, out var textEditor)
+            && !string.Equals(textEditor.Text, file.Text, StringComparison.Ordinal))
+        {
+            textEditor.Text = file.Text;
+            textEditor.CaretOffset = Math.Clamp(ViewModel.CaretOffset, 0, file.Text.Length);
+            textEditor.Focus();
         }
     }
 
@@ -226,6 +240,7 @@ public partial class SourceEditorWindow : Window
         }
 
         ViewModel.CaretText = $"Ln {caret.Line}, Col {caret.Column}";
+        ViewModel.CaretOffset = caret.Offset;
         var editor = _editors.Values.FirstOrDefault(ed => ReferenceEquals(ed.TextArea.Caret, caret));
         if (editor is not null)
         {

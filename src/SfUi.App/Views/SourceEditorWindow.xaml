@@ -46,6 +46,10 @@
                 <Button x:Name="SourceEditorDeleteButton" Content="{loc:Tr SourceEditor_Delete}" Padding="12,3" Margin="8,0,0,0"
                         Command="{Binding DeleteMemberCommand}"
                         AutomationProperties.Name="{loc:Tr SourceEditor_Delete}" />
+                <Button x:Name="SourceEditorAiButton" Content="AI" Padding="12,3" Margin="8,0,0,0"
+                        Command="{Binding ToggleAiPanelCommand}"
+                        ToolTip="{loc:Tr OrgInfo_Ai_ToggleTip}"
+                        AutomationProperties.Name="{loc:Tr OrgInfo_Ai_Title}" />
                 <TextBlock Text="{loc:Tr SourceEditor_FilterTip}" Margin="16,0,4,0" VerticalAlignment="Center" />
                 <TextBox x:Name="SourceEditorFilterBox" Width="220" VerticalContentAlignment="Center"
                          ToolTip="{loc:Tr SourceEditor_FilterTip}"
@@ -80,6 +84,7 @@
                 <ColumnDefinition Width="320" MinWidth="200" />
                 <ColumnDefinition Width="4" />
                 <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
             <TreeView x:Name="SourceEditorTree" ItemsSource="{Binding Groups}"
@@ -171,6 +176,23 @@
                 </DockPanel>
             </Border>
             </Grid>
+
+            <!-- AI パネル（Phase 6: 質問 / 説明 / 改善提案 / エラー修正） -->
+            <Border Grid.Column="3" x:Name="SourceEditorAiPanel" Width="420" Margin="8,0,0,0"
+                    BorderBrush="#DDDDDD" BorderThickness="1"
+                    Visibility="{Binding IsAiPanelOpen, Converter={StaticResource BoolToVis}}">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,4">
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Content="✕" Padding="6,0"
+                                    Command="{Binding ToggleAiPanelCommand}"
+                                    ToolTip="{loc:Tr OrgInfo_Ai_ToggleTip}" />
+                            <TextBlock x:Name="SourceEditorAiPanelHeader" Text="{loc:Tr OrgInfo_Ai_Title}" FontWeight="Bold" VerticalAlignment="Center" />
+                        </DockPanel>
+                    </Border>
+                    <views:AiChatView DataContext="{Binding Ai}" />
+                </DockPanel>
+            </Border>
         </Grid>
     </DockPanel>
 </Window>
