@@ -10,6 +10,7 @@ namespace SfUi.App.ViewModels;
 public sealed partial class SourceMemberGroupViewModel : ObservableObject
 {
     private readonly List<SourceMemberInfo> _all = new();
+    private string _filter = string.Empty;
 
     public SourceMemberGroupViewModel(SourceMemberKind kind, string title)
     {
@@ -50,6 +51,7 @@ public sealed partial class SourceMemberGroupViewModel : ObservableObject
 
     public void ApplyFilter(string filter)
     {
+        _filter = filter;
         Members.Clear();
         foreach (var member in _all)
         {
@@ -59,18 +61,33 @@ public sealed partial class SourceMemberGroupViewModel : ObservableObject
             }
         }
     }
+
+    /// <summary>削除後の一覧更新（現在のフィルタを維持）。</summary>
+    public void RemoveMember(string name)
+    {
+        _all.RemoveAll(m => string.Equals(m.Name, name, StringComparison.Ordinal));
+        ApplyFilter(_filter);
+        OnPropertyChanged(nameof(CountTotal));
+        OnPropertyChanged(nameof(HeaderText));
+        OnPropertyChanged(nameof(DisplayNodeName));
+    }
 }
 
-/// <summary>開いている 1 ファイル（タブ）。</summary>
+/// <summary>開いている 1 ファイル（タブ）。baseline = 組織と一致した内容、Text = 編集中の内容。</summary>
 public sealed partial class SourceFileViewModel : ObservableObject
 {
-    public SourceFileViewModel(string memberKey, string fileName, string languageId, string text)
+    public SourceFileViewModel(SourceMemberInfo member, string fileName, string languageId, string baselineText, string text)
     {
-        MemberKey = memberKey;
+        Member = member;
+        MemberKey = member.Kind + ":" + member.Name;
         FileName = fileName;
         LanguageId = languageId;
+        _baselineText = baselineText;
         _text = text;
+        RecomputeDiff();
     }
+
+    public SourceMemberInfo Member { get; }
 
     /// <summary>同一メンバー判定用キー（kind:name）。</summary>
     public string MemberKey { get; }
@@ -85,16 +102,66 @@ public sealed partial class SourceFileViewModel : ObservableObject
 
     [ObservableProperty]
     private string _text;
+
+    /// <summary>組織と一致している内容（反映成功で Text に追従）。</summary>
+    [ObservableProperty]
+    private string _baselineText;
+
+    partial void OnTextChanged(string value) => RecomputeDiff();
+
+    partial void OnBaselineTextChanged(string value) => RecomputeDiff();
+
+    /// <summary>未反映行（working の 1 始まり行番号 → 種別）。</summary>
+    public IReadOnlyDictionary<int, LineChangeKind> ChangedLines { get; private set; } = new Dictionary<int, LineChangeKind>();
+
+    public int ChangedLineCount => ChangedLines.Count;
+
+    public bool IsDirty => ChangedLineCount > 0;
+
+    /// <summary>反映成功時に呼ぶ（baseline を現在の内容へ更新）。</summary>
+    public void MarkDeployed() => BaselineText = Text;
+
+    private void RecomputeDiff()
+    {
+        ChangedLines = LineDiff.Compute(BaselineText, Text);
+        OnPropertyChanged(nameof(ChangedLines));
+        OnPropertyChanged(nameof(ChangedLineCount));
+        OnPropertyChanged(nameof(IsDirty));
+    }
 }
 
+/// <summary>反映エラー パネルの 1 行（表示用の整形付き）。</summary>
+public sealed class SourceDeployErrorRow
+{
+    public SourceDeployErrorRow(SourceDeployError error)
+    {
+        Error = error;
+        var fileName = error.FileName.Replace('\\', '/');
+        var shortName = fileName.Contains('/') ? fileName[(fileName.LastIndexOf('/') + 1)..] : fileName;
+        DisplayText = error.Line > 0
+            ? UiText.T("SourceEditor_ErrorRowFmt", shortName, error.Line, error.Problem)
+            : UiText.T("SourceEditor_ErrorRowNoLineFmt", shortName, error.Problem);
+    }
+
+    public SourceDeployError Error { get; }
+
+    public string DisplayText { get; }
+
+    public override string ToString() => DisplayText;
+}
+
+/// <summary>エディタへ行ジャンプする要求（ウィンドウのコードビハインドが処理）。</summary>
+public sealed record SourceNavigation(string MemberKey, string FileName, int Line);
+
 /// <summary>
-/// ソース エディタ ウィンドウの ViewModel（Phase 1: 列挙 + 本文表示。編集・反映は Phase 2）。
+/// ソース エディタ ウィンドウの ViewModel（Phase 2: 編集 + 未反映ハイライト + 組織反映 + 検証 + 削除）。
 /// </summary>
 public sealed partial class SourceEditorViewModel : ObservableObject
 {
     private readonly ISourceEditorService _service;
     private readonly IDialogService _dialogs;
     private readonly AppLog _log;
+    private CancellationTokenSource? _draftCts;
 
     public SourceEditorViewModel(ISourceEditorService service, IDialogService dialogs, AppLog log)
     {
@@ -117,12 +184,39 @@ public sealed partial class SourceEditorViewModel : ObservableObject
 
     public string OrgLabel => Org is null ? string.Empty : Org.DisplayName;
 
+    /// <summary>ドラフト保存用の組織キー（username から生成）。</summary>
+    public string OrgKey => SourceEditorWorkspace.KeyFor(Org?.Username);
+
     public ObservableCollection<SourceMemberGroupViewModel> Groups { get; } = new();
 
     public ObservableCollection<SourceFileViewModel> OpenFiles { get; } = new();
 
     [ObservableProperty]
     private SourceFileViewModel? _selectedFile;
+
+    partial void OnSelectedFileChanged(SourceFileViewModel? oldValue, SourceFileViewModel? newValue)
+    {
+        if (oldValue is not null)
+        {
+            oldValue.PropertyChanged -= File_PropertyChanged;
+        }
+
+        if (newValue is not null)
+        {
+            newValue.PropertyChanged += File_PropertyChanged;
+        }
+
+        UpdateFileStatus();
+    }
+
+    private void File_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(SourceFileViewModel.ChangedLineCount) or nameof(SourceFileViewModel.IsDirty))
+        {
+            UpdateFileStatus();
+            QueueDraftSave(sender as SourceFileViewModel);
+        }
+    }
 
     [ObservableProperty]
     private string _filterText = string.Empty;
@@ -139,6 +233,9 @@ public sealed partial class SourceEditorViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsNotBusy))]
     [NotifyCanExecuteChangedFor(nameof(RefreshCommand))]
     [NotifyCanExecuteChangedFor(nameof(OpenMemberCommand))]
+    [NotifyCanExecuteChangedFor(nameof(DeployCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ValidateCommand))]
+    [NotifyCanExecuteChangedFor(nameof(DeleteMemberCommand))]
     private bool _isBusy;
 
     public bool IsNotBusy => !IsBusy;
@@ -150,11 +247,32 @@ public sealed partial class SourceEditorViewModel : ObservableObject
     [ObservableProperty]
     private string _caretText = string.Empty;
 
+    /// <summary>選択中ファイルの反映状態（未反映 N 行 / 組織と一致）。</summary>
+    [ObservableProperty]
+    private string _fileStatusText = string.Empty;
+
+    /// <summary>反映エラー（パネル表示用）。</summary>
+    public ObservableCollection<SourceDeployErrorRow> DeployErrors { get; } = new();
+
+    public bool HasDeployErrors => DeployErrors.Count > 0;
+
+    public string ErrorsHeaderText => UiText.T("SourceEditor_ErrorsHeaderFmt", DeployErrors.Count);
+
+    [ObservableProperty]
+    private SourceDeployErrorRow? _selectedDeployError;
+
+    partial void OnSelectedDeployErrorChanged(SourceDeployErrorRow? value) => GoToError(value);
+
+    /// <summary>エディタの行ジャンプ要求（コードビハインドが処理して消費する）。</summary>
+    [ObservableProperty]
+    private SourceNavigation? _pendingNavigation;
+
     public void Initialize(OrgInfo? org)
     {
         Org = org;
         OnPropertyChanged(nameof(OrgLabel));
         OnPropertyChanged(nameof(TargetOrg));
+        OnPropertyChanged(nameof(OrgKey));
         StatusMessage = org is null ? UiText.T("SourceEditor_NoOrg") : string.Empty;
     }
 
@@ -200,7 +318,7 @@ public sealed partial class SourceEditorViewModel : ObservableObject
         }
     }
 
-    /// <summary>メンバーを選択してソースを開く（同一メンバーはタブを置き換え）。</summary>
+    /// <summary>メンバーを選択してソースを開く（同一メンバーはタブを置き換え。ローカル下書きを復元）。</summary>
     [RelayCommand(CanExecute = nameof(IsNotBusy))]
     private async Task OpenMemberAsync(SourceMemberInfo? member)
     {
@@ -220,12 +338,31 @@ public sealed partial class SourceEditorViewModel : ObservableObject
         StatusMessage = UiText.T("SourceEditor_FetchingFmt", member.Name);
         try
         {
-            var files = await _service.GetSourceAsync(TargetOrg, member).ConfigureAwait(true);
-            if (files.Count == 0)
+            var orgFiles = await _service.GetSourceAsync(TargetOrg, member).ConfigureAwait(true);
+            if (orgFiles.Count == 0)
             {
                 StatusMessage = UiText.T("Common_FailedFmt", UiText.T("SourceEditor_EmptyFmt", member.Name));
                 return;
             }
+
+            IReadOnlyList<SourceFileInfo> baseline = orgFiles;
+            IReadOnlyList<SourceFileInfo> working = orgFiles;
+            var restored = false;
+            try
+            {
+                var draft = await _service.LoadDraftAsync(OrgKey, member).ConfigureAwait(true);
+                if (draft is not null && SameContent(draft.Baseline, orgFiles))
+                {
+                    working = draft.Working;
+                    restored = true;
+                }
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _log.Warn($"ソース エディタ: 下書きの読み込みに失敗しました（{member.Name}）: {ex.Message}");
+            }
+
+            await _service.SaveDraftAsync(OrgKey, member, baseline, working).ConfigureAwait(true);
 
             foreach (var old in OpenFiles.Where(f => f.MemberKey == key).ToList())
             {
@@ -233,15 +370,24 @@ public sealed partial class SourceEditorViewModel : ObservableObject
             }
 
             SourceFileViewModel? first = null;
-            foreach (var file in files)
+            foreach (var file in working)
             {
-                var tab = new SourceFileViewModel(key, file.FileName, file.LanguageId, file.Text);
+                var baseText = baseline.FirstOrDefault(b => string.Equals(b.FileName, file.FileName, StringComparison.OrdinalIgnoreCase))?.Text ?? file.Text;
+                var tab = new SourceFileViewModel(member, file.FileName, file.LanguageId, baseText, file.Text);
                 OpenFiles.Add(tab);
                 first ??= tab;
             }
 
+            if (first is null)
+            {
+                StatusMessage = UiText.T("Common_FailedFmt", UiText.T("SourceEditor_EmptyFmt", member.Name));
+                return;
+            }
+
             SelectedFile = first;
-            StatusMessage = UiText.T("SourceEditor_FetchedFmt", member.Name, CountLines(files[0].Text));
+            StatusMessage = restored
+                ? UiText.T("SourceEditor_DraftRestoredFmt", member.Name)
+                : UiText.T("SourceEditor_FetchedFmt", member.Name, CountLines(first.Text));
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -253,6 +399,221 @@ public sealed partial class SourceEditorViewModel : ObservableObject
         {
             IsBusy = false;
         }
+    }
+
+    /// <summary>選択中ファイルのメンバーを組織へ反映する（Ctrl+S）。</summary>
+    [RelayCommand(CanExecute = nameof(IsNotBusy))]
+    private Task DeployAsync() => DeployCoreAsync(dryRun: false);
+
+    /// <summary>検証のみ（dry-run deploy）。</summary>
+    [RelayCommand(CanExecute = nameof(IsNotBusy))]
+    private Task ValidateAsync() => DeployCoreAsync(dryRun: true);
+
+    private async Task DeployCoreAsync(bool dryRun)
+    {
+        var file = SelectedFile;
+        if (file is null || Org is null)
+        {
+            StatusMessage = Org is null ? UiText.T("SourceEditor_NoOrg") : UiText.T("SourceEditor_NoSelection");
+            return;
+        }
+
+        var member = file.Member;
+        var tabs = OpenFiles.Where(f => f.MemberKey == file.MemberKey).ToList();
+        var sourceFiles = tabs.Select(f => new SourceFileInfo(f.FileName, f.LanguageId, f.Text)).ToList();
+
+        IsBusy = true;
+        DeployErrors.Clear();
+        OnPropertyChanged(nameof(HasDeployErrors));
+        OnPropertyChanged(nameof(ErrorsHeaderText));
+        StatusMessage = UiText.T("SourceEditor_DeployingFmt", member.Name);
+        try
+        {
+            var result = await _service.DeployAsync(TargetOrg, member, sourceFiles, dryRun).ConfigureAwait(true);
+            if (result.Success)
+            {
+                if (!dryRun)
+                {
+                    foreach (var tab in tabs)
+                    {
+                        tab.MarkDeployed();
+                    }
+
+                    await SaveDraftForAsync(member, CancellationToken.None).ConfigureAwait(true);
+                }
+
+                StatusMessage = dryRun
+                    ? UiText.T("SourceEditor_ValidateOkFmt", member.Name)
+                    : UiText.T("SourceEditor_DeployOkFmt", member.Name);
+            }
+            else
+            {
+                foreach (var error in result.Errors)
+                {
+                    DeployErrors.Add(new SourceDeployErrorRow(error));
+                }
+
+                OnPropertyChanged(nameof(HasDeployErrors));
+                OnPropertyChanged(nameof(ErrorsHeaderText));
+                StatusMessage = result.Errors.Count > 0
+                    ? UiText.T("SourceEditor_DeployFailedFmt", result.Errors.Count)
+                    : UiText.T("Common_FailedFmt", result.Message);
+            }
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    /// <summary>選択中ファイルのメンバーを組織から削除する。</summary>
+    [RelayCommand(CanExecute = nameof(IsNotBusy))]
+    private async Task DeleteMemberAsync()
+    {
+        var file = SelectedFile;
+        if (file is null || Org is null)
+        {
+            StatusMessage = Org is null ? UiText.T("SourceEditor_NoOrg") : UiText.T("SourceEditor_NoSelection");
+            return;
+        }
+
+        var member = file.Member;
+        if (!_dialogs.ConfirmDestructive(UiText.T("SourceEditor_DeleteConfirmFmt", member.Name), UiText.T("SourceEditor_Title")))
+        {
+            return;
+        }
+
+        IsBusy = true;
+        StatusMessage = UiText.T("SourceEditor_DeletingFmt", member.Name);
+        try
+        {
+            var result = await _service.DeleteAsync(TargetOrg, member).ConfigureAwait(true);
+            if (result.Success)
+            {
+                foreach (var tab in OpenFiles.Where(f => f.MemberKey == file.MemberKey).ToList())
+                {
+                    OpenFiles.Remove(tab);
+                }
+
+                SelectedFile = OpenFiles.Count == 0 ? null : OpenFiles[^1];
+                Groups.First(g => g.Kind == member.Kind).RemoveMember(member.Name);
+                await _service.ClearDraftAsync(OrgKey, member).ConfigureAwait(true);
+                DeployErrors.Clear();
+                OnPropertyChanged(nameof(HasDeployErrors));
+                OnPropertyChanged(nameof(ErrorsHeaderText));
+                StatusMessage = UiText.T("SourceEditor_DeletedFmt", member.Name);
+            }
+            else
+            {
+                StatusMessage = UiText.T("Common_FailedFmt", result.Message);
+            }
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    /// <summary>反映エラーの行へジャンプする（SelectedDeployError → PendingNavigation）。</summary>
+    public void GoToError(SourceDeployErrorRow? row)
+    {
+        if (row is null)
+        {
+            return;
+        }
+
+        var fileName = row.Error.FileName.Replace('\\', '/');
+        var shortName = fileName.Contains('/') ? fileName[(fileName.LastIndexOf('/') + 1)..] : fileName;
+        var file = OpenFiles.FirstOrDefault(f => string.Equals(f.FileName, shortName, StringComparison.OrdinalIgnoreCase))
+                   ?? OpenFiles.FirstOrDefault(f => f.MemberKey == SelectedFile?.MemberKey);
+        if (file is null)
+        {
+            return;
+        }
+
+        SelectedFile = file;
+        PendingNavigation = new SourceNavigation(file.MemberKey, file.FileName, Math.Max(row.Error.Line, 1));
+    }
+
+    /// <summary>コードビハインドがジャンプを実行した後に呼ぶ。</summary>
+    public void ClearPendingNavigation() => PendingNavigation = null;
+
+    /// <summary>ファイル名の集合と本文が一致するか（下書きが現在の組織内容に対応するか）。</summary>
+    public static bool SameContent(IReadOnlyList<SourceFileInfo> a, IReadOnlyList<SourceFileInfo> b)
+    {
+        if (a.Count != b.Count)
+        {
+            return false;
+        }
+
+        foreach (var file in a)
+        {
+            var other = b.FirstOrDefault(x => string.Equals(x.FileName, file.FileName, StringComparison.OrdinalIgnoreCase));
+            if (other is null || !string.Equals(file.Text, other.Text, StringComparison.Ordinal))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private void UpdateFileStatus()
+    {
+        var file = SelectedFile;
+        FileStatusText = file is null
+            ? string.Empty
+            : file.IsDirty
+                ? UiText.T("SourceEditor_StatusDirtyFmt", file.ChangedLineCount)
+                : UiText.T("SourceEditor_StatusClean");
+    }
+
+    /// <summary>編集のたびにドラフトを自動保存する（800ms デバウンス）。</summary>
+    private void QueueDraftSave(SourceFileViewModel? file)
+    {
+        if (file is null || Org is null)
+        {
+            return;
+        }
+
+        var member = file.Member;
+        _draftCts?.Cancel();
+        _draftCts = new CancellationTokenSource();
+        var token = _draftCts.Token;
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(800, token).ConfigureAwait(false);
+                await SaveDraftForAsync(member, token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception ex)
+            {
+                _log.Warn($"ソース エディタ: 下書きの保存に失敗しました（{member.Name}）: {ex.Message}");
+            }
+        });
+    }
+
+    private async Task SaveDraftForAsync(SourceMemberInfo member, CancellationToken cancellationToken)
+    {
+        if (Org is null)
+        {
+            return;
+        }
+
+        var key = member.Kind + ":" + member.Name;
+        var files = OpenFiles.Where(f => f.MemberKey == key).ToList();
+        if (files.Count == 0)
+        {
+            return;
+        }
+
+        var baseline = files.Select(f => new SourceFileInfo(f.FileName, f.LanguageId, f.BaselineText)).ToList();
+        var working = files.Select(f => new SourceFileInfo(f.FileName, f.LanguageId, f.Text)).ToList();
+        await _service.SaveDraftAsync(OrgKey, member, baseline, working, cancellationToken).ConfigureAwait(false);
     }
 
     [RelayCommand]

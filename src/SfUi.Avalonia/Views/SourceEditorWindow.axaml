@@ -27,12 +27,41 @@
                 <Button x:Name="SourceEditorReloadButton" Content="{loc:Tr SourceEditor_Refresh}" Padding="12,3" Margin="16,0,0,0"
                         Command="{Binding RefreshCommand}"
                         AutomationProperties.Name="{loc:Tr SourceEditor_Refresh}" />
+                <Button x:Name="SourceEditorDeployButton" Content="{loc:Tr SourceEditor_Deploy}" Padding="14,3" Margin="16,0,0,0"
+                        FontWeight="SemiBold"
+                        Command="{Binding DeployCommand}"
+                        AutomationProperties.Name="{loc:Tr SourceEditor_Deploy}" />
+                <Button x:Name="SourceEditorValidateButton" Content="{loc:Tr SourceEditor_Validate}" Padding="12,3" Margin="8,0,0,0"
+                        Command="{Binding ValidateCommand}"
+                        AutomationProperties.Name="{loc:Tr SourceEditor_Validate}" />
+                <Button x:Name="SourceEditorDeleteButton" Content="{loc:Tr SourceEditor_Delete}" Padding="12,3" Margin="8,0,0,0"
+                        Command="{Binding DeleteMemberCommand}"
+                        AutomationProperties.Name="{loc:Tr SourceEditor_Delete}" />
                 <TextBlock Text="{loc:Tr SourceEditor_FilterTip}" Margin="16,0,4,0" VerticalAlignment="Center" />
                 <TextBox x:Name="SourceEditorFilterBox" Width="220" VerticalContentAlignment="Center"
                          ToolTip.Tip="{loc:Tr SourceEditor_FilterTip}"
                          Text="{Binding FilterText, Mode=TwoWay}"
                          AutomationProperties.Name="{loc:Tr SourceEditor_FilterTip}" />
-                <TextBlock Text="{Binding CaretText}" Margin="16,0,0,0" VerticalAlignment="Center" Foreground="#666666" />
+                <TextBlock x:Name="SourceEditorFileStatusText" Text="{Binding FileStatusText}" Margin="16,0,0,0" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#0D47A1" />
+                <TextBlock Text="{Binding CaretText}" Margin="12,0,0,0" VerticalAlignment="Center" Foreground="#666666" />
+            </StackPanel>
+        </Border>
+
+        <!-- 反映エラー パネル -->
+        <Border DockPanel.Dock="Bottom" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="10,6"
+                IsVisible="{Binding HasDeployErrors}">
+            <StackPanel>
+                <TextBlock x:Name="SourceEditorErrorsHeader" Text="{Binding ErrorsHeaderText}" FontWeight="SemiBold" />
+                <ListBox x:Name="SourceEditorErrorsList" MaxHeight="120" Margin="0,4,0,0"
+                         ItemsSource="{Binding DeployErrors}"
+                         SelectedItem="{Binding SelectedDeployError, Mode=TwoWay}"
+                         AutomationProperties.Name="{Binding ErrorsHeaderText}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding DisplayText}" />
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
             </StackPanel>
         </Border>
 
@@ -72,6 +101,8 @@
                     <DataTemplate>
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="{Binding FileName}" VerticalAlignment="Center" />
+                            <TextBlock Text="●" FontSize="10" Margin="4,0,0,0" Foreground="#D97706" VerticalAlignment="Center"
+                                       IsVisible="{Binding IsDirty}" />
                             <Button Content="×" Margin="6,0,0,0" Padding="3,0" FontSize="11" VerticalAlignment="Center"
                                     Command="{Binding $parent[Window].DataContext.CloseFileCommand}"
                                     CommandParameter="{Binding}"
@@ -81,7 +112,7 @@
                 </TabControl.ItemTemplate>
                 <TabControl.ContentTemplate>
                     <DataTemplate>
-                        <ae:TextEditor IsReadOnly="True"
+                        <ae:TextEditor IsReadOnly="False"
                                        ShowLineNumbers="True"
                                        FontFamily="Consolas" FontSize="13"
                                        ScrollViewer.HorizontalScrollBarVisibility="Auto"

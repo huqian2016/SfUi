@@ -1138,8 +1138,9 @@ public partial class App : Application
     }
 
     /// <summary>
-    /// --smoke-source &lt;org&gt;: ソース エディタ（Phase 1 閲覧）の検証。
-    /// 4 種別の列挙（Tooling REST）と、Apex クラス / LWC バンドルの本文取得を実組織で行う。
+    /// --smoke-source &lt;org&gt;: ソース エディタの検証。
+    /// 4 種別の列挙（Tooling REST）、Apex クラス / LWC バンドルの本文取得、および
+    /// 反映の往復（一時クラスを作成 → 検証のみ → 構文エラー検出 → 更新反映 → ドラフト → 削除）を実組織で行う。
     /// </summary>
     private async Task<bool> RunSourceEditorSmokeAsync(string org)
     {
@@ -1211,6 +1212,88 @@ public partial class App : Application
                 {
                     success = false;
                     _log.Error("--smoke-source: 検証可能な LWC バンドル（複数ファイル）が見つかりません");
+                }
+            }
+
+            // ---- 反映の往復（作成 → 取得 → 検証のみ → 構文エラー → 更新反映 → ドラフト → 削除）----
+            // 前回失敗の残骸があれば先に削除する
+            foreach (var leftover in (await service.ListAsync(org, SourceMemberKind.ApexClass))
+                         .Where(m => m.Name.StartsWith("SfUiSmokeSrc", StringComparison.Ordinal)))
+            {
+                await service.DeleteAsync(org, leftover);
+            }
+
+            var smokeName = "SfUiSmokeSrc" + DateTime.Now.ToString("HHmmss");
+            var smokeMember = new SourceMemberInfo(SourceMemberKind.ApexClass, smokeName, string.Empty);
+            var v1 = $"public with sharing class {smokeName} {{ public static String Hi() {{ return 'sfui-v1'; }} }}";
+            var create = await service.DeployAsync(org, smokeMember, new[] { new SourceFileInfo(smokeName + ".cls", "C#", v1) }, dryRun: false);
+            _log.Info($"--smoke-source: [deploy] 作成 = {create.Success}（{create.Message}）");
+            if (!create.Success)
+            {
+                success = false;
+            }
+
+            var created = (await service.ListAsync(org, SourceMemberKind.ApexClass)).FirstOrDefault(m => m.Name == smokeName);
+            if (created is null)
+            {
+                success = false;
+                _log.Error("--smoke-source: [deploy] 作成したクラスが一覧に見つかりません");
+            }
+            else
+            {
+                var body = await service.GetSourceAsync(org, created);
+                var bodyOk = body.Count == 1 && body[0].Text.Contains("sfui-v1", StringComparison.Ordinal);
+                _log.Info($"--smoke-source: [deploy] 作成後の取得 = {bodyOk}");
+                if (!bodyOk)
+                {
+                    success = false;
+                }
+
+                var dry = await service.DeployAsync(org, created, new[] { new SourceFileInfo(smokeName + ".cls", "C#", v1) }, dryRun: true);
+                _log.Info($"--smoke-source: [deploy] 検証のみ = {dry.Success}");
+                if (!dry.Success)
+                {
+                    success = false;
+                }
+
+                var bad = $"public with sharing class {smokeName} {{ public static String Hi() {{ int a = ; }} }}";
+                var failed = await service.DeployAsync(org, created, new[] { new SourceFileInfo(smokeName + ".cls", "C#", bad) }, dryRun: false);
+                var lineOk = !failed.Success && failed.Errors.Count > 0 && failed.Errors[0].Line > 0;
+                _log.Info($"--smoke-source: [deploy] 構文エラー検出 = {lineOk}（{failed.Errors.Count} 件 / 先頭行 {failed.Errors.FirstOrDefault()?.Line}）");
+                if (!lineOk)
+                {
+                    success = false;
+                }
+
+                var v2 = $"public with sharing class {smokeName} {{ public static String Hi() {{ return 'sfui-v2'; }} }}";
+                var update = await service.DeployAsync(org, created, new[] { new SourceFileInfo(smokeName + ".cls", "C#", v2) }, dryRun: false);
+                var body2 = await service.GetSourceAsync(org, created);
+                var updatedOk = update.Success && body2.Count == 1 && body2[0].Text.Contains("sfui-v2", StringComparison.Ordinal);
+                _log.Info($"--smoke-source: [deploy] 更新反映 = {updatedOk}");
+                if (!updatedOk)
+                {
+                    success = false;
+                }
+
+                var orgKey = SourceEditorWorkspace.KeyFor("smoke");
+                await service.SaveDraftAsync(orgKey, created, body2, new[] { new SourceFileInfo(smokeName + ".cls", "C#", body2[0].Text + "\n// draft") });
+                var draft = await service.LoadDraftAsync(orgKey, created);
+                var draftOk = draft is not null && draft.Working[0].Text.EndsWith("// draft", StringComparison.Ordinal);
+                _log.Info($"--smoke-source: [deploy] ドラフト往復 = {draftOk}");
+                if (!draftOk)
+                {
+                    success = false;
+                }
+
+                await service.ClearDraftAsync(orgKey, created);
+
+                var deleted = await service.DeleteAsync(org, created);
+                var stillThere = (await service.ListAsync(org, SourceMemberKind.ApexClass)).Any(m => m.Name == smokeName);
+                var deletedOk = deleted.Success && !stillThere;
+                _log.Info($"--smoke-source: [deploy] 削除 = {deletedOk}");
+                if (!deletedOk)
+                {
+                    success = false;
                 }
             }
         }

@@ -30,8 +30,31 @@ public sealed record SourceMemberInfo(
 /// <param name="Text">本文。</param>
 public sealed record SourceFileInfo(string FileName, string LanguageId, string Text);
 
+/// <summary>ローカル ドラフト（baseline = 組織と一致した内容 / working = 編集中の内容）。</summary>
+public sealed record SourceDraft(
+    IReadOnlyList<SourceFileInfo> Baseline,
+    IReadOnlyList<SourceFileInfo> Working);
+
+/// <summary>反映エラー（Apex のコンパイル エラーは行・列付きで返る）。</summary>
+public sealed record SourceDeployError(string FileName, int Line, int Column, string Problem)
+{
+    /// <summary>表示用（例: classes/X.cls (line 3): Unexpected token ';'.）。</summary>
+    public override string ToString()
+        => (Line > 0 ? FileName + " (line " + Line + ")" : FileName) + ": " + Problem;
+}
+
+/// <summary>反映（deploy）または検証（dry-run）の結果。</summary>
+public sealed record SourceDeployResult(bool Success, bool DryRun, string Message, IReadOnlyList<SourceDeployError> Errors)
+{
+    public static SourceDeployResult Ok(bool dryRun, string message)
+        => new(true, dryRun, message, Array.Empty<SourceDeployError>());
+
+    public static SourceDeployResult Fail(string message, IReadOnlyList<SourceDeployError>? errors = null)
+        => new(false, false, message, errors ?? Array.Empty<SourceDeployError>());
+}
+
 /// <summary>
-/// ソース エディタのデータ サービス（一覧 / 本文取得。Phase 2 で反映・削除を追加）。
+/// ソース エディタのデータ サービス（一覧 / 本文取得 / 反映 / 削除 / ドラフト）。
 /// </summary>
 public interface ISourceEditorService
 {
@@ -40,4 +63,19 @@ public interface ISourceEditorService
 
     /// <summary>指定メンバーのソース本文を取得する（Apex/VF = Tooling GET、LWC = LightningComponentResource クエリ）。</summary>
     Task<IReadOnlyList<SourceFileInfo>> GetSourceAsync(string targetOrg, SourceMemberInfo member, CancellationToken cancellationToken = default);
+
+    /// <summary>ソースを組織へ反映する（sf deploy。初回はメタデータを retrieve して属性を保つ）。dryRun = 検証のみ。</summary>
+    Task<SourceDeployResult> DeployAsync(string targetOrg, SourceMemberInfo member, IReadOnlyList<SourceFileInfo> files, bool dryRun, CancellationToken cancellationToken = default);
+
+    /// <summary>メンバーを組織から削除する（Apex/VF = Tooling DELETE、LWC = sf delete source）。</summary>
+    Task<SourceDeployResult> DeleteAsync(string targetOrg, SourceMemberInfo member, CancellationToken cancellationToken = default);
+
+    /// <summary>ローカル ドラフトを読み込む（無ければ null）。</summary>
+    Task<SourceDraft?> LoadDraftAsync(string orgKey, SourceMemberInfo member, CancellationToken cancellationToken = default);
+
+    /// <summary>ローカル ドラフトを保存する。</summary>
+    Task SaveDraftAsync(string orgKey, SourceMemberInfo member, IReadOnlyList<SourceFileInfo> baseline, IReadOnlyList<SourceFileInfo> working, CancellationToken cancellationToken = default);
+
+    /// <summary>ローカル ドラフトを削除する。</summary>
+    Task ClearDraftAsync(string orgKey, SourceMemberInfo member, CancellationToken cancellationToken = default);
 }

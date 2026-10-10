@@ -1,6 +1,6 @@
 # SfUi ソース エディタ機能 設計書
 
-最終更新: 2026-10-10 / ステータス: **Phase 1 完了（閲覧）** — メタデータ エクスプローラー（Apex クラス / トリガー / VF ページ / LWC）+ Tooling REST 読み取り + 行番号・色付きエディタ（両アプリ）+ `--smoke-source` + UI E2E 検証済み
+最終更新: 2026-10-10 / ステータス: **Phase 2 完了（編集 + 未反映ハイライト + 組織反映）** — Phase 1（閲覧）+ 編集・baseline/working ドラフト自動保存・未反映行の背景色（緑=追加/黄=変更）・組織へ反映（Ctrl+S）・検証のみ（dry-run）・削除・反映エラーの行ジャンプ、を両アプリで実装済み。`--smoke-source` は反映の往復（作成→検証→構文エラー→更新→削除）まで検証
 対象: WPF (`SfUi.App`) + Avalonia (`SfUi.Avalonia`) の両方
 
 ---
@@ -89,7 +89,7 @@ src/SfUi.Avalonia/Views/SourceEditorWindow.axaml
 | Phase | 内容 | 受け入れ基準 | 検証 |
 |---|---|---|---|
 | **P1 閲覧** | ウィンドウ + 4 種の列挙（Tooling）/ 選択で本文取得 / タブ表示 / 行番号 + 色付き / ステータス バー / 両アプリ + ツールバー導線 + UiText 4 言語 | 実組織でクラス・トリガー・VF・LWC が表示できる → **完了**（186→184 クラス等の実測、LWC 479 件） | 単体テスト（25）+ `--smoke-source` + UI E2E（両アプリ）+ スクショ |
-| **P2 編集 + 反映** | 編集可 / working・baseline 保存（自動ドラフト）/ **未反映行ハイライト** / 反映（Ctrl+S・ボタン、sf deploy）/ 検証のみ / 削除 / エラー行ジャンプ | クラスを編集 → 未反映表示 → 反映 → 組織に反映され表示が「一致」に / 構文エラーは行付きで表示 | 単体テスト + スモーク（往復: 取得→編集→deploy→再取得一致→復元）+ UI E2E |
+| **P2 編集 + 反映** | 編集可 / working・baseline 保存（自動ドラフト）/ **未反映行ハイライト** / 反映（Ctrl+S・ボタン、sf deploy）/ 検証のみ / 削除 / エラー行ジャンプ | クラスを編集 → 未反映表示 → 反映 → 組織に反映され表示が「一致」に / 構文エラーは行付きで表示 → **完了**（E2E: 実組織で編集→反映→組織検証→戻し） | 単体テスト（+28）+ スモーク（往復）+ UI E2E |
 | **P3 新規作成** | テンプレート（クラス / トリガー / VF / LWC）+ API 名検証 + deploy で新規作成 | テンプレートから新規クラスを作成し組織に作成できる（スモークで往復 + 後始末） | 単体テスト + スモーク + UI E2E |
 | **P4 Flow グラフ** | Flow 一覧（FlowDefinitionView）+ Metadata(XML) 解析 + **ノード/エッジのグラフ表示**（読み取り専用。start / decision / record 操作 / action / loop / screen 等を色分け）+ ノード詳細 + ズーム/スクロール | 実組織のフローが要素数どおりのグラフで表示される | パーサー単体テスト + 実組織スモーク + UI E2E + スクショ |
 | **P5 自動補完** | Apex: 既存 `ApexCompletion`（スニペット / System / クラス / sObject / 項目 / SOQL）を再利用。LWC JS: キーワード + `lwc` API 基本。VF/HTML: タグ基本 | 入力中に候補が表示され、選択で挿入される | コンテキスト解析の単体テスト + 手動/UI 確認 |
@@ -99,6 +99,17 @@ src/SfUi.Avalonia/Views/SourceEditorWindow.axaml
 各 Phase 完了時に: ビルド → 全テスト → オフライン/実組織スモーク → UI E2E（WPF + Avalonia）→ 設計書/メモ更新 → コミット → CI グリーン、の順で検証する。
 
 ## 6. 実装メモ（スパイクで確定した定石）
+
+- **メタデータ（-meta.xml）の扱い**: source 形式の deploy は **本体 + -meta.xml が必須**（無いと `Component conversion failed: File not found: …-meta.xml`）。
+  - 既存メンバーの初回反映時は `sf project retrieve start --metadata <Type>:<Name> --ignore-conflicts` で取得した**本物のメタデータ**を使用（apiVersion / status / label 等の属性を保持）。ワーク プロジェクトにキャッシュされ、以降の反映はメタ取得なしで速い。
+  - **新規メンバー（未作成）は retrieve できないため `BuildDefaultMeta` で生成**（apiVersion = 組織バージョン、status = Active。VF は label = 名前）。
+- **Apex のコンパイル エラーは行・列付き**: deploy 結果 JSON の `result.details.componentFailures[]` に `fileName` / `lineNumber` / `columnNumber` / `problem` が入る（実測: `int a = ;` → 3 件、行 3 列 17）。エラー パネル → クリックで該当行へジャンプ。
+- `--dry-run` = 検証のみ（アップロードなし、checkOnly true）。
+- **削除**: Apex / トリガー / VF = Tooling DELETE（204）・LWC = `sf project delete source --no-prompt`。
+- ドラフトは `data/source-editor/<orgKey>/<kind>/<name>/` の baseline / working に保存（編集は 800ms デバウンスで自動保存。開くときに baseline が組織内容と一致すれば working を復元、不一致なら破棄）。
+- **sf CLI の偽失敗への耐性**: sf CLI（2.94.6 で確認）はまれに、デプロイが**組織に反映された後**に `Metadata API request failed: Missing message metadata.transfer:Finalizing for locale en_US.` を返して失敗扱いになる（ポーリング中のメッセージ解決の問題。検証のみは影響を受けにくい）。アプリはコンパイル エラーなしの CLI レベル失敗を検出すると、組織から本文を再取得して意図した内容と一致するか確認し、一致すれば成功として扱う（`ShouldVerifyAgainstOrg` / `ContentMatches`。retrieve / LWC 削除にも同様の確認あり）。
+
+### スパイクの生メモ（2026-10-10）
 
 - 一覧 SOQL（Tooling）:
   - `SELECT Id, Name, ApiVersion, LastModifiedDate, LengthWithoutComments FROM ApexClass WHERE NamespacePrefix = null ORDER BY Name`
