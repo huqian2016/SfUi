@@ -233,6 +233,7 @@ The manual is available in four languages (English / 日本語 / 简体中文 / 
 3. Results (compile errors / output / debug log) are recorded in History.
 
 - You can save/copy the log and reload previous code.
+- **System.debug only**: turn on the toolbar checkbox to show only System.debug(...) output (USER_DEBUG lines) in the log area.
 
 ### 4.3 Debug logs and analysis
 
@@ -623,7 +624,7 @@ Selecting a Flow member shows a node / connection graph instead of code.
 ### 15.5 AI, search and local history
 
 - **AI**: open the panel with "AI" in the toolbar. Use the quick prompts (explain / suggest improvements / fix errors) and "attach current tab data" (the file being edited); "Apply to editor" inserts a suggested snippet at the caret.
-- **Search**: searches across the open files (up to 200 hits). Click a result to switch to that tab and jump to the line.
+- **Search**: by default searches the whole org (Apex / triggers / VF / LWC); switch to "Open files only" with the checkbox. Up to 200 hits, cancellable while running. Clicking a result opens the file if needed and jumps to the line.
 - **History**: every successful deploy stores a local snapshot (up to 20 versions). Selecting one shows the diff line count against the current file; "Load" restores it into the editor and "Redeploy" pushes it back to the org (a one-click rollback). "Clear" deletes the history.
 
 ### 15.6 Where Source Editor data lives

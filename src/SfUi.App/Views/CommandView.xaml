@@ -39,6 +39,7 @@
             <TabControl Grid.Row="2" Margin="8">
                 <TabItem Header="{loc:Tr Command_StdOutTab}">
                     <TextBox Text="{Binding StdOut}" IsReadOnly="True" FontFamily="Consolas" FontSize="12"
+                             AutomationProperties.AutomationId="CommandStdOutBox"
                              VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" TextWrapping="NoWrap" />
                 </TabItem>
                 <TabItem Header="{loc:Tr Command_StdErrTab}">

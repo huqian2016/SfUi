@@ -710,7 +710,7 @@ public class SourceEditorViewModelTests : IDisposable
     }
 
     [Fact]
-    public void Search_FindsHitsAcrossOpenFiles_AndNavigates()
+    public void Search_OpenFilesOnly_FindsHitsAcrossOpenFiles_AndNavigates()
     {
         var viewModel = CreateViewModel();
         var alpha = new SourceFileViewModel(
@@ -723,10 +723,11 @@ public class SourceEditorViewModelTests : IDisposable
         viewModel.OpenFiles.Add(cmp);
 
         viewModel.SearchQuery = "hit";
+        viewModel.SearchOpenFilesOnly = true;
         viewModel.RunSearchCommand.Execute(null);
 
         Assert.Equal(2, viewModel.SearchResults.Count);
-        Assert.Equal("Alpha.cls", viewModel.SearchResults[0].File.FileName);
+        Assert.Equal("Alpha.cls", viewModel.SearchResults[0].FileName);
         Assert.Equal(2, viewModel.SearchResults[0].Line);
         Assert.Equal(UiText.T("SourceEditor_SearchCountFmt", 2), viewModel.SearchStatusText);
 
@@ -736,6 +737,71 @@ public class SourceEditorViewModelTests : IDisposable
         Assert.NotNull(viewModel.PendingNavigation);
         Assert.Equal(2, viewModel.PendingNavigation!.Line);
         Assert.Equal("cmp.js", viewModel.PendingNavigation.FileName);
+    }
+
+    [Fact]
+    public async Task Search_OrgWide_FindsHitInUnopenedMember_AndOpensItOnSelect()
+    {
+        var alpha = new SourceMemberInfo(SourceMemberKind.ApexClass, "Alpha", "1");
+        var beta = new SourceMemberInfo(SourceMemberKind.ApexClass, "Beta", "2");
+        _service.Members[SourceMemberKind.ApexClass] = new[] { alpha, beta };
+        _service.GetSource = m => m.Name == "Beta"
+            ? new[] { new SourceFileInfo("Beta.cls", "C#", "class Beta {\n    // needle here\n}") }
+            : new[] { new SourceFileInfo("Alpha.cls", "C#", "class Alpha {}") };
+
+        var viewModel = CreateViewModel();
+        viewModel.Initialize(CreateOrg());
+        await viewModel.RefreshCommand.ExecuteAsync(null);
+
+        // Alpha だけを開いておく（検索は未オープンの Beta も対象）
+        await viewModel.OpenMemberCommand.ExecuteAsync(alpha);
+        Assert.Single(viewModel.OpenFiles);
+
+        viewModel.SearchQuery = "needle";
+        await viewModel.RunSearchCommand.ExecuteAsync(null);
+
+        var hit = Assert.Single(viewModel.SearchResults);
+        Assert.Equal("Beta.cls", hit.FileName);
+        Assert.Equal("Beta", hit.Member.Name);
+        Assert.Equal(UiText.T("SourceEditor_SearchCountFmt", 1), viewModel.SearchStatusText);
+
+        // ヒット選択 → 未オープンの Beta が開かれて行ジャンプ
+        viewModel.SelectedSearchHit = hit;
+        var deadline = DateTime.UtcNow.AddSeconds(5);
+        while (DateTime.UtcNow < deadline && viewModel.PendingNavigation is null)
+        {
+            await Task.Delay(20);
+        }
+
+        Assert.Contains(viewModel.OpenFiles, f => f.FileName == "Beta.cls");
+        Assert.NotNull(viewModel.PendingNavigation);
+        Assert.Equal(2, viewModel.PendingNavigation!.Line);
+        Assert.Equal("Beta.cls", viewModel.PendingNavigation.FileName);
+    }
+
+    [Fact]
+    public async Task Search_OrgWide_CountsFailedMembersInStatus()
+    {
+        _service.Members[SourceMemberKind.ApexClass] = new[]
+        {
+            new SourceMemberInfo(SourceMemberKind.ApexClass, "Alpha", "1"),
+            new SourceMemberInfo(SourceMemberKind.ApexClass, "Gone", "2"),
+        };
+        _service.GetSource = m => m.Name == "Gone"
+            ? throw new InvalidOperationException("boom")
+            : new[] { new SourceFileInfo("Alpha.cls", "C#", "// needle") };
+
+        var viewModel = CreateViewModel();
+        viewModel.Initialize(CreateOrg());
+        await viewModel.RefreshCommand.ExecuteAsync(null);
+
+        viewModel.SearchQuery = "needle";
+        await viewModel.RunSearchCommand.ExecuteAsync(null);
+
+        Assert.Single(viewModel.SearchResults);
+        Assert.Equal(
+            UiText.T("SourceEditor_SearchCountFmt", 1) + UiText.T("SourceEditor_SearchFailedSuffixFmt", 1),
+            viewModel.SearchStatusText);
     }
 
     [Fact]

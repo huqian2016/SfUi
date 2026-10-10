@@ -117,8 +117,9 @@ public partial class CommandViewModel : ObservableObject
         try
         {
             var raw = await _runner.RunAsync(arguments, CurrentFolder, cancellationToken: _cts.Token);
-            StdOut = raw.StdOut;
-            StdErr = raw.StdErr;
+            // ANSI 色コード（ESC[...m）はテキスト ボックスでは制御文字として残るため除去する
+            StdOut = AnsiText.Strip(raw.StdOut);
+            StdErr = AnsiText.Strip(raw.StdErr);
             StatusText = UiText.T("Common_ExitCodeFmt", raw.ExitCode, raw.Duration.TotalMilliseconds) + (raw.TimedOut ? UiText.T("Common_TimeoutSuffix") : string.Empty);
             AppendHistory(input, raw.Success ? "success" : "error", (int)raw.Duration.TotalMilliseconds, BuildResultText(raw));
             _log.Info($"コマンド実行: sf {string.Join(' ', arguments)} → 終了コード {raw.ExitCode}");
@@ -218,12 +219,14 @@ public partial class CommandViewModel : ObservableObject
 
     private static string BuildResultText(SfCliResult raw)
     {
-        if (string.IsNullOrEmpty(raw.StdErr))
+        var stdout = AnsiText.Strip(raw.StdOut) ?? string.Empty;
+        var stderr = AnsiText.Strip(raw.StdErr);
+        if (string.IsNullOrEmpty(stderr))
         {
-            return raw.StdOut;
+            return stdout;
         }
 
-        return raw.StdOut + Environment.NewLine + "--- stderr ---" + Environment.NewLine + raw.StdErr;
+        return stdout + Environment.NewLine + "--- stderr ---" + Environment.NewLine + stderr;
     }
 
     private static string Summarize(string text)

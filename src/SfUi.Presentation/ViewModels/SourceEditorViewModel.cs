@@ -174,18 +174,24 @@ public sealed class SourceHistoryRow
     public override string ToString() => DisplayText;
 }
 
-/// <summary>横断検索（開いているファイル内）の 1 件（Phase 7）。</summary>
+/// <summary>横断検索の 1 件（Phase 7。既定 = 組織全体、オプションで開いているファイルのみ）。</summary>
 public sealed class SourceSearchHit
 {
-    public SourceSearchHit(SourceFileViewModel file, int line, string text)
+    public SourceSearchHit(SourceMemberInfo member, string fileName, int line, string text)
     {
-        File = file;
+        Member = member;
+        FileName = fileName;
         Line = line;
         Text = text;
-        DisplayText = UiText.T("SourceEditor_SearchRowFmt", file.FileName, line, text);
+        DisplayText = UiText.T("SourceEditor_SearchRowFmt", fileName, line, text);
     }
 
-    public SourceFileViewModel File { get; }
+    public SourceMemberInfo Member { get; }
+
+    /// <summary>同一メンバー判定用キー（kind:name）。</summary>
+    public string MemberKey => Member.Kind + ":" + Member.Name;
+
+    public string FileName { get; }
 
     public int Line { get; }
 
@@ -388,6 +394,9 @@ public sealed partial class SourceEditorViewModel : ObservableObject
                     errors.Add(group.Title + ": " + ex.Message);
                 }
             }
+
+            // 一覧を更新したら検索キャッシュは破棄する（削除・追加・改名を正しく反映するため）
+            _searchCache.Clear();
 
             StatusMessage = errors.Count == 0
                 ? UiText.T("SourceEditor_LoadedFmt", counts[0], counts[1], counts[2], counts[3], counts[4])
@@ -933,7 +942,7 @@ public sealed partial class SourceEditorViewModel : ObservableObject
         HistoryDiffText = UiText.T("SourceEditor_HistoryDiffFmt", added, modified);
     }
 
-    // ---- 横断検索（Phase 7: 開いているファイルの本文）----
+    // ---- 横断検索（Phase 7 + 拡張: 既定で組織全体、オプションで開いているファイルのみ） ----
 
     /// <summary>検索パネルの表示状態。</summary>
     [ObservableProperty]
@@ -943,10 +952,18 @@ public sealed partial class SourceEditorViewModel : ObservableObject
     [ObservableProperty]
     private string _searchQuery = string.Empty;
 
-    /// <summary>検索結果（開いているファイル内の一致行。最大 200 件）。</summary>
+    /// <summary>開いているファイルのみを検索するか（既定 = 組織全体を検索）。</summary>
+    [ObservableProperty]
+    private bool _searchOpenFilesOnly;
+
+    /// <summary>検索中か（進捗表示と中止ボタンの切替に使う）。</summary>
+    [ObservableProperty]
+    private bool _isSearching;
+
+    /// <summary>検索結果（最大 200 件。組織横断の場合は取得できた順に追加）。</summary>
     public ObservableCollection<SourceSearchHit> SearchResults { get; } = new();
 
-    /// <summary>選択したヒットへジャンプする。</summary>
+    /// <summary>選択したヒットへジャンプする（未オープンのファイルは先に開く）。</summary>
     [ObservableProperty]
     private SourceSearchHit? _selectedSearchHit;
 
@@ -957,21 +974,60 @@ public sealed partial class SourceEditorViewModel : ObservableObject
             return;
         }
 
-        SelectedFile = value.File;
-        PendingNavigation = new SourceNavigation(value.File.MemberKey, value.File.FileName, value.Line);
+        _ = OpenSearchHitAsync(value);
     }
+
+    /// <summary>ヒットのファイルを開いて行ジャンプを要求する。</summary>
+    private async Task OpenSearchHitAsync(SourceSearchHit hit)
+    {
+        var file = FindOpenFile(hit.MemberKey, hit.FileName);
+        if (file is null)
+        {
+            await OpenMemberAsync(hit.Member).ConfigureAwait(true);
+            file = FindOpenFile(hit.MemberKey, hit.FileName) ?? OpenFiles.FirstOrDefault(f => f.MemberKey == hit.MemberKey);
+        }
+
+        if (file is null)
+        {
+            return;
+        }
+
+        SelectedFile = file;
+        PendingNavigation = new SourceNavigation(file.MemberKey, file.FileName, hit.Line);
+    }
+
+    private SourceFileViewModel? FindOpenFile(string memberKey, string fileName)
+        => OpenFiles.FirstOrDefault(f => f.MemberKey == memberKey
+            && string.Equals(f.FileName, fileName, StringComparison.OrdinalIgnoreCase));
 
     [ObservableProperty]
     private string _searchStatusText = string.Empty;
 
+    private CancellationTokenSource? _searchCts;
+
+    private int _searchGeneration;
+
+    /// <summary>組織横断検索で取得済みのソース（検索のたびに再取得しない。一覧更新でクリア）。</summary>
+    private readonly Dictionary<string, IReadOnlyList<SourceFileInfo>> _searchCache = new(StringComparer.Ordinal);
+
     [RelayCommand]
     private void ToggleSearchPanel() => IsSearchPanelOpen = !IsSearchPanelOpen;
 
-    /// <summary>開いている全タブの本文を行単位で検索する（大文字小文字を無視）。</summary>
+    /// <summary>実行中の組織横断検索を中止する。</summary>
     [RelayCommand]
-    private void RunSearch()
+    private void CancelSearch() => _searchCts?.Cancel();
+
+    /// <summary>組織全体（または開いているファイルのみ）を行単位で検索する（大文字小文字を無視）。</summary>
+    /// <remarks>実行中の再検索は前回をキャンセルして置き換える（AllowConcurrentExecutions + 世代ガード）。</remarks>
+    [RelayCommand(AllowConcurrentExecutions = true)]
+    private async Task RunSearchAsync()
     {
         const int maxHits = 200;
+        _searchCts?.Cancel();
+        _searchCts = new CancellationTokenSource();
+        var cancellationToken = _searchCts.Token;
+        var generation = ++_searchGeneration;
+
         SearchResults.Clear();
         var query = SearchQuery.Trim();
         if (query.Length == 0)
@@ -980,18 +1036,122 @@ public sealed partial class SourceEditorViewModel : ObservableObject
             return;
         }
 
-        foreach (var file in OpenFiles)
+        if (SearchOpenFilesOnly)
         {
-            var lines = file.Text.Split('\n');
-            for (var i = 0; i < lines.Length && SearchResults.Count < maxHits; i++)
+            SearchOpenFiles(query, maxHits);
+            return;
+        }
+
+        // 対象 = コードを持つ 4 種別（フローはグラフ表示のため対象外）
+        var targets = Groups
+            .Where(g => g.Kind != SourceMemberKind.Flow)
+            .SelectMany(g => g.Members)
+            .ToList();
+
+        IsSearching = true;
+        var failures = 0;
+        var canceled = false;
+        var truncated = false;
+        try
+        {
+            for (var i = 0; i < targets.Count; i++)
             {
-                if (lines[i].Contains(query, StringComparison.OrdinalIgnoreCase))
+                if (cancellationToken.IsCancellationRequested)
                 {
-                    SearchResults.Add(new SourceSearchHit(file, i + 1, lines[i].Trim()));
+                    canceled = true;
+                    break;
+                }
+
+                if (i % 10 == 0)
+                {
+                    SearchStatusText = UiText.T("SourceEditor_SearchProgressFmt", i, targets.Count);
+                }
+
+                var member = targets[i];
+                var key = member.Kind + ":" + member.Name;
+                IReadOnlyList<SourceFileInfo> files;
+                var open = OpenFiles.Where(f => f.MemberKey == key).ToList();
+                if (open.Count > 0)
+                {
+                    files = open.Select(f => new SourceFileInfo(f.FileName, f.LanguageId, f.Text)).ToList();
+                }
+                else if (_searchCache.TryGetValue(key, out var cached))
+                {
+                    files = cached;
+                }
+                else
+                {
+                    try
+                    {
+                        files = await _service.GetSourceAsync(TargetOrg, member, cancellationToken).ConfigureAwait(true);
+                        _searchCache[key] = files;
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        canceled = true;
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        failures++;
+                        _log.Warn($"ソース エディタ検索: {member.Name} の取得に失敗しました: {ex.Message}");
+                        continue;
+                    }
+
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        canceled = true;
+                        break;
+                    }
+                }
+
+                foreach (var file in files)
+                {
+                    truncated |= CollectHits(member, file, query, maxHits);
+                    if (truncated)
+                    {
+                        break;
+                    }
+                }
+
+                if (truncated)
+                {
+                    break;
                 }
             }
+        }
+        finally
+        {
+            if (generation == _searchGeneration)
+            {
+                IsSearching = false;
+            }
+        }
 
-            if (SearchResults.Count >= maxHits)
+        if (generation != _searchGeneration)
+        {
+            return; // 新しい検索に置き換えられた（古い結果で上書きしない）
+        }
+
+        var status = canceled
+            ? UiText.T("SourceEditor_SearchCanceled")
+            : SearchResults.Count == 0
+                ? UiText.T("SourceEditor_SearchEmpty")
+                : UiText.T("SourceEditor_SearchCountFmt", SearchResults.Count);
+        if (!canceled && failures > 0)
+        {
+            status += UiText.T("SourceEditor_SearchFailedSuffixFmt", failures);
+        }
+
+        SearchStatusText = status;
+    }
+
+    private void SearchOpenFiles(string query, int maxHits)
+    {
+        foreach (var file in OpenFiles)
+        {
+            var info = new SourceFileInfo(file.FileName, file.LanguageId, file.Text);
+            if (CollectHits(file.Member, info, query, maxHits))
             {
                 break;
             }
@@ -1000,6 +1160,25 @@ public sealed partial class SourceEditorViewModel : ObservableObject
         SearchStatusText = SearchResults.Count == 0
             ? UiText.T("SourceEditor_SearchEmpty")
             : UiText.T("SourceEditor_SearchCountFmt", SearchResults.Count);
+    }
+
+    /// <summary>1 ファイル分の一致行を追加する（上限に達したら true）。</summary>
+    private bool CollectHits(SourceMemberInfo member, SourceFileInfo file, string query, int maxHits)
+    {
+        var lines = file.Text.Split('\n');
+        for (var i = 0; i < lines.Length; i++)
+        {
+            if (lines[i].Contains(query, StringComparison.OrdinalIgnoreCase))
+            {
+                SearchResults.Add(new SourceSearchHit(member, file.FileName, i + 1, lines[i].Trim()));
+                if (SearchResults.Count >= maxHits)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     // ---- ファイル エクスポート / タブ操作（Phase 7）----
@@ -1082,6 +1261,8 @@ public sealed partial class SourceEditorViewModel : ObservableObject
                         tab.MarkDeployed();
                     }
 
+                    // 反映したメンバーの検索キャッシュは古くなるため破棄する
+                    _searchCache.Remove(member.Kind + ":" + member.Name);
                     await SaveDraftForAsync(member, CancellationToken.None).ConfigureAwait(true);
                     await _service.SaveHistoryAsync(OrgKey, member, sourceFiles).ConfigureAwait(true);
                     if (IsHistoryPanelOpen)

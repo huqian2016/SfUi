@@ -11,6 +11,9 @@
                 <Button Content="{loc:Tr Apex_Run}" Padding="10,2" Margin="0,2,12,2" Command="{Binding ExecuteCommand}" />
                 <CheckBox Content="{loc:Tr Apex_AiAssist}" IsChecked="{Binding AiAssistEnabled, Mode=TwoWay}" VerticalAlignment="Center" Margin="0,2,12,2"
                           ToolTip.Tip="{loc:Tr Apex_AiAssistTip}" />
+                <CheckBox Content="{loc:Tr Apex_DebugOnly}" IsChecked="{Binding ShowDebugOnly, Mode=TwoWay}" VerticalAlignment="Center" Margin="0,2,12,2"
+                          ToolTip.Tip="{loc:Tr Apex_DebugOnlyTip}"
+                          AutomationProperties.AutomationId="ApexDebugOnlyCheckBox" />
                 <Button Content="{loc:Tr Apex_LoadFile}" Padding="10,2" Margin="0,2,6,2" Command="{Binding LoadFileCommand}" />
                 <Button Content="{loc:Tr Apex_SaveFile}" Padding="10,2" Margin="0,2,12,2" Command="{Binding SaveFileCommand}" />
                 <Border Width="1" Height="20" VerticalAlignment="Center" Background="#CCCCCC" Margin="0,2,12,2" />
@@ -87,7 +90,8 @@
 
             <TextBlock Grid.Row="3" Text="{Binding ResultSummary}" TextWrapping="Wrap" Margin="8,6" />
 
-            <TextBox Grid.Row="4" Text="{Binding ResultLogs}" IsReadOnly="True"
+            <TextBox Grid.Row="4" Text="{Binding DisplayLogs, Mode=OneWay}" IsReadOnly="True"
+                     AutomationProperties.AutomationId="ApexLogBox"
                      FontFamily="Consolas, Menlo, monospace" FontSize="12"
                      ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto"
                      TextWrapping="NoWrap"

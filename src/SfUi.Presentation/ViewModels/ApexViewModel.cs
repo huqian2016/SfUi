@@ -35,6 +35,17 @@ public partial class ApexViewModel : ObservableObject
     [ObservableProperty]
     private string? _resultLogs;
 
+    /// <summary>ログ領域に System.debug() の出力（USER_DEBUG 行）だけを表示するか。</summary>
+    [ObservableProperty]
+    private bool _showDebugOnly;
+
+    /// <summary>ログ領域へ表示する本文（ShowDebugOnly でフィルタした結果）。</summary>
+    public string DisplayLogs => ShowDebugOnly ? ApexLogFilter.FilterUserDebugLines(ResultLogs) : (ResultLogs ?? string.Empty);
+
+    partial void OnResultLogsChanged(string? value) => OnPropertyChanged(nameof(DisplayLogs));
+
+    partial void OnShowDebugOnlyChanged(bool value) => OnPropertyChanged(nameof(DisplayLogs));
+
     [ObservableProperty]
     private HistoryEntry? _selectedHistoryItem;
 

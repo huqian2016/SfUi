@@ -127,6 +127,8 @@ public sealed class SfCliRunner
 
         startInfo.Environment["SF_DISABLE_TELEMETRY"] = "true";
         startInfo.Environment["SF_AUTOUPDATE_DISABLE"] = "true";
+        // 端末向けの色コード（ESC[...m）を子プロセスに出させない（UI 表示の崩れ防止。二重の安全網として AnsiText でも除去）
+        startInfo.Environment["NO_COLOR"] = "1";
 
         if (environment is not null)
         {

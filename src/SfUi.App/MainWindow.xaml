@@ -115,7 +115,7 @@
                 <Button Style="{StaticResource IconButton}" Margin="0,0,10,0"
                         Command="{Binding OpenEtlCommand}"
                         AutomationProperties.Name="{loc:Tr Main_Etl}">
-                    <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconDataIo}" />
+                    <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconDataMigration}" />
                     <Button.ToolTip>
                         <StackPanel MaxWidth="360">
                             <TextBlock Text="{loc:Tr Main_Etl}" FontWeight="SemiBold" />

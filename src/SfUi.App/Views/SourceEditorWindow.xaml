@@ -102,6 +102,11 @@
                              AutomationProperties.Name="{loc:Tr SourceEditor_SearchTip}" />
                     <Button x:Name="SourceEditorSearchGoButton" Content="{loc:Tr SourceEditor_SearchGo}" Padding="12,2" Margin="6,0,12,0"
                             Command="{Binding RunSearchCommand}" />
+                    <CheckBox x:Name="SourceEditorSearchOpenOnly" Content="{loc:Tr SourceEditor_SearchOpenOnly}" IsChecked="{Binding SearchOpenFilesOnly, Mode=TwoWay}"
+                              VerticalAlignment="Center" Margin="0,0,12,0" />
+                    <Button x:Name="SourceEditorSearchCancelButton" Content="{loc:Tr Common_Cancel}" Padding="12,2" Margin="0,0,12,0"
+                            Command="{Binding CancelSearchCommand}"
+                            Visibility="{Binding IsSearching, Converter={StaticResource BoolToVis}}" />
                     <TextBlock x:Name="SourceEditorSearchStatusText" Text="{Binding SearchStatusText}" VerticalAlignment="Center" Foreground="#666666" />
                 </DockPanel>
                 <ListBox x:Name="SourceEditorSearchResults" MaxHeight="140" Margin="0,4,0,0"

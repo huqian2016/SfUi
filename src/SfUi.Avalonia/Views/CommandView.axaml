@@ -45,6 +45,7 @@
             <TabControl Grid.Row="2" Margin="8">
                 <TabItem Header="{loc:Tr Command_StdOutTab}">
                     <TextBox Text="{Binding StdOut}" IsReadOnly="True" FontFamily="Consolas, Menlo, monospace" FontSize="12"
+                             AutomationProperties.AutomationId="CommandStdOutBox"
                              ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto"
                              TextWrapping="NoWrap" />
                 </TabItem>
