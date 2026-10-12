@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -21,6 +22,9 @@ public partial class MainViewModel : ObservableObject
     private readonly IFilePickerService _filePicker;
     private readonly IDialogService _dialogs;
     private readonly IClipboardService _clipboard;
+    private readonly EditorTabsStore _editorTabs;
+    private readonly UiDebouncer _tabsSaveDebouncer;
+    private bool _tabsReady;
 
     /// <summary>組織一覧を取得中（取得インジケーター表示と各種操作のブロックに使う）。</summary>
     [ObservableProperty]
@@ -162,7 +166,9 @@ public partial class MainViewModel : ObservableObject
         IAppWindowService windows,
         IFilePickerService filePicker,
         IDialogService dialogs,
-        IClipboardService clipboard)
+        IClipboardService clipboard,
+        EditorTabsStore editorTabsStore,
+        IUiDispatcher ui)
     {
         _orgService = orgService;
         _log = log;
@@ -175,6 +181,8 @@ public partial class MainViewModel : ObservableObject
         _filePicker = filePicker;
         _dialogs = dialogs;
         _clipboard = clipboard;
+        _editorTabs = editorTabsStore;
+        _tabsSaveDebouncer = new UiDebouncer(1200, ui);
         Orgs.CollectionChanged += (_, _) =>
         {
             OnPropertyChanged(nameof(CanCompareOrgs));
@@ -199,18 +207,28 @@ public partial class MainViewModel : ObservableObject
         SoqlTabs = new EditorTabHost<SoqlViewModel>(
             () => CreateSoqlTab(soqlFactory),
             (vm, title) => vm.TabTitle = title,
-            "Tab_Soql");
+            "Tab_Soql",
+            vm => vm.SoqlText,
+            (vm, text) => vm.SoqlText = text);
         ApexTabs = new EditorTabHost<ApexViewModel>(
             () => CreateApexTab(apexFactory),
             (vm, title) => vm.TabTitle = title,
-            "Tab_Apex");
+            "Tab_Apex",
+            vm => vm.ApexCode,
+            (vm, text) => vm.ApexCode = text);
         CommandTabs = new EditorTabHost<CommandViewModel>(
             () => CreateCommandTab(commandFactory),
             (vm, title) => vm.TabTitle = title,
-            "Tab_Command");
-        SoqlTabs.AddTab();
-        ApexTabs.AddTab();
-        CommandTabs.AddTab();
+            "Tab_Command",
+            vm => vm.CommandText,
+            (vm, text) => vm.CommandText = text);
+
+        // 保存済みのサブタブ状態（本文・選択）を復元し、以降の変更を保存対象にする。
+        RestoreEditorTabs();
+        SoqlTabs.Changed += ScheduleTabsSave;
+        ApexTabs.Changed += ScheduleTabsSave;
+        CommandTabs.Changed += ScheduleTabsSave;
+        _tabsReady = true;
 
         // 保存済みの言語をコンボへ反映（起動時の UiText 適用は App 側で実施済み）
         _languageLabel = LanguageLabelForCode(_settings.Current.Language);
@@ -230,6 +248,7 @@ public partial class MainViewModel : ObservableObject
             IsAiPanelVisible = true;
             await Ai.AskAsync(prompt);
         };
+        vm.PropertyChanged += OnSoqlTabPropertyChanged;
         return vm;
     }
 
@@ -244,6 +263,7 @@ public partial class MainViewModel : ObservableObject
             IsAiPanelVisible = true;
             await Ai.AskAsync(prompt);
         };
+        vm.PropertyChanged += OnApexTabPropertyChanged;
         return vm;
     }
 
@@ -253,8 +273,89 @@ public partial class MainViewModel : ObservableObject
         var vm = factory();
         vm.CurrentOrg = SelectedOrg?.Alias ?? SelectedOrg?.Username;
         vm.CurrentFolder = SelectedFolder;
+        vm.PropertyChanged += OnCommandTabPropertyChanged;
         return vm;
     }
+
+    /// <summary>保存済みのサブタブ状態（本文・選択）を復元する。無い場合は既定の 1 タブ。</summary>
+    private void RestoreEditorTabs()
+    {
+        var state = _editorTabs.Load();
+        RestoreHost(SoqlTabs, state.Soql);
+        RestoreHost(ApexTabs, state.Apex);
+        RestoreHost(CommandTabs, state.Command);
+    }
+
+    private static void RestoreHost<T>(EditorTabHost<T> host, EditorTabHostState? state) where T : class
+    {
+        if (state?.Tabs is { Count: > 0 })
+        {
+            host.RestoreFromTexts(state.Tabs, state.Selected);
+        }
+        else
+        {
+            host.AddTab();
+        }
+    }
+
+    private void OnSoqlTabPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(SoqlViewModel.SoqlText))
+        {
+            ScheduleTabsSave();
+        }
+    }
+
+    private void OnApexTabPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(ApexViewModel.ApexCode))
+        {
+            ScheduleTabsSave();
+        }
+    }
+
+    private void OnCommandTabPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(CommandViewModel.CommandText))
+        {
+            ScheduleTabsSave();
+        }
+    }
+
+    /// <summary>変更をまとめて保存する（連続入力はデバウンス）。</summary>
+    private void ScheduleTabsSave()
+    {
+        if (!_tabsReady)
+        {
+            return;
+        }
+
+        _tabsSaveDebouncer.Debounce(SaveEditorTabs);
+    }
+
+    /// <summary>サブタブの状態（本文 + 選択位置）を保存する（ウィンドウ終了時にも呼ばれる）。</summary>
+    public void SaveEditorTabs()
+    {
+        try
+        {
+            _editorTabs.Save(new EditorTabsFile
+            {
+                Soql = ToEditorTabsState(SoqlTabs),
+                Apex = ToEditorTabsState(ApexTabs),
+                Command = ToEditorTabsState(CommandTabs),
+            });
+        }
+        catch (Exception ex)
+        {
+            _log.Warn($"エディタ タブの保存に失敗: {ex.Message}");
+        }
+    }
+
+    private static EditorTabHostState ToEditorTabsState<T>(EditorTabHost<T> host) where T : class => new()
+    {
+        Tabs = host.ExportTexts(),
+        Selected = host.SelectedIndex,
+    };
 
     partial void OnIsAiPanelVisibleChanged(bool value)
     {

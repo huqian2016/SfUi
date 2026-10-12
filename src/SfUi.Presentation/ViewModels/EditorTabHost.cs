@@ -15,18 +15,32 @@ public class EditorTabHost<TTab> : ObservableObject where TTab : class
     private readonly Func<TTab> _factory;
     private readonly Action<TTab, string> _applyTitle;
     private readonly string _titleTextKey;
+    private readonly Func<TTab, string>? _getText;
+    private readonly Action<TTab, string>? _setText;
 
     private TTab? _selectedTab;
 
     /// <summary>サブタブ（追加順）。</summary>
     public ObservableCollection<TTab> Tabs { get; } = new();
 
+    /// <summary>タブの追加・クローズ・選択変更で発火する（永続化の契機）。</summary>
+    public event Action? Changed;
+
     /// <summary>選択中のサブタブ。</summary>
     public TTab? SelectedTab
     {
         get => _selectedTab;
-        set => SetProperty(ref _selectedTab, value);
+        set
+        {
+            if (SetProperty(ref _selectedTab, value))
+            {
+                Changed?.Invoke();
+            }
+        }
     }
+
+    /// <summary>選択中タブの位置（0 始まり。タブなしは 0）。</summary>
+    public int SelectedIndex => SelectedTab is null ? 0 : Math.Max(0, Tabs.IndexOf(SelectedTab));
 
     /// <summary>「＋」ボタン用: 新しいタブを追加して選択する。</summary>
     public RelayCommand AddNewTabCommand { get; }
@@ -34,11 +48,13 @@ public class EditorTabHost<TTab> : ObservableObject where TTab : class
     /// <summary>タブの「×」用: タブを閉じる（最後の 1 つは閉じられない）。</summary>
     public RelayCommand<TTab> CloseTabCommand { get; }
 
-    public EditorTabHost(Func<TTab> factory, Action<TTab, string> applyTitle, string titleTextKey)
+    public EditorTabHost(Func<TTab> factory, Action<TTab, string> applyTitle, string titleTextKey, Func<TTab, string>? getText = null, Action<TTab, string>? setText = null)
     {
         _factory = factory;
         _applyTitle = applyTitle;
         _titleTextKey = titleTextKey;
+        _getText = getText;
+        _setText = setText;
         AddNewTabCommand = new RelayCommand(() => AddTab());
         CloseTabCommand = new RelayCommand<TTab>(CloseTab, CanCloseTab);
     }
@@ -51,6 +67,7 @@ public class EditorTabHost<TTab> : ObservableObject where TTab : class
         RefreshTitles();
         SelectedTab = tab;
         CloseTabCommand.NotifyCanExecuteChanged();
+        Changed?.Invoke();
         return tab;
     }
 
@@ -75,6 +92,7 @@ public class EditorTabHost<TTab> : ObservableObject where TTab : class
         }
 
         CloseTabCommand.NotifyCanExecuteChanged();
+        Changed?.Invoke();
     }
 
     private bool CanCloseTab(TTab? tab) => Tabs.Count > 1 && tab is not null && Tabs.Contains(tab);
@@ -87,5 +105,33 @@ public class EditorTabHost<TTab> : ObservableObject where TTab : class
         {
             _applyTitle(Tabs[i], UiText.T("Main_EditorTabTitleFmt", label, i + 1));
         }
+    }
+
+    /// <summary>開いているタブの本文を（順序どおりに）取り出す。</summary>
+    public List<string> ExportTexts()
+    {
+        var result = new List<string>(Tabs.Count);
+        foreach (var tab in Tabs)
+        {
+            result.Add(_getText?.Invoke(tab) ?? string.Empty);
+        }
+
+        return result;
+    }
+
+    /// <summary>保存済みの本文からタブを復元する（既存タブは破棄して置き換える）。</summary>
+    public void RestoreFromTexts(IReadOnlyList<string> texts, int selectedIndex)
+    {
+        Tabs.Clear();
+        foreach (var text in texts)
+        {
+            var tab = _factory();
+            _setText?.Invoke(tab, text ?? string.Empty);
+            Tabs.Add(tab);
+        }
+
+        RefreshTitles();
+        CloseTabCommand.NotifyCanExecuteChanged();
+        SelectedTab = Tabs.Count == 0 ? null : Tabs[Math.Clamp(selectedIndex, 0, Tabs.Count - 1)];
     }
 }

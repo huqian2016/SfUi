@@ -24,6 +24,7 @@ public partial class MainWindow : Window
 
         Loaded += OnWindowLoaded;
         PreviewKeyDown += OnPreviewKeyDown;
+        Closing += (_, _) => _viewModel.SaveEditorTabs();
     }
 
     /// <summary>グローバルショートカット: Ctrl+1..9（クイックパネル実行）/ F5（直前の操作を再実行）。</summary>

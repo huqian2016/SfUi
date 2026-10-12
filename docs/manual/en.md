@@ -217,7 +217,7 @@ The manual is available in four languages (English / 日本語 / 简体中文 / 
 3. Press **Ctrl+Enter** (or the Run button). Results appear in the grid; row count and elapsed time are shown in the status bar.
 4. REST is used first, falling back to the CLI when necessary.
 
-- **Multiple tabs**: press **+** at the right end of the tab strip to add another query tab ("SOQL 2", …). Each tab keeps its own editor text, results and running state, so several queries can run side by side. Close a tab with **×** (the last remaining tab cannot be closed).
+- **Multiple tabs**: press **+** at the right end of the tab strip to add another query tab ("SOQL 2", …). Each tab keeps its own editor text, results and running state, so several queries can run side by side. Close a tab with **×** (the last remaining tab cannot be closed). Tab contents are saved automatically and restored on the next launch.
 - **Builder**: compose object, fields, conditions, order and LIMIT in the GUI and run.
 - **CSV export**: save the result grid as CSV (UTF-8 with BOM; opens directly in Excel).
 - **History**: every query is recorded and can be recalled from the history combo.
@@ -233,7 +233,7 @@ The manual is available in four languages (English / 日本語 / 简体中文 / 
 2. Press **Ctrl+Enter** to run. `System.debug` output is fetched and shown on the right.
 3. Results (compile errors / output / debug log) are recorded in History.
 
-- **Multiple tabs**: press **+** to add a tab; each tab keeps its own code and log, so several scripts can run side by side. Close a tab with **×** (the last remaining tab cannot be closed).
+- **Multiple tabs**: press **+** to add a tab; each tab keeps its own code and log, so several scripts can run side by side. Close a tab with **×** (the last remaining tab cannot be closed). Tab contents are saved automatically and restored on the next launch.
 - You can save/copy the log and reload previous code.
 - **System.debug only**: turn on the toolbar checkbox to show only System.debug(...) output (USER_DEBUG lines) in the log area.
 
@@ -271,7 +271,7 @@ Up to 20,000 events are displayed (larger logs show counts only). Analysis is lo
 - Type any `sf` command and run it (Enter or the Run button).
 - View stdout / stderr, add to favorites, or re-run from the history combo.
 - CLI telemetry is disabled (`SF_DISABLE_TELEMETRY`) for these executions.
-- **Multiple tabs**: press **+** to add a tab; each tab keeps its own command and output independently. Close a tab with **×** (the last remaining tab cannot be closed).
+- **Multiple tabs**: press **+** to add a tab; each tab keeps its own command and output independently. Close a tab with **×** (the last remaining tab cannot be closed). Tab contents are saved automatically and restored on the next launch.
 
 ### 4.6 REST API console
 

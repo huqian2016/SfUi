@@ -26,6 +26,7 @@ public partial class MainWindow : Window
 
         Opened += OnWindowOpened;
         AddHandler(KeyDownEvent, OnPreviewKeyDown, RoutingStrategies.Tunnel);
+        Closing += (_, _) => _viewModel.SaveEditorTabs();
     }
 
     /// <summary>グローバルショートカット: Ctrl(/Cmd)+1..9（クイックパネル実行）/ F5（直前の操作を再実行）。</summary>

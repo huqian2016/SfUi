@@ -11,10 +11,12 @@ public class EditorTabHostTests
     private sealed class DummyTab
     {
         public string Title { get; set; } = string.Empty;
+
+        public string Text { get; set; } = string.Empty;
     }
 
     private static EditorTabHost<DummyTab> CreateHost(string labelKey = "Tab_Soql") =>
-        new(() => new DummyTab(), (tab, title) => tab.Title = title, labelKey);
+        new(() => new DummyTab(), (tab, title) => tab.Title = title, labelKey, tab => tab.Text, (tab, text) => tab.Text = text);
 
     [Fact]
     public void AddTab_AddsAndSelectsNewTab()
@@ -123,5 +125,54 @@ public class EditorTabHostTests
         {
             UiText.SetLanguage(original);
         }
+    }
+
+    [Fact]
+    public void ExportTexts_ReturnsTextsInOrder()
+    {
+        var host = CreateHost();
+        host.AddTab().Text = "SELECT 1";
+        host.AddTab().Text = "SELECT 2";
+
+        Assert.Equal(new[] { "SELECT 1", "SELECT 2" }, host.ExportTexts());
+    }
+
+    [Fact]
+    public void RestoreFromTexts_RebuildsTabsAndSelection()
+    {
+        var host = CreateHost();
+
+        host.RestoreFromTexts(new[] { "A", "B", "C" }, 2);
+
+        Assert.Equal(3, host.Tabs.Count);
+        Assert.Equal(new[] { "A", "B", "C" }, host.Tabs.Select(t => t.Text));
+        Assert.Equal(2, host.SelectedIndex);
+        Assert.Same(host.Tabs[2], host.SelectedTab);
+        Assert.Equal(UiText.T("Main_EditorTabTitleFmt", UiText.T("Tab_Soql"), 3), host.SelectedTab!.Title);
+    }
+
+    [Fact]
+    public void RestoreFromTexts_ClampsSelection()
+    {
+        var host = CreateHost();
+
+        host.RestoreFromTexts(new[] { "A" }, 5);
+
+        Assert.Equal(0, host.SelectedIndex);
+    }
+
+    [Fact]
+    public void Changed_FiresOnAddCloseAndSelect()
+    {
+        var host = CreateHost();
+        var count = 0;
+        host.Changed += () => count++;
+
+        var first = host.AddTab();
+        var second = host.AddTab();
+        host.SelectedTab = first;
+        host.CloseTabCommand.Execute(second);
+
+        Assert.True(count >= 4, $"Changed fired {count} times");
     }
 }

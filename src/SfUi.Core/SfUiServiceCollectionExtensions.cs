@@ -23,6 +23,7 @@ public static class SfUiServiceCollectionExtensions
         services.AddSingleton<AppSettingsStore>();
         services.AddSingleton<RecentFoldersStore>();
         services.AddSingleton<RecentUrlsStore>();
+        services.AddSingleton<EditorTabsStore>();
         services.AddSingleton<FavoritesStore>();
         services.AddSingleton<HistoryStore>();
         services.AddSingleton<OrgInfoCacheStore>();
