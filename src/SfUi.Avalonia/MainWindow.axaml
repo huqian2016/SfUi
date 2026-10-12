@@ -267,10 +267,72 @@
         <!-- メイン: 機能タブ（Settings 以外は Phase C–E で移植） -->
         <TabControl Margin="8" SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}">
             <TabItem Header="{loc:Tr Tab_Soql}">
-                <views:SoqlView DataContext="{Binding Soql}" />
+                <Grid>
+                    <TabControl ItemsSource="{Binding SoqlTabs.Tabs}"
+                                SelectedItem="{Binding SoqlTabs.SelectedTab, Mode=TwoWay}"
+                                AutomationProperties.AutomationId="SoqlTabs">
+                        <TabControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding TabTitle}" VerticalAlignment="Center" />
+                                    <Button Content="×" Margin="6,0,0,0" Padding="3,0" FontSize="11" VerticalAlignment="Center"
+                                            Command="{Binding $parent[TabControl].DataContext.SoqlTabs.CloseTabCommand}"
+                                            CommandParameter="{Binding}"
+                                            ToolTip.Tip="{loc:Tr Main_CloseTab}"
+                                            AutomationProperties.Name="{loc:Tr Main_CloseTab}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </TabControl.ItemTemplate>
+                        <TabControl.ContentTemplate>
+                            <DataTemplate>
+                                <views:SoqlView />
+                            </DataTemplate>
+                        </TabControl.ContentTemplate>
+                    </TabControl>
+                    <Button HorizontalAlignment="Right" VerticalAlignment="Top"
+                            Width="24" Height="22" Margin="0,4,6,0" Padding="0"
+                            Background="Transparent" BorderThickness="0"
+                            Command="{Binding SoqlTabs.AddNewTabCommand}"
+                            ToolTip.Tip="{loc:Tr Main_NewTab}"
+                            AutomationProperties.AutomationId="SoqlTabsAddButton"
+                            AutomationProperties.Name="{loc:Tr Main_NewTab}">
+                        <Path Width="14" Height="14" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconAdd}" />
+                    </Button>
+                </Grid>
             </TabItem>
             <TabItem Header="{loc:Tr Tab_Apex}">
-                <views:ApexView DataContext="{Binding Apex}" />
+                <Grid>
+                    <TabControl ItemsSource="{Binding ApexTabs.Tabs}"
+                                SelectedItem="{Binding ApexTabs.SelectedTab, Mode=TwoWay}"
+                                AutomationProperties.AutomationId="ApexTabs">
+                        <TabControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding TabTitle}" VerticalAlignment="Center" />
+                                    <Button Content="×" Margin="6,0,0,0" Padding="3,0" FontSize="11" VerticalAlignment="Center"
+                                            Command="{Binding $parent[TabControl].DataContext.ApexTabs.CloseTabCommand}"
+                                            CommandParameter="{Binding}"
+                                            ToolTip.Tip="{loc:Tr Main_CloseTab}"
+                                            AutomationProperties.Name="{loc:Tr Main_CloseTab}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </TabControl.ItemTemplate>
+                        <TabControl.ContentTemplate>
+                            <DataTemplate>
+                                <views:ApexView />
+                            </DataTemplate>
+                        </TabControl.ContentTemplate>
+                    </TabControl>
+                    <Button HorizontalAlignment="Right" VerticalAlignment="Top"
+                            Width="24" Height="22" Margin="0,4,6,0" Padding="0"
+                            Background="Transparent" BorderThickness="0"
+                            Command="{Binding ApexTabs.AddNewTabCommand}"
+                            ToolTip.Tip="{loc:Tr Main_NewTab}"
+                            AutomationProperties.AutomationId="ApexTabsAddButton"
+                            AutomationProperties.Name="{loc:Tr Main_NewTab}">
+                        <Path Width="14" Height="14" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconAdd}" />
+                    </Button>
+                </Grid>
             </TabItem>
             <TabItem Header="{loc:Tr Tab_Log}">
                 <views:LogView DataContext="{Binding Logs}" />
@@ -282,7 +344,38 @@
                 <views:DeployView DataContext="{Binding Deploy}" />
             </TabItem>
             <TabItem Header="{loc:Tr Tab_Command}">
-                <views:CommandView DataContext="{Binding Command}" />
+                <Grid>
+                    <TabControl ItemsSource="{Binding CommandTabs.Tabs}"
+                                SelectedItem="{Binding CommandTabs.SelectedTab, Mode=TwoWay}"
+                                AutomationProperties.AutomationId="CommandTabs">
+                        <TabControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding TabTitle}" VerticalAlignment="Center" />
+                                    <Button Content="×" Margin="6,0,0,0" Padding="3,0" FontSize="11" VerticalAlignment="Center"
+                                            Command="{Binding $parent[TabControl].DataContext.CommandTabs.CloseTabCommand}"
+                                            CommandParameter="{Binding}"
+                                            ToolTip.Tip="{loc:Tr Main_CloseTab}"
+                                            AutomationProperties.Name="{loc:Tr Main_CloseTab}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </TabControl.ItemTemplate>
+                        <TabControl.ContentTemplate>
+                            <DataTemplate>
+                                <views:CommandView />
+                            </DataTemplate>
+                        </TabControl.ContentTemplate>
+                    </TabControl>
+                    <Button HorizontalAlignment="Right" VerticalAlignment="Top"
+                            Width="24" Height="22" Margin="0,4,6,0" Padding="0"
+                            Background="Transparent" BorderThickness="0"
+                            Command="{Binding CommandTabs.AddNewTabCommand}"
+                            ToolTip.Tip="{loc:Tr Main_NewTab}"
+                            AutomationProperties.AutomationId="CommandTabsAddButton"
+                            AutomationProperties.Name="{loc:Tr Main_NewTab}">
+                        <Path Width="14" Height="14" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconAdd}" />
+                    </Button>
+                </Grid>
             </TabItem>
             <TabItem Header="{loc:Tr Tab_Api}">
                 <views:ApiConsoleView DataContext="{Binding Api}" />

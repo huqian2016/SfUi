@@ -109,11 +109,15 @@ public partial class App : Application
         services.AddSingleton<IAppWindowService, WpfAppWindowService>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<HistoryViewModel>();
-        services.AddSingleton<SoqlViewModel>();
-        services.AddSingleton<ApexViewModel>();
+        services.AddTransient<SoqlViewModel>();
+        services.AddTransient<ApexViewModel>();
         services.AddSingleton<LogViewModel>();
-        services.AddSingleton<CommandViewModel>();
+        services.AddTransient<CommandViewModel>();
         services.AddSingleton<ApiConsoleViewModel>();
+        // サブタブ用ファクトリ（タブごとに新しい ViewModel を生成する）
+        services.AddSingleton<Func<SoqlViewModel>>(sp => () => sp.GetRequiredService<SoqlViewModel>());
+        services.AddSingleton<Func<ApexViewModel>>(sp => () => sp.GetRequiredService<ApexViewModel>());
+        services.AddSingleton<Func<CommandViewModel>>(sp => () => sp.GetRequiredService<CommandViewModel>());
         services.AddSingleton<DeployViewModel>();
         services.AddTransient<AiChatViewModel>();
         services.AddSingleton<SettingsViewModel>();

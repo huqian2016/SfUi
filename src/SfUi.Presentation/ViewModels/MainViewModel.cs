@@ -105,11 +105,20 @@ public partial class MainViewModel : ObservableObject
     /// <summary>履歴タブの ViewModel。</summary>
     public HistoryViewModel History { get; }
 
-    /// <summary>SOQL タブの ViewModel。</summary>
-    public SoqlViewModel Soql { get; }
+    /// <summary>SOQL サブタブのホスト（複数のクエリを並行して扱える）。</summary>
+    public EditorTabHost<SoqlViewModel> SoqlTabs { get; }
 
-    /// <summary>匿名Apex タブの ViewModel。</summary>
-    public ApexViewModel Apex { get; }
+    /// <summary>匿名Apex サブタブのホスト。</summary>
+    public EditorTabHost<ApexViewModel> ApexTabs { get; }
+
+    /// <summary>コマンド サブタブのホスト。</summary>
+    public EditorTabHost<CommandViewModel> CommandTabs { get; }
+
+    /// <summary>選択中の SOQL タブ（実行・履歴・お気に入り・AI 適用の対象）。</summary>
+    public SoqlViewModel Soql => SoqlTabs.SelectedTab!;
+
+    /// <summary>選択中の匿名Apex タブ。</summary>
+    public ApexViewModel Apex => ApexTabs.SelectedTab!;
 
     /// <summary>AI チャットタブの ViewModel。</summary>
     public AiChatViewModel Ai { get; }
@@ -117,8 +126,8 @@ public partial class MainViewModel : ObservableObject
     /// <summary>デバッグログタブの ViewModel。</summary>
     public LogViewModel Logs { get; }
 
-    /// <summary>sf 自由コマンドタブの ViewModel。</summary>
-    public CommandViewModel Command { get; }
+    /// <summary>選択中のコマンド タブ。</summary>
+    public CommandViewModel Command => CommandTabs.SelectedTab!;
 
     /// <summary>REST コンソールタブの ViewModel。</summary>
     public ApiConsoleViewModel Api { get; }
@@ -141,11 +150,11 @@ public partial class MainViewModel : ObservableObject
         ToolLauncherService toolLauncher,
         HistoryStore historyStore,
         HistoryViewModel history,
-        SoqlViewModel soql,
-        ApexViewModel apex,
+        Func<SoqlViewModel> soqlFactory,
+        Func<ApexViewModel> apexFactory,
         AiChatViewModel ai,
         LogViewModel logs,
-        CommandViewModel command,
+        Func<CommandViewModel> commandFactory,
         ApiConsoleViewModel api,
         DeployViewModel deploy,
         SettingsViewModel settingsViewModel,
@@ -175,11 +184,8 @@ public partial class MainViewModel : ObservableObject
         };
         UiText.LanguageChanged += OnLanguageChanged;
         History = history;
-        Soql = soql;
-        Apex = apex;
         Ai = ai;
         Logs = logs;
-        Command = command;
         Api = api;
         Deploy = deploy;
         Settings = settingsViewModel;
@@ -187,22 +193,67 @@ public partial class MainViewModel : ObservableObject
         History.ReplayRequested += OnReplayRequested;
         QuickPanel.ExecuteRequested += ExecuteFavorite;
         Ai.ApplyRequested += ApplyAiSnippet;
-        Soql.AiAssistHandler = async prompt =>
-        {
-            IsAiPanelVisible = true;
-            await Ai.AskAsync(prompt);
-        };
-        Apex.AiAssistHandler = async prompt =>
-        {
-            IsAiPanelVisible = true;
-            await Ai.AskAsync(prompt);
-        };
+
+        // サブタブ ホスト（SOQL / 匿名Apex / コマンド）。タブごとに独立した ViewModel を生成し、
+        // 組織・フォルダ・AI 支援ハンドラーを各タブへ配線する。
+        SoqlTabs = new EditorTabHost<SoqlViewModel>(
+            () => CreateSoqlTab(soqlFactory),
+            (vm, title) => vm.TabTitle = title,
+            "Tab_Soql");
+        ApexTabs = new EditorTabHost<ApexViewModel>(
+            () => CreateApexTab(apexFactory),
+            (vm, title) => vm.TabTitle = title,
+            "Tab_Apex");
+        CommandTabs = new EditorTabHost<CommandViewModel>(
+            () => CreateCommandTab(commandFactory),
+            (vm, title) => vm.TabTitle = title,
+            "Tab_Command");
+        SoqlTabs.AddTab();
+        ApexTabs.AddTab();
+        CommandTabs.AddTab();
 
         // 保存済みの言語をコンボへ反映（起動時の UiText 適用は App 側で実施済み）
         _languageLabel = LanguageLabelForCode(_settings.Current.Language);
         OnPropertyChanged(nameof(LanguageLabel));
         _isAiPanelVisible = _settings.Current.AiPanelVisible;
         OnPropertyChanged(nameof(IsAiPanelVisible));
+    }
+
+    /// <summary>新しい SOQL タブを作成し、現在の組織・フォルダと AI 支援を配線する。</summary>
+    private SoqlViewModel CreateSoqlTab(Func<SoqlViewModel> factory)
+    {
+        var vm = factory();
+        vm.CurrentOrg = SelectedOrg?.Alias ?? SelectedOrg?.Username;
+        vm.CurrentFolder = SelectedFolder;
+        vm.AiAssistHandler = async prompt =>
+        {
+            IsAiPanelVisible = true;
+            await Ai.AskAsync(prompt);
+        };
+        return vm;
+    }
+
+    /// <summary>新しい匿名Apex タブを作成し、現在の組織・フォルダと AI 支援を配線する。</summary>
+    private ApexViewModel CreateApexTab(Func<ApexViewModel> factory)
+    {
+        var vm = factory();
+        vm.CurrentOrg = SelectedOrg?.Alias ?? SelectedOrg?.Username;
+        vm.CurrentFolder = SelectedFolder;
+        vm.AiAssistHandler = async prompt =>
+        {
+            IsAiPanelVisible = true;
+            await Ai.AskAsync(prompt);
+        };
+        return vm;
+    }
+
+    /// <summary>新しいコマンド タブを作成し、現在の組織・フォルダを配線する。</summary>
+    private CommandViewModel CreateCommandTab(Func<CommandViewModel> factory)
+    {
+        var vm = factory();
+        vm.CurrentOrg = SelectedOrg?.Alias ?? SelectedOrg?.Username;
+        vm.CurrentFolder = SelectedFolder;
+        return vm;
     }
 
     partial void OnIsAiPanelVisibleChanged(bool value)
@@ -307,11 +358,23 @@ public partial class MainViewModel : ObservableObject
     {
         // 各機能ビューへ対象組織（--target-org / REST 用）を伝播
         var target = value?.Alias ?? value?.Username;
-        Soql.CurrentOrg = target;
-        Apex.CurrentOrg = target;
+        foreach (var tab in SoqlTabs.Tabs)
+        {
+            tab.CurrentOrg = target;
+        }
+
+        foreach (var tab in ApexTabs.Tabs)
+        {
+            tab.CurrentOrg = target;
+        }
+
+        foreach (var tab in CommandTabs.Tabs)
+        {
+            tab.CurrentOrg = target;
+        }
+
         Ai.CurrentOrg = target;
         Logs.CurrentOrg = target;
-        Command.CurrentOrg = target;
         Api.CurrentOrg = target;
         Deploy.CurrentOrg = target;
 
@@ -326,9 +389,21 @@ public partial class MainViewModel : ObservableObject
 
     partial void OnSelectedFolderChanged(string? value)
     {
-        Soql.CurrentFolder = value;
-        Apex.CurrentFolder = value;
-        Command.CurrentFolder = value;
+        foreach (var tab in SoqlTabs.Tabs)
+        {
+            tab.CurrentFolder = value;
+        }
+
+        foreach (var tab in ApexTabs.Tabs)
+        {
+            tab.CurrentFolder = value;
+        }
+
+        foreach (var tab in CommandTabs.Tabs)
+        {
+            tab.CurrentFolder = value;
+        }
+
         Deploy.CurrentFolder = value;
     }
 
@@ -908,5 +983,8 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(OrgHintText));
         OnPropertyChanged(nameof(HasOrgHint));
         OnPropertyChanged(nameof(StatusDetail));
+        SoqlTabs.RefreshTitles();
+        ApexTabs.RefreshTitles();
+        CommandTabs.RefreshTitles();
     }
 }

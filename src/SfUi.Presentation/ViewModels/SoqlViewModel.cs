@@ -45,6 +45,10 @@ public partial class SoqlViewModel : ObservableObject
     [ObservableProperty]
     private HistoryEntry? _selectedHistoryItem;
 
+    /// <summary>サブタブのタイトル（MainViewModel のタブ ホストが設定する）。</summary>
+    [ObservableProperty]
+    private string _tabTitle = string.Empty;
+
     /// <summary>現在の対象組織（MainViewModel から設定される）。</summary>
     public string? CurrentOrg { get; set; }
 

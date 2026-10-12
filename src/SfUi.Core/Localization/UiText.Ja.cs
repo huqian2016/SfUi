@@ -90,6 +90,11 @@ public static partial class UiText
         ["Tab_Settings"] = "設定",
         ["Tab_Ai"] = "AI",
 
+        // ---- サブタブ（SOQL / 匿名Apex / コマンド）----
+        ["Main_NewTab"] = "新しいタブ",
+        ["Main_CloseTab"] = "タブを閉じる",
+        ["Main_EditorTabTitleFmt"] = "{0} {1}",
+
         // ---- AI チャット ----
         ["Ai_Send"] = "送信 ({mod}+Enter)",
         ["Ai_Clear"] = "新しい会話",
