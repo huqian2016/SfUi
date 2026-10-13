@@ -193,6 +193,16 @@ public static partial class UiText
         ["Soql_NoResultsToCopy"] = "No results to copy",
         ["Soql_Copied"] = "Results copied to clipboard (TSV)",
         ["Soql_NoQueryFavorite"] = "No SOQL to add to favorites",
+        ["Soql_OpenRecord"] = "Open record in browser",
+        ["Soql_DeployFmt"] = "Deploy to org ({0})",
+        ["Soql_DeployBusy"] = "Deploying changes to the org...",
+        ["Soql_DeployDoneFmt"] = "Deployed {0} record(s)",
+        ["Soql_DeployPartialFmt"] = "Deployed {0} / failed {1} record(s) - {2}",
+        ["Soql_DeployFailedFmt"] = "Deploy failed: {0}",
+        ["Soql_DeployNoChanges"] = "No pending changes to deploy",
+        ["Soql_Err_RowIdMissing"] = "The row has no Id and cannot be updated",
+        ["Soql_Err_FieldNotUpdateableFmt"] = "Field {0} cannot be updated",
+        ["Soql_Err_ObjectUnknown"] = "Could not determine the target object of the query",
 
         // ---- 匿名Apex ----
         ["Apex_Run"] = "▶ Run ({mod}+Enter)",

@@ -193,6 +193,16 @@ public static partial class UiText
         ["Soql_NoResultsToCopy"] = "没有可复制的结果",
         ["Soql_Copied"] = "结果已复制到剪贴板（TSV）",
         ["Soql_NoQueryFavorite"] = "没有可添加到收藏的 SOQL",
+        ["Soql_OpenRecord"] = "在浏览器中打开记录",
+        ["Soql_DeployFmt"] = "应用到组织 ({0})",
+        ["Soql_DeployBusy"] = "正在应用到组织…",
+        ["Soql_DeployDoneFmt"] = "已应用 {0} 条记录",
+        ["Soql_DeployPartialFmt"] = "成功 {0} 条 / 失败 {1} 条 — {2}",
+        ["Soql_DeployFailedFmt"] = "应用失败：{0}",
+        ["Soql_DeployNoChanges"] = "没有要应用的更改",
+        ["Soql_Err_RowIdMissing"] = "没有 Id 的行无法更新",
+        ["Soql_Err_FieldNotUpdateableFmt"] = "字段 {0} 无法更新",
+        ["Soql_Err_ObjectUnknown"] = "无法确定查询的目标对象",
 
         // ---- 匿名Apex ----
         ["Apex_Run"] = "▶ 运行（{mod}+Enter）",

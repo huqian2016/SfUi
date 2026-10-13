@@ -193,6 +193,16 @@ public static partial class UiText
         ["Soql_NoResultsToCopy"] = "복사할 결과가 없습니다",
         ["Soql_Copied"] = "결과를 클립보드에 복사했습니다(TSV)",
         ["Soql_NoQueryFavorite"] = "즐겨찾기에 추가할 SOQL이 없습니다",
+        ["Soql_OpenRecord"] = "브라우저에서 레코드 열기",
+        ["Soql_DeployFmt"] = "조직에 반영 ({0})",
+        ["Soql_DeployBusy"] = "조직에 반영하는 중…",
+        ["Soql_DeployDoneFmt"] = "{0}건의 레코드를 반영했습니다",
+        ["Soql_DeployPartialFmt"] = "{0}건 성공 / {1}건 실패 — {2}",
+        ["Soql_DeployFailedFmt"] = "반영 실패: {0}",
+        ["Soql_DeployNoChanges"] = "반영할 변경 사항이 없습니다",
+        ["Soql_Err_RowIdMissing"] = "Id가 없는 행은 업데이트할 수 없습니다",
+        ["Soql_Err_FieldNotUpdateableFmt"] = "필드 {0}은(는) 업데이트할 수 없습니다",
+        ["Soql_Err_ObjectUnknown"] = "쿼리의 대상 개체를 확인할 수 없습니다",
 
         // ---- 匿名Apex ----
         ["Apex_Run"] = "▶ 실행({mod}+Enter)",

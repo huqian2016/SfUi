@@ -3,6 +3,19 @@
              xmlns:loc="clr-namespace:SfUi.Avalonia"
              xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
              x:Class="SfUi.Avalonia.Views.SoqlView">
+    <UserControl.Styles>
+        <!-- 編集セルはテーマの背景（フォーカス/ポインターオーバー時の白）を消し、
+             未反映の黄色は外側の Border で見せる -->
+        <Style Selector="TextBox.soql-edit-cell /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="TextBox.soql-edit-cell:pointerover /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="TextBox.soql-edit-cell:focus /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+    </UserControl.Styles>
     <DockPanel>
 
         <!-- ツールバー（幅が狭いときは折り返して全ボタンを表示） -->
@@ -29,7 +42,9 @@
                 <Border Width="1" Height="20" VerticalAlignment="Center" Background="#CCCCCC" Margin="0,2,12,2" />
                 <Button Content="{loc:Tr Common_AddFavorite}" Padding="10,2" Margin="0,2,6,2" Command="{Binding AddFavoriteCommand}" />
                 <Button Content="{loc:Tr Soql_ExportCsv}" Padding="10,2" Margin="0,2,6,2" Command="{Binding ExportCsvCommand}" />
-                <Button Content="{loc:Tr Soql_CopyResults}" Padding="10,2" Margin="0,2,0,2" Command="{Binding CopyResultsCommand}" />
+                <Button Content="{loc:Tr Soql_CopyResults}" Padding="10,2" Margin="0,2,6,2" Command="{Binding CopyResultsCommand}" />
+                <Button Content="{Binding DeployButtonText}" Padding="10,2" Margin="0,2,0,2" Command="{Binding DeployCommand}"
+                        AutomationProperties.AutomationId="SoqlDeployButton" />
             </WrapPanel>
         </Border>
 
@@ -88,7 +103,8 @@
             <GridSplitter Grid.Row="2" Height="4" HorizontalAlignment="Stretch" Background="#DDDDDD" />
 
             <DataGrid x:Name="SoqlGrid" Grid.Row="3"
-                      AutoGenerateColumns="False" IsReadOnly="True"
+                      ItemsSource="{Binding Rows}"
+                      AutoGenerateColumns="False" IsReadOnly="False"
                       HeadersVisibility="Column" GridLinesVisibility="All" />
         </Grid>
     </DockPanel>

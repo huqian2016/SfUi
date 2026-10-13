@@ -3,6 +3,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Markup;
 using System.Windows.Threading;
 using System.Xml;
 using ICSharpCode.AvalonEdit.Highlighting;
@@ -14,6 +15,32 @@ namespace SfUi.App.Views;
 
 public partial class SoqlView : UserControl
 {
+    private const string ReadOnlyCellTemplateXaml =
+        "<DataTemplate xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\">"
+        + "<TextBlock Text=\"{Binding Cells[__I__].Value}\" Margin=\"4,2\" VerticalAlignment=\"Center\" "
+        + "TextTrimming=\"CharacterEllipsis\" ToolTip=\"{Binding Cells[__I__].Error}\" /></DataTemplate>";
+
+    private const string EditableCellTemplateXaml =
+        "<DataTemplate xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\">"
+        + "<TextBox Text=\"{Binding Cells[__I__].Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}\" "
+        + "BorderThickness=\"0\" Padding=\"4,2\" Margin=\"0\" VerticalContentAlignment=\"Center\" "
+        + "ToolTip=\"{Binding Cells[__I__].Error}\">"
+        + "<TextBox.Style><Style TargetType=\"TextBox\">"
+        + "<Setter Property=\"Background\" Value=\"Transparent\" />"
+        + "<Style.Triggers>"
+        + "<DataTrigger Binding=\"{Binding Cells[__I__].IsDirty}\" Value=\"True\"><Setter Property=\"Background\" Value=\"#FFF3CD\" /></DataTrigger>"
+        + "<DataTrigger Binding=\"{Binding Cells[__I__].HasError}\" Value=\"True\"><Setter Property=\"Background\" Value=\"#F8D7DA\" /></DataTrigger>"
+        + "</Style.Triggers></Style></TextBox.Style>"
+        + "</TextBox></DataTemplate>";
+
+    private const string IdCellTemplateXaml =
+        "<DataTemplate xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\">"
+        + "<Button Content=\"{Binding RecordId}\" Padding=\"4,2\" Margin=\"2,0\" HorizontalAlignment=\"Left\" "
+        + "Background=\"Transparent\" BorderThickness=\"0\" Foreground=\"#1B6ACB\" Cursor=\"Hand\" "
+        + "ToolTip=\"__NAME__\" AutomationProperties.Name=\"__NAME__\" "
+        + "Command=\"{Binding DataContext.OpenRecordCommand, RelativeSource={RelativeSource AncestorType=UserControl}}\" "
+        + "CommandParameter=\"{Binding}\" /></DataTemplate>";
+
     private SoqlViewModel? _subscribed;
     private readonly DispatcherTimer _suggestionsTimer;
 
@@ -37,20 +64,24 @@ public partial class SoqlView : UserControl
             }
         };
 
-        // ViewModel → エディタ（履歴・お気に入りからの読み込み）
+        // ViewModel → エディタ（履歴・お気に入りからの読み込み）と結果グリッドの再構築
         DataContextChanged += (_, _) =>
         {
             if (_subscribed is not null)
             {
                 _subscribed.PropertyChanged -= OnViewModelPropertyChanged;
+                _subscribed.ResultColumnsChanged -= RebuildResultColumns;
             }
 
             _subscribed = ViewModel;
             if (_subscribed is not null)
             {
                 _subscribed.PropertyChanged += OnViewModelPropertyChanged;
+                _subscribed.ResultColumnsChanged += RebuildResultColumns;
                 SoqlEditor.Text = _subscribed.SoqlText;
             }
+
+            RebuildResultColumns();
         };
 
         // Ctrl+Enter で実行
@@ -83,6 +114,41 @@ public partial class SoqlView : UserControl
             && SoqlEditor.Text != viewModel.SoqlText)
         {
             SoqlEditor.Text = viewModel.SoqlText;
+        }
+    }
+
+    /// <summary>結果グリッドの列を作り直す（Id = リンク・システム項目 = 読み取り専用・それ以外 = 編集可）。</summary>
+    private void RebuildResultColumns()
+    {
+        SoqlGrid.Columns.Clear();
+        if (ViewModel is not { } viewModel)
+        {
+            return;
+        }
+
+        var openRecord = UiText.T("Soql_OpenRecord");
+        for (var i = 0; i < viewModel.Columns.Count; i++)
+        {
+            var index = i;
+            var column = viewModel.Columns[index];
+            if (column.IsId)
+            {
+                SoqlGrid.Columns.Add(new DataGridTemplateColumn
+                {
+                    Header = column.Key,
+                    Width = new DataGridLength(170),
+                    CellTemplate = (DataTemplate)XamlReader.Parse(IdCellTemplateXaml.Replace("__NAME__", openRecord)),
+                });
+                continue;
+            }
+
+            var template = column.IsReadOnly ? ReadOnlyCellTemplateXaml : EditableCellTemplateXaml;
+            SoqlGrid.Columns.Add(new DataGridTemplateColumn
+            {
+                Header = column.Key,
+                Width = new DataGridLength(160),
+                CellTemplate = (DataTemplate)XamlReader.Parse(template.Replace("__I__", index.ToString())),
+            });
         }
     }
 

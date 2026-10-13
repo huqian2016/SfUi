@@ -1,17 +1,22 @@
 using System.ComponentModel;
-using System.Data;
 using System.IO;
 using System.Xml;
+using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
+using Avalonia.Controls.Templates;
 using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Layout;
 using Avalonia.Markup.Xaml;
+using Avalonia.Media;
 using Avalonia.Threading;
 using AvaloniaEdit;
 using AvaloniaEdit.Highlighting;
 using AvaloniaEdit.Highlighting.Xshd;
 using SfUi.App.ViewModels;
+using SfUi.Avalonia.Converters;
 using SfUi.Core;
 
 namespace SfUi.Avalonia.Views;
@@ -76,12 +81,14 @@ public partial class SoqlView : UserControl
         if (_subscribed is not null)
         {
             _subscribed.PropertyChanged -= OnViewModelPropertyChanged;
+            _subscribed.ResultColumnsChanged -= RebuildResults;
         }
 
         _subscribed = ViewModel;
         if (_subscribed is not null)
         {
             _subscribed.PropertyChanged += OnViewModelPropertyChanged;
+            _subscribed.ResultColumnsChanged += RebuildResults;
             editor.Text = _subscribed.SoqlText;
         }
 
@@ -96,11 +103,6 @@ public partial class SoqlView : UserControl
             && editor.Text != viewModel.SoqlText)
         {
             editor.Text = viewModel.SoqlText;
-        }
-
-        if (e.PropertyName == nameof(SoqlViewModel.ResultView))
-        {
-            RebuildResults();
         }
     }
 
@@ -149,41 +151,108 @@ public partial class SoqlView : UserControl
         ScheduleSuggestions();
     }
 
-    /// <summary>DataView の結果を Avalonia DataGrid の列（数値インデクサー バインド）へ変換する。</summary>
+    /// <summary>結果グリッドの列を作り直す（Id = リンク・システム項目 = 読み取り専用・それ以外 = 編集可）。</summary>
     private void RebuildResults()
     {
         var grid = this.FindControl<DataGrid>("SoqlGrid")!;
         grid.Columns.Clear();
-        grid.ItemsSource = null;
 
-        if (ViewModel?.ResultView is not { } view || view.Table is null)
+        if (ViewModel is not { } viewModel)
         {
             return;
         }
 
-        var columns = view.Table.Columns;
-        var rows = new List<object?[]>(view.Count);
-        foreach (DataRowView row in view)
+        for (var i = 0; i < viewModel.Columns.Count; i++)
         {
-            var values = new object?[columns.Count];
-            for (var i = 0; i < columns.Count; i++)
+            var index = i;
+            var column = viewModel.Columns[index];
+            if (column.IsId)
             {
-                values[i] = row.Row[i] is DBNull ? null : row.Row[i];
+                grid.Columns.Add(new DataGridTemplateColumn
+                {
+                    Header = column.Key,
+                    Width = new DataGridLength(170),
+                    CellTemplate = new FuncDataTemplate<SoqlGridRow>((_, _) => BuildIdCell()),
+                });
+                continue;
             }
 
-            rows.Add(values);
-        }
-
-        for (var i = 0; i < columns.Count; i++)
-        {
-            grid.Columns.Add(new DataGridTextColumn
+            grid.Columns.Add(new DataGridTemplateColumn
             {
-                Header = columns[i].ColumnName,
-                Binding = new Binding($"[{i}]"),
-                Width = new DataGridLength(140),
+                Header = column.Key,
+                Width = new DataGridLength(160),
+                CellTemplate = column.IsReadOnly
+                    ? new FuncDataTemplate<SoqlGridRow>((_, _) => BuildReadOnlyCell(index))
+                    : new FuncDataTemplate<SoqlGridRow>((_, _) => BuildEditCell(index)),
             });
         }
+    }
 
-        grid.ItemsSource = rows;
+    /// <summary>読み取り専用セル（テキスト表示 + 反映エラーのツールチップ）。</summary>
+    private static Control BuildReadOnlyCell(int index)
+    {
+        var text = new TextBlock
+        {
+            Margin = new Thickness(4, 2),
+            VerticalAlignment = VerticalAlignment.Center,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+        };
+        text.Bind(TextBlock.TextProperty, new Binding($"Cells[{index}].Value"));
+        text.Bind(ToolTip.TipProperty, new Binding($"Cells[{index}].Error"));
+        return text;
+    }
+
+    /// <summary>編集可能セル（未反映 = 黄 / 反映エラー = 赤の背景）。</summary>
+    private static Control BuildEditCell(int index)
+    {
+        // 背景は外側の Border で描く（TextBox のテーマ背景がフォーカス時に白で上書きするため）
+        var border = new Border
+        {
+            Padding = new Thickness(0),
+        };
+        border.Bind(Border.BackgroundProperty, new Binding($"Cells[{index}].StyleState")
+        {
+            Converter = new SoqlCellBrushConverter(),
+        });
+
+        var box = new TextBox
+        {
+            BorderThickness = new Thickness(0),
+            Padding = new Thickness(4, 2),
+            VerticalContentAlignment = VerticalAlignment.Center,
+            Background = Brushes.Transparent,
+        };
+        box.Classes.Add("soql-edit-cell");
+        box.Bind(TextBox.TextProperty, new Binding($"Cells[{index}].Value") { Mode = BindingMode.TwoWay });
+        box.Bind(ToolTip.TipProperty, new Binding($"Cells[{index}].Error"));
+
+        border.Child = box;
+        return border;
+    }
+
+    /// <summary>Id セル（クリックでレコードページを開くリンク）。</summary>
+    private Control BuildIdCell()
+    {
+        var openRecord = UiText.T("Soql_OpenRecord");
+        var button = new Button
+        {
+            Padding = new Thickness(4, 2),
+            HorizontalAlignment = HorizontalAlignment.Left,
+            Background = Brushes.Transparent,
+            BorderThickness = new Thickness(0),
+            Foreground = new SolidColorBrush(Color.Parse("#1B6ACB")),
+            Cursor = new Cursor(StandardCursorType.Hand),
+        };
+        button.Bind(ContentControl.ContentProperty, new Binding(nameof(SoqlGridRow.RecordId)));
+        ToolTip.SetTip(button, openRecord);
+        AutomationProperties.SetName(button, openRecord);
+        button.Click += (sender, _) =>
+        {
+            if ((sender as Control)?.DataContext is SoqlGridRow row)
+            {
+                ViewModel?.OpenRecordCommand.Execute(row);
+            }
+        };
+        return button;
     }
 }

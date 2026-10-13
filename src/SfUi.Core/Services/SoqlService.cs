@@ -261,6 +261,82 @@ public sealed class SoqlService
         return SoqlResultFactory.FromJsonRecords(records, totalSize, done, rawJson);
     }
 
+    /// <summary>対象組織のインスタンス URL を返す（レコードページ URL の組み立て用）。</summary>
+    public Task<string?> GetInstanceUrlAsync(string targetOrg, CancellationToken cancellationToken = default) =>
+        _rest.GetInstanceUrlAsync(targetOrg, cancellationToken);
+
+    /// <summary>
+    /// 編集済みレコードを組織へ反映する（標準 API は composite/sobjects の 200 件バッチ・Tooling API は 1 件ずつ）。
+    /// 結果は入力順（RowIndex 付き）で返す。
+    /// </summary>
+    public async Task<IReadOnlyList<ImportRowResult>> UpdateRecordsAsync(
+        string targetOrg,
+        string objectName,
+        IReadOnlyList<ImportPlannedRow> records,
+        bool useToolingApi = false,
+        CancellationToken cancellationToken = default)
+    {
+        var apiVersion = await _rest.GetApiVersionAsync(targetOrg, cancellationToken).ConfigureAwait(false);
+        var results = new List<ImportRowResult>(records.Count);
+
+        if (useToolingApi)
+        {
+            foreach (var record in records)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (string.IsNullOrEmpty(record.Id))
+                {
+                    results.Add(new ImportRowResult(record.RowIndex, false, null, UiText.T("Soql_Err_RowIdMissing")));
+                    continue;
+                }
+
+                var body = JsonSerializer.Serialize(record.Fields);
+                try
+                {
+                    await _rest.SendRawAsync(
+                        targetOrg,
+                        HttpMethod.Patch,
+                        $"/services/data/v{apiVersion}/tooling/sobjects/{objectName}/{record.Id}",
+                        body,
+                        cancellationToken).ConfigureAwait(false);
+                    results.Add(new ImportRowResult(record.RowIndex, true, record.Id, null));
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    _log.Warn($"Tooling API でのレコード更新に失敗: {ex.Message}");
+                    results.Add(new ImportRowResult(record.RowIndex, false, record.Id, ex.Message));
+                }
+            }
+
+            return results;
+        }
+
+        const int batchSize = 200;
+        for (var offset = 0; offset < records.Count; offset += batchSize)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var batch = records.Skip(offset).Take(batchSize).ToList();
+            var body = ImportBatchPlanner.BuildCompositeBody(batch, objectName, includeId: true);
+            try
+            {
+                var response = await _rest.SendRawAsync(
+                    targetOrg,
+                    HttpMethod.Patch,
+                    $"/services/data/v{apiVersion}/composite/sobjects",
+                    body,
+                    cancellationToken).ConfigureAwait(false);
+                results.AddRange(ImportResultMapper.FromCompositeResponse(response, batch));
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _log.Warn($"レコード更新に失敗: {ex.Message}");
+                results.AddRange(batch.Select(r => new ImportRowResult(r.RowIndex, false, null, ex.Message)));
+            }
+        }
+
+        return results;
+    }
+
     private static void AddRecords(JsonElement root, List<JsonElement> records)
     {
         if (root.TryGetProperty("records", out var array) && array.ValueKind == JsonValueKind.Array)

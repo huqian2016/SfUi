@@ -222,6 +222,8 @@ The manual is available in four languages (English / 日本語 / 简体中文 / 
 - **CSV export**: save the result grid as CSV (UTF-8 with BOM; opens directly in Excel).
 - **History**: every query is recorded and can be recalled from the history combo.
 - Tick "Tooling API" to run via the Tooling API (needed for metadata objects).
+- **Fixed Id column** — the results grid always starts with the **Id** column; if the query does not select Id it is added automatically at run time (aggregate queries that cannot return an Id are left as-is). Click the Id to open the record page in the browser (Lightning).
+- **Inline editing & deploy to org** — edit cells directly in the results grid (system fields such as Id / Created / Modified, and relationship columns, stay read-only). Cells edited but not yet deployed are highlighted in yellow, deploy errors in red. The **Deploy to org (n)** toolbar button pushes only the edited fields to the org (REST uses composite, the Tooling API updates one record at a time).
 
 ![SOQL result grid](images/en/04-soql-results.png)
 

@@ -185,6 +185,21 @@ public sealed class SalesforceRestClient
         }
     }
 
+    /// <summary>組織のインスタンス URL を返す（レコードページ URL の組み立て用。失敗時は null）。</summary>
+    public async Task<string?> GetInstanceUrlAsync(string targetOrg, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var auth = await _orgService.GetAuthAsync(targetOrg, cancellationToken: cancellationToken).ConfigureAwait(false);
+            return auth.InstanceUrl;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _log.Warn($"インスタンス URL を取得できませんでした: {ex.Message}");
+            return null;
+        }
+    }
+
     private static string BuildUrl(string? instanceUrl, string pathOrUrl)
     {
         if (pathOrUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))

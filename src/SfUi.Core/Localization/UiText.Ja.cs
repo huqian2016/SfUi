@@ -193,6 +193,16 @@ public static partial class UiText
         ["Soql_NoResultsToCopy"] = "コピーできる結果がありません",
         ["Soql_Copied"] = "結果をクリップボードにコピーしました（TSV）",
         ["Soql_NoQueryFavorite"] = "お気に入りに追加する SOQL がありません",
+        ["Soql_OpenRecord"] = "ブラウザーでレコードを開く",
+        ["Soql_DeployFmt"] = "組織へ反映 ({0})",
+        ["Soql_DeployBusy"] = "組織へ反映中…",
+        ["Soql_DeployDoneFmt"] = "{0} 件のレコードを反映しました",
+        ["Soql_DeployPartialFmt"] = "{0} 件成功 / {1} 件失敗 — {2}",
+        ["Soql_DeployFailedFmt"] = "反映に失敗: {0}",
+        ["Soql_DeployNoChanges"] = "反映する変更はありません",
+        ["Soql_Err_RowIdMissing"] = "Id が無い行は更新できません",
+        ["Soql_Err_FieldNotUpdateableFmt"] = "項目 {0} は更新できません",
+        ["Soql_Err_ObjectUnknown"] = "クエリの対象オブジェクトを特定できません",
 
         // ---- 匿名Apex ----
         ["Apex_Run"] = "▶ 実行 ({mod}+Enter)",

@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
 using System.IO;
@@ -39,8 +40,25 @@ public partial class SoqlViewModel : ObservableObject
     [ObservableProperty]
     private string _statusText = UiText.T("Common_Ready");
 
+    /// <summary>結果グリッドの列（実行のたびに作り直す・Id は先頭固定）。</summary>
+    public ObservableCollection<SoqlGridColumn> Columns { get; } = new();
+
+    /// <summary>結果グリッドの行（実行のたびに作り直す）。</summary>
+    public ObservableCollection<SoqlGridRow> Rows { get; } = new();
+
+    /// <summary>列構成が作り直されたときに通知する（ビューの列再構築用）。</summary>
+    public event Action? ResultColumnsChanged;
+
+    /// <summary>組織へ未反映の編集セル数。</summary>
     [ObservableProperty]
-    private DataView? _resultView;
+    private int _pendingEditCount;
+
+    /// <summary>「組織へ反映」ボタンの表示文字列（未反映の件数付き）。</summary>
+    [ObservableProperty]
+    private string _deployButtonText = UiText.T("Soql_DeployFmt", 0);
+
+    /// <summary>最後に実行したクエリの対象オブジェクト（レコードページ URL・反映に使う）。</summary>
+    private string? _resultObjectName;
 
     [ObservableProperty]
     private HistoryEntry? _selectedHistoryItem;
@@ -315,9 +333,16 @@ public partial class SoqlViewModel : ObservableObject
         var stopwatch = Stopwatch.StartNew();
         try
         {
-            var execution = await _service.ExecuteSoqlAsync(CurrentOrg, soql, UseToolingApi, PreferRest, CurrentFolder);
-            ResultView = execution.Result.Table.DefaultView;
+            // 結果の先頭に Id 列を固定で用意する（集計など括弧を含む選択リストでは補わない）
+            var (effectiveSoql, idInjected) = SoqlQueryEditor.EnsureIdSelected(soql);
+            var execution = await _service.ExecuteSoqlAsync(CurrentOrg, effectiveSoql, UseToolingApi, PreferRest, CurrentFolder);
+            _resultObjectName = SoqlQueryEditor.TryGetObjectName(soql);
+            BuildResultModel(execution.Result.Table);
             StatusText = UiText.T("Soql_ResultFmt", execution.Engine, execution.Result.TotalSize, execution.Duration.TotalMilliseconds);
+            if (idInjected)
+            {
+                _log.Info("SOQL: 選択リストに Id を補って実行しました。");
+            }
 
             _history.Append(
                 new HistoryEntry
@@ -337,7 +362,8 @@ public partial class SoqlViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            ResultView = null;
+            _resultObjectName = null;
+            ClearResultModel();
             StatusText = UiText.T("Common_FailedFmt", ex.Message);
             _history.Append(
                 new HistoryEntry
@@ -364,7 +390,7 @@ public partial class SoqlViewModel : ObservableObject
     [RelayCommand]
     private async Task ExportCsvAsync()
     {
-        var table = ResultView?.Table;
+        var table = GetCurrentTable();
         if (table is null || table.Rows.Count == 0)
         {
             StatusText = UiText.T("Soql_NoResultsToExport");
@@ -397,7 +423,7 @@ public partial class SoqlViewModel : ObservableObject
     [RelayCommand]
     private void CopyResults()
     {
-        var table = ResultView?.Table;
+        var table = GetCurrentTable();
         if (table is null || table.Rows.Count == 0)
         {
             StatusText = UiText.T("Soql_NoResultsToCopy");
@@ -418,6 +444,285 @@ public partial class SoqlViewModel : ObservableObject
         else
         {
             StatusText = UiText.T("Msg_CopyFailedFmt", "Clipboard not available");
+        }
+    }
+
+    // ---- 結果グリッド（Id 列の固定・セル編集・組織へ反映） ----
+
+    /// <summary>現在の表示内容（未反映の編集を含む）を DataTable 化する（CSV/コピー用）。</summary>
+    private DataTable? GetCurrentTable()
+    {
+        if (Columns.Count == 0)
+        {
+            return null;
+        }
+
+        var table = new DataTable();
+        foreach (var column in Columns)
+        {
+            table.Columns.Add(column.Key, typeof(string));
+        }
+
+        foreach (var row in Rows)
+        {
+            var values = table.NewRow();
+            for (var i = 0; i < Columns.Count && i < row.Cells.Count; i++)
+            {
+                values[i] = (object?)row.Cells[i].Value ?? DBNull.Value;
+            }
+
+            table.Rows.Add(values);
+        }
+
+        return table;
+    }
+
+    /// <summary>実行結果から結果グリッドを作り直す。</summary>
+    private void BuildResultModel(DataTable table)
+    {
+        ClearResultModel();
+
+        var (columns, rows) = SoqlResultModelBuilder.Build(table);
+        foreach (var column in columns)
+        {
+            Columns.Add(column);
+        }
+
+        foreach (var row in rows)
+        {
+            foreach (var cell in row.Cells)
+            {
+                if (!cell.IsReadOnly)
+                {
+                    cell.PropertyChanged += OnCellPropertyChanged;
+                }
+            }
+
+            Rows.Add(row);
+        }
+
+        ResultColumnsChanged?.Invoke();
+    }
+
+    /// <summary>結果グリッドを空にする（イベント解除込み）。</summary>
+    private void ClearResultModel()
+    {
+        foreach (var row in Rows)
+        {
+            foreach (var cell in row.Cells)
+            {
+                cell.PropertyChanged -= OnCellPropertyChanged;
+            }
+        }
+
+        Rows.Clear();
+        Columns.Clear();
+        PendingEditCount = 0;
+        ResultColumnsChanged?.Invoke();
+    }
+
+    private void OnCellPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(SoqlCell.IsDirty) || sender is not SoqlCell cell)
+        {
+            return;
+        }
+
+        PendingEditCount = Math.Max(0, PendingEditCount + (cell.IsDirty ? 1 : -1));
+    }
+
+    partial void OnPendingEditCountChanged(int value)
+    {
+        DeployButtonText = UiText.T("Soql_DeployFmt", value);
+        DeployCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnIsRunningChanged(bool value) => DeployCommand.NotifyCanExecuteChanged();
+
+    private bool CanDeploy() => PendingEditCount > 0 && !IsRunning;
+
+    /// <summary>未反映の編集がある行を集める。</summary>
+    private List<SoqlEditRow> CollectEditedRows()
+    {
+        var edits = new List<SoqlEditRow>();
+        for (var i = 0; i < Rows.Count; i++)
+        {
+            var row = Rows[i];
+            Dictionary<string, string?>? fields = null;
+            for (var c = 0; c < row.Cells.Count && c < Columns.Count; c++)
+            {
+                var cell = row.Cells[c];
+                if (cell.IsDirty)
+                {
+                    (fields ??= new Dictionary<string, string?>(StringComparer.Ordinal))[Columns[c].Key] = cell.Value;
+                }
+            }
+
+            if (fields is not null)
+            {
+                edits.Add(new SoqlEditRow(i, row.RecordId, fields));
+            }
+        }
+
+        return edits;
+    }
+
+    private void MarkRowFailed(int rowIndex, string error)
+    {
+        if (rowIndex < 0 || rowIndex >= Rows.Count)
+        {
+            return;
+        }
+
+        foreach (var cell in Rows[rowIndex].Cells)
+        {
+            if (cell.IsDirty)
+            {
+                cell.Error = error;
+            }
+        }
+    }
+
+    /// <summary>対象オブジェクトの describe（無い場合は null = 文字列のまま送信）。</summary>
+    private async Task<IReadOnlyDictionary<string, DataIoField>?> FetchDescribeFieldsAsync(string objectName)
+    {
+        try
+        {
+            var describe = await _describes.DescribeAsync(CurrentOrg!, objectName);
+            return describe.Fields.ToDictionary(f => f.Name, StringComparer.OrdinalIgnoreCase);
+        }
+        catch (Exception ex)
+        {
+            _log.Warn($"describe を取得できないため文字列のまま送信します: {ex.Message}");
+            return null;
+        }
+    }
+
+    /// <summary>編集済みセルを組織へ反映する（composite/sobjects・Tooling API は 1 件ずつ）。</summary>
+    [RelayCommand(CanExecute = nameof(CanDeploy))]
+    private async Task DeployAsync()
+    {
+        if (string.IsNullOrWhiteSpace(CurrentOrg))
+        {
+            StatusText = UiText.T("Msg_SelectOrg");
+            return;
+        }
+
+        var edits = CollectEditedRows();
+        if (edits.Count == 0)
+        {
+            StatusText = UiText.T("Soql_DeployNoChanges");
+            return;
+        }
+
+        if (string.IsNullOrEmpty(_resultObjectName))
+        {
+            StatusText = UiText.T("Soql_Err_ObjectUnknown");
+            return;
+        }
+
+        IsRunning = true;
+        StatusText = UiText.T("Soql_DeployBusy");
+        try
+        {
+            var fields = await FetchDescribeFieldsAsync(_resultObjectName);
+            var plan = SoqlEditPlanner.Plan(edits, fields);
+
+            var planned = new List<ImportPlannedRow>();
+            var failed = 0;
+            string? firstError = null;
+            foreach (var entry in plan)
+            {
+                if (entry.Error is { } error)
+                {
+                    failed++;
+                    firstError ??= error;
+                    MarkRowFailed(entry.RowIndex, error);
+                    continue;
+                }
+
+                if (entry.Planned is { } row)
+                {
+                    planned.Add(row);
+                }
+            }
+
+            var succeeded = 0;
+            if (planned.Count > 0)
+            {
+                var results = await _service.UpdateRecordsAsync(CurrentOrg, _resultObjectName, planned, UseToolingApi);
+                foreach (var result in results)
+                {
+                    if (result.Success)
+                    {
+                        succeeded++;
+                        if (result.RowIndex >= 0 && result.RowIndex < Rows.Count)
+                        {
+                            foreach (var cell in Rows[result.RowIndex].Cells)
+                            {
+                                cell.Commit();
+                            }
+                        }
+                    }
+                    else
+                    {
+                        failed++;
+                        firstError ??= result.Error;
+                        MarkRowFailed(result.RowIndex, result.Error ?? string.Empty);
+                    }
+                }
+            }
+
+            StatusText = failed == 0
+                ? UiText.T("Soql_DeployDoneFmt", succeeded)
+                : succeeded > 0
+                    ? UiText.T("Soql_DeployPartialFmt", succeeded, failed, firstError ?? string.Empty)
+                    : UiText.T("Soql_DeployFailedFmt", firstError ?? string.Empty);
+            _log.Info($"SOQL 反映: {StatusText}");
+        }
+        catch (Exception ex)
+        {
+            StatusText = UiText.T("Soql_DeployFailedFmt", ex.Message);
+            _log.Error("SOQL の組織反映に失敗", ex);
+        }
+        finally
+        {
+            IsRunning = false;
+        }
+    }
+
+    /// <summary>Id セルのクリックでレコードページをブラウザーで開く。</summary>
+    [RelayCommand]
+    private async Task OpenRecordAsync(SoqlGridRow? row)
+    {
+        if (string.IsNullOrWhiteSpace(CurrentOrg) || string.IsNullOrWhiteSpace(row?.RecordId))
+        {
+            return;
+        }
+
+        if (string.IsNullOrEmpty(_resultObjectName))
+        {
+            StatusText = UiText.T("Soql_Err_ObjectUnknown");
+            return;
+        }
+
+        var instanceUrl = await _service.GetInstanceUrlAsync(CurrentOrg);
+        var url = BackupOrgUrls.BuildRecordUrl(instanceUrl, _resultObjectName, row.RecordId);
+        if (url is null)
+        {
+            StatusText = UiText.T("Msg_NoInstanceUrl");
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            StatusText = UiText.T("Msg_BrowserFmt", url);
+        }
+        catch (Exception ex)
+        {
+            StatusText = UiText.T("Msg_BrowserFailedFmt", ex.Message);
+            _log.Error("レコードページを開けませんでした", ex);
         }
     }
 
