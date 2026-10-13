@@ -86,7 +86,7 @@ SfUi.sln
 | 機能 | コマンド（v2.94.6 時点。フラグは実装時に `sf <cmd> --help` で最終確定） |
 |---|---|
 | 組織一覧 | `sf org list --json` |
-| アクセストークン | `sf org display --target-org <alias> --json`（v2.94.6 では `org auth show-access-token` 未搭載。将来搭載時は切替） |
+| アクセストークン | `sf org display --target-org <alias> --json`。sf 2.15x+ は display がトークンを伏せ字にするため `sf org auth show-access-token --target-org <alias> --json` を自動フォールバック（新旧両対応） |
 | ログイン / ログアウト | `sf org login web --alias <alias>` / `sf org logout` |
 | ブラウザ起動 | `sf org open --target-org <alias> [--path <path>]` / URL 直接起動 |
 | SOQL | REST `/services/data/vXX.X/query`（自動ページング）／代替 `sf data query --query <soql> --json` |
@@ -129,9 +129,9 @@ data/
 
 - `SfCliRunner`（cmd.exe /d /s /c 経由、UTF-8、タイムアウト・キャンセル、テレメトリ/自動更新抑制の環境変数）
 - `SfCommandResult`（--json 解析。エラー名/メッセージ抽出、result の Clone 保持）
-- `OrgService`（組織一覧は username で重複排除、トークンは `sf org display`、30 分メモリキャッシュ）
+- `OrgService`（組織一覧は username で重複排除、トークンは `sf org display`（伏せ字時は `org auth show-access-token` に自動フォールバック）、30 分メモリキャッシュ）
 - 上部バー: 組織コンボ（既定★先頭）+ 更新ボタン、SFフォルダ（編集可 + 参照ダイアログ）
-- 注: インストール済み sf v2.94.6 には `org auth show-access-token` が無いため `org display` を使用（将来搭載時は切替候補）
+- 注: トークン取得は `org display --json` を基本にし、sf 2.15x+ のように accessToken が伏せ字（`[REDACTED]`）のときだけ `sf org auth show-access-token --target-org <org> --json` へフォールバックする（旧 sf 2.94.6 と新 2.153.5 の両方で実機検証済み）
 
 ### Phase 2: JSON 永続化 ✅
 

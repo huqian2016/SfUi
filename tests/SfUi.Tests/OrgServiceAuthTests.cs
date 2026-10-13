@@ -40,6 +40,7 @@ public class OrgServiceAuthTests : IDisposable
         Assert.Null(OrgService.UsableAccessToken(""));
         Assert.Null(OrgService.UsableAccessToken("   "));
         Assert.Null(OrgService.UsableAccessToken("[REDACTED] Use \"sf org auth show-access-token\" to see the token."));
+        Assert.Null(OrgService.UsableAccessToken("[REDACTED] Use 'sf org auth show-access-token' to view")); // sf 2.153.5 の実測値
         Assert.Null(OrgService.UsableAccessToken("[redacted] lower case"));
     }
 
@@ -63,6 +64,10 @@ public class OrgServiceAuthTests : IDisposable
         Assert.Equal("MOCK_TOKEN", auth.AccessToken);
         Assert.Equal("http://127.0.0.1:8787", auth.InstanceUrl);
         Assert.Equal("67.0", auth.ApiVersion);
+
+        var calls = ReadCalls();
+        Assert.Contains("org display --target-org dev@acme.example.com --json", calls);
+        Assert.DoesNotContain("show-access-token", calls);
     }
 
     [Fact]
@@ -93,8 +98,8 @@ public class OrgServiceAuthTests : IDisposable
 
         Assert.Equal("REAL_TOKEN_123", auth.AccessToken);
         var calls = ReadCalls();
-        Assert.Contains("display", calls);
-        Assert.Contains("show-access-token", calls);
+        Assert.Contains("org display --target-org dev@acme.example.com --json", calls);
+        Assert.Contains("org auth show-access-token --target-org dev@acme.example.com --json", calls);
     }
 
     [Fact]
@@ -133,14 +138,14 @@ public class OrgServiceAuthTests : IDisposable
             var sb = new StringBuilder();
             sb.AppendLine("@echo off");
             sb.AppendLine($"if \"%1 %2\"==\"org display\" (");
-            sb.AppendLine($"  echo display >> \"{log}\"");
+            sb.AppendLine($"  echo %1 %2 %3 %4 %5 %6 >> \"{log}\"");
             sb.AppendLine($"  echo {displayJson}");
             sb.AppendLine("  exit /b 0");
             sb.AppendLine(")");
             if (showTokenJson is not null)
             {
                 sb.AppendLine($"if \"%1 %2 %3\"==\"org auth show-access-token\" (");
-                sb.AppendLine($"  echo show-access-token >> \"{log}\"");
+                sb.AppendLine($"  echo %1 %2 %3 %4 %5 %6 >> \"{log}\"");
                 sb.AppendLine($"  echo {showTokenJson}");
                 sb.AppendLine("  exit /b 0");
                 sb.AppendLine(")");
@@ -155,14 +160,14 @@ public class OrgServiceAuthTests : IDisposable
         var sh = new StringBuilder();
         sh.AppendLine("#!/bin/sh");
         sh.AppendLine("if [ \"$1 $2\" = \"org display\" ]; then");
-        sh.AppendLine($"  echo display >> '{log}'");
+        sh.AppendLine("  echo \"$@\" >> '" + log + "'");
         sh.AppendLine($"  echo '{displayJson.Replace("'", string.Empty)}'");
         sh.AppendLine("  exit 0");
         sh.AppendLine("fi");
         if (showTokenJson is not null)
         {
             sh.AppendLine("if [ \"$1 $2 $3\" = \"org auth show-access-token\" ]; then");
-            sh.AppendLine($"  echo show-access-token >> '{log}'");
+            sh.AppendLine("  echo \"$@\" >> '" + log + "'");
             sh.AppendLine($"  echo '{showTokenJson.Replace("'", string.Empty)}'");
             sh.AppendLine("  exit 0");
             sh.AppendLine("fi");
