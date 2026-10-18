@@ -23,7 +23,10 @@ public partial class MainViewModel : ObservableObject
     private readonly IDialogService _dialogs;
     private readonly IClipboardService _clipboard;
     private readonly EditorTabsStore _editorTabs;
+    private readonly OrgCacheStore _orgCache;
+    private readonly IUiDispatcher _ui;
     private readonly UiDebouncer _tabsSaveDebouncer;
+    private CancellationTokenSource? _backgroundOrgsCts;
     private bool _tabsReady;
 
     /// <summary>組織一覧を取得中（取得インジケーター表示と各種操作のブロックに使う）。</summary>
@@ -168,6 +171,7 @@ public partial class MainViewModel : ObservableObject
         IDialogService dialogs,
         IClipboardService clipboard,
         EditorTabsStore editorTabsStore,
+        OrgCacheStore orgCacheStore,
         IUiDispatcher ui)
     {
         _orgService = orgService;
@@ -182,6 +186,8 @@ public partial class MainViewModel : ObservableObject
         _dialogs = dialogs;
         _clipboard = clipboard;
         _editorTabs = editorTabsStore;
+        _orgCache = orgCacheStore;
+        _ui = ui;
         _tabsSaveDebouncer = new UiDebouncer(1200, ui);
         Orgs.CollectionChanged += (_, _) =>
         {
@@ -398,7 +404,10 @@ public partial class MainViewModel : ObservableObject
         _ => "English",
     };
 
-    /// <summary>起動時の初期化（前回状態の復元 → 組織一覧の取得）。</summary>
+    /// <summary>
+    /// 起動時の初期化（前回状態の復元 → 組織一覧）。
+    /// 組織一覧はキャッシュから即時復元し、最新化はバックグラウンドで行う（キャッシュがない初回のみ従来どおり待機）。
+    /// </summary>
     public async Task InitializeAsync()
     {
         ReloadRecentFolders();
@@ -410,7 +419,18 @@ public partial class MainViewModel : ObservableObject
             SelectedFolder = settings.LastFolder;
         }
 
-        await RefreshOrgsAsync();
+        var cached = _orgCache.Load();
+        if (cached.Orgs.Count > 0)
+        {
+            ApplyOrgs(cached.Orgs);
+            StatusMessage = UiText.T("Msg_OrgCountCachedFmt", Orgs.Count);
+            _log.Info($"組織一覧をキャッシュから復元: {Orgs.Count} 件");
+            StartBackgroundOrgsRefresh();
+        }
+        else
+        {
+            await RefreshOrgsAsync();
+        }
     }
 
     [RelayCommand]
@@ -422,25 +442,16 @@ public partial class MainViewModel : ObservableObject
             return;
         }
 
+        // 手動更新を優先するため、バックグラウンド更新は中断する
+        _backgroundOrgsCts?.Cancel();
+
         IsLoadingOrgs = true;
         StatusMessage = UiText.T("Msg_LoadingOrgs");
         try
         {
             var orgs = await _orgService.ListOrgsAsync();
-            var previousUsername = SelectedOrg?.Username;
-            var lastUsername = _settings.Current.LastOrgUsername;
-
-            Orgs.Clear();
-            foreach (var org in orgs.OrderByDescending(o => o.IsDefault).ThenBy(o => o.DisplayName, StringComparer.CurrentCulture))
-            {
-                Orgs.Add(org);
-            }
-
-            SelectedOrg = Orgs.FirstOrDefault(o => string.Equals(o.Username, previousUsername, StringComparison.OrdinalIgnoreCase))
-                          ?? Orgs.FirstOrDefault(o => string.Equals(o.Username, lastUsername, StringComparison.OrdinalIgnoreCase))
-                          ?? Orgs.FirstOrDefault(o => o.IsDefault)
-                          ?? Orgs.FirstOrDefault();
-
+            ApplyOrgs(orgs);
+            _orgCache.Save(orgs);
             StatusMessage = UiText.T("Msg_OrgCountFmt", Orgs.Count);
             _log.Info($"組織一覧を取得: {Orgs.Count} 件");
         }
@@ -453,6 +464,86 @@ public partial class MainViewModel : ObservableObject
         {
             IsLoadingOrgs = false;
         }
+    }
+
+    /// <summary>組織一覧を Orgs へ反映し、選択中の組織（無ければ前回の組織 → 既定）を復元する。</summary>
+    private void ApplyOrgs(IReadOnlyList<OrgInfo> orgs)
+    {
+        var previousUsername = SelectedOrg?.Username;
+        var lastUsername = _settings.Current.LastOrgUsername;
+
+        Orgs.Clear();
+        foreach (var org in orgs.OrderByDescending(o => o.IsDefault).ThenBy(o => o.DisplayName, StringComparer.CurrentCulture))
+        {
+            Orgs.Add(org);
+        }
+
+        SelectedOrg = Orgs.FirstOrDefault(o => string.Equals(o.Username, previousUsername, StringComparison.OrdinalIgnoreCase))
+                      ?? Orgs.FirstOrDefault(o => string.Equals(o.Username, lastUsername, StringComparison.OrdinalIgnoreCase))
+                      ?? Orgs.FirstOrDefault(o => o.IsDefault)
+                      ?? Orgs.FirstOrDefault();
+    }
+
+    /// <summary>
+    /// キャッシュ表示後に組織一覧をバックグラウンドで更新する。
+    /// UI は待たせず、sf の子プロセスは低優先度で実行する（画面操作の処理を優先）。
+    /// </summary>
+    private void StartBackgroundOrgsRefresh()
+    {
+        _backgroundOrgsCts?.Cancel();
+        var cts = new CancellationTokenSource();
+        _backgroundOrgsCts = cts;
+        StatusMessage = UiText.T("Msg_OrgsRefreshing");
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var orgs = await _orgService.ListOrgsAsync(cts.Token, background: true);
+                _ui.Invoke(() =>
+                {
+                    if (cts.IsCancellationRequested)
+                    {
+                        return;
+                    }
+
+                    ApplyOrgs(orgs);
+                    _orgCache.Save(orgs);
+                    StatusMessage = UiText.T("Msg_OrgCountFmt", Orgs.Count);
+                    _log.Info($"組織一覧をバックグラウンド更新: {Orgs.Count} 件");
+                });
+            }
+            catch (OperationCanceledException)
+            {
+                // 手動更新などに処理を譲った
+            }
+            catch (Exception ex)
+            {
+                _log.Warn($"組織一覧のバックグラウンド更新に失敗: {ex.Message}");
+            }
+        });
+    }
+
+    /// <summary>選択中組織のトークンをバックグラウンドで事前取得する（初回の SOQL 実行を速くする）。</summary>
+    private void StartAuthPrefetch(OrgInfo? org)
+    {
+        var target = org?.Alias ?? org?.Username;
+        if (string.IsNullOrWhiteSpace(target))
+        {
+            return;
+        }
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await _orgService.GetAuthAsync(target, background: true);
+                _log.Info($"トークンを事前取得: {org!.DisplayName}");
+            }
+            catch (Exception ex)
+            {
+                _log.Warn($"トークンの事前取得に失敗: {ex.Message}");
+            }
+        });
     }
 
     partial void OnSelectedOrgChanged(OrgInfo? value)
@@ -478,6 +569,9 @@ public partial class MainViewModel : ObservableObject
         Logs.CurrentOrg = target;
         Api.CurrentOrg = target;
         Deploy.CurrentOrg = target;
+
+        // 初回実行を速くするため、選択された組織のトークンをバックグラウンドで事前取得する
+        StartAuthPrefetch(value);
 
         if (value is null || string.Equals(_settings.Current.LastOrgUsername, value.Username, StringComparison.OrdinalIgnoreCase))
         {

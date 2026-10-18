@@ -11,8 +11,10 @@ public sealed record OrgInfo(
     bool IsSandbox)
 {
     /// <summary>コンボボックス表示用（例: hks3 (ko-ymje@force.com)）。</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
     public string DisplayName => string.IsNullOrWhiteSpace(Alias) ? Username : $"{Alias} ({Username})";
 
     /// <summary>接続状態が正常か。</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
     public bool IsConnected => string.Equals(ConnectedStatus, "Connected", StringComparison.OrdinalIgnoreCase);
 }

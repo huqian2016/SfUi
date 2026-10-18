@@ -104,12 +104,14 @@ public sealed class SfCliRunner
     /// <param name="timeout">タイムアウト（既定 120 秒）。null で既定値。</param>
     /// <param name="cancellationToken">キャンセル用トークン。</param>
     /// <param name="environment">子プロセスに追加する環境変数（例: SF_ACCESS_TOKEN）。null なら追加なし。</param>
+    /// <param name="background">バックグラウンド処理（起動時の組織一覧更新など）。子プロセスの優先度を下げ、画面操作の処理を優先する。</param>
     public async Task<SfCliResult> RunAsync(
         IReadOnlyList<string> arguments,
         string? workingDirectory = null,
         TimeSpan? timeout = null,
         CancellationToken cancellationToken = default,
-        IReadOnlyDictionary<string, string>? environment = null)
+        IReadOnlyDictionary<string, string>? environment = null,
+        bool background = false)
     {
         if (_sfExecutablePath is null)
         {
@@ -147,6 +149,20 @@ public sealed class SfCliRunner
         catch (Win32Exception ex)
         {
             throw new InvalidOperationException(UiText.T("Core_SfStartFailedFmt", ex.Message), ex);
+        }
+
+        if (background)
+        {
+            // バックグラウンド処理は OS の優先度を下げ、ユーザー操作で発生する sf 呼び出しを優先させる
+            // （設定できない環境では既定の優先度のまま）。
+            try
+            {
+                process.PriorityClass = ProcessPriorityClass.BelowNormal;
+            }
+            catch
+            {
+                // 権限や OS の制約で設定できない場合は無視
+            }
         }
 
         var stdOutTask = process.StandardOutput.ReadToEndAsync();

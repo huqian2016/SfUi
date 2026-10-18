@@ -134,6 +134,8 @@ public static partial class UiText
         ["Main_NoOrgsHint"] = "組織がありません。「組織管理」からログインしてください。",
         ["OrgManage_NoOrgsHint"] = "組織がありません。「組織を登録」からログインしてください。",
         ["Msg_OrgCountFmt"] = "組織 {0} 件を取得しました",
+        ["Msg_OrgCountCachedFmt"] = "キャッシュから組織 {0} 件を復元しました",
+        ["Msg_OrgsRefreshing"] = "組織一覧をバックグラウンドで更新中…",
         ["Msg_OrgLoadFailedFmt"] = "組織一覧の取得に失敗: {0}",
         ["Msg_ReplaySoql"] = "履歴から SOQL を再実行します",
         ["Msg_ReplayApex"] = "履歴から匿名Apex を読み込みました（{mod}+Enter で実行）",

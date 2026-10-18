@@ -54,7 +54,7 @@ public class OrgServiceAuthTests : IDisposable
     [Fact]
     public async Task GetAuthAsync_UsesDisplayToken_WhenOldCliWithoutShowAccessToken()
     {
-        // 旧 CLI（sf 2.94.6 など）: org display がトークンをそのまま返し、show-access-token は存在しない。
+        // 旧 CLI（sf 2.94.6 など）: org display がトークンをそのまま返し、show-access-token は未知コマンドとして失敗する。
         var displayJson = BuildDisplayJson("MOCK_TOKEN");
         var script = WriteFakeSf(displayJson, showTokenJson: null);
         var service = new OrgService(new SfCliRunner(script));
@@ -67,13 +67,34 @@ public class OrgServiceAuthTests : IDisposable
 
         var calls = ReadCalls();
         Assert.Contains("org display --target-org dev@acme.example.com --json", calls);
-        Assert.DoesNotContain("show-access-token", calls);
+        Assert.Contains("unsupported org auth show-access-token", calls);
     }
 
     [Fact]
-    public async Task GetAuthAsync_PrefersDisplayToken_AndSkipsShowAccessToken()
+    public async Task GetAuthAsync_SingleFlight_ForConcurrentCalls()
     {
-        // display のトークンが使える場合は show-access-token を呼ばない（余分な CLI 呼び出しを防ぐ）。
+        // 同時呼び出し（SOQL 実行 + ライブ件数など）は先発の取得に合流し、org display は 1 回しか実行されない。
+        var script = WriteFakeSf(
+            BuildDisplayJson("MOCK_TOKEN"),
+            showTokenJson: "{\"status\":0,\"result\":{\"accessToken\":\"REAL_TOKEN_123\"}}",
+            displayDelayMs: 1000);
+        var service = new OrgService(new SfCliRunner(script));
+
+        var results = await Task.WhenAll(
+            service.GetAuthAsync("dev@acme.example.com"),
+            service.GetAuthAsync("dev@acme.example.com"));
+
+        Assert.All(results, r => Assert.Equal("MOCK_TOKEN", r.AccessToken));
+        var displayCalls = ReadCalls()
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Count(line => line.TrimStart().StartsWith("org display", StringComparison.Ordinal));
+        Assert.Equal(1, displayCalls);
+    }
+
+    [Fact]
+    public async Task GetAuthAsync_UsesDisplayToken_WhenUsable_EvenThoughTokenCommandRunsInParallel()
+    {
+        // display のトークンが使える場合はそちらを採用する（新旧対応のため show-access-token も並列で実行する）。
         var script = WriteFakeSf(BuildDisplayJson("MOCK_TOKEN"), showTokenJson: "{\"status\":0,\"result\":{\"accessToken\":\"REAL_TOKEN_123\"}}");
         var service = new OrgService(new SfCliRunner(script));
 
@@ -81,8 +102,8 @@ public class OrgServiceAuthTests : IDisposable
 
         Assert.Equal("MOCK_TOKEN", auth.AccessToken);
         var calls = ReadCalls();
-        Assert.Contains("display", calls);
-        Assert.DoesNotContain("show-access-token", calls);
+        Assert.Contains("org display --target-org dev@acme.example.com --json", calls);
+        Assert.Contains("org auth show-access-token --target-org dev@acme.example.com --json", calls);
     }
 
     [Fact]
@@ -126,9 +147,10 @@ public class OrgServiceAuthTests : IDisposable
 
     /// <summary>
     /// 偽 sf スクリプトを作成する。org display は displayJson を出力して成功し、
-    /// showTokenJson が non-null なら org auth show-access-token も成功する（null なら未知コマンドとして失敗）。
+    /// showTokenJson が non-null なら org auth show-access-token も成功する（null なら未対応コマンドとして失敗）。
+    /// 呼び出しは引数付きでログに記録し、displayDelayMs で display の応答を遅らせられる（並列・単一フライト検証用）。
     /// </summary>
-    private string WriteFakeSf(string displayJson, string? showTokenJson)
+    private string WriteFakeSf(string displayJson, string? showTokenJson, int displayDelayMs = 0)
     {
         var log = Path.Combine(_sandbox, "calls.log");
 
@@ -138,6 +160,11 @@ public class OrgServiceAuthTests : IDisposable
             var sb = new StringBuilder();
             sb.AppendLine("@echo off");
             sb.AppendLine($"if \"%1 %2\"==\"org display\" (");
+            if (displayDelayMs > 0)
+            {
+                sb.AppendLine("  ping -n 2 127.0.0.1 >nul");
+            }
+
             sb.AppendLine($"  echo %1 %2 %3 %4 %5 %6 >> \"{log}\"");
             sb.AppendLine($"  echo {displayJson}");
             sb.AppendLine("  exit /b 0");
@@ -151,6 +178,7 @@ public class OrgServiceAuthTests : IDisposable
                 sb.AppendLine(")");
             }
 
+            sb.AppendLine($"echo unsupported %1 %2 %3 >> \"{log}\"");
             sb.AppendLine("exit /b 1");
             File.WriteAllText(path, sb.ToString());
             return path;
@@ -160,6 +188,11 @@ public class OrgServiceAuthTests : IDisposable
         var sh = new StringBuilder();
         sh.AppendLine("#!/bin/sh");
         sh.AppendLine("if [ \"$1 $2\" = \"org display\" ]; then");
+        if (displayDelayMs > 0)
+        {
+            sh.AppendLine("  sleep 1");
+        }
+
         sh.AppendLine("  echo \"$@\" >> '" + log + "'");
         sh.AppendLine($"  echo '{displayJson.Replace("'", string.Empty)}'");
         sh.AppendLine("  exit 0");
@@ -173,6 +206,7 @@ public class OrgServiceAuthTests : IDisposable
             sh.AppendLine("fi");
         }
 
+        sh.AppendLine("echo \"unsupported $1 $2 $3\" >> '" + log + "'");
         sh.AppendLine("exit 1");
         File.WriteAllText(shPath, sh.ToString());
         File.SetUnixFileMode(shPath, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);

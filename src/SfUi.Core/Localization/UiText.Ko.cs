@@ -134,6 +134,8 @@ public static partial class UiText
         ["Main_NoOrgsHint"] = "조직이 없습니다 — '조직 관리'에서 로그인하세요.",
         ["OrgManage_NoOrgsHint"] = "조직이 없습니다 — '조직 등록'에서 로그인하세요.",
         ["Msg_OrgCountFmt"] = "조직 {0}개를 가져왔습니다",
+        ["Msg_OrgCountCachedFmt"] = "캐시에서 조직 {0}개를 복원했습니다",
+        ["Msg_OrgsRefreshing"] = "백그라운드에서 조직 목록을 업데이트하는 중…",
         ["Msg_OrgLoadFailedFmt"] = "조직을 불러오지 못했습니다: {0}",
         ["Msg_ReplaySoql"] = "히스토리에서 SOQL을 다시 실행합니다",
         ["Msg_ReplayApex"] = "히스토리에서 Apex를 로드했습니다({mod}+Enter 실행)",

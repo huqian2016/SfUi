@@ -134,6 +134,8 @@ public static partial class UiText
         ["Main_NoOrgsHint"] = "No orgs found — sign in from Org Management.",
         ["OrgManage_NoOrgsHint"] = "No orgs found — use \"Register org\" to sign in.",
         ["Msg_OrgCountFmt"] = "Loaded {0} org(s)",
+        ["Msg_OrgCountCachedFmt"] = "Loaded {0} org(s) from cache",
+        ["Msg_OrgsRefreshing"] = "Updating org list in the background…",
         ["Msg_OrgLoadFailedFmt"] = "Failed to load orgs: {0}",
         ["Msg_ReplaySoql"] = "Re-running SOQL from history",
         ["Msg_ReplayApex"] = "Apex loaded from history (press {mod}+Enter to run)",

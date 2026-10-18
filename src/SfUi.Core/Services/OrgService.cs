@@ -11,17 +11,18 @@ public sealed class OrgService
 
     private readonly SfCliRunner _runner;
     private readonly ConcurrentDictionary<string, OrgAuthInfo> _authCache = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, Task<OrgAuthInfo>> _inflightAuth = new(StringComparer.OrdinalIgnoreCase);
 
     public OrgService(SfCliRunner runner)
     {
         _runner = runner;
     }
 
-    /// <summary>認証済み組織の一覧を取得する。</summary>
-    public async Task<IReadOnlyList<OrgInfo>> ListOrgsAsync(CancellationToken cancellationToken = default)
+    /// <summary>認証済み組織の一覧を取得する（background=true で優先度を下げたプロセス実行）。</summary>
+    public async Task<IReadOnlyList<OrgInfo>> ListOrgsAsync(CancellationToken cancellationToken = default, bool background = false)
     {
         var raw = await _runner
-            .RunAsync(new[] { "org", "list", "--json" }, cancellationToken: cancellationToken)
+            .RunAsync(new[] { "org", "list", "--json" }, cancellationToken: cancellationToken, background: background)
             .ConfigureAwait(false);
 
         var command = SfCommandResult.From(raw);
@@ -85,11 +86,11 @@ public sealed class OrgService
 
     /// <summary>
     /// 対象組織のアクセストークン等を取得する（既定 30 分キャッシュ、forceRefresh で再取得）。
-    /// <c>org display</c> の accessToken がそのまま使える場合はそれを使い、
-    /// sf 2.152+ のように伏せ字（"[REDACTED]..."）の場合のみ <c>org auth show-access-token --json</c> で取得する。
-    /// （古い CLI・sf 2.94.6 などには show-access-token コマンドが存在しないための両対応）
+    /// <c>org display</c> と <c>org auth show-access-token</c> を<b>並列実行</b>して待ち時間を短縮する
+    /// （旧 CLI は display のトークン、sf 2.15x+ は display が伏せ字のため show-access-token の値を使用）。
+    /// 同じ組織への同時呼び出し（SOQL 実行とライブ件数など）は 1 回の取得に集約する。
     /// </summary>
-    public async Task<OrgAuthInfo> GetAuthAsync(string targetOrg, bool forceRefresh = false, CancellationToken cancellationToken = default)
+    public Task<OrgAuthInfo> GetAuthAsync(string targetOrg, bool forceRefresh = false, CancellationToken cancellationToken = default, bool background = false)
     {
         if (string.IsNullOrWhiteSpace(targetOrg))
         {
@@ -98,26 +99,64 @@ public sealed class OrgService
 
         if (!forceRefresh && _authCache.TryGetValue(targetOrg, out var cached) && cached.IsFresh(TokenCacheDuration))
         {
-            return cached;
+            return Task.FromResult(cached);
         }
 
-        var raw = await _runner
-            .RunAsync(new[] { "org", "display", "--target-org", targetOrg, "--json" }, cancellationToken: cancellationToken)
-            .ConfigureAwait(false);
+        if (forceRefresh)
+        {
+            return AwaitWithCancellationAsync(FetchAuthCoreAsync(targetOrg, background), cancellationToken);
+        }
+
+        // 同時呼び出しは先発の取得に合流する（重複した CLI 呼び出しを防ぐ）
+        var task = _inflightAuth.GetOrAdd(targetOrg, key => FetchAuthCoreAsync(key, background));
+        _ = task.ContinueWith(
+            _ => _inflightAuth.TryRemove(new KeyValuePair<string, Task<OrgAuthInfo>>(targetOrg, task)),
+            CancellationToken.None,
+            TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
+        return AwaitWithCancellationAsync(task, cancellationToken);
+    }
+
+    private static async Task<OrgAuthInfo> AwaitWithCancellationAsync(Task<OrgAuthInfo> task, CancellationToken cancellationToken) =>
+        cancellationToken.CanBeCanceled
+            ? await task.WaitAsync(cancellationToken).ConfigureAwait(false)
+            : await task.ConfigureAwait(false);
+
+    private async Task<OrgAuthInfo> FetchAuthCoreAsync(string targetOrg, bool background)
+    {
+        // 新旧 CLI の差を吸収するため 2 つを並列実行する:
+        // - org display: username / instanceUrl / apiVersion（旧 CLU は accessToken も返す）
+        // - org auth show-access-token: sf 2.15x+ で display が伏せ字の場合のトークン取得
+        //   （--json で確認プロンプトをスキップ。旧 CLI にはコマンド自体がないが、失敗するだけで実害はない）
+        var displayTask = _runner.RunAsync(
+            new[] { "org", "display", "--target-org", targetOrg, "--json" },
+            cancellationToken: CancellationToken.None,
+            background: background);
+        var tokenTask = _runner.RunAsync(
+            new[] { "org", "auth", "show-access-token", "--target-org", targetOrg, "--json" },
+            cancellationToken: CancellationToken.None,
+            background: background);
+
+        var raw = await displayTask.ConfigureAwait(false);
         var command = SfCommandResult.From(raw);
+
+        SfCliResult? tokenRaw = null;
+        try
+        {
+            tokenRaw = await tokenTask.ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // 旧 CLI（show-access-token 未搭載）など。display のトークンを使う。
+        }
 
         var accessToken = UsableAccessToken(command.GetResultString("accessToken"));
         string? tokenErrorMessage = null;
         if (command.IsSuccess && accessToken is null)
         {
-            // sf 2.152+ の org display は accessToken を伏せるため、専用コマンドで取得する
-            // （--json で確認プロンプトをスキップ）。古い CLI は display の値をそのまま返すためこの分岐には入らない。
-            var tokenRaw = await _runner
-                .RunAsync(new[] { "org", "auth", "show-access-token", "--target-org", targetOrg, "--json" }, cancellationToken: cancellationToken)
-                .ConfigureAwait(false);
-            var tokenCommand = SfCommandResult.From(tokenRaw);
-            accessToken = UsableAccessToken(tokenCommand.GetResultString("accessToken"));
-            tokenErrorMessage = tokenCommand.ErrorMessage;
+            var tokenCommand = tokenRaw is null ? null : SfCommandResult.From(tokenRaw);
+            accessToken = UsableAccessToken(tokenCommand?.GetResultString("accessToken"));
+            tokenErrorMessage = tokenCommand?.ErrorMessage;
         }
 
         if (!command.IsSuccess || string.IsNullOrWhiteSpace(accessToken))

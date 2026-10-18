@@ -134,6 +134,8 @@ public static partial class UiText
         ["Main_NoOrgsHint"] = "没有组织 — 请通过“组织管理”登录。",
         ["OrgManage_NoOrgsHint"] = "没有组织 — 请使用“注册组织”登录。",
         ["Msg_OrgCountFmt"] = "已获取 {0} 个组织",
+        ["Msg_OrgCountCachedFmt"] = "已从缓存恢复 {0} 个组织",
+        ["Msg_OrgsRefreshing"] = "正在后台更新组织列表…",
         ["Msg_OrgLoadFailedFmt"] = "加载组织失败：{0}",
         ["Msg_ReplaySoql"] = "正在从历史记录重新运行 SOQL",
         ["Msg_ReplayApex"] = "已从历史记录加载 Apex（按 {mod}+Enter 运行）",
