@@ -74,9 +74,11 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Button Content="{Binding Text}" Padding="8,2" Margin="0,0,6,6"
+                                    <Button Padding="8,2" Margin="0,0,6,6"
                                             ToolTip="{Binding Description}"
-                                            Click="OnSuggestionClick" />
+                                            Click="OnSuggestionClick">
+                                        <TextBlock Text="{Binding Text}" />
+                                    </Button>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
