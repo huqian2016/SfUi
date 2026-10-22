@@ -144,9 +144,10 @@ public partial class SoqlView : UserControl
         var caret = editor.CaretOffset;
         var context = SoqlCompletionParser.Parse(editor.Text, caret);
         var segmentStart = caret - context.Prefix.Length;
+        var suffix = SoqlSuggestionInsertion.SeparatorFor(editor.Text, caret, context, item);
 
-        editor.Document.Replace(segmentStart, caret - segmentStart, item.Text);
-        editor.CaretOffset = segmentStart + item.Text.Length + item.CaretOffsetDelta;
+        editor.Document.Replace(segmentStart, caret - segmentStart, item.Text + suffix);
+        editor.CaretOffset = SoqlSuggestionInsertion.CaretAfterInsert(editor.Text, segmentStart, item, suffix);
         editor.Focus();
         ScheduleSuggestions();
     }
