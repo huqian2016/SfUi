@@ -141,8 +141,21 @@ public class OrgServiceAuthTests : IDisposable
 
     private string ReadCalls()
     {
-        var log = Path.Combine(_sandbox, "calls.log");
-        return File.Exists(log) ? File.ReadAllText(log) : string.Empty;
+        // 呼び出しごとに別ファイルへ記録している（並列実行時の同一ファイル追記の競合を避ける）
+        var builder = new StringBuilder();
+        foreach (var file in Directory.GetFiles(_sandbox, "calls.*.log"))
+        {
+            try
+            {
+                builder.AppendLine(File.ReadAllText(file));
+            }
+            catch (IOException)
+            {
+                // まだ書き込み中のファイルは次のポーリングで読む
+            }
+        }
+
+        return builder.ToString();
     }
 
     /// <summary>
@@ -170,33 +183,32 @@ public class OrgServiceAuthTests : IDisposable
     /// </summary>
     private string WriteFakeSf(string displayJson, string? showTokenJson, int displayDelayMs = 0)
     {
-        var log = Path.Combine(_sandbox, "calls.log");
-
         if (OperatingSystem.IsWindows())
         {
             var path = Path.Combine(_sandbox, "sf.cmd");
             var sb = new StringBuilder();
             sb.AppendLine("@echo off");
+            sb.AppendLine("set \"CALLS=%~dp0calls.%RANDOM%.log\"");
             sb.AppendLine($"if \"%1 %2\"==\"org display\" (");
             if (displayDelayMs > 0)
             {
                 sb.AppendLine("  ping -n 2 127.0.0.1 >nul");
             }
 
-            sb.AppendLine($"  echo %1 %2 %3 %4 %5 %6 >> \"{log}\"");
+            sb.AppendLine("  echo %1 %2 %3 %4 %5 %6 >> \"%CALLS%\"");
             sb.AppendLine($"  echo {displayJson}");
             sb.AppendLine("  exit /b 0");
             sb.AppendLine(")");
             if (showTokenJson is not null)
             {
                 sb.AppendLine($"if \"%1 %2 %3\"==\"org auth show-access-token\" (");
-                sb.AppendLine($"  echo %1 %2 %3 %4 %5 %6 >> \"{log}\"");
+                sb.AppendLine("  echo %1 %2 %3 %4 %5 %6 >> \"%CALLS%\"");
                 sb.AppendLine($"  echo {showTokenJson}");
                 sb.AppendLine("  exit /b 0");
                 sb.AppendLine(")");
             }
 
-            sb.AppendLine($"echo unsupported %1 %2 %3 >> \"{log}\"");
+            sb.AppendLine("echo unsupported %1 %2 %3 >> \"%CALLS%\"");
             sb.AppendLine("exit /b 1");
             File.WriteAllText(path, sb.ToString());
             return path;
@@ -205,26 +217,27 @@ public class OrgServiceAuthTests : IDisposable
         var shPath = Path.Combine(_sandbox, "sf");
         var sh = new StringBuilder();
         sh.AppendLine("#!/bin/sh");
+        sh.AppendLine("CALLS=\"" + Path.Combine(_sandbox, "calls.") + "$$.log\"");
         sh.AppendLine("if [ \"$1 $2\" = \"org display\" ]; then");
         if (displayDelayMs > 0)
         {
             sh.AppendLine("  sleep 1");
         }
 
-        sh.AppendLine("  echo \"$@\" >> '" + log + "'");
+        sh.AppendLine("  echo \"$@\" >> \"$CALLS\"");
         sh.AppendLine($"  echo '{displayJson.Replace("'", string.Empty)}'");
         sh.AppendLine("  exit 0");
         sh.AppendLine("fi");
         if (showTokenJson is not null)
         {
             sh.AppendLine("if [ \"$1 $2 $3\" = \"org auth show-access-token\" ]; then");
-            sh.AppendLine("  echo \"$@\" >> '" + log + "'");
+            sh.AppendLine("  echo \"$@\" >> \"$CALLS\"");
             sh.AppendLine($"  echo '{showTokenJson.Replace("'", string.Empty)}'");
             sh.AppendLine("  exit 0");
             sh.AppendLine("fi");
         }
 
-        sh.AppendLine("echo \"unsupported $1 $2 $3\" >> '" + log + "'");
+        sh.AppendLine("echo \"unsupported $1 $2 $3\" >> \"$CALLS\"");
         sh.AppendLine("exit 1");
         File.WriteAllText(shPath, sh.ToString());
         File.SetUnixFileMode(shPath, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
