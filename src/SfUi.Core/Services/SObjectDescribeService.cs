@@ -4,23 +4,56 @@ using System.Text.Json;
 namespace SfUi.Core;
 
 /// <summary>
-/// オブジェクト一覧（DescribeGlobal）と項目メタデータ（describe）を取得し、
-/// 組織単位でメモリ キャッシュする。
+/// オブジェクト一覧（DescribeGlobal）と項目メタデータ（describe）を取得する。
+/// メモリ → ディスク キャッシュ（即時応答）→ 裏での最新確認（変更時のみ更新）の順で応答する。
+/// 補完候補を起動直後から高速に出すための仕組み。
 /// </summary>
 public sealed class SObjectDescribeService
 {
-    private readonly SalesforceRestClient _rest;
     private readonly AppLog _log;
+    private readonly IMetadataCache? _cache;
+    private readonly Func<string, CancellationToken, Task<IReadOnlyList<DataIoObject>>> _fetchObjects;
+    private readonly Func<string, string, CancellationToken, Task<DataIoObjectDescribe>> _fetchDescribe;
+
     private readonly ConcurrentDictionary<string, IReadOnlyList<DataIoObject>> _objects = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, DataIoObjectDescribe> _describes = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, Task<IReadOnlyList<DataIoObject>>> _objectsInFlight = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, Task<DataIoObjectDescribe>> _describesInFlight = new(StringComparer.OrdinalIgnoreCase);
 
-    public SObjectDescribeService(SalesforceRestClient rest, AppLog log)
+    /// <summary>オブジェクト一覧が最新化されたとき（初回取得・裏の更新で変化あり）に発火する。</summary>
+    public event Action<string>? ObjectsChanged;
+
+    public SObjectDescribeService(SalesforceRestClient rest, AppLog log, IMetadataCache? cache = null)
+        : this(
+            log,
+            cache,
+            async (org, ct) =>
+            {
+                using var document = await rest.DescribeGlobalAsync(org, ct).ConfigureAwait(false);
+                return ParseObjects(document.RootElement);
+            },
+            async (org, objectName, ct) =>
+            {
+                using var document = await rest.DescribeAsync(org, objectName, ct).ConfigureAwait(false);
+                return ParseDescribe(objectName, document.RootElement);
+            })
     {
-        _rest = rest;
-        _log = log;
     }
 
-    /// <summary>組織の sObject 一覧を返す（キャッシュ優先）。</summary>
+    /// <summary>テスト用（REST 呼び出しを差し替える）。</summary>
+    internal SObjectDescribeService(
+        AppLog log,
+        IMetadataCache? cache,
+        Func<string, CancellationToken, Task<IReadOnlyList<DataIoObject>>> fetchObjects,
+        Func<string, string, CancellationToken, Task<DataIoObjectDescribe>> fetchDescribe)
+    {
+        _log = log;
+        _cache = cache;
+        _fetchObjects = fetchObjects;
+        _fetchDescribe = fetchDescribe;
+    }
+
+    /// <summary>組織の sObject 一覧を返す（メモリ → ディスク キャッシュ優先）。</summary>
     public async Task<IReadOnlyList<DataIoObject>> ListObjectsAsync(string targetOrg, bool forceRefresh = false, CancellationToken cancellationToken = default)
     {
         if (!forceRefresh && _objects.TryGetValue(targetOrg, out var cached))
@@ -28,14 +61,18 @@ public sealed class SObjectDescribeService
             return cached;
         }
 
-        using var document = await _rest.DescribeGlobalAsync(targetOrg, cancellationToken).ConfigureAwait(false);
-        var list = ParseObjects(document.RootElement);
-        _objects[targetOrg] = list;
-        _log.Info($"オブジェクト一覧を取得: {targetOrg} ({list.Count} 件)");
-        return list;
+        if (!forceRefresh && _cache is not null && _cache.TryGetObjects(targetOrg, out var disk))
+        {
+            _objects[targetOrg] = disk;
+            _log.Info($"オブジェクト一覧をキャッシュから復元: {targetOrg} ({disk.Count} 件)");
+            ObserveBackground(GetOrStartObjectsFetch(targetOrg), $"オブジェクト一覧の背景更新に失敗: {targetOrg}");
+            return disk;
+        }
+
+        return await GetOrStartObjectsFetch(targetOrg).WaitAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>オブジェクトの項目メタデータを返す（キャッシュ優先）。</summary>
+    /// <summary>オブジェクトの項目メタデータを返す（メモリ → ディスク キャッシュ優先）。</summary>
     public async Task<DataIoObjectDescribe> DescribeAsync(string targetOrg, string objectName, bool forceRefresh = false, CancellationToken cancellationToken = default)
     {
         var key = targetOrg + "\n" + objectName;
@@ -44,13 +81,17 @@ public sealed class SObjectDescribeService
             return cached;
         }
 
-        using var document = await _rest.DescribeAsync(targetOrg, objectName, cancellationToken).ConfigureAwait(false);
-        var describe = ParseDescribe(objectName, document.RootElement);
-        _describes[key] = describe;
-        return describe;
+        if (!forceRefresh && _cache is not null && _cache.TryGetDescribe(targetOrg, objectName, out var disk))
+        {
+            _describes[key] = disk;
+            ObserveBackground(GetOrStartDescribeFetch(targetOrg, objectName), $"describe の背景更新に失敗: {objectName}");
+            return disk;
+        }
+
+        return await GetOrStartDescribeFetch(targetOrg, objectName).WaitAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>キャッシュを破棄する（オブジェクト再読込用）。</summary>
+    /// <summary>キャッシュを破棄する（オブジェクト再読込用。次回アクセス時に取得し直す）。</summary>
     public void Invalidate(string targetOrg)
     {
         _objects.TryRemove(targetOrg, out _);
@@ -58,6 +99,85 @@ public sealed class SObjectDescribeService
         {
             _describes.TryRemove(key, out _);
         }
+
+        _cache?.Remove(targetOrg);
+    }
+
+    private Task<IReadOnlyList<DataIoObject>> GetOrStartObjectsFetch(string targetOrg) =>
+        _objectsInFlight.GetOrAdd(targetOrg, key =>
+        {
+            var task = FetchAndStoreObjectsAsync(key);
+            _ = task.ContinueWith(_ => _objectsInFlight.TryRemove(key, out _), TaskScheduler.Default);
+            return task;
+        });
+
+    /// <summary>背景更新（テスト用。実行中の取得があれば合流する）。</summary>
+    internal Task<IReadOnlyList<DataIoObject>> RefreshObjectsAsync(string targetOrg) =>
+        GetOrStartObjectsFetch(targetOrg);
+
+    private async Task<IReadOnlyList<DataIoObject>> FetchAndStoreObjectsAsync(string targetOrg)
+    {
+        var list = await _fetchObjects(targetOrg, CancellationToken.None).ConfigureAwait(false);
+        var changed = !_objects.TryGetValue(targetOrg, out var previous)
+            || !MetadataCacheComparison.ObjectsEqual(previous, list);
+
+        _objects[targetOrg] = list;
+
+        if (changed)
+        {
+            _cache?.SetObjects(targetOrg, list);
+            _log.Info($"オブジェクト一覧を取得: {targetOrg} ({list.Count} 件)");
+            ObjectsChanged?.Invoke(targetOrg);
+        }
+        else
+        {
+            _log.Info($"オブジェクト一覧は最新でした: {targetOrg} ({list.Count} 件)");
+        }
+
+        return list;
+    }
+
+    private Task<DataIoObjectDescribe> GetOrStartDescribeFetch(string targetOrg, string objectName)
+    {
+        var key = targetOrg + "\n" + objectName;
+        return _describesInFlight.GetOrAdd(key, k =>
+        {
+            var task = FetchAndStoreDescribeAsync(targetOrg, objectName);
+            _ = task.ContinueWith(_ => _describesInFlight.TryRemove(k, out _), TaskScheduler.Default);
+            return task;
+        });
+    }
+
+    /// <summary>背景更新（テスト用。実行中の取得があれば合流する）。</summary>
+    internal Task<DataIoObjectDescribe> RefreshDescribeAsync(string targetOrg, string objectName) =>
+        GetOrStartDescribeFetch(targetOrg, objectName);
+
+    private async Task<DataIoObjectDescribe> FetchAndStoreDescribeAsync(string targetOrg, string objectName)
+    {
+        var describe = await _fetchDescribe(targetOrg, objectName, CancellationToken.None).ConfigureAwait(false);
+        var key = targetOrg + "\n" + objectName;
+        var changed = !_describes.TryGetValue(key, out var previous)
+            || !MetadataCacheComparison.DescribesEqual(previous, describe);
+
+        _describes[key] = describe;
+
+        if (changed)
+        {
+            _cache?.SetDescribe(targetOrg, objectName, describe);
+            _log.Info($"describe を取得: {targetOrg} / {objectName} ({describe.Fields.Count} 項目)");
+        }
+
+        return describe;
+    }
+
+    /// <summary>背景タスクの失敗をログに残す（未監視例外を握りつぶさない）。</summary>
+    private void ObserveBackground(Task task, string message)
+    {
+        _ = task.ContinueWith(
+            t => _log.Warn($"{message}: {t.Exception?.GetBaseException().Message}"),
+            CancellationToken.None,
+            TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
     }
 
     /// <summary>DescribeGlobal の応答をパースする（純関数・テスト対象）。</summary>

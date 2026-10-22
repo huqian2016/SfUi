@@ -24,6 +24,8 @@ public partial class MainViewModel : ObservableObject
     private readonly IClipboardService _clipboard;
     private readonly EditorTabsStore _editorTabs;
     private readonly OrgCacheStore _orgCache;
+    private readonly SObjectDescribeService _describes;
+    private readonly OrgMetadataService _metadata;
     private readonly IUiDispatcher _ui;
     private readonly UiDebouncer _tabsSaveDebouncer;
     private CancellationTokenSource? _backgroundOrgsCts;
@@ -172,6 +174,8 @@ public partial class MainViewModel : ObservableObject
         IClipboardService clipboard,
         EditorTabsStore editorTabsStore,
         OrgCacheStore orgCacheStore,
+        SObjectDescribeService describes,
+        OrgMetadataService metadata,
         IUiDispatcher ui)
     {
         _orgService = orgService;
@@ -187,6 +191,8 @@ public partial class MainViewModel : ObservableObject
         _clipboard = clipboard;
         _editorTabs = editorTabsStore;
         _orgCache = orgCacheStore;
+        _describes = describes;
+        _metadata = metadata;
         _ui = ui;
         _tabsSaveDebouncer = new UiDebouncer(1200, ui);
         Orgs.CollectionChanged += (_, _) =>
@@ -546,6 +552,32 @@ public partial class MainViewModel : ObservableObject
         });
     }
 
+    /// <summary>補完候補用のメタデータ（オブジェクト一覧 / Apex クラス等）をバックグラウンドで温める。</summary>
+    private void StartSuggestionPrefetch(OrgInfo? org)
+    {
+        var target = org?.Alias ?? org?.Username;
+        if (string.IsNullOrWhiteSpace(target))
+        {
+            return;
+        }
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                // 画面操作（実行・入力）を優先するため、1 つずつ順番に温める
+                await _describes.ListObjectsAsync(target, cancellationToken: CancellationToken.None);
+                await _metadata.ListApexClassesAsync(target, cancellationToken: CancellationToken.None);
+                await _metadata.ListCustomMetadataTypesAsync(target, cancellationToken: CancellationToken.None);
+                _log.Info($"補完候補のメタデータを事前取得: {org!.DisplayName}");
+            }
+            catch (Exception ex)
+            {
+                _log.Warn($"補完候補のメタデータ事前取得に失敗: {ex.Message}");
+            }
+        });
+    }
+
     partial void OnSelectedOrgChanged(OrgInfo? value)
     {
         // 各機能ビューへ対象組織（--target-org / REST 用）を伝播
@@ -572,6 +604,9 @@ public partial class MainViewModel : ObservableObject
 
         // 初回実行を速くするため、選択された組織のトークンをバックグラウンドで事前取得する
         StartAuthPrefetch(value);
+
+        // 補完候補（オブジェクト / 項目 / Apex クラス）のメタデータをバックグラウンドで温める
+        StartSuggestionPrefetch(value);
 
         if (value is null || string.Equals(_settings.Current.LastOrgUsername, value.Username, StringComparison.OrdinalIgnoreCase))
         {

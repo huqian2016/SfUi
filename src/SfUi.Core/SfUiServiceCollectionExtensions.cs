@@ -25,6 +25,8 @@ public static class SfUiServiceCollectionExtensions
         services.AddSingleton<RecentUrlsStore>();
         services.AddSingleton<EditorTabsStore>();
         services.AddSingleton<OrgCacheStore>();
+        services.AddSingleton<MetadataCacheStore>();
+        services.AddSingleton<IMetadataCache>(sp => sp.GetRequiredService<MetadataCacheStore>());
         services.AddSingleton<FavoritesStore>();
         services.AddSingleton<HistoryStore>();
         services.AddSingleton<OrgInfoCacheStore>();

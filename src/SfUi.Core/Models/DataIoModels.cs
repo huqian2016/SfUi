@@ -1,5 +1,7 @@
 namespace SfUi.Core;
 
+using System.Text.Json.Serialization;
+
 /// <summary>データ入出力の実行エンジン。</summary>
 public enum DataIoEngine
 {
@@ -23,6 +25,7 @@ public enum DataImportOperation
 public sealed record DataIoObject(string Name, string Label, bool Queryable, bool Createable, bool Updateable, bool Deletable)
 {
     /// <summary>コンボ表示用（ラベルと API 名）。</summary>
+    [JsonIgnore]
     public string Display => string.Equals(Name, Label, StringComparison.Ordinal) ? Name : $"{Label} ({Name})";
 
     public override string ToString() => Display;
@@ -44,8 +47,10 @@ public sealed record DataIoField(
     string? CalculatedFormula = null)
 {
     /// <summary>Insert 時の必須項目（作成可・非 null 許容・既定値なし）。</summary>
+    [JsonIgnore]
     public bool RequiredForInsert => Createable && !Nillable && !DefaultedOnCreate;
 
+    [JsonIgnore]
     public string Display => string.Equals(Name, Label, StringComparison.Ordinal) ? $"{Name} ({Type})" : $"{Label} ({Name})";
 
     public override string ToString() => Display;

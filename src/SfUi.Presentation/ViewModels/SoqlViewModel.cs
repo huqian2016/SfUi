@@ -133,6 +133,7 @@ public partial class SoqlViewModel : ObservableObject
     /// </summary>
     public async Task UpdateSuggestionsAsync(string text, int caret)
     {
+        var stopwatch = Stopwatch.StartNew();
         var context = SoqlCompletionParser.Parse(text, caret);
 
         _suggestCts?.Cancel();
@@ -196,6 +197,7 @@ public partial class SoqlViewModel : ObservableObject
 
             IsFetchingSuggestions = false;
             IsSuggestionsVisible = items.Count > 0;
+            _log.Info($"SOQL 候補を表示: {items.Count} 件 ({stopwatch.ElapsedMilliseconds} ms)");
         }
         catch (OperationCanceledException)
         {
