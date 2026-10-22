@@ -44,6 +44,7 @@ public static class SfUiServiceCollectionExtensions
         services.AddSingleton<DataImportService>();
         services.AddSingleton<PermissionAccessService>();
         services.AddSingleton<RecordAccessService>();
+        services.AddSingleton<UserAccessService>();
         services.AddSingleton<SalesforceSoapClient>();
         services.AddSingleton<BackupStateStore>();
         services.AddSingleton<BackupService>();

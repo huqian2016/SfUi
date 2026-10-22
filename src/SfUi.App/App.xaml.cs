@@ -138,6 +138,7 @@ public partial class App : Application
         services.AddTransient<ObjectAccessViewModel>();
         services.AddTransient<FieldAccessViewModel>();
         services.AddTransient<RecordAccessViewModel>();
+        services.AddTransient<UserAccessViewModel>();
         services.AddTransient<DataIoWindow>();
         services.AddSingleton<EtlWindowFactory>();
         services.AddTransient<EtlViewModel>();

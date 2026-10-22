@@ -22,6 +22,7 @@ public sealed partial class DataIoViewModel : ObservableObject, IDisposable
         ObjectAccessViewModel objectAccess,
         FieldAccessViewModel fieldAccess,
         RecordAccessViewModel recordAccess,
+        UserAccessViewModel userAccess,
         IDialogService dialogs,
         AppLog log)
     {
@@ -31,6 +32,7 @@ public sealed partial class DataIoViewModel : ObservableObject, IDisposable
         ObjectAccess = objectAccess;
         FieldAccess = fieldAccess;
         RecordAccess = recordAccess;
+        UserAccess = userAccess;
         _dialogs = dialogs;
         _log = log;
         export.Attach(this);
@@ -38,6 +40,7 @@ public sealed partial class DataIoViewModel : ObservableObject, IDisposable
         objectAccess.Attach(this);
         fieldAccess.Attach(this);
         recordAccess.Attach(this);
+        userAccess.Attach(this);
     }
 
     public DataExportViewModel Export { get; }
@@ -49,6 +52,9 @@ public sealed partial class DataIoViewModel : ObservableObject, IDisposable
     public FieldAccessViewModel FieldAccess { get; }
 
     public RecordAccessViewModel RecordAccess { get; }
+
+    /// <summary>ユーザー中心の実効アクセス タブ。</summary>
+    public UserAccessViewModel UserAccess { get; }
 
     public OrgInfo? Org { get; private set; }
 
@@ -267,6 +273,7 @@ public sealed partial class DataIoViewModel : ObservableObject, IDisposable
         ObjectAccess.Dispose();
         FieldAccess.Dispose();
         RecordAccess.Dispose();
+        UserAccess.Dispose();
         DescribeChanged = null;
     }
 }

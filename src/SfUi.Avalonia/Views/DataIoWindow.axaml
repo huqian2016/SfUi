@@ -41,6 +41,9 @@
             <TabItem Header="{loc:Tr DataIo_TabRecordAccess}">
                 <views:RecordAccessView DataContext="{Binding RecordAccess}" />
             </TabItem>
+            <TabItem Header="{loc:Tr DataIo_TabUserAccess}" AutomationProperties.AutomationId="UserAccessTab">
+                <views:UserAccessView DataContext="{Binding UserAccess}" />
+            </TabItem>
         </TabControl>
     </DockPanel>
 </Window>

@@ -69,6 +69,7 @@ public partial class App : Application
             services.AddTransient<ObjectAccessViewModel>();
             services.AddTransient<FieldAccessViewModel>();
             services.AddTransient<RecordAccessViewModel>();
+            services.AddTransient<UserAccessViewModel>();
             services.AddTransient<BackupViewModel>();
             services.AddTransient<BackupTabViewModel>();
             services.AddTransient<RestoreTabViewModel>();

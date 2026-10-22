@@ -1,0 +1,112 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:SfUi.Avalonia"
+             x:Class="SfUi.Avalonia.Views.UserAccessView"
+             FontSize="13">
+    <DockPanel Margin="6">
+        <Border DockPanel.Dock="Top" Padding="4,4,4,6" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="{loc:Tr UserAccess_Show}" Command="{Binding ShowCommand}" Padding="12,3"
+                            FontWeight="SemiBold" AutomationProperties.AutomationId="UserAccessShow" />
+                    <Button Content="{loc:Tr Access_Reload}" Command="{Binding ReloadCommand}" Padding="12,3" Margin="6,0,0,0"
+                            AutomationProperties.AutomationId="UserAccessReload" />
+                    <TextBlock Text="{loc:Tr UserAccess_FieldFilter}" Margin="14,0,4,0" VerticalAlignment="Center" />
+                    <TextBox Width="150" Text="{Binding FieldSearch, Mode=TwoWay}"
+                             ToolTip.Tip="{loc:Tr Access_SearchTip}" AutomationProperties.AutomationId="UserAccessFieldSearch" />
+                    <CheckBox Content="{loc:Tr UserAccess_EditOnly}" IsChecked="{Binding EditOnly, Mode=TwoWay}"
+                              Margin="10,0,0,0" VerticalAlignment="Center" AutomationProperties.AutomationId="UserAccessEditOnly" />
+                    <Button Content="{loc:Tr UserAccess_ExportObject}" Command="{Binding ExportObjectCsvCommand}"
+                            Padding="10,3" Margin="14,0,0,0" AutomationProperties.AutomationId="UserAccessExportObject" />
+                    <Button Content="{loc:Tr UserAccess_ExportFields}" Command="{Binding ExportFieldCsvCommand}"
+                            Padding="10,3" Margin="4,0,0,0" AutomationProperties.AutomationId="UserAccessExportFields" />
+                    <TextBlock Text="{Binding SummaryText}" Margin="14,0,0,0" VerticalAlignment="Center" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding StatusMessage}" Margin="14,0,0,0" VerticalAlignment="Center" Foreground="#555555"
+                               TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+                <TextBlock Text="{loc:Tr UserAccess_Legend}" Foreground="#777777" Margin="0,4,0,0" TextWrapping="Wrap" FontSize="12" />
+            </StackPanel>
+        </Border>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="340" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- ユーザー選択（複数可） -->
+            <DockPanel Grid.Column="0" Margin="0,0,10,0">
+                <TextBlock DockPanel.Dock="Top" Text="{loc:Tr RecordAccess_UsersLabel}" FontWeight="SemiBold" />
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,3,0,3">
+                    <TextBox Width="150" Text="{Binding UserFilter, Mode=TwoWay}"
+                             ToolTip.Tip="{loc:Tr RecordAccess_UserFilterHint}" AutomationProperties.AutomationId="UserAccessUserFilter" />
+                    <Button Content="{loc:Tr RecordAccess_SelectAll}" Command="{Binding SelectAllUsersCommand}" Padding="8,2" Margin="6,0,0,0"
+                            AutomationProperties.AutomationId="UserAccessSelectAll" />
+                    <Button Content="{loc:Tr RecordAccess_SelectNone}" Command="{Binding ClearUsersCommand}" Padding="8,2" Margin="4,0,0,0"
+                            AutomationProperties.AutomationId="UserAccessClear" />
+                </StackPanel>
+                <ListBox ItemsSource="{Binding VisibleUsers}" AutomationProperties.AutomationId="UserAccessUsersList">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <CheckBox Content="{Binding Display}" IsChecked="{Binding IsSelected, Mode=TwoWay}" Margin="0,1" />
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+
+            <Grid Grid.Column="1" RowDefinitions="180,4,*">
+                <DockPanel Grid.Row="0">
+                    <TextBlock DockPanel.Dock="Top" Text="{loc:Tr UserAccess_ObjectHeader}" FontWeight="SemiBold" Margin="0,0,0,3" />
+                    <DataGrid x:Name="UserAccessObjectGrid" ItemsSource="{Binding ObjectRows}" IsReadOnly="True" AutoGenerateColumns="False"
+                              HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                              AutomationProperties.AutomationId="UserAccessObjectGrid">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="{loc:Tr UserAccess_ColUser}" Binding="{Binding User}" Width="210" />
+                            <DataGridTextColumn Header="{loc:Tr UserAccess_ColProfile}" Binding="{Binding Profile}" Width="160" />
+                            <DataGridTextColumn Header="{loc:Tr Access_ColRead}" Binding="{Binding Read}" Width="60" />
+                            <DataGridTextColumn Header="{loc:Tr Access_ColCreate}" Binding="{Binding Create}" Width="60" />
+                            <DataGridTextColumn Header="{loc:Tr Access_ColEdit}" Binding="{Binding Edit}" Width="60" />
+                            <DataGridTextColumn Header="{loc:Tr Access_ColDelete}" Binding="{Binding Delete}" Width="60" />
+                            <DataGridTextColumn Header="{loc:Tr Access_ColViewAllRecords}" Binding="{Binding ViewAll}" Width="110" />
+                            <DataGridTextColumn Header="{loc:Tr Access_ColModifyAllRecords}" Binding="{Binding ModifyAll}" Width="120" />
+                            <DataGridTextColumn Header="{loc:Tr Access_ColViewAllFields}" Binding="{Binding ViewAllFields}" Width="110" />
+                            <DataGridTextColumn Header="{loc:Tr UserAccess_ColFieldCounts}" Binding="{Binding FieldCounts}" Width="140" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+
+                <GridSplitter Grid.Row="1" Height="4" HorizontalAlignment="Stretch" Background="#DDDDDD" ResizeDirection="Rows" />
+
+                <DockPanel Grid.Row="2">
+                    <TextBlock DockPanel.Dock="Top" Text="{loc:Tr UserAccess_FieldHeader}" FontWeight="SemiBold" Margin="0,3,0,3" />
+                    <DataGrid x:Name="UserAccessFieldGrid" ItemsSource="{Binding FieldRows}" IsReadOnly="True" AutoGenerateColumns="False"
+                              HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                              AutomationProperties.AutomationId="UserAccessFieldGrid">
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Header="{loc:Tr FieldAccess_ColField}" Width="280">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Field}" TextTrimming="CharacterEllipsis" Margin="4,2"
+                                                   ToolTip.Tip="{Binding Field}" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="{loc:Tr UserAccess_ColUser}" Binding="{Binding User}" Width="200" />
+                            <DataGridTextColumn Header="{loc:Tr UserAccess_ColProfile}" Binding="{Binding Profile}" Width="150" />
+                            <DataGridTextColumn Header="{loc:Tr Access_ColRead}" Binding="{Binding Read}" Width="60" />
+                            <DataGridTextColumn Header="{loc:Tr Access_ColEdit}" Binding="{Binding Edit}" Width="60" />
+                            <DataGridTemplateColumn Header="{loc:Tr UserAccess_ColGrants}" Width="*">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding GrantedBy}" TextTrimming="CharacterEllipsis" Margin="4,2"
+                                                   ToolTip.Tip="{Binding GrantedBy}" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </Grid>
+        </Grid>
+    </DockPanel>
+</UserControl>
