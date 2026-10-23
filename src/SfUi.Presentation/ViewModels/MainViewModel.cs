@@ -59,9 +59,9 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private int _selectedTabIndex;
 
-    /// <summary>クイックパネル（左サイド）の表示状態。</summary>
+    /// <summary>クイックパネル（左サイド）の表示状態（既定は非表示）。</summary>
     [ObservableProperty]
-    private bool _isQuickPanelVisible = true;
+    private bool _isQuickPanelVisible;
 
     /// <summary>AI パネル（右サイド）の表示状態。</summary>
     [ObservableProperty]

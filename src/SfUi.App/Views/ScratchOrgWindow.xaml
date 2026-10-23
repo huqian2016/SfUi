@@ -118,8 +118,18 @@
                                               AutomationProperties.AutomationId="ScratchUseCustomMetadata" />
                                     <CheckBox Content="{loc:Tr Scratch_UsePermissionSets}" IsChecked="{Binding UsePermissionSets, Mode=TwoWay}" Margin="0,0,0,3"
                                               AutomationProperties.AutomationId="ScratchUsePermissionSets" />
-                                    <CheckBox Content="{loc:Tr Scratch_UseSeedData}" IsChecked="{Binding UseSeedData, Mode=TwoWay}" Margin="0,0,0,6"
+                                    <CheckBox Content="{loc:Tr Scratch_UseSeedData}" IsChecked="{Binding UseSeedData, Mode=TwoWay}" Margin="0,0,0,3"
                                               AutomationProperties.AutomationId="ScratchUseSeedData" />
+                                    <CheckBox Content="{loc:Tr Scratch_UseStaticResources}" IsChecked="{Binding UseStaticResources, Mode=TwoWay}" Margin="0,0,0,3"
+                                              AutomationProperties.AutomationId="ScratchUseStaticResources" />
+                                    <CheckBox Content="{loc:Tr Scratch_UseConnectedApps}" IsChecked="{Binding UseConnectedApps, Mode=TwoWay}" Margin="0,0,0,3"
+                                              AutomationProperties.AutomationId="ScratchUseConnectedApps" />
+                                    <CheckBox Content="{loc:Tr Scratch_UseReports}" IsChecked="{Binding UseReports, Mode=TwoWay}" Margin="0,0,0,3"
+                                              AutomationProperties.AutomationId="ScratchUseReports" />
+                                    <CheckBox Content="{loc:Tr Scratch_UseApexScripts}" IsChecked="{Binding UseApexScripts, Mode=TwoWay}" Margin="0,0,0,4"
+                                              ToolTip="{loc:Tr Scratch_UseApexScriptsTip}"
+                                              AutomationProperties.AutomationId="ScratchUseApexScripts" />
+                                    <TextBlock Text="{loc:Tr Scratch_SourcesHint}" TextWrapping="Wrap" Foreground="#777777" FontSize="12" Margin="0,0,0,6" />
                                     <TextBlock Text="{loc:Tr Scratch_PermissionSetsLabel}" Margin="0,0,0,3" />
                                     <TextBox Text="{Binding PermissionSetsText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                              Height="72" AcceptsReturn="True" TextWrapping="NoWrap"
@@ -198,6 +208,11 @@
                         <Button Content="{loc:Tr Scratch_ImportProfile}" Padding="10,2" Margin="6,0,0,0" Command="{Binding ImportProfileCommand}" />
                         <Button Content="{loc:Tr Scratch_DeleteProfile}" Padding="10,2" Margin="6,0,0,0" Command="{Binding DeleteProfileCommand}" />
                         <Button Content="{loc:Tr Scratch_OpenFolder}" Padding="10,2" Margin="6,0,0,0" Command="{Binding OpenProfileFolderCommand}" />
+                        <Button Content="{loc:Tr Scratch_BatchCreate}" Padding="10,2" Margin="14,0,0,0" FontWeight="SemiBold"
+                                Command="{Binding BatchCreateCommand}"
+                                AutomationProperties.AutomationId="ScratchBatchCreate" />
+                        <TextBlock Text="{Binding BatchSelectionText}" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="#555555"
+                                   AutomationProperties.AutomationId="ScratchBatchSelection" />
                     </StackPanel>
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -206,9 +221,14 @@
                         </Grid.ColumnDefinitions>
                         <DockPanel Grid.Column="0" Margin="0,0,10,0">
                             <TextBlock DockPanel.Dock="Top" Text="{loc:Tr Scratch_ProfilesListHeader}" FontWeight="SemiBold" Margin="0,0,0,4" />
-                            <ListBox ItemsSource="{Binding ProfileNames}"
-                                     SelectedItem="{Binding SelectedProfileName, Mode=TwoWay}"
-                                     AutomationProperties.AutomationId="ScratchProfileList" />
+                            <ListBox ItemsSource="{Binding ProfileRows}"
+                                     AutomationProperties.AutomationId="ScratchProfileList">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected, Mode=TwoWay}" Margin="0,1" />
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
                         </DockPanel>
                         <StackPanel Grid.Column="1">
                             <TextBlock Text="{loc:Tr Scratch_FilesHeader}" FontWeight="SemiBold" />
@@ -265,6 +285,87 @@
                                  FontFamily="Consolas" TextWrapping="NoWrap"
                                  VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
                                  AutomationProperties.AutomationId="ScratchHistoryDetail" />
+                    </DockPanel>
+                </Grid>
+            </TabItem>
+
+            <!-- 別 Org からの取り込みタブ -->
+            <TabItem Header="{loc:Tr Scratch_TabImport}" AutomationProperties.AutomationId="ScratchTabImport">
+                <Grid Margin="4">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="4" />
+                        <RowDefinition Height="220" />
+                        <RowDefinition Height="4" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{loc:Tr Scratch_ImportSourceLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                            <ComboBox Width="320" ItemsSource="{Binding Orgs}"
+                                      SelectedItem="{Binding SourceOrg, Mode=TwoWay}"
+                                      IsEnabled="{Binding CanEdit}"
+                                      ToolTip="{loc:Tr Scratch_ImportSourceTip}"
+                                      AutomationProperties.AutomationId="ScratchImportSource">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding DisplayName}" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                            <Button Content="{loc:Tr Scratch_Retrieve}" Padding="12,2" Margin="10,0,0,0"
+                                    Command="{Binding RetrieveCommand}"
+                                    AutomationProperties.AutomationId="ScratchImportRetrieve" />
+                            <Button Content="{loc:Tr Scratch_ApplyRetrieved}" Padding="12,2" Margin="6,0,0,0"
+                                    Command="{Binding ApplyRetrievedCommand}"
+                                    AutomationProperties.AutomationId="ScratchImportApply" />
+                            <TextBlock Text="{Binding RetrieveStatus}" VerticalAlignment="Center" Margin="12,0,0,0" Foreground="#555555"
+                                       TextTrimming="CharacterEllipsis"
+                                       AutomationProperties.AutomationId="ScratchImportStatus" />
+                        </StackPanel>
+                        <WrapPanel Margin="0,6,0,0">
+                            <CheckBox Content="{loc:Tr Scratch_UseMetadata}" IsChecked="{Binding RetrieveUseMetadata, Mode=TwoWay}" Margin="0,0,12,0"
+                                      AutomationProperties.AutomationId="ScratchImportMetadata" />
+                            <CheckBox Content="{loc:Tr Scratch_UseCustomMetadata}" IsChecked="{Binding RetrieveUseCustomMetadata, Mode=TwoWay}" Margin="0,0,12,0"
+                                      AutomationProperties.AutomationId="ScratchImportCustomMetadata" />
+                            <CheckBox Content="{loc:Tr Scratch_UseStaticResources}" IsChecked="{Binding RetrieveUseStaticResources, Mode=TwoWay}" Margin="0,0,12,0"
+                                      AutomationProperties.AutomationId="ScratchImportStaticResources" />
+                            <CheckBox Content="{loc:Tr Scratch_UseConnectedApps}" IsChecked="{Binding RetrieveUseConnectedApps, Mode=TwoWay}" Margin="0,0,12,0"
+                                      AutomationProperties.AutomationId="ScratchImportConnectedApps" />
+                            <CheckBox Content="{loc:Tr Scratch_UseReports}" IsChecked="{Binding RetrieveUseReports, Mode=TwoWay}"
+                                      AutomationProperties.AutomationId="ScratchImportReports" />
+                        </WrapPanel>
+                        <TextBlock Text="{loc:Tr Scratch_ImportHint}" TextWrapping="Wrap" Foreground="#777777" FontSize="12" Margin="0,6,0,0" />
+                    </StackPanel>
+
+                    <GridSplitter Grid.Row="1" Height="4" HorizontalAlignment="Stretch" Background="#DDDDDD" ResizeDirection="Rows" />
+
+                    <DockPanel Grid.Row="2">
+                        <TextBlock DockPanel.Dock="Top" Text="{loc:Tr Scratch_ImportDiffHeader}" FontWeight="SemiBold" Margin="0,0,0,3" />
+                        <Grid>
+                            <DataGrid ItemsSource="{Binding RetrieveChanges}" AutoGenerateColumns="False" IsReadOnly="True"
+                                      HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                                      AutomationProperties.AutomationId="ScratchImportGrid">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="{loc:Tr Scratch_ColFile}" Binding="{Binding RelativePath}" Width="*" />
+                                    <DataGridTextColumn Header="{loc:Tr Scratch_ColChange}" Binding="{Binding KindText}" Width="100" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                            <TextBlock Text="{loc:Tr Scratch_ImportEmpty}" Foreground="#999999" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       IsHitTestVisible="False"
+                                       Visibility="{Binding IsRetrieveEmpty, Converter={StaticResource BoolToVis}}" />
+                        </Grid>
+                    </DockPanel>
+
+                    <GridSplitter Grid.Row="3" Height="4" HorizontalAlignment="Stretch" Background="#DDDDDD" ResizeDirection="Rows" />
+
+                    <DockPanel Grid.Row="4">
+                        <TextBlock DockPanel.Dock="Top" Text="{loc:Tr Scratch_ImportLogHeader}" FontWeight="SemiBold" Margin="0,0,0,3" />
+                        <TextBox Text="{Binding RetrieveLog, Mode=OneWay}" IsReadOnly="True" AcceptsReturn="True"
+                                 FontFamily="Consolas" TextWrapping="NoWrap"
+                                 VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                                 AutomationProperties.AutomationId="ScratchImportLog" />
                     </DockPanel>
                 </Grid>
             </TabItem>

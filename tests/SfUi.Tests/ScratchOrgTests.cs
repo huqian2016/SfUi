@@ -212,7 +212,14 @@ public class ScratchOrgTests
             Assert.True(File.Exists(files.ManifestFile));
             Assert.True(File.Exists(files.CustomMetadataManifestFile));
             Assert.True(File.Exists(files.SeedPlanFile));
+            Assert.True(File.Exists(files.ProjectFile));
+            Assert.True(Directory.Exists(files.PackageDirectory));
+            Assert.True(File.Exists(files.StaticResourcesManifestFile));
+            Assert.True(File.Exists(files.ConnectedAppsManifestFile));
+            Assert.True(File.Exists(files.ReportsManifestFile));
+            Assert.True(File.Exists(Path.Combine(files.ApexScriptsDirectory, "setup.apex")));
             Assert.Contains("CustomMetadata", File.ReadAllText(files.CustomMetadataManifestFile));
+            Assert.Contains("packageDirectories", File.ReadAllText(files.ProjectFile));
         }
         finally
         {
@@ -235,6 +242,8 @@ public class ScratchOrgTests
             profile.AliasPattern = "s-{profile}";
             profile.SetDefault = true;
             profile.UseMetadata = false;
+            profile.UseStaticResources = true;
+            profile.UseApexScripts = true;
             profile.PermissionSets = new List<string> { "A", "B", "A" };
             store.Save(profile);
 
@@ -246,6 +255,8 @@ public class ScratchOrgTests
             Assert.Equal("s-{profile}", loaded.AliasPattern);
             Assert.True(loaded.SetDefault);
             Assert.False(loaded.UseMetadata);
+            Assert.True(loaded.UseStaticResources);
+            Assert.True(loaded.UseApexScripts);
             Assert.Equal(new[] { "A", "B" }, loaded.PermissionSets);
         }
         finally
@@ -414,6 +425,194 @@ public class ScratchOrgTests
         Assert.Equal("Error: deploy failed", ScratchOrgService.ExtractError(result));
     }
 
+    // ---- 追加資源（P2） ----
+
+    [Fact]
+    public void BuildPlan_AddsAdditionalResourceSteps()
+    {
+        var root = CreateTempRoot();
+        try
+        {
+            var files = CreateFiles(root, includeSeed: false);
+            var profile = new ScratchProfile
+            {
+                Name = "dev",
+                UseMetadata = true,
+                UseCustomMetadata = false,
+                UsePermissionSets = false,
+                UseSeedData = false,
+                UseStaticResources = true,
+                UseConnectedApps = true,
+                UseReports = true,
+            };
+
+            var steps = ScratchOrgService.BuildPlan(profile, "hub", "scratch-dev", files);
+
+            Assert.Equal(
+                new[] { "create", "metadata", "static-resources", "connected-apps", "reports", "verify" },
+                steps.Select(s => s.Kind));
+            // deploy はプロファイル フォルダーを cwd にして実行する
+            Assert.Equal(Path.GetDirectoryName(files.ProjectFile), steps[1].WorkingDirectory);
+        }
+        finally
+        {
+            TryDelete(root);
+        }
+    }
+
+    [Fact]
+    public void BuildPlan_AddsApexScriptsInNameOrder()
+    {
+        var root = CreateTempRoot();
+        try
+        {
+            var files = CreateFiles(root, includeSeed: false);
+            File.WriteAllText(Path.Combine(files.ApexScriptsDirectory, "b.apex"), "System.debug('b');");
+            File.WriteAllText(Path.Combine(files.ApexScriptsDirectory, "a.apex"), "System.debug('a');");
+            var profile = new ScratchProfile
+            {
+                Name = "dev",
+                UseMetadata = false,
+                UseCustomMetadata = false,
+                UsePermissionSets = false,
+                UseSeedData = false,
+                UseApexScripts = true,
+            };
+
+            var steps = ScratchOrgService.BuildPlan(profile, "hub", "scratch-dev", files);
+            var apexSteps = steps.Where(s => s.Kind == "apex").ToList();
+
+            Assert.Equal(2, apexSteps.Count);
+            Assert.EndsWith("a.apex", apexSteps[0].Arguments[3]);
+            Assert.EndsWith("b.apex", apexSteps[1].Arguments[3]);
+            Assert.Equal(new[] { "create", "apex", "apex", "verify" }, steps.Select(s => s.Kind));
+        }
+        finally
+        {
+            TryDelete(root);
+        }
+    }
+
+    [Fact]
+    public void BuildPlan_SkipsDeploySteps_WhenThereAreNoSources()
+    {
+        var root = CreateTempRoot();
+        try
+        {
+            var files = CreateFiles(root, includeSeed: false);
+            Directory.Delete(files.PackageDirectory, recursive: true);
+            var profile = new ScratchProfile
+            {
+                Name = "dev",
+                UseMetadata = true,
+                UseCustomMetadata = true,
+                UseStaticResources = true,
+                UsePermissionSets = false,
+                UseSeedData = false,
+            };
+
+            var steps = ScratchOrgService.BuildPlan(profile, "hub", "scratch-dev", files);
+
+            Assert.Equal(new[] { "create", "verify" }, steps.Select(s => s.Kind));
+        }
+        finally
+        {
+            TryDelete(root);
+        }
+    }
+
+    [Fact]
+    public void HasSourceFiles_And_ListApexScripts_HandleMissingFolders()
+    {
+        var root = CreateTempRoot();
+        try
+        {
+            Assert.False(ScratchOrgService.HasSourceFiles(Path.Combine(root, "missing")));
+            Assert.Empty(ScratchOrgService.ListApexScripts(Path.Combine(root, "missing")));
+
+            var files = CreateFiles(root, includeSeed: false);
+            Assert.True(ScratchOrgService.HasSourceFiles(files.PackageDirectory));
+            Assert.Empty(ScratchOrgService.ListApexScripts(files.ApexScriptsDirectory));
+        }
+        finally
+        {
+            TryDelete(root);
+        }
+    }
+
+    // ---- 取り込み（P2） ----
+
+    [Fact]
+    public void BuildRetrieveArgs_UsesOutputDirectory()
+    {
+        var args = ScratchResourceService.BuildRetrieveArgs("p.xml", "acc", "out");
+
+        Assert.Equal(new[] { "project", "retrieve", "start" }, args.Take(3));
+        Assert.Contains("--output-dir", args);
+        Assert.Contains("out", args);
+        Assert.Equal("--json", args[^1]);
+    }
+
+    [Fact]
+    public void RetrieveCompare_DetectsAddedChangedAndSame()
+    {
+        var root = CreateTempRoot();
+        try
+        {
+            var retrieved = Path.Combine(root, "retrieved");
+            var target = Path.Combine(root, "target");
+            Directory.CreateDirectory(Path.Combine(retrieved, "classes"));
+            Directory.CreateDirectory(Path.Combine(target, "classes"));
+            File.WriteAllText(Path.Combine(retrieved, "package.xml"), "<Package/>");
+            File.WriteAllText(Path.Combine(retrieved, "classes", "Same.cls"), "same");
+            File.WriteAllText(Path.Combine(target, "classes", "Same.cls"), "same");
+            File.WriteAllText(Path.Combine(retrieved, "classes", "Changed.cls"), "new");
+            File.WriteAllText(Path.Combine(target, "classes", "Changed.cls"), "old");
+            File.WriteAllText(Path.Combine(retrieved, "classes", "Added.cls"), "added");
+
+            var diff = ScratchResourceService.Compare(retrieved, target);
+
+            Assert.Equal(1, diff.AddedCount);
+            Assert.Equal(1, diff.ChangedCount);
+            Assert.Equal(1, diff.SameCount);
+            Assert.Equal(2, diff.PendingCount);
+            Assert.DoesNotContain(diff.Changes, c => c.RelativePath == "package.xml");
+        }
+        finally
+        {
+            TryDelete(root);
+        }
+    }
+
+    [Fact]
+    public void RetrieveApply_CopiesFilesAndKeepsBackup()
+    {
+        var root = CreateTempRoot();
+        try
+        {
+            var retrieved = Path.Combine(root, "retrieved");
+            var target = Path.Combine(root, "target");
+            Directory.CreateDirectory(Path.Combine(retrieved, "classes"));
+            Directory.CreateDirectory(Path.Combine(target, "classes"));
+            File.WriteAllText(Path.Combine(retrieved, "classes", "Changed.cls"), "new");
+            File.WriteAllText(Path.Combine(target, "classes", "Changed.cls"), "old");
+            File.WriteAllText(Path.Combine(retrieved, "classes", "Added.cls"), "added");
+
+            var diff = ScratchResourceService.Compare(retrieved, target);
+            var applied = ScratchResourceService.Apply(diff, target);
+
+            Assert.Equal(2, applied);
+            Assert.Equal("new", File.ReadAllText(Path.Combine(target, "classes", "Changed.cls")));
+            Assert.Equal("old", File.ReadAllText(Path.Combine(target, "classes", "Changed.cls.bak")));
+            Assert.Equal("added", File.ReadAllText(Path.Combine(target, "classes", "Added.cls")));
+            Assert.Equal(0, ScratchResourceService.Compare(retrieved, target).PendingCount);
+        }
+        finally
+        {
+            TryDelete(root);
+        }
+    }
+
     // ---- ヘルパー ----
 
     private static ScratchProfileStore CreateStore(string root)
@@ -428,15 +627,31 @@ public class ScratchOrgTests
         var manifest = Path.Combine(root, "package.xml");
         var customMetadata = Path.Combine(root, "custom-metadata.xml");
         var plan = Path.Combine(root, "plan.json");
+        var project = Path.Combine(root, "sfdx-project.json");
+        var package = Path.Combine(root, "force-app", "main", "default");
+        var staticResources = Path.Combine(root, "static-resources.xml");
+        var connectedApps = Path.Combine(root, "connected-apps.xml");
+        var reports = Path.Combine(root, "reports.xml");
+        var apexScripts = Path.Combine(root, "scripts", "apex");
+
         File.WriteAllText(definition, "{}");
         File.WriteAllText(manifest, "<Package/>");
         File.WriteAllText(customMetadata, "<Package/>");
+        File.WriteAllText(project, "{}");
+        File.WriteAllText(staticResources, "<Package/>");
+        File.WriteAllText(connectedApps, "<Package/>");
+        File.WriteAllText(reports, "<Package/>");
+        Directory.CreateDirectory(Path.Combine(package, "classes"));
+        File.WriteAllText(Path.Combine(package, "classes", "Sample.cls"), "public class Sample {}");
+        Directory.CreateDirectory(apexScripts);
         File.WriteAllText(
             plan,
             includeSeed
                 ? "{ \"objects\": [ { \"sobject\": \"Account\", \"saveRefs\": true, \"resolveRefs\": true } ] }"
                 : "{ \"objects\": [] }");
-        return new ScratchProfileFiles(definition, manifest, customMetadata, plan);
+        return new ScratchProfileFiles(
+            definition, manifest, customMetadata, plan, project, package,
+            staticResources, connectedApps, reports, apexScripts);
     }
 
     private static string CreateTempRoot()

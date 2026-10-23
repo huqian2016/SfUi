@@ -8,6 +8,17 @@ using SfUi.Presentation;
 
 namespace SfUi.App.ViewModels;
 
+/// <summary>連続作成用のプロファイル 1 行（チェックボックス）。</summary>
+public sealed partial class ScratchProfileRowViewModel : ObservableObject
+{
+    public ScratchProfileRowViewModel(string name) => Name = name;
+
+    public string Name { get; }
+
+    [ObservableProperty]
+    private bool _isSelected;
+}
+
 /// <summary>
 /// スクラッチ組織ウィンドウの ViewModel。
 /// プロファイル（作成する資源の選択）を編集し、sf コマンドのプレビューと実行ログを表示する。
@@ -20,24 +31,31 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
     private readonly OrgService _orgs;
     private readonly ScratchProfileStore _profiles;
     private readonly ScratchOrgService _service;
+    private readonly ScratchResourceService _resources;
     private readonly ScratchRunHistoryStore _historyStore;
+    private readonly AppPaths _paths;
     private readonly IDialogService _dialogs;
     private readonly IFilePickerService _filePicker;
     private readonly ToolLauncherService _launcher;
     private readonly AppLog _log;
     private readonly StringBuilder _logBuilder = new();
+    private readonly List<string> _batchSelection = new();
 
     private ScratchProfile _profile = new();
     private CancellationTokenSource? _cts;
     private bool _initialized;
     private bool _applyingProfile;
     private string? _preferredDevHub;
+    private ScratchRetrieveDiff? _retrieveDiff;
+    private string? _retrieveDirectory;
 
     public ScratchOrgViewModel(
         OrgService orgs,
         ScratchProfileStore profiles,
         ScratchOrgService service,
+        ScratchResourceService resources,
         ScratchRunHistoryStore historyStore,
+        AppPaths paths,
         IDialogService dialogs,
         IFilePickerService filePicker,
         ToolLauncherService launcher,
@@ -46,7 +64,9 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
         _orgs = orgs;
         _profiles = profiles;
         _service = service;
+        _resources = resources;
         _historyStore = historyStore;
+        _paths = paths;
         _dialogs = dialogs;
         _filePicker = filePicker;
         _launcher = launcher;
@@ -59,7 +79,13 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
 
     public ObservableCollection<string> ProfileNames { get; } = new();
 
+    /// <summary>連続作成用のプロファイル一覧（チェックボックス）。</summary>
+    public ObservableCollection<ScratchProfileRowViewModel> ProfileRows { get; } = new();
+
     public ObservableCollection<ScratchRunRecord> History { get; } = new();
+
+    /// <summary>取り込み差分の一覧。</summary>
+    public ObservableCollection<ScratchRetrieveChange> RetrieveChanges { get; } = new();
 
     /// <summary>現在のプロファイル名。</summary>
     public string ProfileName => SelectedProfileName ?? _profile.Name;
@@ -82,6 +108,7 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(RunCommand))]
+    [NotifyCanExecuteChangedFor(nameof(BatchCreateCommand))]
     private OrgInfo? _selectedDevHub;
 
     [ObservableProperty]
@@ -115,17 +142,69 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
     private bool _useSeedData = true;
 
     [ObservableProperty]
+    private bool _useStaticResources;
+
+    [ObservableProperty]
+    private bool _useConnectedApps;
+
+    [ObservableProperty]
+    private bool _useReports;
+
+    [ObservableProperty]
+    private bool _useApexScripts;
+
+    [ObservableProperty]
     private string _permissionSetsText = string.Empty;
+
+    // ---- 別 Org からの取り込み ----
+
+    [ObservableProperty]
+    private OrgInfo? _sourceOrg;
+
+    [ObservableProperty]
+    private bool _retrieveUseMetadata = true;
+
+    [ObservableProperty]
+    private bool _retrieveUseCustomMetadata = true;
+
+    [ObservableProperty]
+    private bool _retrieveUseStaticResources;
+
+    [ObservableProperty]
+    private bool _retrieveUseConnectedApps;
+
+    [ObservableProperty]
+    private bool _retrieveUseReports;
+
+    [ObservableProperty]
+    private string _retrieveStatus = string.Empty;
+
+    [ObservableProperty]
+    private string _retrieveLog = string.Empty;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(RetrieveCommand))]
+    private bool _isRetrieving;
+
+    /// <summary>反映できる差分があるか。</summary>
+    public bool HasPendingRetrieveChanges => _retrieveDiff is { PendingCount: > 0 };
+
+    public bool IsRetrieveEmpty => RetrieveChanges.Count == 0;
+
+    /// <summary>連続作成で選んだプロファイルの表示。</summary>
+    public string BatchSelectionText => UiText.T("Scratch_BatchSelectedFmt", _batchSelection.Count);
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(RunCommand))]
     [NotifyCanExecuteChangedFor(nameof(CancelCommand))]
+    [NotifyCanExecuteChangedFor(nameof(BatchCreateCommand))]
     [NotifyPropertyChangedFor(nameof(CanCancel))]
     [NotifyPropertyChangedFor(nameof(CanEdit))]
     private bool _isRunning;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(RunCommand))]
+    [NotifyCanExecuteChangedFor(nameof(BatchCreateCommand))]
     private bool _isLoadingOrgs;
 
     [ObservableProperty]
@@ -194,6 +273,7 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
             SelectedDevHub = Orgs.FirstOrDefault(o => Matches(o, preferred))
                              ?? Orgs.FirstOrDefault(o => o.IsDefault)
                              ?? Orgs.FirstOrDefault();
+            SourceOrg ??= Orgs.FirstOrDefault(o => o.IsDefault) ?? Orgs.FirstOrDefault();
             StatusMessage = UiText.T("Scratch_OrgsLoadedFmt", Orgs.Count);
         }
         catch (Exception ex)
@@ -214,11 +294,23 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
 
     private void ReloadProfileNames(string? select)
     {
+        var selectedNames = _batchSelection.ToHashSet(StringComparer.OrdinalIgnoreCase);
         ProfileNames.Clear();
+        foreach (var row in ProfileRows)
+        {
+            row.PropertyChanged -= OnProfileRowPropertyChanged;
+        }
+
+        ProfileRows.Clear();
         foreach (var name in _profiles.ListProfiles())
         {
             ProfileNames.Add(name);
+            var row = new ScratchProfileRowViewModel(name) { IsSelected = selectedNames.Contains(name) };
+            row.PropertyChanged += OnProfileRowPropertyChanged;
+            ProfileRows.Add(row);
         }
+
+        UpdateBatchSelection();
 
         var target = ProfileNames.FirstOrDefault(n => string.Equals(n, select, StringComparison.OrdinalIgnoreCase))
                      ?? ProfileNames.FirstOrDefault();
@@ -237,10 +329,40 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
         }
     }
 
+    private void OnProfileRowPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(ScratchProfileRowViewModel.IsSelected))
+        {
+            UpdateBatchSelection();
+        }
+    }
+
+    private void UpdateBatchSelection()
+    {
+        _batchSelection.Clear();
+        _batchSelection.AddRange(ProfileRows.Where(row => row.IsSelected).Select(row => row.Name));
+        OnPropertyChanged(nameof(BatchSelectionText));
+        BatchCreateCommand.NotifyCanExecuteChanged();
+    }
+
     private void LoadProfile(string name)
     {
         _profile = _profiles.Ensure(name);
+        ClearRetrieveState();
         ApplyProfileValues(_profile);
+    }
+
+    /// <summary>取り込み結果（差分とログ）をクリアする。</summary>
+    private void ClearRetrieveState()
+    {
+        _retrieveDiff = null;
+        _retrieveDirectory = null;
+        RetrieveChanges.Clear();
+        RetrieveStatus = string.Empty;
+        RetrieveLog = string.Empty;
+        OnPropertyChanged(nameof(HasPendingRetrieveChanges));
+        OnPropertyChanged(nameof(IsRetrieveEmpty));
+        ApplyRetrievedCommand.NotifyCanExecuteChanged();
     }
 
     /// <summary>プロファイルの値を画面へ反映する（プロファイル読み込み時）。</summary>
@@ -258,6 +380,10 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
             UseCustomMetadata = profile.UseCustomMetadata;
             UsePermissionSets = profile.UsePermissionSets;
             UseSeedData = profile.UseSeedData;
+            UseStaticResources = profile.UseStaticResources;
+            UseConnectedApps = profile.UseConnectedApps;
+            UseReports = profile.UseReports;
+            UseApexScripts = profile.UseApexScripts;
             PermissionSetsText = string.Join(Environment.NewLine, profile.PermissionSets);
 
             if (!string.IsNullOrWhiteSpace(profile.DevHub))
@@ -292,6 +418,10 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
         profile.UseCustomMetadata = UseCustomMetadata;
         profile.UsePermissionSets = UsePermissionSets;
         profile.UseSeedData = UseSeedData;
+        profile.UseStaticResources = UseStaticResources;
+        profile.UseConnectedApps = UseConnectedApps;
+        profile.UseReports = UseReports;
+        profile.UseApexScripts = UseApexScripts;
         profile.PermissionSets = PermissionSetsText
             .Split(new[] { '\r', '\n', ',', ';', ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -311,6 +441,9 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
         var devHub = SelectedDevHub?.Alias ?? SelectedDevHub?.Username ?? "<DevHub>";
         var alias = ScratchProfileNaming.ExpandAlias(profile.AliasPattern, profile.Name, DateTimeOffset.Now);
         var files = _profiles.GetFiles(profile.Name);
+        var hasSources = ScratchOrgService.HasSourceFiles(files.PackageDirectory);
+        var usesDeploy = profile.UseMetadata || profile.UseCustomMetadata || profile.UseStaticResources
+                         || profile.UseConnectedApps || profile.UseReports;
 
         var warnings = new List<string>();
         if (!File.Exists(files.DefinitionFile))
@@ -328,6 +461,36 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
             warnings.Add(UiText.T("Scratch_WarnMissingCustomMetadataFmt", files.CustomMetadataManifestFile));
         }
 
+        if (profile.UseStaticResources && !File.Exists(files.StaticResourcesManifestFile))
+        {
+            warnings.Add(UiText.T("Scratch_WarnMissingStaticResourcesFmt", files.StaticResourcesManifestFile));
+        }
+
+        if (profile.UseConnectedApps && !File.Exists(files.ConnectedAppsManifestFile))
+        {
+            warnings.Add(UiText.T("Scratch_WarnMissingConnectedAppsFmt", files.ConnectedAppsManifestFile));
+        }
+
+        if (profile.UseReports && !File.Exists(files.ReportsManifestFile))
+        {
+            warnings.Add(UiText.T("Scratch_WarnMissingReportsFmt", files.ReportsManifestFile));
+        }
+
+        if (usesDeploy && !hasSources)
+        {
+            warnings.Add(UiText.T("Scratch_WarnNoSources"));
+        }
+
+        if (profile.UseCustomMetadata && !profile.UseMetadata)
+        {
+            warnings.Add(UiText.T("Scratch_WarnCustomMetadataWithoutMetadata"));
+        }
+
+        if (profile.UsePermissionSets && !profile.UseMetadata)
+        {
+            warnings.Add(UiText.T("Scratch_WarnPermissionSetsWithoutMetadata"));
+        }
+
         if (profile.UseSeedData && !ScratchOrgService.HasSeedObjects(files.SeedPlanFile))
         {
             warnings.Add(UiText.T("Scratch_WarnNoSeedPlan"));
@@ -336,6 +499,11 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
         if (profile.UsePermissionSets && profile.PermissionSets.Count == 0)
         {
             warnings.Add(UiText.T("Scratch_WarnNoPermissionSets"));
+        }
+
+        if (profile.UseApexScripts && ScratchOrgService.ListApexScripts(files.ApexScriptsDirectory).Count == 0)
+        {
+            warnings.Add(UiText.T("Scratch_WarnNoApexScripts"));
         }
 
         WarningText = string.Join(Environment.NewLine, warnings);
@@ -492,8 +660,36 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
     {
         var profile = CaptureProfile();
         var devHub = SelectedDevHub?.Alias ?? SelectedDevHub?.Username;
-        var files = _profiles.GetFiles(profile.Name);
+        var errors = ValidateForRun(profile, devHub);
+        if (errors.Count > 0)
+        {
+            StatusMessage = errors[0];
+            _dialogs.Warning(string.Join(Environment.NewLine, errors), Title);
+            return;
+        }
 
+        profile.DevHub = devHub;
+        _profiles.Save(profile);
+        _profile = profile;
+        ApplyProfileValues(profile);
+
+        var alias = ScratchProfileNaming.ExpandAlias(profile.AliasPattern, profile.Name, DateTimeOffset.Now);
+        if (!_dialogs.Confirm(UiText.T("Scratch_RunConfirmFmt", devHub!, alias), Title))
+        {
+            return;
+        }
+
+        var (success, resultAlias) = await RunProfileCoreAsync(profile, devHub!, showDialogs: true, resetLog: true);
+        if (success)
+        {
+            await LoadOrgsAsync(resultAlias);
+        }
+    }
+
+    /// <summary>実行前の検証（Dev Hub / プロファイル / 必須ファイル）。</summary>
+    private List<string> ValidateForRun(ScratchProfile profile, string? devHub)
+    {
+        var files = _profiles.GetFiles(profile.Name);
         var errors = new List<string>();
         if (string.IsNullOrWhiteSpace(devHub))
         {
@@ -516,28 +712,27 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
             errors.Add(UiText.T("Scratch_MissingCustomMetadataFmt", files.CustomMetadataManifestFile));
         }
 
-        if (errors.Count > 0)
+        return errors;
+    }
+
+    /// <summary>1 プロファイル分の作成を実行する（成功・失敗を問わず履歴に記録する）。</summary>
+    private async Task<(bool Success, string Alias)> RunProfileCoreAsync(
+        ScratchProfile profile,
+        string devHub,
+        bool showDialogs,
+        bool resetLog)
+    {
+        if (resetLog)
         {
-            StatusMessage = errors[0];
-            _dialogs.Warning(string.Join(Environment.NewLine, errors), Title);
-            return;
+            ResetLog();
         }
 
-        profile.DevHub = devHub;
-        _profiles.Save(profile);
-        _profile = profile;
-        ApplyProfileValues(profile);
-
+        var files = _profiles.GetFiles(profile.Name);
         var alias = ScratchProfileNaming.ExpandAlias(profile.AliasPattern, profile.Name, DateTimeOffset.Now);
-        if (!_dialogs.Confirm(UiText.T("Scratch_RunConfirmFmt", devHub!, alias), Title))
-        {
-            return;
-        }
+        var steps = ScratchOrgService.BuildPlan(profile, devHub, alias, files);
 
-        var steps = ScratchOrgService.BuildPlan(profile, devHub!, alias, files);
         _cts = new CancellationTokenSource();
         IsRunning = true;
-        ResetLog();
         var started = DateTimeOffset.Now;
         ScratchOrgRunResult? runResult = null;
         try
@@ -565,7 +760,7 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
 
         if (runResult is null)
         {
-            return;
+            return (false, alias);
         }
 
         var record = new ScratchRunRecord
@@ -574,7 +769,7 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
             FinishedAt = DateTimeOffset.Now,
             ProfileName = profile.Name,
             Alias = alias,
-            DevHub = devHub!,
+            DevHub = devHub,
             Success = runResult.Success,
             Message = runResult.Success ? string.Empty : (runResult.ErrorText ?? string.Empty),
             Steps = runResult.Steps.ToList(),
@@ -585,20 +780,247 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
         if (runResult.Success)
         {
             StatusMessage = UiText.T("Scratch_RunDoneFmt", alias);
-            _dialogs.Info(
-                UiText.T("Scratch_RunDoneFmt", alias) + Environment.NewLine + Environment.NewLine +
-                UiText.T("Scratch_RunDoneHintFmt", alias),
-                Title);
-            await LoadOrgsAsync(alias);
+            if (showDialogs)
+            {
+                _dialogs.Info(
+                    UiText.T("Scratch_RunDoneFmt", alias) + Environment.NewLine + Environment.NewLine +
+                    UiText.T("Scratch_RunDoneHintFmt", alias),
+                    Title);
+            }
+
+            return (true, alias);
         }
-        else
+
+        StatusMessage = UiText.T("Scratch_RunFailedFmt", runResult.FailedStepLabel ?? string.Empty);
+        if (showDialogs)
         {
-            StatusMessage = UiText.T("Scratch_RunFailedFmt", runResult.FailedStepLabel ?? string.Empty);
             _dialogs.Warning(
                 $"{runResult.FailedStepLabel}: {runResult.ErrorText}" + Environment.NewLine +
                 UiText.T("Scratch_RunFailedHint"),
                 Title);
         }
+
+        return (false, alias);
+    }
+
+    // ---- 複数プロファイルの連続作成 ----
+
+    private bool CanBatchCreate() => !IsRunning && !IsLoadingOrgs && SelectedDevHub is not null && _batchSelection.Count > 0;
+
+    [RelayCommand(CanExecute = nameof(CanBatchCreate))]
+    private async Task BatchCreateAsync()
+    {
+        var devHub = SelectedDevHub?.Alias ?? SelectedDevHub?.Username;
+        var profiles = _batchSelection.Select(name => _profiles.Ensure(name)).ToList();
+        var errors = new List<string>();
+        if (string.IsNullOrWhiteSpace(devHub))
+        {
+            errors.Add(UiText.T("Scratch_NoDevHub"));
+        }
+
+        if (profiles.Count == 0)
+        {
+            errors.Add(UiText.T("Scratch_BatchNoSelection"));
+        }
+
+        var aliases = profiles
+            .Select(p => ScratchProfileNaming.ExpandAlias(p.AliasPattern, p.Name, DateTimeOffset.Now))
+            .ToList();
+        var duplicate = aliases
+            .GroupBy(a => a, StringComparer.OrdinalIgnoreCase)
+            .FirstOrDefault(group => group.Count() > 1);
+        if (duplicate is not null)
+        {
+            errors.Add(UiText.T("Scratch_BatchDuplicateAliasFmt", duplicate.Key));
+        }
+
+        foreach (var profile in profiles)
+        {
+            errors.AddRange(ValidateForRun(profile, devHub));
+        }
+
+        if (errors.Count > 0)
+        {
+            StatusMessage = errors[0];
+            _dialogs.Warning(string.Join(Environment.NewLine, errors.Distinct()), Title);
+            return;
+        }
+
+        if (!_dialogs.Confirm(UiText.T("Scratch_BatchConfirmFmt", profiles.Count), Title))
+        {
+            return;
+        }
+
+        ResetLog();
+        var succeeded = 0;
+        foreach (var profile in profiles)
+        {
+            AppendLog(UiText.T("Scratch_BatchProfileFmt", profile.Name));
+            var (success, _) = await RunProfileCoreAsync(profile, devHub!, showDialogs: false, resetLog: false);
+            if (!success)
+            {
+                break;
+            }
+
+            succeeded++;
+        }
+
+        ReloadHistory();
+        var summary = UiText.T("Scratch_BatchSummaryFmt", succeeded, profiles.Count);
+        StatusMessage = summary;
+        _dialogs.Info(summary, Title);
+    }
+
+    // ---- 別 Org からの取り込み ----
+
+    private bool CanRetrieve() => !IsRetrieving && SourceOrg is not null;
+
+    [RelayCommand(CanExecute = nameof(CanRetrieve))]
+    private async Task RetrieveAsync()
+    {
+        var profile = CaptureProfile();
+        var source = SourceOrg?.Alias ?? SourceOrg?.Username;
+        if (string.IsNullOrWhiteSpace(source))
+        {
+            RetrieveStatus = UiText.T("Scratch_ImportNoSource");
+            return;
+        }
+
+        var files = _profiles.GetFiles(profile.Name);
+        var manifests = new List<(string Path, string Label)>();
+        if (RetrieveUseMetadata)
+        {
+            manifests.Add((files.ManifestFile, UiText.T("Scratch_UseMetadata")));
+        }
+
+        if (RetrieveUseCustomMetadata)
+        {
+            manifests.Add((files.CustomMetadataManifestFile, UiText.T("Scratch_UseCustomMetadata")));
+        }
+
+        if (RetrieveUseStaticResources)
+        {
+            manifests.Add((files.StaticResourcesManifestFile, UiText.T("Scratch_UseStaticResources")));
+        }
+
+        if (RetrieveUseConnectedApps)
+        {
+            manifests.Add((files.ConnectedAppsManifestFile, UiText.T("Scratch_UseConnectedApps")));
+        }
+
+        if (RetrieveUseReports)
+        {
+            manifests.Add((files.ReportsManifestFile, UiText.T("Scratch_UseReports")));
+        }
+
+        if (manifests.Count == 0)
+        {
+            RetrieveStatus = UiText.T("Scratch_ImportNoGroup");
+            return;
+        }
+
+        var missing = manifests.FirstOrDefault(item => !File.Exists(item.Path));
+        if (!string.IsNullOrWhiteSpace(missing.Path))
+        {
+            RetrieveStatus = UiText.T("Scratch_RetrieveNoManifestFmt", missing.Label, missing.Path);
+            return;
+        }
+
+        IsRetrieving = true;
+        RetrieveStatus = UiText.T("Scratch_Retrieving", source);
+        RetrieveLog = string.Empty;
+        RetrieveChanges.Clear();
+        _retrieveDiff = null;
+        OnPropertyChanged(nameof(IsRetrieveEmpty));
+        OnPropertyChanged(nameof(HasPendingRetrieveChanges));
+        ApplyRetrievedCommand.NotifyCanExecuteChanged();
+
+        var retrieveDirectory = Path.Combine(_paths.TempDirectory, $"scratch-retrieve-{Guid.NewGuid():N}");
+        _retrieveDirectory = retrieveDirectory;
+        try
+        {
+            var profileDirectory = _profiles.GetProfileDirectory(profile.Name);
+            foreach (var manifest in manifests)
+            {
+                AppendRetrieveLog($"{manifest.Label}: {manifest.Path}");
+                var result = await _resources.RetrieveAsync(
+                    manifest.Path, source, profileDirectory, retrieveDirectory, CancellationToken.None);
+                if (!string.IsNullOrWhiteSpace(result.Output))
+                {
+                    AppendRetrieveLog(result.Output);
+                }
+
+                if (!result.Success)
+                {
+                    RetrieveStatus = UiText.T("Scratch_RetrieveFailedFmt", result.ErrorText);
+                    return;
+                }
+            }
+
+            var diff = ScratchResourceService.Compare(retrieveDirectory, files.PackageDirectory);
+            _retrieveDiff = diff;
+            foreach (var change in diff.Changes)
+            {
+                RetrieveChanges.Add(change);
+            }
+
+            RetrieveStatus = UiText.T("Scratch_RetrieveDoneFmt", diff.AddedCount, diff.ChangedCount, diff.SameCount);
+        }
+        catch (Exception ex)
+        {
+            RetrieveStatus = UiText.T("Common_FailedFmt", ex.Message);
+            _log.Error("スクラッチ組織: 取り込みに失敗", ex);
+        }
+        finally
+        {
+            IsRetrieving = false;
+            OnPropertyChanged(nameof(IsRetrieveEmpty));
+            OnPropertyChanged(nameof(HasPendingRetrieveChanges));
+            ApplyRetrievedCommand.NotifyCanExecuteChanged();
+        }
+    }
+
+    private bool CanApplyRetrieved() => !IsRetrieving && _retrieveDiff is { PendingCount: > 0 };
+
+    [RelayCommand(CanExecute = nameof(CanApplyRetrieved))]
+    private void ApplyRetrieved()
+    {
+        if (_retrieveDiff is null || string.IsNullOrWhiteSpace(_retrieveDirectory))
+        {
+            return;
+        }
+
+        if (!_dialogs.Confirm(UiText.T("Scratch_ApplyConfirmFmt", _retrieveDiff.PendingCount), Title))
+        {
+            return;
+        }
+
+        var files = _profiles.GetFiles(ProfileName);
+        var applied = ScratchResourceService.Apply(_retrieveDiff, files.PackageDirectory);
+        var remaining = ScratchResourceService.Compare(_retrieveDirectory, files.PackageDirectory);
+        _retrieveDiff = remaining;
+        RetrieveChanges.Clear();
+        foreach (var change in remaining.Changes)
+        {
+            RetrieveChanges.Add(change);
+        }
+
+        RetrieveStatus = UiText.T("Scratch_AppliedFmt", applied);
+        StatusMessage = UiText.T("Scratch_AppliedFmt", applied);
+        RefreshPreview();
+        OnPropertyChanged(nameof(IsRetrieveEmpty));
+        OnPropertyChanged(nameof(HasPendingRetrieveChanges));
+        ApplyRetrievedCommand.NotifyCanExecuteChanged();
+    }
+
+    private void AppendRetrieveLog(string line)
+    {
+        if (string.IsNullOrWhiteSpace(line))
+        {
+            return;
+        }
+
+        RetrieveLog = string.IsNullOrEmpty(RetrieveLog) ? line : RetrieveLog + Environment.NewLine + line;
     }
 
     [RelayCommand(CanExecute = nameof(CanCancel))]
@@ -773,6 +1195,48 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
 
         RefreshPreview();
     }
+
+    partial void OnUseStaticResourcesChanged(bool value)
+    {
+        if (!_applyingProfile)
+        {
+            _profile.UseStaticResources = value;
+        }
+
+        RefreshPreview();
+    }
+
+    partial void OnUseConnectedAppsChanged(bool value)
+    {
+        if (!_applyingProfile)
+        {
+            _profile.UseConnectedApps = value;
+        }
+
+        RefreshPreview();
+    }
+
+    partial void OnUseReportsChanged(bool value)
+    {
+        if (!_applyingProfile)
+        {
+            _profile.UseReports = value;
+        }
+
+        RefreshPreview();
+    }
+
+    partial void OnUseApexScriptsChanged(bool value)
+    {
+        if (!_applyingProfile)
+        {
+            _profile.UseApexScripts = value;
+        }
+
+        RefreshPreview();
+    }
+
+    partial void OnSourceOrgChanged(OrgInfo? value) => RetrieveCommand.NotifyCanExecuteChanged();
 
     partial void OnPermissionSetsTextChanged(string value) => RefreshPreview();
 

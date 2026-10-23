@@ -10,9 +10,15 @@ public sealed class ScratchProfileStore
 {
     public const string ProfileFileName = "profile.json";
     public const string DefinitionFileName = "definition.json";
+    public const string ProjectFileName = "sfdx-project.json";
     public const string ManifestRelativePath = "manifest/package.xml";
     public const string CustomMetadataManifestRelativePath = "manifest/custom-metadata.xml";
+    public const string StaticResourcesManifestRelativePath = "manifest/static-resources.xml";
+    public const string ConnectedAppsManifestRelativePath = "manifest/connected-apps.xml";
+    public const string ReportsManifestRelativePath = "manifest/reports.xml";
     public const string SeedPlanRelativePath = "data/plan.json";
+    public const string PackageDirectoryRelativePath = "force-app/main/default";
+    public const string ApexScriptsRelativePath = "scripts/apex";
     public const string DefaultProfileName = "default";
     private const int MaxProfiles = 200;
 
@@ -40,10 +46,18 @@ public sealed class ScratchProfileStore
         var directory = GetProfileDirectory(name);
         return new ScratchProfileFiles(
             Path.Combine(directory, DefinitionFileName),
-            Path.Combine(directory, ManifestRelativePath.Replace('/', Path.DirectorySeparatorChar)),
-            Path.Combine(directory, CustomMetadataManifestRelativePath.Replace('/', Path.DirectorySeparatorChar)),
-            Path.Combine(directory, SeedPlanRelativePath.Replace('/', Path.DirectorySeparatorChar)));
+            Path.Combine(directory, Relative(ManifestRelativePath)),
+            Path.Combine(directory, Relative(CustomMetadataManifestRelativePath)),
+            Path.Combine(directory, Relative(SeedPlanRelativePath)),
+            Path.Combine(directory, ProjectFileName),
+            Path.Combine(directory, Relative(PackageDirectoryRelativePath)),
+            Path.Combine(directory, Relative(StaticResourcesManifestRelativePath)),
+            Path.Combine(directory, Relative(ConnectedAppsManifestRelativePath)),
+            Path.Combine(directory, Relative(ReportsManifestRelativePath)),
+            Path.Combine(directory, Relative(ApexScriptsRelativePath)));
     }
+
+    private static string Relative(string path) => path.Replace('/', Path.DirectorySeparatorChar);
 
     /// <summary>保存済みプロファイル名の一覧（名前順）。</summary>
     public IReadOnlyList<string> ListProfiles()
@@ -93,11 +107,27 @@ public sealed class ScratchProfileStore
         }
 
         WriteFileIfMissing(GetFiles(sanitized).DefinitionFile, DefaultDefinitionJson);
-        WriteFileIfMissing(GetFiles(sanitized).ManifestFile, DefaultManifestXml);
-        WriteFileIfMissing(GetFiles(sanitized).CustomMetadataManifestFile, DefaultCustomMetadataManifestXml);
-        WriteFileIfMissing(GetFiles(sanitized).SeedPlanFile, DefaultSeedPlanJson);
+
+        EnsureFiles(GetFiles(sanitized));
 
         return Load(sanitized);
+    }
+
+    /// <summary>プロファイルに必要な既定ファイル（マニフェスト / 定義 / SFDX プロジェクト / Apex サンプル）を作る。</summary>
+    private void EnsureFiles(ScratchProfileFiles files)
+    {
+        WriteFileIfMissing(files.ProjectFile, DefaultSfdxProjectJson);
+        WriteFileIfMissing(files.DefinitionFile, DefaultDefinitionJson);
+        WriteFileIfMissing(files.ManifestFile, DefaultManifestXml);
+        WriteFileIfMissing(files.CustomMetadataManifestFile, DefaultCustomMetadataManifestXml);
+        WriteFileIfMissing(files.StaticResourcesManifestFile, DefaultStaticResourcesManifestXml);
+        WriteFileIfMissing(files.ConnectedAppsManifestFile, DefaultConnectedAppsManifestXml);
+        WriteFileIfMissing(files.ReportsManifestFile, DefaultReportsManifestXml);
+        WriteFileIfMissing(files.SeedPlanFile, DefaultSeedPlanJson);
+        WriteFileIfMissing(Path.Combine(files.ApexScriptsDirectory, "setup.apex"), DefaultApexSample);
+
+        Directory.CreateDirectory(files.PackageDirectory);
+        Directory.CreateDirectory(files.ApexScriptsDirectory);
     }
 
     /// <summary>既定プロファイル（default）を用意する。失敗しても起動を止めない。</summary>
@@ -130,10 +160,7 @@ public sealed class ScratchProfileStore
         profile.UpdatedAt = DateTimeOffset.Now;
         AtomicJsonFile.Save(path, profile, _log);
 
-        WriteFileIfMissing(GetFiles(profile.Name).DefinitionFile, DefaultDefinitionJson);
-        WriteFileIfMissing(GetFiles(profile.Name).ManifestFile, DefaultManifestXml);
-        WriteFileIfMissing(GetFiles(profile.Name).CustomMetadataManifestFile, DefaultCustomMetadataManifestXml);
-        WriteFileIfMissing(GetFiles(profile.Name).SeedPlanFile, DefaultSeedPlanJson);
+        EnsureFiles(GetFiles(profile.Name));
     }
 
     /// <summary>プロファイルを削除する（フォルダーごと）。</summary>
@@ -384,5 +411,74 @@ public sealed class ScratchProfileStore
 {
   "objects": []
 }
+""";
+
+    /// <summary>既定の SFDX プロジェクト定義（deploy / retrieve に必須）。</summary>
+    public const string DefaultSfdxProjectJson = """
+{
+  "packageDirectories": [
+    {
+      "path": "force-app",
+      "default": true
+    }
+  ],
+  "namespace": "",
+  "sourceApiVersion": "62.0"
+}
+""";
+
+    /// <summary>既定の Static Resource マニフェスト。</summary>
+    public const string DefaultStaticResourcesManifestXml = """
+<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    <types>
+        <members>*</members>
+        <name>StaticResource</name>
+    </types>
+    <version>62.0</version>
+</Package>
+""";
+
+    /// <summary>既定の Connected App マニフェスト。</summary>
+    public const string DefaultConnectedAppsManifestXml = """
+<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    <types>
+        <members>*</members>
+        <name>ConnectedApp</name>
+    </types>
+    <version>62.0</version>
+</Package>
+""";
+
+    /// <summary>既定のレポート / ダッシュボード マニフェスト。</summary>
+    public const string DefaultReportsManifestXml = """
+<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    <types>
+        <members>*</members>
+        <name>Report</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>ReportFolder</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>Dashboard</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>DashboardFolder</name>
+    </types>
+    <version>62.0</version>
+</Package>
+""";
+
+    /// <summary>既定の Apex セットアップ スクリプト（コメント + 安全なデバッグ出力のみ）。</summary>
+    public const string DefaultApexSample = """
+// SfUi: this script runs with `sf apex run --file` when "Apex scripts" is enabled.
+// Add setup statements here (create records, assign queues, ...).
+System.debug('SfUi scratch org setup');
 """;
 }

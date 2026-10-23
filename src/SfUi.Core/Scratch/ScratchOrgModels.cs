@@ -46,6 +46,18 @@ public sealed class ScratchProfile
 
     public bool UseSeedData { get; set; } = true;
 
+    /// <summary>Static Resource をデプロイするか。</summary>
+    public bool UseStaticResources { get; set; }
+
+    /// <summary>Connected App をデプロイするか。</summary>
+    public bool UseConnectedApps { get; set; }
+
+    /// <summary>レポート / ダッシュボードをデプロイするか。</summary>
+    public bool UseReports { get; set; }
+
+    /// <summary>scripts/apex の匿名 Apex を実行するか。</summary>
+    public bool UseApexScripts { get; set; }
+
     /// <summary>作成後に割り当てる権限セット（API 名）。</summary>
     public List<string> PermissionSets { get; set; } = new();
 
@@ -115,6 +127,10 @@ public sealed class ScratchProfile
         UseCustomMetadata = UseCustomMetadata,
         UsePermissionSets = UsePermissionSets,
         UseSeedData = UseSeedData,
+        UseStaticResources = UseStaticResources,
+        UseConnectedApps = UseConnectedApps,
+        UseReports = UseReports,
+        UseApexScripts = UseApexScripts,
         PermissionSets = PermissionSets.ToList(),
         CreatedAt = CreatedAt,
         UpdatedAt = UpdatedAt,
@@ -192,14 +208,22 @@ public sealed record ScratchProfileFiles(
     string DefinitionFile,
     string ManifestFile,
     string CustomMetadataManifestFile,
-    string SeedPlanFile);
+    string SeedPlanFile,
+    string ProjectFile,
+    string PackageDirectory,
+    string StaticResourcesManifestFile,
+    string ConnectedAppsManifestFile,
+    string ReportsManifestFile,
+    string ApexScriptsDirectory);
 
 /// <summary>スクラッチ組織作成の 1 ステップ（sf コマンド 1 回分）。</summary>
+/// <param name="WorkingDirectory">プロジェクトが必要なコマンド（deploy 等）で使う作業ディレクトリ。</param>
 public sealed record ScratchOrgStep(
     string Kind,
     string Label,
     IReadOnlyList<string> Arguments,
-    TimeSpan Timeout)
+    TimeSpan Timeout,
+    string? WorkingDirectory = null)
 {
     /// <summary>表示用コマンドライン（例: sf org create scratch ...）。</summary>
     public string CommandLine => "sf " + string.Join(' ', Arguments);

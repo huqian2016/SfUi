@@ -78,6 +78,15 @@ public sealed class ScratchOrgService
             "--json",
         };
 
+    public static IReadOnlyList<string> BuildApexRunArgs(string scriptFile, string target) =>
+        new[]
+        {
+            "apex", "run",
+            "--file", scriptFile,
+            "--target-org", target,
+            "--json",
+        };
+
     public static IReadOnlyList<string> BuildImportTreeArgs(string planFile, string target) =>
         new[]
         {
@@ -101,6 +110,8 @@ public sealed class ScratchOrgService
         ScratchProfileFiles files)
     {
         var steps = new List<ScratchOrgStep>();
+        var profileDirectory = Path.GetDirectoryName(files.ProjectFile) ?? string.Empty;
+        var hasSources = HasSourceFiles(files.PackageDirectory);
         steps.Add(new ScratchOrgStep(
             "create",
             UiText.T("Scratch_StepCreate"),
@@ -114,22 +125,67 @@ public sealed class ScratchOrgService
                 profile.OrgShapeId),
             TimeSpan.FromMinutes(profile.WaitMinutes + 20)));
 
-        if (profile.UseMetadata && File.Exists(files.ManifestFile))
+        if (profile.UseMetadata && hasSources && File.Exists(files.ManifestFile))
         {
             steps.Add(new ScratchOrgStep(
                 "metadata",
                 UiText.T("Scratch_StepMetadata"),
                 BuildDeployArgs(files.ManifestFile, alias),
-                TimeSpan.FromMinutes(60)));
+                TimeSpan.FromMinutes(60),
+                profileDirectory));
         }
 
-        if (profile.UseCustomMetadata && File.Exists(files.CustomMetadataManifestFile))
+        if (profile.UseCustomMetadata && hasSources && File.Exists(files.CustomMetadataManifestFile))
         {
             steps.Add(new ScratchOrgStep(
                 "custom-metadata",
                 UiText.T("Scratch_StepCustomMetadata"),
                 BuildDeployArgs(files.CustomMetadataManifestFile, alias),
-                TimeSpan.FromMinutes(30)));
+                TimeSpan.FromMinutes(30),
+                profileDirectory));
+        }
+
+        if (profile.UseStaticResources && hasSources && File.Exists(files.StaticResourcesManifestFile))
+        {
+            steps.Add(new ScratchOrgStep(
+                "static-resources",
+                UiText.T("Scratch_StepStaticResources"),
+                BuildDeployArgs(files.StaticResourcesManifestFile, alias),
+                TimeSpan.FromMinutes(30),
+                profileDirectory));
+        }
+
+        if (profile.UseConnectedApps && hasSources && File.Exists(files.ConnectedAppsManifestFile))
+        {
+            steps.Add(new ScratchOrgStep(
+                "connected-apps",
+                UiText.T("Scratch_StepConnectedApps"),
+                BuildDeployArgs(files.ConnectedAppsManifestFile, alias),
+                TimeSpan.FromMinutes(30),
+                profileDirectory));
+        }
+
+        if (profile.UseReports && hasSources && File.Exists(files.ReportsManifestFile))
+        {
+            steps.Add(new ScratchOrgStep(
+                "reports",
+                UiText.T("Scratch_StepReports"),
+                BuildDeployArgs(files.ReportsManifestFile, alias),
+                TimeSpan.FromMinutes(30),
+                profileDirectory));
+        }
+
+        if (profile.UseApexScripts)
+        {
+            foreach (var script in ListApexScripts(files.ApexScriptsDirectory))
+            {
+                steps.Add(new ScratchOrgStep(
+                    "apex",
+                    UiText.T("Scratch_StepApexFmt", Path.GetFileName(script)),
+                    BuildApexRunArgs(script, alias),
+                    TimeSpan.FromMinutes(30),
+                    profileDirectory));
+            }
         }
 
         if (profile.UsePermissionSets)
@@ -184,6 +240,37 @@ public sealed class ScratchOrgService
         }
     }
 
+    /// <summary>force-app/main/default にソースファイルがあるか（無い状態で deploy すると必ず失敗するため）。</summary>
+    public static bool HasSourceFiles(string packageDirectory)
+    {
+        try
+        {
+            return Directory.Exists(packageDirectory)
+                   && Directory.EnumerateFiles(packageDirectory, "*", SearchOption.AllDirectories).Any();
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>scripts/apex の *.apex を名前順で返す。</summary>
+    public static IReadOnlyList<string> ListApexScripts(string directory)
+    {
+        try
+        {
+            return Directory.Exists(directory)
+                ? Directory.EnumerateFiles(directory, "*.apex", SearchOption.TopDirectoryOnly)
+                    .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+                    .ToList()
+                : Array.Empty<string>();
+        }
+        catch
+        {
+            return Array.Empty<string>();
+        }
+    }
+
     // ---- 実行 ----
 
     /// <summary>
@@ -205,7 +292,7 @@ public sealed class ScratchOrgService
             var stopwatch = Stopwatch.StartNew();
             try
             {
-                result = await _runner.RunAsync(step.Arguments, null, step.Timeout, cancellationToken)
+                result = await _runner.RunAsync(step.Arguments, step.WorkingDirectory, step.Timeout, cancellationToken)
                     .ConfigureAwait(false);
             }
             catch (OperationCanceledException)
