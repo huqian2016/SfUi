@@ -171,6 +171,9 @@ public partial class App : Application
         services.AddTransient<OrgHealthViewModel>();
         services.AddTransient<MigrationInventoryViewModel>();
         services.AddTransient<OrgManageWindow>();
+        services.AddSingleton<ScratchOrgWindowFactory>();
+        services.AddTransient<ScratchOrgViewModel>();
+        services.AddTransient<ScratchOrgWindow>();
         services.AddSingleton(new StartupOptions { SimulateSfMissing = _simulateSfMissing });
         services.AddTransient<WelcomeViewModel>();
         services.AddSingleton<WelcomeWindowFactory>();

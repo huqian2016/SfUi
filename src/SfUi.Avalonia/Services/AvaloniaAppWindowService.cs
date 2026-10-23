@@ -92,6 +92,14 @@ public sealed class AvaloniaAppWindowService : IAppWindowService
         ShowOwned(new OrgManageWindow(viewModel));
     }
 
+    /// <summary>スクラッチ組織ウィンドウを開く（非モーダル・複数同時表示可）。</summary>
+    public void OpenScratchOrg(OrgInfo? initial)
+    {
+        var viewModel = _services.GetRequiredService<ScratchOrgViewModel>();
+        viewModel.Initialize(initial);
+        ShowOwned(new ScratchOrgWindow(viewModel));
+    }
+
     /// <summary>ETL 移行ウィンドウを開く（非モーダル・複数同時表示可）。</summary>
     public void OpenEtl(OrgInfo? org)
     {

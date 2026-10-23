@@ -13,6 +13,7 @@ public sealed class WpfAppWindowService : IAppWindowService
     private readonly DataIoWindowFactory _dataIo;
     private readonly BackupWindowFactory _backup;
     private readonly OrgManageWindowFactory _orgManage;
+    private readonly ScratchOrgWindowFactory _scratchOrg;
     private readonly EtlWindowFactory _etl;
     private readonly SourceEditorWindowFactory _sourceEditor;
     private readonly BackupRecordsWindowFactory _records;
@@ -28,6 +29,7 @@ public sealed class WpfAppWindowService : IAppWindowService
         DataIoWindowFactory dataIo,
         BackupWindowFactory backup,
         OrgManageWindowFactory orgManage,
+        ScratchOrgWindowFactory scratchOrg,
         EtlWindowFactory etl,
         SourceEditorWindowFactory sourceEditor,
         BackupRecordsWindowFactory records,
@@ -42,6 +44,7 @@ public sealed class WpfAppWindowService : IAppWindowService
         _dataIo = dataIo;
         _backup = backup;
         _orgManage = orgManage;
+        _scratchOrg = scratchOrg;
         _etl = etl;
         _sourceEditor = sourceEditor;
         _records = records;
@@ -63,6 +66,8 @@ public sealed class WpfAppWindowService : IAppWindowService
     public void OpenBackup(OrgInfo org) => _backup.Open(org, ActiveOwner());
 
     public void OpenOrgManage(OrgInfo? initial) => _orgManage.Open(initial, ActiveOwner());
+
+    public void OpenScratchOrg(OrgInfo? initial) => _scratchOrg.Open(initial, ActiveOwner());
 
     public void OpenEtl(OrgInfo? org) => _etl.Open(org, ActiveOwner());
 

@@ -26,6 +26,9 @@ public interface IAppWindowService
     /// <summary>組織管理ウィンドウを開く（初期選択組織は任意）。</summary>
     void OpenOrgManage(OrgInfo? initial);
 
+    /// <summary>スクラッチ組織ウィンドウを開く（初期 Dev Hub は任意）。</summary>
+    void OpenScratchOrg(OrgInfo? initial);
+
     /// <summary>ETL 移行ウィンドウを開く（組織未選択でも可）。</summary>
     void OpenEtl(OrgInfo? org);
 

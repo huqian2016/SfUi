@@ -924,6 +924,22 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
+    /// <summary>スクラッチ組織ウィンドウを新しいウィンドウで開く（組織未選択でも可）。</summary>
+    [RelayCommand]
+    private void OpenScratchOrg()
+    {
+        try
+        {
+            _windows.OpenScratchOrg(SelectedOrg);
+            StatusMessage = UiText.T("Msg_ScratchOpenedFmt", SelectedOrg?.DisplayName ?? UiText.T("Main_NotSelected"));
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = UiText.T("Common_FailedFmt", ex.Message);
+            _log.Error("スクラッチ組織ウィンドウを開けませんでした", ex);
+        }
+    }
+
     /// <summary>ETL 移行ウィンドウを新しいウィンドウで開く（組織未選択でも可）。</summary>
     [RelayCommand]
     private void OpenEtl()

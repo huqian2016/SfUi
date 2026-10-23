@@ -52,6 +52,9 @@ public static class SfUiServiceCollectionExtensions
         services.AddSingleton<OrgManageService>();
         services.AddSingleton<OrgManageStateStore>();
         services.AddSingleton<MigrationInventoryService>();
+        services.AddSingleton<ScratchProfileStore>();
+        services.AddSingleton<ScratchRunHistoryStore>();
+        services.AddSingleton<ScratchOrgService>();
         return services;
     }
 }

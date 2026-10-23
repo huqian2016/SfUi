@@ -81,6 +81,7 @@ public partial class App : Application
             services.AddTransient<OrgManageViewModel>();
             services.AddTransient<OrgHealthViewModel>();
             services.AddTransient<MigrationInventoryViewModel>();
+            services.AddTransient<ScratchOrgViewModel>();
             services.AddTransient<EtlViewModel>();
             services.AddTransient<ApexSuggestionProvider>();
             services.AddTransient<SourceEditorViewModel>();

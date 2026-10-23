@@ -149,6 +149,19 @@
                     </Button.ToolTip>
                 </Button>
 
+                <Button Style="{StaticResource IconButton}" Margin="0,0,10,0"
+                        Command="{Binding OpenScratchOrgCommand}"
+                        AutomationProperties.AutomationId="OpenScratchOrg"
+                        AutomationProperties.Name="{loc:Tr Main_Scratch}">
+                    <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconAdd}" />
+                    <Button.ToolTip>
+                        <StackPanel MaxWidth="360">
+                            <TextBlock Text="{loc:Tr Main_Scratch}" FontWeight="SemiBold" />
+                            <TextBlock Text="{loc:Tr Main_ScratchTip}" TextWrapping="Wrap" Foreground="#555555" Margin="0,2,0,0" />
+                        </StackPanel>
+                    </Button.ToolTip>
+                </Button>
+
                 <TextBlock Text="{loc:Tr Main_FolderLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
                 <ComboBox x:Name="FolderComboBox" Width="230" IsEditable="True" Margin="0,0,4,0"
                           ItemsSource="{Binding RecentFolders}"
