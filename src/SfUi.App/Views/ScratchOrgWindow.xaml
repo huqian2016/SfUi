@@ -236,23 +236,25 @@
                                     Command="{Binding ClearHistoryCommand}"
                                     AutomationProperties.AutomationId="ScratchHistoryClear" />
                         </StackPanel>
-                        <DataGrid x:Name="ScratchHistoryGrid" ItemsSource="{Binding History}"
-                                  SelectedItem="{Binding SelectedHistory, Mode=TwoWay}"
-                                  AutoGenerateColumns="False" IsReadOnly="True"
-                                  HeadersVisibility="Column" GridLinesVisibility="Horizontal"
-                                  AutomationProperties.AutomationId="ScratchHistoryGrid">
-                            <DataGrid.Columns>
-                                <DataGridTextColumn Header="{loc:Tr Scratch_ColStarted}" Binding="{Binding StartedAtText}" Width="150" />
-                                <DataGridTextColumn Header="{loc:Tr Scratch_ColProfile}" Binding="{Binding ProfileName}" Width="140" />
-                                <DataGridTextColumn Header="{loc:Tr Scratch_ColAlias}" Binding="{Binding Alias}" Width="220" />
-                                <DataGridTextColumn Header="{loc:Tr Scratch_ColDevHub}" Binding="{Binding DevHub}" Width="200" />
-                                <DataGridTextColumn Header="{loc:Tr Scratch_ColResult}" Binding="{Binding ResultText}" Width="70" />
-                                <DataGridTextColumn Header="{loc:Tr Scratch_ColDuration}" Binding="{Binding DurationText}" Width="90" />
-                            </DataGrid.Columns>
-                        </DataGrid>
-                        <TextBlock Text="{loc:Tr Scratch_HistoryEmpty}" Foreground="#999999" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   IsHitTestVisible="False"
-                                   Visibility="{Binding IsHistoryEmpty, Converter={StaticResource BoolToVis}}" />
+                        <Grid>
+                            <DataGrid x:Name="ScratchHistoryGrid" ItemsSource="{Binding History}"
+                                      SelectedItem="{Binding SelectedHistory, Mode=TwoWay}"
+                                      AutoGenerateColumns="False" IsReadOnly="True"
+                                      HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                                      AutomationProperties.AutomationId="ScratchHistoryGrid">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="{loc:Tr Scratch_ColStarted}" Binding="{Binding StartedAtText}" Width="150" />
+                                    <DataGridTextColumn Header="{loc:Tr Scratch_ColProfile}" Binding="{Binding ProfileName}" Width="140" />
+                                    <DataGridTextColumn Header="{loc:Tr Scratch_ColAlias}" Binding="{Binding Alias}" Width="220" />
+                                    <DataGridTextColumn Header="{loc:Tr Scratch_ColDevHub}" Binding="{Binding DevHub}" Width="200" />
+                                    <DataGridTextColumn Header="{loc:Tr Scratch_ColResult}" Binding="{Binding ResultText}" Width="70" />
+                                    <DataGridTextColumn Header="{loc:Tr Scratch_ColDuration}" Binding="{Binding DurationText}" Width="90" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                            <TextBlock Text="{loc:Tr Scratch_HistoryEmpty}" Foreground="#999999" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       IsHitTestVisible="False"
+                                       Visibility="{Binding IsHistoryEmpty, Converter={StaticResource BoolToVis}}" />
+                        </Grid>
                     </DockPanel>
 
                     <GridSplitter Grid.Row="1" Height="4" HorizontalAlignment="Stretch" Background="#DDDDDD" ResizeDirection="Rows" />
