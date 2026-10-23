@@ -84,6 +84,7 @@
                                             <RowDefinition Height="Auto" />
                                             <RowDefinition Height="Auto" />
                                             <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
 
                                         <TextBlock Grid.Row="0" Grid.Column="0" Text="{loc:Tr Scratch_DurationLabel}" VerticalAlignment="Center" Margin="0,0,0,4" />
@@ -103,6 +104,11 @@
                                         <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding OrgShapeId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                  ToolTip="{loc:Tr Scratch_ShapeTip}"
                                                  AutomationProperties.AutomationId="ScratchShapeId" />
+
+                                        <TextBlock Grid.Row="4" Grid.Column="0" Text="{loc:Tr Scratch_SnapshotLabel}" VerticalAlignment="Center" Margin="0,4,0,0" />
+                                        <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding SnapshotName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 Margin="0,4,0,0" ToolTip="{loc:Tr Scratch_SnapshotTip}"
+                                                 AutomationProperties.AutomationId="ScratchSnapshotName" />
                                     </Grid>
                                     <CheckBox Content="{loc:Tr Scratch_SetDefault}" IsChecked="{Binding SetDefault, Mode=TwoWay}" Margin="0,6,0,0"
                                               AutomationProperties.AutomationId="ScratchSetDefault" />
@@ -129,7 +135,28 @@
                                     <CheckBox Content="{loc:Tr Scratch_UseApexScripts}" IsChecked="{Binding UseApexScripts, Mode=TwoWay}" Margin="0,0,0,4"
                                               ToolTip="{loc:Tr Scratch_UseApexScriptsTip}"
                                               AutomationProperties.AutomationId="ScratchUseApexScripts" />
+                                    <CheckBox Content="{loc:Tr Scratch_UseExperienceCloud}" IsChecked="{Binding UseExperienceCloud, Mode=TwoWay}" Margin="0,0,0,3"
+                                              ToolTip="{loc:Tr Scratch_UseExperienceCloudTip}"
+                                              AutomationProperties.AutomationId="ScratchUseExperienceCloud" />
+                                    <CheckBox Content="{loc:Tr Scratch_UseNamedCredentials}" IsChecked="{Binding UseNamedCredentials, Mode=TwoWay}" Margin="0,0,0,4"
+                                              ToolTip="{loc:Tr Scratch_UseNamedCredentialsTip}"
+                                              AutomationProperties.AutomationId="ScratchUseNamedCredentials" />
                                     <TextBlock Text="{loc:Tr Scratch_SourcesHint}" TextWrapping="Wrap" Foreground="#777777" FontSize="12" Margin="0,0,0,6" />
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                        <Button Content="{loc:Tr Scratch_AddExperienceSettings}" Padding="8,2"
+                                                Command="{Binding AddExperienceSettingsCommand}"
+                                                ToolTip="{loc:Tr Scratch_ExperienceHint}"
+                                                AutomationProperties.AutomationId="ScratchAddExperience" />
+                                    </StackPanel>
+                                    <WrapPanel Margin="0,0,0,6">
+                                        <TextBlock Text="{loc:Tr Scratch_NamedCredentialPresetsLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                                        <ComboBox Width="120" ItemsSource="{Binding NamedCredentialPresetNames}"
+                                                  SelectedItem="{Binding SelectedNamedCredentialPreset, Mode=TwoWay}"
+                                                  AutomationProperties.AutomationId="ScratchPresetCombo" />
+                                        <Button Content="{loc:Tr Scratch_AddPreset}" Padding="8,2" Margin="6,0,0,0"
+                                                Command="{Binding AddNamedCredentialPresetCommand}"
+                                                AutomationProperties.AutomationId="ScratchAddPreset" />
+                                    </WrapPanel>
                                     <TextBlock Text="{loc:Tr Scratch_PermissionSetsLabel}" Margin="0,0,0,3" />
                                     <TextBox Text="{Binding PermissionSetsText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                              Height="72" AcceptsReturn="True" TextWrapping="NoWrap"
@@ -335,6 +362,10 @@
                                       AutomationProperties.AutomationId="ScratchImportConnectedApps" />
                             <CheckBox Content="{loc:Tr Scratch_UseReports}" IsChecked="{Binding RetrieveUseReports, Mode=TwoWay}"
                                       AutomationProperties.AutomationId="ScratchImportReports" />
+                            <CheckBox Content="{loc:Tr Scratch_UseExperienceCloud}" IsChecked="{Binding RetrieveUseExperienceCloud, Mode=TwoWay}" Margin="12,0,0,0"
+                                      AutomationProperties.AutomationId="ScratchImportExperience" />
+                            <CheckBox Content="{loc:Tr Scratch_UseNamedCredentials}" IsChecked="{Binding RetrieveUseNamedCredentials, Mode=TwoWay}" Margin="12,0,0,0"
+                                      AutomationProperties.AutomationId="ScratchImportNamedCredentials" />
                         </WrapPanel>
                         <TextBlock Text="{loc:Tr Scratch_ImportHint}" TextWrapping="Wrap" Foreground="#777777" FontSize="12" Margin="0,6,0,0" />
                     </StackPanel>
@@ -366,6 +397,120 @@
                                  FontFamily="Consolas" TextWrapping="NoWrap"
                                  VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
                                  AutomationProperties.AutomationId="ScratchImportLog" />
+                    </DockPanel>
+                </Grid>
+            </TabItem>
+
+            <!-- Shape / スナップショット タブ -->
+            <TabItem Header="{loc:Tr Scratch_TabShapes}" AutomationProperties.AutomationId="ScratchTabShapes">
+                <Grid Margin="4">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="4" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <DockPanel Grid.Row="0">
+                        <StackPanel DockPanel.Dock="Top">
+                            <TextBlock Text="{loc:Tr Scratch_ShapeSection}" FontWeight="SemiBold" />
+                            <TextBlock Text="{loc:Tr Scratch_ShapeHint}" TextWrapping="Wrap" Foreground="#777777" FontSize="12" />
+                            <WrapPanel Margin="0,4,0,4">
+                                <TextBlock Text="{loc:Tr Scratch_ShapeSourceLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                                <ComboBox Width="240" ItemsSource="{Binding Orgs}"
+                                          SelectedItem="{Binding ShapeSourceOrg, Mode=TwoWay}"
+                                          ToolTip="{loc:Tr Scratch_ShapeSourceTip}"
+                                          AutomationProperties.AutomationId="ScratchShapeSource">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding DisplayName}" />
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                                <Button Content="{loc:Tr Scratch_ShapeRefresh}" Padding="8,2" Margin="8,0,0,0"
+                                        Command="{Binding RefreshShapesCommand}"
+                                        AutomationProperties.AutomationId="ScratchShapeRefresh" />
+                                <Button Content="{loc:Tr Scratch_ShapeCreate}" Padding="8,2" Margin="6,0,0,0"
+                                        Command="{Binding CreateShapeCommand}"
+                                        AutomationProperties.AutomationId="ScratchShapeCreate" />
+                                <Button Content="{loc:Tr Scratch_ShapeDelete}" Padding="8,2" Margin="6,0,0,0"
+                                        Command="{Binding DeleteShapeCommand}"
+                                        AutomationProperties.AutomationId="ScratchShapeDelete" />
+                                <Button Content="{loc:Tr Scratch_ShapeUse}" Padding="8,2" Margin="6,0,0,0"
+                                        Command="{Binding UseShapeInProfileCommand}"
+                                        AutomationProperties.AutomationId="ScratchShapeUse" />
+                                <TextBlock Text="{Binding ShapeStatus}" VerticalAlignment="Center" Margin="10,0,0,0" Foreground="#555555"
+                                           TextTrimming="CharacterEllipsis"
+                                           AutomationProperties.AutomationId="ScratchShapeStatus" />
+                            </WrapPanel>
+                        </StackPanel>
+                        <Grid>
+                            <DataGrid ItemsSource="{Binding Shapes}"
+                                      SelectedItem="{Binding SelectedShape, Mode=TwoWay}"
+                                      AutoGenerateColumns="False" IsReadOnly="True"
+                                      HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                                      AutomationProperties.AutomationId="ScratchShapeGrid">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="{loc:Tr Scratch_ColShapeName}" Binding="{Binding Name}" Width="240" />
+                                    <DataGridTextColumn Header="{loc:Tr Scratch_ColShapeId}" Binding="{Binding Id}" Width="220" />
+                                    <DataGridTextColumn Header="{loc:Tr Scratch_ColShapeStatus}" Binding="{Binding Status}" Width="120" />
+                                    <DataGridTextColumn Header="{loc:Tr Scratch_ColShapeCreated}" Binding="{Binding CreatedDate}" Width="*" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                            <TextBlock Text="{loc:Tr Scratch_ShapeEmpty}" Foreground="#999999" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       IsHitTestVisible="False"
+                                       Visibility="{Binding IsShapeListEmpty, Converter={StaticResource BoolToVis}}" />
+                        </Grid>
+                    </DockPanel>
+
+                    <GridSplitter Grid.Row="1" Height="4" HorizontalAlignment="Stretch" Background="#DDDDDD" ResizeDirection="Rows" />
+
+                    <DockPanel Grid.Row="2">
+                        <StackPanel DockPanel.Dock="Top">
+                            <TextBlock Text="{loc:Tr Scratch_SnapshotSection}" FontWeight="SemiBold" />
+                            <TextBlock Text="{loc:Tr Scratch_SnapshotHint}" TextWrapping="Wrap" Foreground="#777777" FontSize="12" />
+                            <WrapPanel Margin="0,4,0,4">
+                                <TextBlock Text="{loc:Tr Scratch_SnapshotSourceLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                                <TextBox Width="240" Text="{Binding SnapshotSourceOrg, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         ToolTip="{loc:Tr Scratch_SnapshotSourceTip}"
+                                         AutomationProperties.AutomationId="ScratchSnapshotSource" />
+                                <TextBlock Text="{loc:Tr Scratch_SnapshotNameLabel}" VerticalAlignment="Center" Margin="10,0,4,0" />
+                                <TextBox Width="180" Text="{Binding NewSnapshotName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         AutomationProperties.AutomationId="ScratchSnapshotNewName" />
+                                <TextBlock Text="{loc:Tr Scratch_SnapshotDescriptionLabel}" VerticalAlignment="Center" Margin="10,0,4,0" />
+                                <TextBox Width="220" Text="{Binding NewSnapshotDescription, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         AutomationProperties.AutomationId="ScratchSnapshotDescription" />
+                            </WrapPanel>
+                            <WrapPanel Margin="0,0,0,4">
+                                <Button Content="{loc:Tr Scratch_SnapshotRefresh}" Padding="8,2" Command="{Binding RefreshSnapshotsCommand}"
+                                        AutomationProperties.AutomationId="ScratchSnapshotRefresh" />
+                                <Button Content="{loc:Tr Scratch_SnapshotCreate}" Padding="8,2" Margin="6,0,0,0" Command="{Binding CreateSnapshotCommand}"
+                                        AutomationProperties.AutomationId="ScratchSnapshotCreate" />
+                                <Button Content="{loc:Tr Scratch_SnapshotDelete}" Padding="8,2" Margin="6,0,0,0" Command="{Binding DeleteSnapshotCommand}"
+                                        AutomationProperties.AutomationId="ScratchSnapshotDelete" />
+                                <Button Content="{loc:Tr Scratch_SnapshotUse}" Padding="8,2" Margin="6,0,0,0" Command="{Binding UseSnapshotInProfileCommand}"
+                                        AutomationProperties.AutomationId="ScratchSnapshotUse" />
+                                <TextBlock Text="{Binding SnapshotStatus}" VerticalAlignment="Center" Margin="10,0,0,0" Foreground="#555555"
+                                           TextTrimming="CharacterEllipsis"
+                                           AutomationProperties.AutomationId="ScratchSnapshotStatus" />
+                            </WrapPanel>
+                        </StackPanel>
+                        <Grid>
+                            <DataGrid ItemsSource="{Binding Snapshots}"
+                                      SelectedItem="{Binding SelectedSnapshot, Mode=TwoWay}"
+                                      AutoGenerateColumns="False" IsReadOnly="True"
+                                      HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                                      AutomationProperties.AutomationId="ScratchSnapshotGrid">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="{loc:Tr Scratch_ColSnapshotName}" Binding="{Binding Name}" Width="240" />
+                                    <DataGridTextColumn Header="{loc:Tr Scratch_ColSnapshotStatus}" Binding="{Binding Status}" Width="120" />
+                                    <DataGridTextColumn Header="{loc:Tr Scratch_ColSnapshotExpires}" Binding="{Binding ExpirationDate}" Width="180" />
+                                    <DataGridTextColumn Header="{loc:Tr Scratch_ColSnapshotCreated}" Binding="{Binding CreatedDate}" Width="*" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                            <TextBlock Text="{loc:Tr Scratch_SnapshotEmpty}" Foreground="#999999" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       IsHitTestVisible="False"
+                                       Visibility="{Binding IsSnapshotListEmpty, Converter={StaticResource BoolToVis}}" />
+                        </Grid>
                     </DockPanel>
                 </Grid>
             </TabItem>

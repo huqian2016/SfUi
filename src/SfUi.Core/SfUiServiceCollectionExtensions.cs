@@ -56,6 +56,7 @@ public static class SfUiServiceCollectionExtensions
         services.AddSingleton<ScratchRunHistoryStore>();
         services.AddSingleton<ScratchOrgService>();
         services.AddSingleton<ScratchResourceService>();
+        services.AddSingleton<ScratchSignupService>();
         return services;
     }
 }

@@ -16,6 +16,8 @@ public sealed class ScratchProfileStore
     public const string StaticResourcesManifestRelativePath = "manifest/static-resources.xml";
     public const string ConnectedAppsManifestRelativePath = "manifest/connected-apps.xml";
     public const string ReportsManifestRelativePath = "manifest/reports.xml";
+    public const string ExperienceManifestRelativePath = "manifest/experience.xml";
+    public const string NamedCredentialsManifestRelativePath = "manifest/named-credentials.xml";
     public const string SeedPlanRelativePath = "data/plan.json";
     public const string PackageDirectoryRelativePath = "force-app/main/default";
     public const string ApexScriptsRelativePath = "scripts/apex";
@@ -54,6 +56,8 @@ public sealed class ScratchProfileStore
             Path.Combine(directory, Relative(StaticResourcesManifestRelativePath)),
             Path.Combine(directory, Relative(ConnectedAppsManifestRelativePath)),
             Path.Combine(directory, Relative(ReportsManifestRelativePath)),
+            Path.Combine(directory, Relative(ExperienceManifestRelativePath)),
+            Path.Combine(directory, Relative(NamedCredentialsManifestRelativePath)),
             Path.Combine(directory, Relative(ApexScriptsRelativePath)));
     }
 
@@ -123,6 +127,8 @@ public sealed class ScratchProfileStore
         WriteFileIfMissing(files.StaticResourcesManifestFile, DefaultStaticResourcesManifestXml);
         WriteFileIfMissing(files.ConnectedAppsManifestFile, DefaultConnectedAppsManifestXml);
         WriteFileIfMissing(files.ReportsManifestFile, DefaultReportsManifestXml);
+        WriteFileIfMissing(files.ExperienceManifestFile, DefaultExperienceManifestXml);
+        WriteFileIfMissing(files.NamedCredentialsManifestFile, DefaultNamedCredentialsManifestXml);
         WriteFileIfMissing(files.SeedPlanFile, DefaultSeedPlanJson);
         WriteFileIfMissing(Path.Combine(files.ApexScriptsDirectory, "setup.apex"), DefaultApexSample);
 
@@ -480,5 +486,65 @@ public sealed class ScratchProfileStore
 // SfUi: this script runs with `sf apex run --file` when "Apex scripts" is enabled.
 // Add setup statements here (create records, assign queues, ...).
 System.debug('SfUi scratch org setup');
+""";
+
+    /// <summary>既定の Experience Cloud マニフェスト。</summary>
+    public const string DefaultExperienceManifestXml = """
+<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    <types>
+        <members>*</members>
+        <name>Network</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>CustomSite</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>ExperienceBundle</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>SiteDotCom</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>Audience</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>NavigationMenu</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>BrandingSet</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>CommunitiesSettings</name>
+    </types>
+    <version>62.0</version>
+</Package>
+""";
+
+    /// <summary>既定の Named Credential マニフェスト。</summary>
+    public const string DefaultNamedCredentialsManifestXml = """
+<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    <types>
+        <members>*</members>
+        <name>NamedCredential</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>ExternalCredential</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>AuthProvider</name>
+    </types>
+    <version>62.0</version>
+</Package>
 """;
 }

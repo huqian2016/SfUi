@@ -217,6 +217,8 @@ public class ScratchOrgTests
             Assert.True(File.Exists(files.StaticResourcesManifestFile));
             Assert.True(File.Exists(files.ConnectedAppsManifestFile));
             Assert.True(File.Exists(files.ReportsManifestFile));
+            Assert.True(File.Exists(files.ExperienceManifestFile));
+            Assert.True(File.Exists(files.NamedCredentialsManifestFile));
             Assert.True(File.Exists(Path.Combine(files.ApexScriptsDirectory, "setup.apex")));
             Assert.Contains("CustomMetadata", File.ReadAllText(files.CustomMetadataManifestFile));
             Assert.Contains("packageDirectories", File.ReadAllText(files.ProjectFile));
@@ -241,6 +243,7 @@ public class ScratchOrgTests
             profile.WaitMinutes = 20;
             profile.AliasPattern = "s-{profile}";
             profile.SetDefault = true;
+            profile.SnapshotName = "Nightly";
             profile.UseMetadata = false;
             profile.UseStaticResources = true;
             profile.UseApexScripts = true;
@@ -254,6 +257,7 @@ public class ScratchOrgTests
             Assert.Equal(20, loaded.WaitMinutes);
             Assert.Equal("s-{profile}", loaded.AliasPattern);
             Assert.True(loaded.SetDefault);
+            Assert.Equal("Nightly", loaded.SnapshotName);
             Assert.False(loaded.UseMetadata);
             Assert.True(loaded.UseStaticResources);
             Assert.True(loaded.UseApexScripts);
@@ -613,6 +617,191 @@ public class ScratchOrgTests
         }
     }
 
+    [Fact]
+    public void BuildCreateArgs_IncludesSnapshot()
+    {
+        var args = ScratchOrgService.BuildCreateArgs("hub", "def.json", "alias", 7, 10, false, null, "Nightly");
+
+        Assert.Contains("--snapshot", args);
+        Assert.Contains("Nightly", args);
+        Assert.DoesNotContain("--source-org", args);
+    }
+
+    [Fact]
+    public void Profile_Validate_RejectsShapeAndSnapshotTogether()
+    {
+        var profile = new ScratchProfile
+        {
+            Name = "dev",
+            OrgShapeId = "00Dxx0000000001",
+            SnapshotName = "Nightly",
+        };
+
+        var errors = profile.Validate();
+
+        Assert.Contains(UiText.T("Scratch_InvalidShapeAndSnapshot"), errors);
+    }
+
+    [Fact]
+    public void BuildPlan_AddsExperienceAndNamedCredentialSteps()
+    {
+        var root = CreateTempRoot();
+        try
+        {
+            var files = CreateFiles(root, includeSeed: false);
+            var profile = new ScratchProfile
+            {
+                Name = "dev",
+                UseMetadata = false,
+                UseCustomMetadata = false,
+                UsePermissionSets = false,
+                UseSeedData = false,
+                UseExperienceCloud = true,
+                UseNamedCredentials = true,
+            };
+
+            var steps = ScratchOrgService.BuildPlan(profile, "hub", "scratch-dev", files);
+
+            Assert.Equal(
+                new[] { "create", "experience", "named-credentials", "verify" },
+                steps.Select(s => s.Kind));
+        }
+        finally
+        {
+            TryDelete(root);
+        }
+    }
+
+    // ---- Shape / スナップショット ----
+
+    [Fact]
+    public void SignupCommands_UseExpectedArguments()
+    {
+        Assert.Equal(new[] { "org", "list", "shape", "--json" }, ScratchSignupService.BuildListShapesArgs());
+        Assert.Equal(
+            new[] { "org", "create", "shape", "--target-org", "src", "--json" },
+            ScratchSignupService.BuildCreateShapeArgs("src"));
+        Assert.Equal(
+            new[] { "org", "delete", "shape", "--target-org", "src", "--no-prompt", "--json" },
+            ScratchSignupService.BuildDeleteShapeArgs("src"));
+        Assert.Equal(
+            new[] { "org", "list", "snapshot", "--target-dev-hub", "hub", "--json" },
+            ScratchSignupService.BuildListSnapshotsArgs("hub"));
+
+        var createSnapshot = ScratchSignupService.BuildCreateSnapshotArgs("hub", "src", "Nightly", "nightly build");
+        Assert.Contains("--source-org", createSnapshot);
+        Assert.Contains("--name", createSnapshot);
+        Assert.Contains("Nightly", createSnapshot);
+        Assert.Contains("--description", createSnapshot);
+        Assert.Equal("--json", createSnapshot[^1]);
+
+        var deleteSnapshot = ScratchSignupService.BuildDeleteSnapshotArgs("hub", "Nightly");
+        Assert.Contains("--snapshot", deleteSnapshot);
+        Assert.Contains("--no-prompt", deleteSnapshot);
+    }
+
+    [Fact]
+    public void ParseShapes_HandlesShapeListJson()
+    {
+        const string json = """
+            {"status":0,"result":[{"Id":"00Dxx0000000001","Name":"CorpShape","Status":"Active","CreatedDate":"2026-10-01T00:00:00.000+0000"}]}
+            """;
+
+        var shapes = ScratchSignupService.ParseShapes(json);
+
+        var shape = Assert.Single(shapes);
+        Assert.Equal("00Dxx0000000001", shape.Id);
+        Assert.Equal("CorpShape", shape.Name);
+        Assert.Equal("Active", shape.Status);
+        Assert.Contains("CorpShape", shape.Display);
+    }
+
+    [Fact]
+    public void ParseSnapshots_HandlesSnapshotListJson()
+    {
+        const string json = """
+            {"status":0,"result":[{"Id":"0Oo000000000001","SnapshotName":"Nightly","Status":"Completed","ExpirationDate":"2026-11-01","CreatedDate":"2026-10-01"}]}
+            """;
+
+        var snapshots = ScratchSignupService.ParseSnapshots(json);
+
+        var snapshot = Assert.Single(snapshots);
+        Assert.Equal("Nightly", snapshot.Name);
+        Assert.Equal("Completed", snapshot.Status);
+        Assert.Equal("2026-11-01", snapshot.ExpirationDate);
+    }
+
+    [Fact]
+    public void ParseSignup_HandlesEmptyAndBrokenJson()
+    {
+        Assert.Empty(ScratchSignupService.ParseShapes(string.Empty));
+        Assert.Empty(ScratchSignupService.ParseSnapshots("not json"));
+        Assert.Empty(ScratchSignupService.ParseShapes("{\"status\":0,\"result\":[]}"));
+    }
+
+    // ---- 定義ファイル / プリセット ----
+
+    [Fact]
+    public void DefinitionEditor_AddsExperienceSettingsAndKeepsExistingValues()
+    {
+        var root = CreateTempRoot();
+        try
+        {
+            var path = Path.Combine(root, "definition.json");
+            File.WriteAllText(path, """
+                {
+                  "orgName": "Keep Me",
+                  "edition": "Developer",
+                  "features": ["EnableSetPasswordInApi"],
+                  "settings": { "lightningExperienceSettings": { "enableS1DesktopEnabled": true } }
+                }
+                """);
+
+            Assert.False(ScratchDefinitionEditor.HasExperienceSettings(path));
+            var changed = ScratchDefinitionEditor.AddExperienceSettings(path);
+            Assert.True(changed);
+            Assert.True(ScratchDefinitionEditor.HasExperienceSettings(path));
+
+            using var document = System.Text.Json.JsonDocument.Parse(File.ReadAllText(path));
+            var rootElement = document.RootElement;
+            Assert.Equal("Keep Me", rootElement.GetProperty("orgName").GetString());
+            Assert.Contains("Communities", rootElement.GetProperty("features").EnumerateArray().Select(e => e.GetString()));
+            Assert.True(rootElement.GetProperty("settings").GetProperty("communitiesSettings").GetProperty("enableNetworks").GetBoolean());
+            Assert.True(rootElement.GetProperty("settings").TryGetProperty("lightningExperienceSettings", out _));
+
+            Assert.False(ScratchDefinitionEditor.AddExperienceSettings(path));
+        }
+        finally
+        {
+            TryDelete(root);
+        }
+    }
+
+    [Fact]
+    public void NamedCredentialPresets_WriteValidSkeleton()
+    {
+        var root = CreateTempRoot();
+        try
+        {
+            var path = ScratchNamedCredentialPresets.Write(
+                root, "SapApi", ScratchNamedCredentialPreset.Sap);
+
+            Assert.NotNull(path);
+            var xml = File.ReadAllText(path!);
+            Assert.Contains("<NamedCredential", xml);
+            Assert.Contains("<protocol>NoAuthentication</protocol>", xml);
+            Assert.Contains("your-sap-host", xml);
+            Assert.DoesNotContain("password", xml, StringComparison.OrdinalIgnoreCase);
+
+            Assert.Null(ScratchNamedCredentialPresets.Write(root, "SapApi", ScratchNamedCredentialPreset.Sap));
+            Assert.False(ScratchNamedCredentialPresets.IsValidApiName("1bad"));
+        }
+        finally
+        {
+            TryDelete(root);
+        }
+    }
+
     // ---- ヘルパー ----
 
     private static ScratchProfileStore CreateStore(string root)
@@ -632,6 +821,8 @@ public class ScratchOrgTests
         var staticResources = Path.Combine(root, "static-resources.xml");
         var connectedApps = Path.Combine(root, "connected-apps.xml");
         var reports = Path.Combine(root, "reports.xml");
+        var experience = Path.Combine(root, "experience.xml");
+        var namedCredentials = Path.Combine(root, "named-credentials.xml");
         var apexScripts = Path.Combine(root, "scripts", "apex");
 
         File.WriteAllText(definition, "{}");
@@ -641,6 +832,8 @@ public class ScratchOrgTests
         File.WriteAllText(staticResources, "<Package/>");
         File.WriteAllText(connectedApps, "<Package/>");
         File.WriteAllText(reports, "<Package/>");
+        File.WriteAllText(experience, "<Package/>");
+        File.WriteAllText(namedCredentials, "<Package/>");
         Directory.CreateDirectory(Path.Combine(package, "classes"));
         File.WriteAllText(Path.Combine(package, "classes", "Sample.cls"), "public class Sample {}");
         Directory.CreateDirectory(apexScripts);
@@ -651,7 +844,7 @@ public class ScratchOrgTests
                 : "{ \"objects\": [] }");
         return new ScratchProfileFiles(
             definition, manifest, customMetadata, plan, project, package,
-            staticResources, connectedApps, reports, apexScripts);
+            staticResources, connectedApps, reports, experience, namedCredentials, apexScripts);
     }
 
     private static string CreateTempRoot()

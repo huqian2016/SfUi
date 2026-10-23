@@ -28,6 +28,9 @@ public sealed class ScratchProfile
     /// <summary>Org Shape ID（15 桁）。指定時は sf org create scratch --source-org に渡す。</summary>
     public string? OrgShapeId { get; set; }
 
+    /// <summary>スナップショット名。指定時は sf org create scratch --snapshot に渡す（shape とは排他）。</summary>
+    public string? SnapshotName { get; set; }
+
     public int DurationDays { get; set; } = DefaultDurationDays;
 
     public int WaitMinutes { get; set; } = DefaultWaitMinutes;
@@ -58,6 +61,12 @@ public sealed class ScratchProfile
     /// <summary>scripts/apex の匿名 Apex を実行するか。</summary>
     public bool UseApexScripts { get; set; }
 
+    /// <summary>Experience Cloud（Network / Site / ExperienceBundle 等）をデプロイするか。</summary>
+    public bool UseExperienceCloud { get; set; }
+
+    /// <summary>Named Credential / External Credential をデプロイするか。</summary>
+    public bool UseNamedCredentials { get; set; }
+
     /// <summary>作成後に割り当てる権限セット（API 名）。</summary>
     public List<string> PermissionSets { get; set; } = new();
 
@@ -73,6 +82,7 @@ public sealed class ScratchProfile
         WaitMinutes = Math.Clamp(WaitMinutes, MinWaitMinutes, MaxWaitMinutes);
         AliasPattern = string.IsNullOrWhiteSpace(AliasPattern) ? DefaultAliasPattern : AliasPattern.Trim();
         OrgShapeId = string.IsNullOrWhiteSpace(OrgShapeId) ? null : OrgShapeId.Trim();
+        SnapshotName = string.IsNullOrWhiteSpace(SnapshotName) ? null : SnapshotName.Trim();
         DevHub = string.IsNullOrWhiteSpace(DevHub) ? null : DevHub.Trim();
         PermissionSets = PermissionSets
             .Select(p => p?.Trim() ?? string.Empty)
@@ -111,6 +121,11 @@ public sealed class ScratchProfile
             errors.Add(UiText.T("Scratch_InvalidAlias"));
         }
 
+        if (!string.IsNullOrWhiteSpace(OrgShapeId) && !string.IsNullOrWhiteSpace(SnapshotName))
+        {
+            errors.Add(UiText.T("Scratch_InvalidShapeAndSnapshot"));
+        }
+
         return errors;
     }
 
@@ -119,6 +134,7 @@ public sealed class ScratchProfile
         Name = Name,
         DevHub = DevHub,
         OrgShapeId = OrgShapeId,
+        SnapshotName = SnapshotName,
         DurationDays = DurationDays,
         WaitMinutes = WaitMinutes,
         AliasPattern = AliasPattern,
@@ -131,6 +147,8 @@ public sealed class ScratchProfile
         UseConnectedApps = UseConnectedApps,
         UseReports = UseReports,
         UseApexScripts = UseApexScripts,
+        UseExperienceCloud = UseExperienceCloud,
+        UseNamedCredentials = UseNamedCredentials,
         PermissionSets = PermissionSets.ToList(),
         CreatedAt = CreatedAt,
         UpdatedAt = UpdatedAt,
@@ -214,6 +232,8 @@ public sealed record ScratchProfileFiles(
     string StaticResourcesManifestFile,
     string ConnectedAppsManifestFile,
     string ReportsManifestFile,
+    string ExperienceManifestFile,
+    string NamedCredentialsManifestFile,
     string ApexScriptsDirectory);
 
 /// <summary>スクラッチ組織作成の 1 ステップ（sf コマンド 1 回分）。</summary>

@@ -32,6 +32,7 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
     private readonly ScratchProfileStore _profiles;
     private readonly ScratchOrgService _service;
     private readonly ScratchResourceService _resources;
+    private readonly ScratchSignupService _signup;
     private readonly ScratchRunHistoryStore _historyStore;
     private readonly AppPaths _paths;
     private readonly IDialogService _dialogs;
@@ -54,6 +55,7 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
         ScratchProfileStore profiles,
         ScratchOrgService service,
         ScratchResourceService resources,
+        ScratchSignupService signup,
         ScratchRunHistoryStore historyStore,
         AppPaths paths,
         IDialogService dialogs,
@@ -65,6 +67,7 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
         _profiles = profiles;
         _service = service;
         _resources = resources;
+        _signup = signup;
         _historyStore = historyStore;
         _paths = paths;
         _dialogs = dialogs;
@@ -86,6 +89,15 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
 
     /// <summary>取り込み差分の一覧。</summary>
     public ObservableCollection<ScratchRetrieveChange> RetrieveChanges { get; } = new();
+
+    /// <summary>Org Shape 一覧。</summary>
+    public ObservableCollection<ScratchShapeInfo> Shapes { get; } = new();
+
+    /// <summary>スナップショット一覧。</summary>
+    public ObservableCollection<ScratchSnapshotInfo> Snapshots { get; } = new();
+
+    /// <summary>Named Credential プリセットの表示名。</summary>
+    public IReadOnlyList<string> NamedCredentialPresetNames { get; } = new[] { "SAP", "ServiceNow", "MuleSoft", "Generic" };
 
     /// <summary>現在のプロファイル名。</summary>
     public string ProfileName => SelectedProfileName ?? _profile.Name;
@@ -129,6 +141,10 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _orgShapeId = string.Empty;
 
+    /// <summary>作成元のスナップショット名（shape とは排他）。</summary>
+    [ObservableProperty]
+    private string _snapshotName = string.Empty;
+
     [ObservableProperty]
     private bool _useMetadata = true;
 
@@ -154,6 +170,16 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
     private bool _useApexScripts;
 
     [ObservableProperty]
+    private bool _useExperienceCloud;
+
+    [ObservableProperty]
+    private bool _useNamedCredentials;
+
+    /// <summary>選択中の Named Credential プリセット表示名。</summary>
+    [ObservableProperty]
+    private string _selectedNamedCredentialPreset = "SAP";
+
+    [ObservableProperty]
     private string _permissionSetsText = string.Empty;
 
     // ---- 別 Org からの取り込み ----
@@ -175,6 +201,45 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private bool _retrieveUseReports;
+
+    [ObservableProperty]
+    private bool _retrieveUseExperienceCloud;
+
+    [ObservableProperty]
+    private bool _retrieveUseNamedCredentials;
+
+    // ---- Org Shape / スナップショット ----
+
+    [ObservableProperty]
+    private ScratchShapeInfo? _selectedShape;
+
+    [ObservableProperty]
+    private ScratchSnapshotInfo? _selectedSnapshot;
+
+    [ObservableProperty]
+    private OrgInfo? _shapeSourceOrg;
+
+    [ObservableProperty]
+    private string _snapshotSourceOrg = string.Empty;
+
+    [ObservableProperty]
+    private string _newSnapshotName = string.Empty;
+
+    [ObservableProperty]
+    private string _newSnapshotDescription = string.Empty;
+
+    [ObservableProperty]
+    private string _shapeStatus = string.Empty;
+
+    [ObservableProperty]
+    private string _snapshotStatus = string.Empty;
+
+    [ObservableProperty]
+    private bool _isShapeBusy;
+
+    public bool IsShapeListEmpty => Shapes.Count == 0;
+
+    public bool IsSnapshotListEmpty => Snapshots.Count == 0;
 
     [ObservableProperty]
     private string _retrieveStatus = string.Empty;
@@ -274,6 +339,7 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
                              ?? Orgs.FirstOrDefault(o => o.IsDefault)
                              ?? Orgs.FirstOrDefault();
             SourceOrg ??= Orgs.FirstOrDefault(o => o.IsDefault) ?? Orgs.FirstOrDefault();
+            ShapeSourceOrg ??= Orgs.FirstOrDefault(o => o.IsDefault) ?? Orgs.FirstOrDefault();
             StatusMessage = UiText.T("Scratch_OrgsLoadedFmt", Orgs.Count);
         }
         catch (Exception ex)
@@ -376,6 +442,7 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
             AliasPattern = profile.AliasPattern;
             SetDefault = profile.SetDefault;
             OrgShapeId = profile.OrgShapeId ?? string.Empty;
+            SnapshotName = profile.SnapshotName ?? string.Empty;
             UseMetadata = profile.UseMetadata;
             UseCustomMetadata = profile.UseCustomMetadata;
             UsePermissionSets = profile.UsePermissionSets;
@@ -384,6 +451,8 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
             UseConnectedApps = profile.UseConnectedApps;
             UseReports = profile.UseReports;
             UseApexScripts = profile.UseApexScripts;
+            UseExperienceCloud = profile.UseExperienceCloud;
+            UseNamedCredentials = profile.UseNamedCredentials;
             PermissionSetsText = string.Join(Environment.NewLine, profile.PermissionSets);
 
             if (!string.IsNullOrWhiteSpace(profile.DevHub))
@@ -414,6 +483,7 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
         profile.AliasPattern = AliasPattern;
         profile.SetDefault = SetDefault;
         profile.OrgShapeId = string.IsNullOrWhiteSpace(OrgShapeId) ? null : OrgShapeId.Trim();
+        profile.SnapshotName = string.IsNullOrWhiteSpace(SnapshotName) ? null : SnapshotName.Trim();
         profile.UseMetadata = UseMetadata;
         profile.UseCustomMetadata = UseCustomMetadata;
         profile.UsePermissionSets = UsePermissionSets;
@@ -422,6 +492,8 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
         profile.UseConnectedApps = UseConnectedApps;
         profile.UseReports = UseReports;
         profile.UseApexScripts = UseApexScripts;
+        profile.UseExperienceCloud = UseExperienceCloud;
+        profile.UseNamedCredentials = UseNamedCredentials;
         profile.PermissionSets = PermissionSetsText
             .Split(new[] { '\r', '\n', ',', ';', ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -476,6 +548,26 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
             warnings.Add(UiText.T("Scratch_WarnMissingReportsFmt", files.ReportsManifestFile));
         }
 
+        if (profile.UseExperienceCloud && !File.Exists(files.ExperienceManifestFile))
+        {
+            warnings.Add(UiText.T("Scratch_WarnMissingExperienceFmt", files.ExperienceManifestFile));
+        }
+
+        if (profile.UseNamedCredentials && !File.Exists(files.NamedCredentialsManifestFile))
+        {
+            warnings.Add(UiText.T("Scratch_WarnMissingNamedCredentialsFmt", files.NamedCredentialsManifestFile));
+        }
+
+        if (profile.UseExperienceCloud && !ScratchDefinitionEditor.HasExperienceSettings(files.DefinitionFile))
+        {
+            warnings.Add(UiText.T("Scratch_WarnExperienceWithoutSettings"));
+        }
+
+        if (!string.IsNullOrWhiteSpace(profile.OrgShapeId) && !string.IsNullOrWhiteSpace(profile.SnapshotName))
+        {
+            warnings.Add(UiText.T("Scratch_InvalidShapeAndSnapshot"));
+        }
+
         if (usesDeploy && !hasSources)
         {
             warnings.Add(UiText.T("Scratch_WarnNoSources"));
@@ -523,17 +615,28 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void SaveProfile()
     {
+        if (!TrySaveProfile())
+        {
+            return;
+        }
+
+        StatusMessage = UiText.T("Scratch_SavedFmt", ProfileName);
+    }
+
+    /// <summary>画面の値を検証してプロファイルへ保存する（成功したら true）。</summary>
+    private bool TrySaveProfile()
+    {
         var profile = CaptureProfile();
         if (!ScratchProfileNaming.IsValidName(profile.Name))
         {
             _dialogs.Warning(UiText.T("Scratch_InvalidProfileName"), Title);
-            return;
+            return false;
         }
 
         _profiles.Save(profile);
         _profile = profile;
         ApplyProfileValues(profile);
-        StatusMessage = UiText.T("Scratch_SavedFmt", profile.Name);
+        return true;
     }
 
     [RelayCommand]
@@ -648,6 +751,381 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
         catch (Exception ex)
         {
             StatusMessage = UiText.T("Common_FailedFmt", ex.Message);
+        }
+    }
+
+    // ---- Org Shape / スナップショット ----
+
+    [RelayCommand]
+    private async Task RefreshShapesAsync()
+    {
+        if (IsShapeBusy)
+        {
+            return;
+        }
+
+        IsShapeBusy = true;
+        ShapeStatus = UiText.T("Scratch_ShapeLoading");
+        try
+        {
+            await RefreshShapesCoreAsync();
+        }
+        finally
+        {
+            IsShapeBusy = false;
+        }
+    }
+
+    private async Task RefreshShapesCoreAsync()
+    {
+        var result = await _signup.ListShapesAsync(CancellationToken.None);
+        if (!result.Success)
+        {
+            ShapeStatus = UiText.T("Scratch_ShapeFailedFmt", result.ErrorText);
+            return;
+        }
+
+        var shapes = ScratchSignupService.ParseShapes(result.Output);
+        Shapes.Clear();
+        foreach (var shape in shapes)
+        {
+            Shapes.Add(shape);
+        }
+
+        ShapeStatus = UiText.T("Scratch_ShapeLoadedFmt", Shapes.Count);
+        OnPropertyChanged(nameof(IsShapeListEmpty));
+    }
+
+    [RelayCommand]
+    private async Task CreateShapeAsync()
+    {
+        var source = ShapeSourceOrg?.Alias ?? ShapeSourceOrg?.Username;
+        if (string.IsNullOrWhiteSpace(source))
+        {
+            ShapeStatus = UiText.T("Scratch_ShapeNeedSource");
+            return;
+        }
+
+        if (!_dialogs.Confirm(UiText.T("Scratch_ShapeCreateConfirmFmt", source), Title))
+        {
+            return;
+        }
+
+        await RunSignupOperationAsync(
+            token => _signup.CreateShapeAsync(source, token),
+            UiText.T("Scratch_ShapeCreatedHint"),
+            refreshShapes: true);
+    }
+
+    [RelayCommand]
+    private async Task DeleteShapeAsync()
+    {
+        var source = ShapeSourceOrg?.Alias ?? ShapeSourceOrg?.Username;
+        if (string.IsNullOrWhiteSpace(source))
+        {
+            ShapeStatus = UiText.T("Scratch_ShapeNeedSource");
+            return;
+        }
+
+        if (!_dialogs.ConfirmDestructive(UiText.T("Scratch_ShapeDeleteConfirmFmt", source), Title))
+        {
+            return;
+        }
+
+        await RunSignupOperationAsync(
+            token => _signup.DeleteShapeAsync(source, token),
+            UiText.T("Scratch_ShapeDeletedFmt", source),
+            refreshShapes: true);
+    }
+
+    private async Task RunSignupOperationAsync(
+        Func<CancellationToken, Task<ScratchSignupResult>> operation, string successMessage, bool refreshShapes)
+    {
+        if (IsShapeBusy)
+        {
+            return;
+        }
+
+        IsShapeBusy = true;
+        try
+        {
+            var result = await operation(CancellationToken.None);
+            ShapeStatus = result.Success
+                ? successMessage
+                : UiText.T("Scratch_ShapeFailedFmt", result.ErrorText);
+            if (result.Success && refreshShapes)
+            {
+                await RefreshShapesCoreAsync();
+            }
+        }
+        finally
+        {
+            IsShapeBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private void UseShapeInProfile()
+    {
+        var shape = SelectedShape;
+        if (shape is null || string.IsNullOrWhiteSpace(shape.Id))
+        {
+            ShapeStatus = UiText.T("Scratch_ShapeSelect");
+            return;
+        }
+
+        OrgShapeId = shape.Id;
+        SnapshotName = string.Empty;
+        if (!TrySaveProfile())
+        {
+            return;
+        }
+
+        ShapeStatus = UiText.T("Scratch_ShapeUseDoneFmt", shape.Id);
+    }
+
+    [RelayCommand]
+    private async Task RefreshSnapshotsAsync()
+    {
+        if (IsShapeBusy)
+        {
+            return;
+        }
+
+        IsShapeBusy = true;
+        SnapshotStatus = UiText.T("Scratch_SnapshotLoading");
+        try
+        {
+            await RefreshSnapshotsCoreAsync();
+        }
+        finally
+        {
+            IsShapeBusy = false;
+        }
+    }
+
+    private async Task RefreshSnapshotsCoreAsync()
+    {
+        var hub = SelectedDevHub?.Alias ?? SelectedDevHub?.Username;
+        if (string.IsNullOrWhiteSpace(hub))
+        {
+            SnapshotStatus = UiText.T("Scratch_NoDevHub");
+            return;
+        }
+
+        var result = await _signup.ListSnapshotsAsync(hub, CancellationToken.None);
+        if (!result.Success)
+        {
+            SnapshotStatus = UiText.T("Scratch_SnapshotFailedFmt", result.ErrorText);
+            return;
+        }
+
+        var snapshots = ScratchSignupService.ParseSnapshots(result.Output);
+        Snapshots.Clear();
+        foreach (var snapshot in snapshots)
+        {
+            Snapshots.Add(snapshot);
+        }
+
+        SnapshotStatus = UiText.T("Scratch_SnapshotLoadedFmt", Snapshots.Count);
+        OnPropertyChanged(nameof(IsSnapshotListEmpty));
+    }
+
+    private static bool IsValidSnapshotName(string? name) =>
+        !string.IsNullOrWhiteSpace(name)
+        && name.Length <= 80
+        && char.IsLetter(name[0])
+        && name.All(c => char.IsLetterOrDigit(c) || c == '_');
+
+    [RelayCommand]
+    private async Task CreateSnapshotAsync()
+    {
+        var hub = SelectedDevHub?.Alias ?? SelectedDevHub?.Username;
+        var source = SnapshotSourceOrg?.Trim() ?? string.Empty;
+        var name = NewSnapshotName?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(hub))
+        {
+            SnapshotStatus = UiText.T("Scratch_NoDevHub");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(source))
+        {
+            SnapshotStatus = UiText.T("Scratch_SnapshotNeedSource");
+            return;
+        }
+
+        if (!IsValidSnapshotName(name))
+        {
+            SnapshotStatus = UiText.T("Scratch_InvalidSnapshotName");
+            return;
+        }
+
+        if (!_dialogs.Confirm(UiText.T("Scratch_SnapshotCreateConfirmFmt", hub, source, name), Title))
+        {
+            return;
+        }
+
+        await RunSnapshotOperationAsync(
+            token => _signup.CreateSnapshotAsync(hub, source, name, NewSnapshotDescription, token),
+            UiText.T("Scratch_SnapshotCreatedFmt", name),
+            refreshSnapshots: true);
+    }
+
+    [RelayCommand]
+    private async Task DeleteSnapshotAsync()
+    {
+        var hub = SelectedDevHub?.Alias ?? SelectedDevHub?.Username;
+        var snapshot = SelectedSnapshot;
+        if (string.IsNullOrWhiteSpace(hub))
+        {
+            SnapshotStatus = UiText.T("Scratch_NoDevHub");
+            return;
+        }
+
+        if (snapshot is null || string.IsNullOrWhiteSpace(snapshot.Name))
+        {
+            SnapshotStatus = UiText.T("Scratch_SnapshotSelect");
+            return;
+        }
+
+        if (!_dialogs.ConfirmDestructive(UiText.T("Scratch_SnapshotDeleteConfirmFmt", snapshot.Name), Title))
+        {
+            return;
+        }
+
+        await RunSnapshotOperationAsync(
+            token => _signup.DeleteSnapshotAsync(hub, snapshot.Name, token),
+            UiText.T("Scratch_SnapshotDeletedFmt", snapshot.Name),
+            refreshSnapshots: true);
+    }
+
+    private async Task RunSnapshotOperationAsync(
+        Func<CancellationToken, Task<ScratchSignupResult>> operation, string successMessage, bool refreshSnapshots)
+    {
+        if (IsShapeBusy)
+        {
+            return;
+        }
+
+        IsShapeBusy = true;
+        try
+        {
+            var result = await operation(CancellationToken.None);
+            SnapshotStatus = result.Success
+                ? successMessage
+                : UiText.T("Scratch_SnapshotFailedFmt", result.ErrorText);
+            if (result.Success && refreshSnapshots)
+            {
+                await RefreshSnapshotsCoreAsync();
+            }
+        }
+        finally
+        {
+            IsShapeBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private void UseSnapshotInProfile()
+    {
+        var snapshot = SelectedSnapshot;
+        if (snapshot is null || string.IsNullOrWhiteSpace(snapshot.Name))
+        {
+            SnapshotStatus = UiText.T("Scratch_SnapshotSelect");
+            return;
+        }
+
+        SnapshotName = snapshot.Name;
+        OrgShapeId = string.Empty;
+        if (!TrySaveProfile())
+        {
+            return;
+        }
+
+        SnapshotStatus = UiText.T("Scratch_SnapshotUseDoneFmt", snapshot.Name);
+    }
+
+    // ---- Experience Cloud / Named Credential の補助 ----
+
+    [RelayCommand]
+    private void AddExperienceSettings()
+    {
+        var files = _profiles.GetFiles(ProfileName);
+        if (!File.Exists(files.DefinitionFile))
+        {
+            StatusMessage = UiText.T("Scratch_MissingDefinitionFmt", files.DefinitionFile);
+            return;
+        }
+
+        if (!_dialogs.Confirm(UiText.T("Scratch_ExperienceAddConfirm"), Title))
+        {
+            return;
+        }
+
+        try
+        {
+            var changed = ScratchDefinitionEditor.AddExperienceSettings(files.DefinitionFile);
+            UseExperienceCloud = true;
+            if (!TrySaveProfile())
+            {
+                return;
+            }
+
+            StatusMessage = UiText.T(changed ? "Scratch_ExperienceAddedFmt" : "Scratch_ExperienceAlreadyFmt");
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = UiText.T("Common_FailedFmt", ex.Message);
+            _dialogs.Warning(ex.Message, Title);
+        }
+    }
+
+    [RelayCommand]
+    private void AddNamedCredentialPreset()
+    {
+        var apiName = _dialogs.Prompt(
+            UiText.T("Scratch_PresetNameTitle"),
+            UiText.T("Scratch_PresetNamePrompt"),
+            "SapApi");
+        if (string.IsNullOrWhiteSpace(apiName))
+        {
+            return;
+        }
+
+        if (!ScratchNamedCredentialPresets.IsValidApiName(apiName))
+        {
+            _dialogs.Warning(UiText.T("Scratch_InvalidApiName"), Title);
+            return;
+        }
+
+        var preset = SelectedNamedCredentialPreset switch
+        {
+            "ServiceNow" => ScratchNamedCredentialPreset.ServiceNow,
+            "MuleSoft" => ScratchNamedCredentialPreset.MuleSoft,
+            "Generic" => ScratchNamedCredentialPreset.Generic,
+            _ => ScratchNamedCredentialPreset.Sap,
+        };
+
+        try
+        {
+            var path = ScratchNamedCredentialPresets.Write(
+                _profiles.GetProfileDirectory(ProfileName), apiName.Trim(), preset);
+            if (path is null)
+            {
+                StatusMessage = UiText.T("Scratch_PresetExistsFmt", apiName.Trim());
+                _dialogs.Warning(StatusMessage, Title);
+                return;
+            }
+
+            UseNamedCredentials = true;
+            TrySaveProfile();
+            StatusMessage = UiText.T("Scratch_PresetAddedFmt", path);
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = UiText.T("Common_FailedFmt", ex.Message);
+            _dialogs.Warning(ex.Message, Title);
         }
     }
 
@@ -911,6 +1389,16 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
         if (RetrieveUseReports)
         {
             manifests.Add((files.ReportsManifestFile, UiText.T("Scratch_UseReports")));
+        }
+
+        if (RetrieveUseExperienceCloud)
+        {
+            manifests.Add((files.ExperienceManifestFile, UiText.T("Scratch_UseExperienceCloud")));
+        }
+
+        if (RetrieveUseNamedCredentials)
+        {
+            manifests.Add((files.NamedCredentialsManifestFile, UiText.T("Scratch_UseNamedCredentials")));
         }
 
         if (manifests.Count == 0)
@@ -1231,6 +1719,36 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
         if (!_applyingProfile)
         {
             _profile.UseApexScripts = value;
+        }
+
+        RefreshPreview();
+    }
+
+    partial void OnUseExperienceCloudChanged(bool value)
+    {
+        if (!_applyingProfile)
+        {
+            _profile.UseExperienceCloud = value;
+        }
+
+        RefreshPreview();
+    }
+
+    partial void OnUseNamedCredentialsChanged(bool value)
+    {
+        if (!_applyingProfile)
+        {
+            _profile.UseNamedCredentials = value;
+        }
+
+        RefreshPreview();
+    }
+
+    partial void OnSnapshotNameChanged(string value)
+    {
+        if (!_applyingProfile)
+        {
+            _profile.SnapshotName = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
         }
 
         RefreshPreview();

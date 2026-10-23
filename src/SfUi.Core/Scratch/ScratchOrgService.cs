@@ -30,7 +30,8 @@ public sealed class ScratchOrgService
         int durationDays,
         int waitMinutes,
         bool setDefault,
-        string? orgShapeId = null)
+        string? orgShapeId = null,
+        string? snapshotName = null)
     {
         var args = new List<string>
         {
@@ -52,6 +53,13 @@ public sealed class ScratchOrgService
         {
             args.Add("--source-org");
             args.Add(orgShapeId.Trim());
+        }
+
+        // スナップショットから作る場合は --snapshot（shape / edition とは排他）。
+        if (!string.IsNullOrWhiteSpace(snapshotName))
+        {
+            args.Add("--snapshot");
+            args.Add(snapshotName.Trim());
         }
 
         args.Add("--json");
@@ -122,9 +130,9 @@ public sealed class ScratchOrgService
                 profile.DurationDays,
                 profile.WaitMinutes,
                 profile.SetDefault,
-                profile.OrgShapeId),
+                profile.OrgShapeId,
+                profile.SnapshotName),
             TimeSpan.FromMinutes(profile.WaitMinutes + 20)));
-
         if (profile.UseMetadata && hasSources && File.Exists(files.ManifestFile))
         {
             steps.Add(new ScratchOrgStep(
@@ -141,6 +149,26 @@ public sealed class ScratchOrgService
                 "custom-metadata",
                 UiText.T("Scratch_StepCustomMetadata"),
                 BuildDeployArgs(files.CustomMetadataManifestFile, alias),
+                TimeSpan.FromMinutes(30),
+                profileDirectory));
+        }
+
+        if (profile.UseExperienceCloud && hasSources && File.Exists(files.ExperienceManifestFile))
+        {
+            steps.Add(new ScratchOrgStep(
+                "experience",
+                UiText.T("Scratch_StepExperience"),
+                BuildDeployArgs(files.ExperienceManifestFile, alias, 45),
+                TimeSpan.FromMinutes(90),
+                profileDirectory));
+        }
+
+        if (profile.UseNamedCredentials && hasSources && File.Exists(files.NamedCredentialsManifestFile))
+        {
+            steps.Add(new ScratchOrgStep(
+                "named-credentials",
+                UiText.T("Scratch_StepNamedCredentials"),
+                BuildDeployArgs(files.NamedCredentialsManifestFile, alias),
                 TimeSpan.FromMinutes(30),
                 profileDirectory));
         }
