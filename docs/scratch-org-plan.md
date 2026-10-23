@@ -10,7 +10,7 @@
 | リポジトリ | **アプリ管理下** `data/scratch/profiles/<name>/`。Git 連携は行わない。**ZIP エクスポート / インポート**で共有する |
 | シークレット | リポジトリに保存しない。必要になった時点で DPAPI（`CredentialProtector`）によるローカル保存を使う（P3） |
 | Experience Cloud / Named Credential | 「取得・デプロイ」と「プリセット生成」の**両方**を選べるようにする（P3） |
-| 進め方 | **P1 のみ**実装して動作確認 → 合意後に P2 以降 |
+| 進め方 | P1 実装 → 動作確認 → **P2 承認済み・実装済み** → 合意後に P3 以降 |
 
 ## プロファイル構成
 
@@ -35,7 +35,7 @@ data/scratch/
 - 既定プロファイル `default` は初回表示時に自動作成する。
 - **force-app/main/default にソースが無い場合、deploy 系のステップはスキップ**する（`sf project deploy start` はソースが無いと必ず失敗するため）。取り込みタブで取得するか、ファイルを置く。
 
-## 実行ステップ（P1）
+## 実行ステップ（P1/P2）
 
 1. `sf org create scratch --target-dev-hub <hub> --definition-file <def> --alias <alias> --duration-days N --wait M [--set-default] [--source-org <shapeId>] --json`
 2. `sf project deploy start --manifest manifest/package.xml --target-org <alias> --wait 30 --ignore-conflicts --json`（チェック ON・ファイルあり・ソースあり）

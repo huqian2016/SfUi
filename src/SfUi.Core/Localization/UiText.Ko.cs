@@ -1681,7 +1681,7 @@ public static partial class UiText
         ["Scratch_PermissionSetsLabel"] = "권한 세트(한 줄에 하나):",
         ["Scratch_PermissionSetsTip"] = "만든 후 할당할 권한 세트의 API 이름입니다(sf org assign permset --name)",
         ["Scratch_FilesHeader"] = "프로필 파일",
-        ["Scratch_ProfileFilesHint"] = "프로필 폴더의 파일을 그대로 사용합니다: definition.json / manifest/package.xml / manifest/custom-metadata.xml / data/plan.json",
+        ["Scratch_ProfileFilesHint"] = "프로필 폴더의 파일을 그대로 사용합니다: definition.json / sfdx-project.json / manifest/*.xml / data/plan.json / force-app/main/default(소스) / scripts/apex/*.apex",
         ["Scratch_OpenFolder"] = "폴더 열기",
         ["Scratch_SaveProfile"] = "프로필 저장",
         ["Scratch_NewProfile"] = "새 프로필...",

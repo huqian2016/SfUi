@@ -1680,7 +1680,7 @@ public static partial class UiText
         ["Scratch_PermissionSetsLabel"] = "権限セット（1 行に 1 つ）:",
         ["Scratch_PermissionSetsTip"] = "作成後に割り当てる権限セットの API 名です（sf org assign permset --name）",
         ["Scratch_FilesHeader"] = "プロファイルのファイル",
-        ["Scratch_ProfileFilesHint"] = "プロファイル フォルダーのファイルをそのまま使用します: definition.json / manifest/package.xml / manifest/custom-metadata.xml / data/plan.json",
+        ["Scratch_ProfileFilesHint"] = "プロファイル フォルダーのファイルをそのまま使用します: definition.json / sfdx-project.json / manifest/*.xml / data/plan.json / force-app/main/default（ソース）/ scripts/apex/*.apex",
         ["Scratch_OpenFolder"] = "フォルダーを開く",
         ["Scratch_SaveProfile"] = "プロファイルを保存",
         ["Scratch_NewProfile"] = "新規プロファイル…",

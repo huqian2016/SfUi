@@ -1681,7 +1681,7 @@ public static partial class UiText
         ["Scratch_PermissionSetsLabel"] = "权限集（每行一个）:",
         ["Scratch_PermissionSetsTip"] = "创建后分配的权限集 API 名称（sf org assign permset --name）",
         ["Scratch_FilesHeader"] = "配置文件中的文件",
-        ["Scratch_ProfileFilesHint"] = "直接使用配置文件文件夹中的文件: definition.json / manifest/package.xml / manifest/custom-metadata.xml / data/plan.json",
+        ["Scratch_ProfileFilesHint"] = "直接使用配置文件文件夹中的文件: definition.json / sfdx-project.json / manifest/*.xml / data/plan.json / force-app/main/default（源文件）/ scripts/apex/*.apex",
         ["Scratch_OpenFolder"] = "打开文件夹",
         ["Scratch_SaveProfile"] = "保存配置文件",
         ["Scratch_NewProfile"] = "新建配置文件...",

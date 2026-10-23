@@ -1680,7 +1680,7 @@ public static partial class UiText
         ["Scratch_PermissionSetsLabel"] = "Permission sets (one per line):",
         ["Scratch_PermissionSetsTip"] = "API names of permission sets assigned after the org is created (sf org assign permset --name).",
         ["Scratch_FilesHeader"] = "Profile files",
-        ["Scratch_ProfileFilesHint"] = "The files in the profile folder are used as-is: definition.json, manifest/package.xml, manifest/custom-metadata.xml, data/plan.json.",
+        ["Scratch_ProfileFilesHint"] = "The files in the profile folder are used as-is: definition.json, sfdx-project.json, manifest/*.xml, data/plan.json, force-app/main/default (sources) and scripts/apex/*.apex.",
         ["Scratch_OpenFolder"] = "Open folder",
         ["Scratch_SaveProfile"] = "Save profile",
         ["Scratch_NewProfile"] = "New profile...",
