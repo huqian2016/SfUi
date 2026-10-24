@@ -323,6 +323,10 @@ public static partial class UiText
         ["Api_SendConfirmFmt"] = "{0} 요청을 보낼까요?{1}{1}{0} {2}",
         ["Api_Sending"] = "보내는 중…",
         ["Api_NoPathFavorite"] = "즐겨찾기에 추가할 경로가 없습니다",
+        ["Api_Execute"] = "실행",
+        ["Api_ResponseLabel"] = "응답",
+        ["Api_RawResponse"] = "원본 응답 보기",
+        ["Api_UrlTip"] = "절대 URL(인스턴스 URL + 경로)",
 
         // ---- デプロイ ----
         ["Deploy_Operation"] = "작업:",

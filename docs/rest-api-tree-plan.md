@@ -81,6 +81,33 @@ GET    リストビュー  /services/data/v{version}/sobjects/{object}/listviews
   ViewModel へ渡す。WPF の UIA 名は `RestTreeNodeViewModel.ToString()`（`"GET 1 件取得"`）を使う。
 - メソッド バッジは DataTrigger で色分け（GET = 緑 / POST = 青 / PATCH = 橙 / DELETE = 赤）。
 
+## リクエスト バー（Workbench の REST Explorer 風・2026-10-24）
+
+Workbench の REST Explorer と同じ「入力 → 実行 → 応答」の流れになるよう、上部のリクエスト バーを再構成しました。
+
+```
+[☰] [GET][POST][PATCH][DELETE]   [お気に入りに追加] [⟳]
+[ /services/data/v68.0/sobjects/Account/{id} ................................ ][ 実行 ]
+https://xxx.my.salesforce.com/services/data/v68.0/sobjects/Account/{id}
+
+（選択エンドポイントの引数） (パスを入力すると即時に書き換わる)
+（リクエスト本文 — POST / PATCH のときだけ表示）
+応答                                            [ ] 生の応答を表示
+┌────────────────────────────────────────────────────────────────┐
+```
+
+- **メソッドはボタン**（`SetMethodCommand` + `IsGetMethod` 等）。選択中のものだけ色付き。
+- **パス欄 + 実行ボタン**を 1 行にし、その下に**絶対 URL**（インスタンス URL + パス）を常時表示。
+  インスタンス URL は組織データ取得時に `GetInstanceUrlAsync` で 1 回取得してキャッシュ。
+- **本文欄は GET / DELETE では非表示**（`IsBodyVisible`）。
+- **「生の応答を表示」**（`IsRawResponse`）で整形済み JSON ↔ 生の応答を切替
+  （`RawResponseText` を保持し、`DisplayResponse` が選択に応じて返す）。
+- 初期表示のパスは組織の API バージョンに追従（ユーザーが書き換えていれば触らない）。
+- **WPF の罠**: `TextBox.Text` は既定 TwoWay なので、読み取り専用プロパティ（`DisplayResponse`）に
+  束縛するときは `Mode=OneWay` を明示しないと起動時に InvalidOperationException でウィンドウが壊れる。
+- **Avalonia のメソッド ボタン**: `Classes.selected="{Binding IsGetMethod}"` のような
+  クラス バインディング + `Style Selector="Button.method.selected"` で色分け（DataTrigger は無い）。
+
 ## 今後の候補（P2 / P3）
 
 - **P2**: 送信結果からの「このリクエストをツリーに保存」、履歴のメソッド別グルーピング、
@@ -93,5 +120,7 @@ GET    リストビュー  /services/data/v{version}/sobjects/{object}/listviews
 - 単体テスト: `tests/SfUi.Tests/RestApiCatalogTests.cs`（9 件。静的グループ / メソッドとパス / バージョン差し込み /
   パス組み立てとエスケープ / 必須引数 / 本文 / SObject 8 リクエスト / 先頭文字グルーピング）。
 - UI 自動操作 E2E（WPF）: ツリー表示 → SObject → A → Account → 「GET 1 件取得」→ パス自動入力 →
-  引数 `id` 入力でパス即時更新 → 未入力での送信ガード → 絞り込み（`limits`）→ ツリー非表示。
+  引数 `id` 入力でパス即時更新 → 未入力での送信ガード → 絞り込み（`limits`）→ 絶対 URL →
+  メソッド ボタン（POST で本文表示 / GET で非表示）→ 実行（HTTP 200）→ 「生の応答を表示」で本文が変わる →
+  ツリー非表示（全 18 項目）。
 - スモーク: WPF / Avalonia ともに終了コード 0。

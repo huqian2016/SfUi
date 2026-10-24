@@ -2,27 +2,86 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:loc="clr-namespace:SfUi.Avalonia"
              x:Class="SfUi.Avalonia.Views.ApiConsoleView">
+    <UserControl.Styles>
+        <Style Selector="Button.method">
+            <Setter Property="MinWidth" Value="62" />
+            <Setter Property="Padding" Value="0,3" />
+            <Setter Property="Margin" Value="0,2,4,2" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="#555555" />
+            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="BorderBrush" Value="#BDBDBD" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="3" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.method.selected">
+            <Setter Property="Foreground" Value="#FFFFFF" />
+            <Setter Property="Background" Value="#2E7D32" />
+            <Setter Property="BorderBrush" Value="#2E7D32" />
+        </Style>
+        <Style Selector="Button.method.ispost">
+            <Setter Property="Foreground" Value="#FFFFFF" />
+            <Setter Property="Background" Value="#1565C0" />
+            <Setter Property="BorderBrush" Value="#1565C0" />
+        </Style>
+        <Style Selector="Button.method.ispatch">
+            <Setter Property="Foreground" Value="#FFFFFF" />
+            <Setter Property="Background" Value="#B26A00" />
+            <Setter Property="BorderBrush" Value="#B26A00" />
+        </Style>
+        <Style Selector="Button.method.isdelete">
+            <Setter Property="Foreground" Value="#FFFFFF" />
+            <Setter Property="Background" Value="#C62828" />
+            <Setter Property="BorderBrush" Value="#C62828" />
+        </Style>
+    </UserControl.Styles>
+
     <DockPanel>
 
-        <!-- ツールバー（幅が狭いときは折り返して全ボタンを表示） -->
-        <Border DockPanel.Dock="Top" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,4">
-            <WrapPanel Orientation="Horizontal">
-                <Button Content="☰" Padding="8,2" Margin="0,2,6,2" Command="{Binding ToggleTreeCommand}"
-                        ToolTip.Tip="{loc:Tr ApiTree_ToggleTip}"
-                        AutomationProperties.AutomationId="ApiTreeToggle" />
-                <ComboBox Width="90" VerticalAlignment="Center" Margin="0,2,0,2" ItemsSource="{Binding Methods}" SelectedItem="{Binding Method, Mode=TwoWay}"
-                          AutomationProperties.AutomationId="ApiMethod" />
-                <TextBox Width="400" Margin="6,2,6,2" VerticalContentAlignment="Center" FontFamily="Consolas, Menlo, monospace"
-                         Text="{Binding Path, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                         ToolTip.Tip="{loc:Tr Api_PathTip}"
-                         AutomationProperties.AutomationId="ApiPath" />
-                <Button Content="{loc:Tr Api_Send}" Padding="10,2" Margin="0,2,12,2" Command="{Binding SendCommand}"
-                        AutomationProperties.AutomationId="ApiSend" />
-                <Button Content="{loc:Tr Common_AddFavorite}" Padding="10,2" Margin="0,2,0,2" Command="{Binding AddFavoriteCommand}" />
-                <Button Content="⟳" Padding="8,2" Margin="6,2,0,2" Command="{Binding ReloadTreeCommand}"
-                        ToolTip.Tip="{loc:Tr ApiTree_Refresh}"
-                        AutomationProperties.AutomationId="ApiTreeReload" />
-            </WrapPanel>
+        <!-- リクエスト バー（Workbench の REST Explorer 風） -->
+        <Border DockPanel.Dock="Top" Background="#F5F5F5" BorderBrush="#D8D8D8" BorderThickness="0,0,0,1" Padding="8,6">
+            <StackPanel>
+                <WrapPanel Orientation="Horizontal">
+                    <Button Content="☰" Padding="8,2" Margin="0,2,8,2" Command="{Binding ToggleTreeCommand}"
+                            ToolTip.Tip="{loc:Tr ApiTree_ToggleTip}"
+                            AutomationProperties.AutomationId="ApiTreeToggle" />
+
+                    <Button Classes="method" Classes.selected="{Binding IsGetMethod}" Content="GET"
+                            Command="{Binding SetMethodCommand}" CommandParameter="GET"
+                            AutomationProperties.AutomationId="ApiMethodGet" />
+                    <Button Classes="method" Classes.ispost="{Binding IsPostMethod}" Content="POST"
+                            Command="{Binding SetMethodCommand}" CommandParameter="POST"
+                            AutomationProperties.AutomationId="ApiMethodPost" />
+                    <Button Classes="method" Classes.ispatch="{Binding IsPatchMethod}" Content="PATCH"
+                            Command="{Binding SetMethodCommand}" CommandParameter="PATCH"
+                            AutomationProperties.AutomationId="ApiMethodPatch" />
+                    <Button Classes="method" Classes.isdelete="{Binding IsDeleteMethod}" Content="DELETE"
+                            Command="{Binding SetMethodCommand}" CommandParameter="DELETE"
+                            AutomationProperties.AutomationId="ApiMethodDelete" />
+
+                    <Button Content="{loc:Tr Common_AddFavorite}" Padding="10,2" Margin="0,2,0,2" Command="{Binding AddFavoriteCommand}" />
+                    <Button Content="⟳" Padding="8,2" Margin="6,2,0,2" Command="{Binding ReloadTreeCommand}"
+                            ToolTip.Tip="{loc:Tr ApiTree_Refresh}"
+                            AutomationProperties.AutomationId="ApiTreeReload" />
+                </WrapPanel>
+
+                <!-- パス + 実行（Workbench の URL 欄 + EXECUTE） -->
+                <DockPanel Margin="0,4,0,0">
+                    <Button DockPanel.Dock="Right" Content="{loc:Tr Api_Execute}" MinWidth="96" Padding="12,3"
+                            Margin="6,0,0,0" FontWeight="SemiBold" Command="{Binding SendCommand}"
+                            AutomationProperties.AutomationId="ApiSend" />
+                    <TextBox VerticalContentAlignment="Center" FontFamily="Consolas, Menlo, monospace" Height="26"
+                             Text="{Binding Path, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             ToolTip.Tip="{loc:Tr Api_PathTip}"
+                             AutomationProperties.AutomationId="ApiPath" />
+                </DockPanel>
+
+                <!-- 絶対 URL（Workbench の Absolute URL） -->
+                <TextBlock Text="{Binding AbsoluteUrl}" Margin="0,3,0,0" FontSize="11" Foreground="#777777"
+                           TextTrimming="CharacterEllipsis" ToolTip.Tip="{loc:Tr Api_UrlTip}"
+                           AutomationProperties.AutomationId="ApiAbsoluteUrl" />
+            </StackPanel>
         </Border>
 
         <!-- ステータス -->
@@ -81,7 +140,7 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
-                    <RowDefinition Height="4" />
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
@@ -106,7 +165,8 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
 
-                <DockPanel Grid.Row="1" Margin="8,4,8,0">
+                <!-- リクエスト本文（GET / DELETE では隠す） -->
+                <DockPanel Grid.Row="1" Margin="8,6,8,0" IsVisible="{Binding IsBodyVisible}">
                     <TextBlock DockPanel.Dock="Top" Text="{loc:Tr Api_BodyLabel}" Margin="0,0,0,4" Foreground="#666666" />
                     <TextBox Height="110" FontFamily="Consolas, Menlo, monospace" FontSize="12" AcceptsReturn="True"
                              ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto"
@@ -115,9 +175,15 @@
                              AutomationProperties.AutomationId="ApiBody" />
                 </DockPanel>
 
-                <GridSplitter Grid.Row="2" Height="4" HorizontalAlignment="Stretch" Background="#DDDDDD" />
+                <!-- 応答ヘッダー（Workbench の Show Raw Response） -->
+                <DockPanel Grid.Row="2" Margin="8,8,8,0">
+                    <CheckBox DockPanel.Dock="Right" Content="{loc:Tr Api_RawResponse}" VerticalAlignment="Center"
+                              IsChecked="{Binding IsRawResponse, Mode=TwoWay}"
+                              AutomationProperties.AutomationId="ApiRawResponse" />
+                    <TextBlock Text="{loc:Tr Api_ResponseLabel}" Foreground="#666666" VerticalAlignment="Center" />
+                </DockPanel>
 
-                <TextBox Grid.Row="3" Margin="8,4,8,8" Text="{Binding ResponseText}" IsReadOnly="True"
+                <TextBox Grid.Row="3" Margin="8,4,8,8" Text="{Binding DisplayResponse, Mode=OneWay}" IsReadOnly="True"
                          FontFamily="Consolas, Menlo, monospace" FontSize="12"
                          ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto"
                          TextWrapping="NoWrap"

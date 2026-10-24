@@ -323,6 +323,10 @@ public static partial class UiText
         ["Api_SendConfirmFmt"] = "Send a {0} request?{1}{1}{0} {2}",
         ["Api_Sending"] = "Sending…",
         ["Api_NoPathFavorite"] = "No path to add to favorites",
+        ["Api_Execute"] = "Execute",
+        ["Api_ResponseLabel"] = "Response",
+        ["Api_RawResponse"] = "Show raw response",
+        ["Api_UrlTip"] = "Absolute URL (instance URL + path)",
 
         // ---- デプロイ ----
         ["Deploy_Operation"] = "Operation:",

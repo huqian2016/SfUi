@@ -323,6 +323,10 @@ public static partial class UiText
         ["Api_SendConfirmFmt"] = "{0} リクエストを送信します。実行しますか？{1}{1}{0} {2}",
         ["Api_Sending"] = "送信中…",
         ["Api_NoPathFavorite"] = "お気に入りに追加するパスがありません",
+        ["Api_Execute"] = "実行",
+        ["Api_ResponseLabel"] = "応答",
+        ["Api_RawResponse"] = "生の応答を表示",
+        ["Api_UrlTip"] = "絶対 URL（インスタンス URL + パス）",
 
         // ---- デプロイ ----
         ["Deploy_Operation"] = "操作:",

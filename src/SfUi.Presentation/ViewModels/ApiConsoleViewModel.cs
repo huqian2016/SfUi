@@ -25,6 +25,7 @@ public partial class ApiConsoleViewModel : ObservableObject
     private readonly AppLog _log;
     private readonly Dictionary<string, IReadOnlyList<string>> _objectsByOrg = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _versionByOrg = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, string> _instanceByOrg = new(StringComparer.OrdinalIgnoreCase);
     private IReadOnlyList<string> _objectNames = Array.Empty<string>();
 
     /// <summary>直近にツリーから適用したエンドポイント（パラメータ検証に使う）。</summary>
@@ -32,6 +33,9 @@ public partial class ApiConsoleViewModel : ObservableObject
 
     /// <summary>ツリー再構築時の選択復元で、入力を上書きしないためのフラグ。</summary>
     private bool _suppressApply;
+
+    /// <summary>初期表示のままのパス（組織の API バージョンに追従させる）。</summary>
+    private string _lastDefaultPath = $"/services/data/v{DefaultApiVersion}/limits";
 
     [ObservableProperty]
     private string _method = "GET";
@@ -50,6 +54,30 @@ public partial class ApiConsoleViewModel : ObservableObject
 
     [ObservableProperty]
     private string? _responseText;
+
+    /// <summary>整形前の生の応答（Workbench の Show Raw Response 用）。</summary>
+    [ObservableProperty]
+    private string? _rawResponseText;
+
+    /// <summary>生の応答を表示するか（Workbench 風のトグル）。</summary>
+    [ObservableProperty]
+    private bool _isRawResponse;
+
+    /// <summary>インスタンスの URL（絶対 URL の表示用）。</summary>
+    [ObservableProperty]
+    private string? _instanceUrl;
+
+    /// <summary>レスポンス領域に表示する文字列。</summary>
+    public string DisplayResponse => IsRawResponse ? RawResponseText ?? string.Empty : ResponseText ?? string.Empty;
+
+    /// <summary>リクエスト本文を表示するか（GET / DELETE では隠す）。</summary>
+    public bool IsBodyVisible => !string.Equals(Method, "GET", StringComparison.OrdinalIgnoreCase)
+                                 && !string.Equals(Method, "DELETE", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>現在のパスの絶対 URL（表示用。取得できていなければパスのみ）。</summary>
+    public string AbsoluteUrl => string.IsNullOrWhiteSpace(InstanceUrl)
+        ? Path
+        : InstanceUrl!.TrimEnd('/') + (Path.StartsWith('/') ? Path : "/" + Path);
 
     /// <summary>現在の対象組織（MainViewModel から設定される）。</summary>
     [ObservableProperty]
@@ -74,6 +102,17 @@ public partial class ApiConsoleViewModel : ObservableObject
     private string _apiVersion = DefaultApiVersion;
 
     public ObservableCollection<string> Methods { get; } = new() { "GET", "POST", "PATCH", "DELETE" };
+
+    // Workbench 風のメソッド ボタン用（選択中のものだけ色を変える）
+    public bool IsGetMethod => IsMethod("GET");
+
+    public bool IsPostMethod => IsMethod("POST");
+
+    public bool IsPatchMethod => IsMethod("PATCH");
+
+    public bool IsDeleteMethod => IsMethod("DELETE");
+
+    private bool IsMethod(string method) => string.Equals(Method, method, StringComparison.OrdinalIgnoreCase);
 
     public ObservableCollection<RestTreeNodeViewModel> TreeNodes { get; } = new();
 
@@ -111,6 +150,45 @@ public partial class ApiConsoleViewModel : ObservableObject
     }
 
     partial void OnTreeFilterChanged(string value) => RebuildTree();
+
+    partial void OnResponseTextChanged(string? value) => OnPropertyChanged(nameof(DisplayResponse));
+
+    partial void OnRawResponseTextChanged(string? value) => OnPropertyChanged(nameof(DisplayResponse));
+
+    partial void OnIsRawResponseChanged(bool value) => OnPropertyChanged(nameof(DisplayResponse));
+
+    partial void OnMethodChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsBodyVisible));
+        OnPropertyChanged(nameof(IsGetMethod));
+        OnPropertyChanged(nameof(IsPostMethod));
+        OnPropertyChanged(nameof(IsPatchMethod));
+        OnPropertyChanged(nameof(IsDeleteMethod));
+    }
+
+    partial void OnPathChanged(string value) => OnPropertyChanged(nameof(AbsoluteUrl));
+
+    partial void OnApiVersionChanged(string value)
+    {
+        // 初期パスのまま（ユーザーが触っていない）なら組織の API バージョンに合わせる
+        if (Path == _lastDefaultPath)
+        {
+            _lastDefaultPath = $"/services/data/v{value}/limits";
+            Path = _lastDefaultPath;
+        }
+    }
+
+    partial void OnInstanceUrlChanged(string? value) => OnPropertyChanged(nameof(AbsoluteUrl));
+
+    /// <summary>メソッド ボタン（Workbench 風）から HTTP メソッドを切り替える。</summary>
+    [RelayCommand]
+    private void SetMethod(string? method)
+    {
+        if (!string.IsNullOrWhiteSpace(method))
+        {
+            Method = method.ToUpperInvariant();
+        }
+    }
 
     partial void OnSelectedTreeNodeChanged(RestTreeNodeViewModel? value)
     {
@@ -154,6 +232,14 @@ public partial class ApiConsoleViewModel : ObservableObject
             }
 
             ApiVersion = _versionByOrg[org];
+
+            if (!_instanceByOrg.TryGetValue(org, out var instance))
+            {
+                instance = await _client.GetInstanceUrlAsync(org) ?? string.Empty;
+                _instanceByOrg[org] = instance;
+            }
+
+            InstanceUrl = string.IsNullOrWhiteSpace(instance) ? null : instance;
 
             if (forceObjects || !_objectsByOrg.TryGetValue(org, out var objects))
             {
@@ -468,6 +554,7 @@ public partial class ApiConsoleViewModel : ObservableObject
         IsRunning = true;
         StatusText = UiText.T("Api_Sending");
         ResponseText = null;
+        RawResponseText = null;
         var stopwatch = Stopwatch.StartNew();
         try
         {
@@ -475,6 +562,7 @@ public partial class ApiConsoleViewModel : ObservableObject
             var bytes = Encoding.UTF8.GetByteCount(responseBody);
             var success = (int)statusCode is >= 200 and <= 299;
             StatusText = $"HTTP {(int)statusCode} ({statusCode}) / {bytes:N0} bytes / {stopwatch.Elapsed.TotalMilliseconds:F0} ms";
+            RawResponseText = responseBody;
             ResponseText = JsonPretty.Prettify(responseBody);
             AppendHistory(method, path, body, success ? "success" : "error", (int)stopwatch.Elapsed.TotalMilliseconds, responseBody);
             _log.Info($"REST: {method} {path} → HTTP {(int)statusCode}");
@@ -483,6 +571,7 @@ public partial class ApiConsoleViewModel : ObservableObject
         {
             StatusText = UiText.T("Common_FailedFmt", ex.Message);
             ResponseText = ex.Message;
+            RawResponseText = ex.Message;
             AppendHistory(method, path, body, "error", (int)stopwatch.Elapsed.TotalMilliseconds, ex.Message);
             _log.Error("REST リクエストに失敗", ex);
         }

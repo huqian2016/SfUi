@@ -323,6 +323,10 @@ public static partial class UiText
         ["Api_SendConfirmFmt"] = "发送 {0} 请求？{1}{1}{0} {2}",
         ["Api_Sending"] = "发送中…",
         ["Api_NoPathFavorite"] = "没有可添加到收藏的路径",
+        ["Api_Execute"] = "执行",
+        ["Api_ResponseLabel"] = "响应",
+        ["Api_RawResponse"] = "显示原始响应",
+        ["Api_UrlTip"] = "绝对 URL（实例 URL + 路径）",
 
         // ---- デプロイ ----
         ["Deploy_Operation"] = "操作：",
