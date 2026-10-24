@@ -67,7 +67,7 @@ public class OrgServiceAuthTests : IDisposable
 
         // 並列の show-access-token は（未対応 CLI のため）失敗するが、display のトークンで成功する。
         // CI では並列プロセスの起動・ログ記録がタイミングで落ちるため、そこは検証しない。
-        var calls = ReadCalls();
+        var calls = WaitForCalls(c => c.Contains("org display --target-org dev@acme.example.com --json"));
         Assert.Contains("org display --target-org dev@acme.example.com --json", calls);
     }
 
