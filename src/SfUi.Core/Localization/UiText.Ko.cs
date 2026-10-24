@@ -2020,6 +2020,7 @@ public static partial class UiText
         ["Erd_NoFormats"] = "형식을 하나 이상 선택하세요",
         ["Erd_NoFolder"] = "출력 폴더를 지정하세요",
         ["Erd_DoneFmt"] = "{1}에 파일 {0}개를 내보냈습니다",
+        ["Erd_SelectedCountFmt"] = "{0}개 선택됨",
         ["DataImport_ColRow"] = "행",
         ["DataImport_ColStatus"] = "상태",
         ["DataImport_ColId"] = "Id",

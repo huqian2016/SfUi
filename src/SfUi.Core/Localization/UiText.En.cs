@@ -2019,6 +2019,7 @@ public static partial class UiText
         ["Erd_NoFormats"] = "Select at least one format",
         ["Erd_NoFolder"] = "Choose an output folder",
         ["Erd_DoneFmt"] = "Exported {0} file(s) to {1}",
+        ["Erd_SelectedCountFmt"] = "{0} object(s) selected",
         ["DataImport_ColRow"] = "Row",
         ["DataImport_ColStatus"] = "Status",
         ["DataImport_ColId"] = "Id",

@@ -2020,6 +2020,7 @@ public static partial class UiText
         ["Erd_NoFormats"] = "请至少选择一种格式",
         ["Erd_NoFolder"] = "请指定输出文件夹",
         ["Erd_DoneFmt"] = "已将 {0} 个文件导出到 {1}",
+        ["Erd_SelectedCountFmt"] = "已选择 {0} 个对象",
         ["DataImport_ColRow"] = "行",
         ["DataImport_ColStatus"] = "状态",
         ["DataImport_ColId"] = "Id",

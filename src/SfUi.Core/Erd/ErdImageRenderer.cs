@@ -179,6 +179,8 @@ public static class ErdImageRenderer
 
         var byName = nodes.ToDictionary(node => node.Entity.ApiName, StringComparer.OrdinalIgnoreCase);
         var edges = new List<ErdImageLayout.ErdEdge>();
+        var laneOffsets = new[] { 0f, 16f, -16f, 30f, -30f, 8f, -8f };
+        var edgeIndex = 0;
         foreach (var relationship in document.Relationships)
         {
             if (!byName.TryGetValue(relationship.ParentApiName, out var parent) ||
@@ -192,8 +194,9 @@ public static class ErdImageRenderer
                 From = parent,
                 To = child,
                 Relationship = relationship,
-                Points = RouteEdge(parent, child),
+                Points = RouteEdge(parent, child, laneOffsets[edgeIndex % laneOffsets.Length]),
             });
+            edgeIndex++;
         }
 
         var totalWidth = (int)Math.Ceiling(nodes.Count == 0 ? 600 : nodes.Max(node => node.X + node.Width) + Margin + 70);
@@ -201,7 +204,7 @@ public static class ErdImageRenderer
         return new ErdImageLayout { Nodes = nodes, Edges = edges, Width = totalWidth, Height = totalHeight };
     }
 
-    private static List<(float X, float Y)> RouteEdge(ErdImageLayout.ErdNode parent, ErdImageLayout.ErdNode child)
+    private static List<(float X, float Y)> RouteEdge(ErdImageLayout.ErdNode parent, ErdImageLayout.ErdNode child, float lane = 0)
     {
         var points = new List<(float X, float Y)>();
         if (ReferenceEquals(parent, child))
@@ -226,7 +229,7 @@ public static class ErdImageRenderer
             endX = child.X + child.Width;
         }
 
-        var midX = startX + ((endX - startX) / 2);
+        var midX = startX + ((endX - startX) / 2) + lane;
         points.Add((startX, startY));
         points.Add((midX, startY));
         points.Add((midX, endY));
@@ -248,12 +251,28 @@ public static class ErdImageRenderer
         builder.Append("  <title>").Append(EscapeXml(document.Title)).AppendLine("</title>");
         builder.AppendLine("  <rect width=\"100%\" height=\"100%\" fill=\"#FFFFFF\" />");
 
-        builder.AppendLine("  <g id=\"edges\" fill=\"none\" stroke=\"" + BorderColor + "\" stroke-width=\"1.6\">");
+        builder.AppendLine("  <g id=\"edges\" fill=\"none\">");
         var showLabels = layout.Edges.Count <= 12;
         foreach (var edge in layout.Edges)
         {
+            // 主従 = 太い実線、必須参照 = 実線、任意参照 = 破線で描き分ける
+            var isDetail = edge.Relationship.IsMasterDetail;
+            var isRequired = edge.Relationship.IsRequired;
+            var stroke = isDetail ? "#1F3A5F" : isRequired ? BorderColor : "#8A94A6";
+            var width = isDetail ? "2.4" : isRequired ? "1.8" : "1.4";
+            var dash = isDetail || isRequired ? string.Empty : " stroke-dasharray=\"5 3\"";
             builder.Append("    <path d=\"M ").Append(Format(edge.Points));
-            builder.Append("\" marker-end=\"url(#crow)\" />").AppendLine();
+            builder.Append("\" stroke=\"").Append(stroke).Append("\" stroke-width=\"").Append(width)
+                .Append('"').Append(dash).Append(" marker-end=\"url(#crow)\" />").AppendLine();
+
+            // 親側 = 1、子側 = N（親子の向きを明示）
+            var first = edge.Points[0];
+            var last = edge.Points[^1];
+            builder.Append("    <text x=\"").Append(Number(first.X - 6)).Append("\" y=\"").Append(Number(first.Y - 4))
+                .Append("\" font-size=\"10\" font-weight=\"600\" text-anchor=\"end\" fill=\"").Append(stroke).AppendLine("\">1</text>");
+            builder.Append("    <text x=\"").Append(Number(last.X + 6)).Append("\" y=\"").Append(Number(last.Y + 12))
+                .Append("\" font-size=\"10\" font-weight=\"600\" fill=\"").Append(stroke).AppendLine("\">N</text>");
+
             if (!showLabels)
             {
                 continue;
@@ -337,6 +356,20 @@ public static class ErdImageRenderer
         var showLabels = layout.Edges.Count <= 12;
         foreach (var edge in layout.Edges)
         {
+            var isDetail = edge.Relationship.IsMasterDetail;
+            var isRequired = edge.Relationship.IsRequired;
+            using var edgePaint = new SKPaint
+            {
+                Color = SKColor.Parse(isDetail ? "#1F3A5F" : isRequired ? BorderColor : "#8A94A6"),
+                IsAntialias = true,
+                Style = SKPaintStyle.Stroke,
+                StrokeWidth = isDetail ? 2.4f : isRequired ? 1.8f : 1.4f,
+            };
+            if (!isDetail && !isRequired)
+            {
+                edgePaint.PathEffect = SKPathEffect.CreateDash(new[] { 5f, 3f }, 0);
+            }
+
             using var path = new SKPath();
             path.MoveTo(edge.Points[0].X, edge.Points[0].Y);
             foreach (var point in edge.Points.Skip(1))
@@ -344,7 +377,23 @@ public static class ErdImageRenderer
                 path.LineTo(point.X, point.Y);
             }
 
-            canvas.DrawPath(path, line);
+            canvas.DrawPath(path, edgePaint);
+
+            // 親側 = 1、子側 = N
+            using var markerPaint = new SKPaint
+            {
+                Color = edgePaint.Color,
+                IsAntialias = true,
+                Typeface = typeface,
+                TextSize = 10,
+                FakeBoldText = true,
+            };
+            var first = edge.Points[0];
+            var last = edge.Points[^1];
+            var oneWidth = markerPaint.MeasureText("1");
+            canvas.DrawText("1", first.X - 6 - oneWidth, first.Y - 4, markerPaint);
+            canvas.DrawText("N", last.X + 6, last.Y + 12, markerPaint);
+
             if (!showLabels)
             {
                 continue;

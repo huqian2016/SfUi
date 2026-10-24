@@ -2019,6 +2019,7 @@ public static partial class UiText
         ["Erd_NoFormats"] = "出力形式を 1 つ以上選んでください",
         ["Erd_NoFolder"] = "出力先フォルダーを指定してください",
         ["Erd_DoneFmt"] = "{1} に {0} 件のファイルを出力しました",
+        ["Erd_SelectedCountFmt"] = "{0} 件選択中",
         ["DataImport_ColRow"] = "行",
         ["DataImport_ColStatus"] = "状態",
         ["DataImport_ColId"] = "Id",

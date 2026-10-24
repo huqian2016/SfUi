@@ -8,8 +8,11 @@ namespace SfUi.Presentation;
 /// <summary>ER 図ダイアログで選ぶオブジェクト 1 行。</summary>
 public sealed partial class ErdExportObjectRow : ObservableObject
 {
-    public ErdExportObjectRow(ErdObjectInfo info)
+    private readonly Action? _changed;
+
+    public ErdExportObjectRow(ErdObjectInfo info, Action? changed = null)
     {
+        _changed = changed;
         ApiName = info.ApiName;
         Label = string.IsNullOrWhiteSpace(info.Label) ? info.ApiName : info.Label;
         IsCustom = info.IsCustom;
@@ -29,6 +32,8 @@ public sealed partial class ErdExportObjectRow : ObservableObject
 
     [ObservableProperty]
     private bool _isSelected;
+
+    partial void OnIsSelectedChanged(bool value) => _changed?.Invoke();
 }
 
 /// <summary>ER 図ダイアログの結果。</summary>
@@ -74,7 +79,7 @@ public sealed partial class ErdExportDialogViewModel : ObservableObject
     {
         Org = org;
         _filePicker = filePicker;
-        _allObjects = objects.Select(info => new ErdExportObjectRow(info)).ToList();
+        _allObjects = objects.Select(info => new ErdExportObjectRow(info, OnSelectionChanged)).ToList();
         _baseName = suggestedBaseName;
         _outputDirectory = initialDirectory ?? string.Empty;
 
@@ -183,6 +188,9 @@ public sealed partial class ErdExportDialogViewModel : ObservableObject
 
     public bool HasSelection => SelectedCount > 0;
 
+    /// <summary>選択中の件数（例: 12 件選択中）。</summary>
+    public string SelectedCountText => UiText.T("Erd_SelectedCountFmt", SelectedCount);
+
     partial void OnFilterTextChanged(string value)
     {
         var filter = value?.Trim().ToLowerInvariant() ?? string.Empty;
@@ -207,7 +215,8 @@ public sealed partial class ErdExportDialogViewModel : ObservableObject
     [RelayCommand]
     private void ClearSelection()
     {
-        foreach (var row in _allObjects)
+        // 絞り込み中は表示されているオブジェクトだけを解除する（全選択と対称）
+        foreach (var row in FilteredObjects.ToList())
         {
             row.IsSelected = false;
         }
@@ -230,6 +239,7 @@ public sealed partial class ErdExportDialogViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(SelectedCount));
         OnPropertyChanged(nameof(HasSelection));
+        OnPropertyChanged(nameof(SelectedCountText));
     }
 
     /// <summary>入力内容を検証して結果を作る（無効なら ErrorText を設定して null）。</summary>
