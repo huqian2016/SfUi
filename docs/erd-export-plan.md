@@ -76,14 +76,23 @@ SalesforceRestClient.QueryAsync(tooling: true)        → 参照関係（1 回�
 
 ## 6. 実装ステージ
 
-| Stage | 内容 | 完了条件 |
+| Stage | 内容 | 状態 |
 | --- | --- | --- |
-| **1** | Core モデル + 5 テキスト形式ライター + 単体テスト | ビルド + テスト green（この文書と同時に実装） |
-| 2 | 参照関係の取得（`ErdService`）+ モデル構築 + テスト（偽 REST） | 実組織なしでテスト green |
-| 3 | 画像レンダラー（SVG + SkiaSharp PNG/JPEG/WebP） | SVG 文字列 / PNG バイト列のテスト |
-| 4 | ダイアログ（VM + WPF + Avalonia）と `IErdExportDialog` | 単体テスト + スモーク |
-| 5 | 組織情報（オブジェクト）とデータ入出力にボタン追加 | 両シェルで表示・E2E |
-| 6 | ローカライズ（4 言語）、README / マニュアル、リリース | ローカライズテスト green |
+| **1** | Core モデル + 5 テキスト形式ライター + 単体テスト | ✅ 完了（13 テスト） |
+| **2** | 参照関係の取得（`ErdService`）+ モデル構築 + テスト | ✅ 完了（12 テスト） |
+| **3** | 画像レンダラー（SVG + SkiaSharp PNG/JPEG/WebP） | ✅ 完了（5 テスト・目視確認済み） |
+| **4** | ダイアログ VM + 出力サービス + WPF / Avalonia ダイアログ | ✅ 完了（4 テスト） |
+| **5** | 組織情報（オブジェクト）とデータ入出力にボタン追加 | ✅ 完了（両シェル・DI 登録済み） |
+| 6 | UI E2E、README / マニュアル、リリース | 未着手 |
+
+### 実組織での確認結果（2026-10-24 / hks4sand1）
+
+- Tooling API の `FieldDefinition` は `DataType = "Lookup(Account)"` / `"MasterDetail(Account)"`、`ReferenceTo = { referenceTo: [...] }` 形式で返る
+  （当初 `DataType IN ('Lookup','Master-Detail')` で 0 件だったため、**サーバー側で型フィルタせず** `ReferenceTo` のある行だけをクライアント側で採用する方式に変更）
+- 614 オブジェクト取得 → Account / Contact / Opportunity を選択 → **3 エンティティ / 13 リレーション**を生成
+- 8 ファイル（mmd / md / dbml / drawio / puml / dot / svg / png）を出力、PNG を目視確認（日本語ラベル・PK/FK・直交エッジ）
+- エッジが多い（> 12 本）ときはラベルを省略して重なりを回避、ラベルは中央の縦線分に白フチ付きで配置
+
 
 ---
 
