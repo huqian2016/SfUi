@@ -26,9 +26,10 @@ jobs:
         uses: github/codeql-action/init@v4
         with:
           languages: csharp
-      # C# はビルドが必要（Windows ランナーで WPF 含むソリューションを自動ビルド）
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v4
+      # C# はビルドが必要。autobuild はソリューション外のプロジェクト参照に弱いため、
+      # 解析対象を明示的にビルドする（CodeQL の MSBuild トレースはこのビルドで有効）。
+      - name: Build
+        run: dotnet build SfUi.sln -c Release --nologo -v q
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
         with:
