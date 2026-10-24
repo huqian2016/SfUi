@@ -103,7 +103,7 @@ public class OrgServiceAuthTests : IDisposable
         var auth = await service.GetAuthAsync("dev@acme.example.com");
 
         Assert.Equal("MOCK_TOKEN", auth.AccessToken);
-        var calls = ReadCalls();
+        var calls = WaitForCalls(c => c.Contains("org display --target-org dev@acme.example.com --json"));
         Assert.Contains("org display --target-org dev@acme.example.com --json", calls);
     }
 
