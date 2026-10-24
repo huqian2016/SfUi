@@ -17,7 +17,8 @@ public sealed record ErdFieldReference(
     IReadOnlyList<string> ReferenceTo,
     bool IsNillable)
 {
-    public bool IsMasterDetail => DataType.Contains("Master-Detail", StringComparison.OrdinalIgnoreCase);
+    public bool IsMasterDetail => DataType.Contains("MasterDetail", StringComparison.OrdinalIgnoreCase)
+        || DataType.Contains("Master-Detail", StringComparison.OrdinalIgnoreCase);
 }
 
 /// <summary>ER 図を組み立てるときのオプション。</summary>
@@ -122,7 +123,11 @@ public sealed class ErdService
             references.AddRange(await QueryFieldReferencesAsync(org, chunk, cancellationToken).ConfigureAwait(false));
         }
 
-        return Build(byName.Values.ToList(), references, options, org);
+        var scopeObjects = byName.Values
+            .Where(item => wanted.Contains(item.ApiName))
+            .ToList();
+
+        return Build(scopeObjects, references, options, org);
     }
 
     // ------------------------------------------------------------ pure build
@@ -266,13 +271,22 @@ public sealed class ErdService
             }
 
             var targets = new List<string>();
-            if (record.TryGetProperty("ReferenceTo", out var referenceTo) && referenceTo.ValueKind == JsonValueKind.Array)
+            if (record.TryGetProperty("ReferenceTo", out var referenceTo))
             {
-                foreach (var element in referenceTo.EnumerateArray())
+                // Tooling API は { "referenceTo": ["Contact"] } 形式で返す（素の配列も受け付ける）
+                var array = referenceTo.ValueKind == JsonValueKind.Array
+                    ? referenceTo
+                    : referenceTo.ValueKind == JsonValueKind.Object && referenceTo.TryGetProperty("referenceTo", out var inner)
+                        ? inner
+                        : default;
+                if (array.ValueKind == JsonValueKind.Array)
                 {
-                    if (element.ValueKind == JsonValueKind.String && element.GetString() is { Length: > 0 } target)
+                    foreach (var element in array.EnumerateArray())
                     {
-                        targets.Add(target);
+                        if (element.ValueKind == JsonValueKind.String && element.GetString() is { Length: > 0 } target)
+                        {
+                            targets.Add(target);
+                        }
                     }
                 }
             }
@@ -364,10 +378,12 @@ public sealed class ErdService
     private async Task<List<ErdFieldReference>> QueryFieldReferencesAsync(string org, List<string> objectNames, CancellationToken cancellationToken)
     {
         var names = string.Join(",", objectNames.Select(name => "'" + name.Replace("'", "\\'") + "'"));
+        // DataType は "Lookup(Account)" / "MasterDetail(Account)" のように型引数付きで返るため、
+        // サーバー側で絞り込まず ReferenceTo が入っている行だけをクライアント側で採用する。
         var soql =
             "SELECT EntityDefinition.QualifiedApiName, QualifiedApiName, Label, DataType, ReferenceTo, IsNillable " +
             "FROM FieldDefinition " +
-            "WHERE DataType IN ('Lookup','Master-Detail') AND EntityDefinition.QualifiedApiName IN (" + names + ")";
+            "WHERE EntityDefinition.QualifiedApiName IN (" + names + ")";
 
         var records = await QueryAllAsync(org, soql, useToolingApi: true, cancellationToken).ConfigureAwait(false);
         return ParseFieldReferences(records).ToList();

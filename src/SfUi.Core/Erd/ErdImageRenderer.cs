@@ -196,8 +196,8 @@ public static class ErdImageRenderer
             });
         }
 
-        var totalWidth = (int)Math.Ceiling(nodes.Count == 0 ? 600 : nodes.Max(node => node.X + node.Width) + Margin);
-        var totalHeight = (int)Math.Ceiling(nodes.Count == 0 ? 300 : nodes.Max(node => node.Y + node.Height) + Margin);
+        var totalWidth = (int)Math.Ceiling(nodes.Count == 0 ? 600 : nodes.Max(node => node.X + node.Width) + Margin + 70);
+        var totalHeight = (int)Math.Ceiling(nodes.Count == 0 ? 300 : nodes.Max(node => node.Y + node.Height) + Margin + 40);
         return new ErdImageLayout { Nodes = nodes, Edges = edges, Width = totalWidth, Height = totalHeight };
     }
 
@@ -249,13 +249,20 @@ public static class ErdImageRenderer
         builder.AppendLine("  <rect width=\"100%\" height=\"100%\" fill=\"#FFFFFF\" />");
 
         builder.AppendLine("  <g id=\"edges\" fill=\"none\" stroke=\"" + BorderColor + "\" stroke-width=\"1.6\">");
+        var showLabels = layout.Edges.Count <= 12;
         foreach (var edge in layout.Edges)
         {
             builder.Append("    <path d=\"M ").Append(Format(edge.Points));
             builder.Append("\" marker-end=\"url(#crow)\" />").AppendLine();
-            var last = edge.Points[^1];
-            builder.Append("    <text x=\"").Append(Number(last.X + 6)).Append("\" y=\"").Append(Number(last.Y - 4))
-                .Append("\" font-size=\"10\" fill=\"").Append(SubTextColor).Append("\" stroke=\"none\">")
+            if (!showLabels)
+            {
+                continue;
+            }
+
+            var label = LabelPoint(edge.Points);
+            builder.Append("    <text x=\"").Append(Number(label.X)).Append("\" y=\"").Append(Number(label.Y))
+                .Append("\" font-size=\"9\" text-anchor=\"middle\" fill=\"").Append(SubTextColor)
+                .Append("\" stroke=\"#FFFFFF\" stroke-width=\"3\" paint-order=\"stroke\">")
                 .Append(EscapeXml(edge.Relationship.FieldApiName)).AppendLine("</text>");
         }
 
@@ -327,6 +334,7 @@ public static class ErdImageRenderer
         using var keyText = new SKPaint { Color = SKColor.Parse(ForeignKeyColor), IsAntialias = true, Typeface = typeface, TextSize = 9 };
         using var line = new SKPaint { Color = SKColor.Parse(BorderColor), IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1.6f };
 
+        var showLabels = layout.Edges.Count <= 12;
         foreach (var edge in layout.Edges)
         {
             using var path = new SKPath();
@@ -337,8 +345,24 @@ public static class ErdImageRenderer
             }
 
             canvas.DrawPath(path, line);
-            var last = edge.Points[^1];
-            canvas.DrawText(edge.Relationship.FieldApiName, last.X + 6, last.Y - 4, keyText);
+            if (!showLabels)
+            {
+                continue;
+            }
+
+            var label = LabelPoint(edge.Points);
+            var textWidth = keyText.MeasureText(edge.Relationship.FieldApiName);
+            using var halo = new SKPaint
+            {
+                Color = SKColors.White,
+                IsAntialias = true,
+                Typeface = typeface,
+                TextSize = 9,
+                Style = SKPaintStyle.Stroke,
+                StrokeWidth = 3,
+            };
+            canvas.DrawText(edge.Relationship.FieldApiName, label.X - (textWidth / 2), label.Y, halo);
+            canvas.DrawText(edge.Relationship.FieldApiName, label.X - (textWidth / 2), label.Y, keyText);
         }
 
         foreach (var node in layout.Nodes)
@@ -419,7 +443,23 @@ public static class ErdImageRenderer
         return builder.ToString();
     }
 
+    /// <summary>エッジラベルを置く位置（中央の縦線分の中点）。</summary>
+    private static (float X, float Y) LabelPoint(IReadOnlyList<(float X, float Y)> points)
+    {
+        if (points.Count >= 4)
+        {
+            var a = points[1];
+            var b = points[2];
+            return ((a.X + b.X) / 2, ((a.Y + b.Y) / 2) - 2);
+        }
+
+        var first = points[0];
+        var last = points[^1];
+        return ((first.X + last.X) / 2, ((first.Y + last.Y) / 2) - 2);
+    }
+
     private static string Number(float value) => value.ToString("0.##", CultureInfo.InvariantCulture);
+
 
     private static string EscapeXml(string value) => value
         .Replace("&", "&amp;")
