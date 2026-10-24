@@ -164,7 +164,7 @@ public class OrgServiceAuthTests : IDisposable
     /// 子プロセスのログ書き込みが終わるのを待ってから呼び出し記録を返す
     /// （CI の Windows では書き込み中のファイルが読めず、直後の ReadCalls が取りこぼすことがある）。
     /// </summary>
-    private string WaitForCalls(Func<string, bool> predicate, int timeoutMs = 5000)
+    private string WaitForCalls(Func<string, bool> predicate, int timeoutMs = 15000)
     {
         var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
         var calls = ReadCalls();
