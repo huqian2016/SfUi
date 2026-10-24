@@ -1232,5 +1232,6 @@ public partial class MainViewModel : ObservableObject
         SoqlTabs.RefreshTitles();
         ApexTabs.RefreshTitles();
         CommandTabs.RefreshTitles();
+        Api.RefreshTree();
     }
 }

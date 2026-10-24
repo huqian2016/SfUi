@@ -9,23 +9,35 @@ using SfUi.Presentation;
 
 namespace SfUi.App.ViewModels;
 
-/// <summary>REST コンソールタブの ViewModel。</summary>
+/// <summary>REST コンソールタブの ViewModel（エクスプローラー ツリー付き）。</summary>
 public partial class ApiConsoleViewModel : ObservableObject
 {
     private const string BodySeparator = "\n---body---\n";
+    private const string DefaultApiVersion = "67.0";
+    private const string HistoryFolderKey = "group.history";
 
     private readonly SalesforceRestClient _client;
+    private readonly SObjectDescribeService _describes;
     private readonly HistoryStore _history;
     private readonly FavoritesStore _favorites;
     private readonly AppSettingsStore _settings;
     private readonly IDialogService _dialogs;
     private readonly AppLog _log;
+    private readonly Dictionary<string, IReadOnlyList<string>> _objectsByOrg = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, string> _versionByOrg = new(StringComparer.OrdinalIgnoreCase);
+    private IReadOnlyList<string> _objectNames = Array.Empty<string>();
+
+    /// <summary>直近にツリーから適用したエンドポイント（パラメータ検証に使う）。</summary>
+    private RestApiNode? _appliedNode;
+
+    /// <summary>ツリー再構築時の選択復元で、入力を上書きしないためのフラグ。</summary>
+    private bool _suppressApply;
 
     [ObservableProperty]
     private string _method = "GET";
 
     [ObservableProperty]
-    private string _path = "/services/data/v67.0/limits";
+    private string _path = $"/services/data/v{DefaultApiVersion}/limits";
 
     [ObservableProperty]
     private string? _requestBody;
@@ -39,44 +51,375 @@ public partial class ApiConsoleViewModel : ObservableObject
     [ObservableProperty]
     private string? _responseText;
 
-    [ObservableProperty]
-    private HistoryEntry? _selectedHistoryItem;
-
     /// <summary>現在の対象組織（MainViewModel から設定される）。</summary>
-    public string? CurrentOrg { get; set; }
+    [ObservableProperty]
+    private string? _currentOrg;
+
+    // ---- エクスプローラー ツリー ----
+
+    [ObservableProperty]
+    private bool _isTreeVisible = true;
+
+    [ObservableProperty]
+    private bool _isTreeLoading;
+
+    [ObservableProperty]
+    private string _treeFilter = string.Empty;
+
+    [ObservableProperty]
+    private RestTreeNodeViewModel? _selectedTreeNode;
+
+    /// <summary>REST の API バージョン（組織から取得。取得できるまでは既定値）。</summary>
+    [ObservableProperty]
+    private string _apiVersion = DefaultApiVersion;
 
     public ObservableCollection<string> Methods { get; } = new() { "GET", "POST", "PATCH", "DELETE" };
 
-    public ObservableCollection<HistoryEntry> HistoryItems { get; } = new();
+    public ObservableCollection<RestTreeNodeViewModel> TreeNodes { get; } = new();
 
-    public ApiConsoleViewModel(SalesforceRestClient client, HistoryStore history, FavoritesStore favorites, AppSettingsStore settings, IDialogService dialogs, AppLog log)
+    /// <summary>選択中エンドポイントの入力パラメータ。</summary>
+    public ObservableCollection<RestParameterViewModel> Parameters { get; } = new();
+
+    public bool HasParameters => Parameters.Count > 0;
+
+    public ApiConsoleViewModel(
+        SalesforceRestClient client,
+        SObjectDescribeService describes,
+        HistoryStore history,
+        FavoritesStore favorites,
+        AppSettingsStore settings,
+        IDialogService dialogs,
+        AppLog log)
     {
         _client = client;
+        _describes = describes;
         _history = history;
         _favorites = favorites;
         _settings = settings;
         _dialogs = dialogs;
         _log = log;
-        RefreshHistory();
+        Parameters.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasParameters));
+        RebuildTree();
     }
+
+    partial void OnCurrentOrgChanged(string? value)
+    {
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            _ = LoadOrgDataAsync(value);
+        }
+    }
+
+    partial void OnTreeFilterChanged(string value) => RebuildTree();
+
+    partial void OnSelectedTreeNodeChanged(RestTreeNodeViewModel? value)
+    {
+        if (_suppressApply)
+        {
+            return;
+        }
+
+        ApplyNode(value);
+    }
+
+    // ---- ツリー ----
 
     [RelayCommand]
-    private void RefreshHistory()
+    private void ToggleTree() => IsTreeVisible = !IsTreeVisible;
+
+    /// <summary>ツリーを作り直す（言語切替や組織変更時）。</summary>
+    public void RefreshTree() => RebuildTree();
+
+    [RelayCommand]
+    private async Task ReloadTreeAsync()
     {
-        HistoryItems.Clear();
-        foreach (var entry in _history.Query(new HistoryQuery(Type: HistoryTypes.Api)).Take(30))
+        if (!string.IsNullOrWhiteSpace(CurrentOrg))
         {
-            HistoryItems.Add(entry);
+            await LoadOrgDataAsync(CurrentOrg, forceObjects: true);
+        }
+
+        RebuildTree();
+    }
+
+    /// <summary>API バージョンと SObject 一覧を取得してツリーを作り直す。</summary>
+    private async Task LoadOrgDataAsync(string org, bool forceObjects = false)
+    {
+        IsTreeLoading = true;
+        try
+        {
+            if (!_versionByOrg.TryGetValue(org, out var version))
+            {
+                version = await _client.GetApiVersionAsync(org);
+                _versionByOrg[org] = string.IsNullOrWhiteSpace(version) ? DefaultApiVersion : version;
+            }
+
+            ApiVersion = _versionByOrg[org];
+
+            if (forceObjects || !_objectsByOrg.TryGetValue(org, out var objects))
+            {
+                var list = await _describes.ListObjectsAsync(org, forceRefresh: forceObjects);
+                objects = list.Select(item => item.Name).ToList();
+                _objectsByOrg[org] = objects;
+            }
+
+            _objectNames = objects;
+        }
+        catch (Exception ex)
+        {
+            _log.Warn($"REST ツリー: 組織データの取得に失敗: {ex.Message}");
+            _objectNames = Array.Empty<string>();
+        }
+        finally
+        {
+            IsTreeLoading = false;
+            RebuildTree();
         }
     }
 
-    partial void OnSelectedHistoryItemChanged(HistoryEntry? value)
+    private void RebuildTree()
     {
-        if (value is not null)
+        var selectedKey = SelectedTreeNode?.Key;
+        var expandedKeys = TreeNodes
+            .SelectMany(Flatten)
+            .Where(node => node.IsExpanded)
+            .Select(node => node.Key)
+            .ToHashSet(StringComparer.Ordinal);
+        TreeNodes.Clear();
+
+        var filter = TreeFilter.Trim();
+        if (filter.Length > 0)
         {
-            LoadFromHistory(value, autoRun: false);
+            AddFilteredNodes(filter);
+        }
+        else
+        {
+            AddFolder(RestTreeNodeViewModel.CreateFavorites(_favorites.GetByType(HistoryTypes.Api)));
+            AddFolder(RestTreeNodeViewModel.CreateHistory(RecentHistory()));
+            foreach (var group in RestApiCatalog.BuildStaticGroups())
+            {
+                TreeNodes.Add(new RestTreeNodeViewModel(group));
+            }
+
+            TreeNodes.Add(new RestTreeNodeViewModel(RestApiCatalog.BuildObjectGroup(() => _objectNames)));
+        }
+
+        RestoreExpansion(expandedKeys);
+
+        var restored = selectedKey is null
+            ? null
+            : TreeNodes.SelectMany(Flatten).FirstOrDefault(node => node.Key == selectedKey);
+        if (restored is not null)
+        {
+            _suppressApply = true;
+            SelectedTreeNode = restored;
+            _suppressApply = false;
         }
     }
+
+    /// <summary>再構築前の展開状態を戻す（遅延ノードは展開して子を作る）。</summary>
+    private void RestoreExpansion(HashSet<string> expandedKeys)
+    {
+        if (expandedKeys.Count == 0)
+        {
+            return;
+        }
+
+        for (var pass = 0; pass < 3; pass++)
+        {
+            var pending = false;
+            foreach (var node in TreeNodes.SelectMany(Flatten).ToList())
+            {
+                if (expandedKeys.Contains(node.Key) && !node.IsExpanded)
+                {
+                    node.IsExpanded = true;
+                    pending = true;
+                }
+            }
+
+            if (!pending)
+            {
+                break;
+            }
+        }
+    }
+
+    private void AddFolder(RestTreeNodeViewModel folder)
+    {
+        folder.IsExpanded = true;
+        TreeNodes.Add(folder);
+    }
+
+    private void AddFilteredNodes(string filter)
+    {
+        StringComparison comparison = StringComparison.OrdinalIgnoreCase;
+
+        var favorites = _favorites.GetByType(HistoryTypes.Api)
+            .Where(item => item.Label.Contains(filter, comparison))
+            .ToList();
+        if (favorites.Count > 0)
+        {
+            AddFolder(RestTreeNodeViewModel.CreateFavorites(favorites));
+        }
+
+        var history = RecentHistory()
+            .Where(entry => (entry.Summary ?? string.Empty).Contains(filter, comparison))
+            .ToList();
+        if (history.Count > 0)
+        {
+            AddFolder(RestTreeNodeViewModel.CreateHistory(history));
+        }
+
+        foreach (var group in RestApiCatalog.BuildStaticGroups())
+        {
+            var matches = FilterRequests(group, filter);
+            if (matches.Count > 0)
+            {
+                var node = new RestTreeNodeViewModel(new RestApiNode(group.Id, group.Title, Children: matches));
+                node.IsExpanded = true;
+                TreeNodes.Add(node);
+            }
+        }
+
+        var objects = _objectNames
+            .Where(name => name.Contains(filter, comparison))
+            .Take(200)
+            .Select(RestApiCatalog.BuildObjectNode)
+            .ToList();
+        if (objects.Count > 0)
+        {
+            var node = new RestTreeNodeViewModel(
+                new RestApiNode("group.objects.search", UiText.T("ApiTree_GroupObjects"), Children: objects));
+            node.IsExpanded = true;
+            TreeNodes.Add(node);
+        }
+    }
+
+    private static List<RestApiNode> FilterRequests(RestApiNode folder, string filter)
+    {
+        var result = new List<RestApiNode>();
+        foreach (var child in folder.Children ?? Array.Empty<RestApiNode>())
+        {
+            if (child.Kind == RestApiNodeKind.Request)
+            {
+                if (child.Title.Contains(filter, StringComparison.OrdinalIgnoreCase)
+                    || (child.PathTemplate?.Contains(filter, StringComparison.OrdinalIgnoreCase) ?? false))
+                {
+                    result.Add(child);
+                }
+            }
+            else
+            {
+                var nested = FilterRequests(child, filter);
+                if (nested.Count > 0)
+                {
+                    result.Add(new RestApiNode(child.Id, child.Title, Children: nested));
+                }
+            }
+        }
+
+        return result;
+    }
+
+    private IEnumerable<HistoryEntry> RecentHistory() =>
+        _history.Query(new HistoryQuery(Type: HistoryTypes.Api)).Take(30);
+
+    private static IEnumerable<RestTreeNodeViewModel> Flatten(RestTreeNodeViewModel node)
+    {
+        yield return node;
+        foreach (var child in node.Children.SelectMany(Flatten))
+        {
+            yield return child;
+        }
+    }
+
+    /// <summary>ノード選択 → Method / パス / ボディ / パラメータを反映する。</summary>
+    private void ApplyNode(RestTreeNodeViewModel? node)
+    {
+        if (node is null || node.IsPlaceholder)
+        {
+            return;
+        }
+
+        if (node.Node is { Kind: RestApiNodeKind.Request } request)
+        {
+            ApplyRequest(request);
+            return;
+        }
+
+        if (node.Favorite is { } favorite)
+        {
+            _appliedNode = null;
+            Parameters.Clear();
+            LoadFavorite(favorite, autoRun: false);
+            return;
+        }
+
+        if (node.History is { } history)
+        {
+            _appliedNode = null;
+            Parameters.Clear();
+            LoadFromHistory(history, autoRun: false);
+        }
+    }
+
+    private void ApplyRequest(RestApiNode request)
+    {
+        _appliedNode = request;
+        Method = request.Method?.ToUpperInvariant() ?? "GET";
+        RequestBody = RestApiCatalog.BuildBody(request, ApiVersion);
+
+        Parameters.Clear();
+        foreach (var parameter in request.Parameters ?? Array.Empty<RestApiParameter>())
+        {
+            Parameters.Add(new RestParameterViewModel(parameter, RebuildPath));
+        }
+
+        RebuildPath();
+    }
+
+    private void RebuildPath()
+    {
+        if (_appliedNode is null)
+        {
+            return;
+        }
+
+        var values = Parameters.ToDictionary(
+            parameter => parameter.Parameter.Name,
+            parameter => parameter.Value,
+            StringComparer.OrdinalIgnoreCase);
+        Path = RestApiCatalog.BuildPath(_appliedNode, ApiVersion, values);
+    }
+
+    private IReadOnlyList<string> MissingParameters()
+    {
+        if (_appliedNode is null)
+        {
+            return Array.Empty<string>();
+        }
+
+        var values = Parameters.ToDictionary(
+            parameter => parameter.Parameter.Name,
+            parameter => parameter.Value,
+            StringComparer.OrdinalIgnoreCase);
+        return RestApiCatalog.MissingParameters(_appliedNode, values);
+    }
+
+    private void RefreshHistoryNode()
+    {
+        var node = TreeNodes.FirstOrDefault(item => item.Key == HistoryFolderKey);
+        if (node is null)
+        {
+            return;
+        }
+
+        var index = TreeNodes.IndexOf(node);
+        var replacement = RestTreeNodeViewModel.CreateHistory(RecentHistory());
+        replacement.IsExpanded = true;
+        TreeNodes[index] = replacement;
+    }
+
+    // ---- 送信 ----
 
     [RelayCommand]
     private async Task SendAsync()
@@ -92,6 +435,14 @@ public partial class ApiConsoleViewModel : ObservableObject
             return;
         }
 
+        var missing = MissingParameters();
+        if (missing.Count > 0)
+        {
+            StatusText = UiText.T("ApiTree_MissingParamsFmt", string.Join(", ", missing));
+            return;
+        }
+
+        RebuildPath();
         var path = Path.Trim();
         if (string.IsNullOrEmpty(path))
         {
@@ -104,14 +455,14 @@ public partial class ApiConsoleViewModel : ObservableObject
 
         if (method != "GET" && ConfirmPolicies.ShouldConfirm(_settings.Current.ConfirmPolicy, isDangerous: true))
         {
-        var answer = _dialogs.Confirm(
-            UiText.T("Api_SendConfirmFmt", method, Environment.NewLine, path),
-            "SfUi");
-        if (!answer)
-        {
-            StatusText = UiText.T("Common_Canceled");
-            return;
-        }
+            var answer = _dialogs.Confirm(
+                UiText.T("Api_SendConfirmFmt", method, Environment.NewLine, path),
+                "SfUi");
+            if (!answer)
+            {
+                StatusText = UiText.T("Common_Canceled");
+                return;
+            }
         }
 
         IsRunning = true;
@@ -138,7 +489,7 @@ public partial class ApiConsoleViewModel : ObservableObject
         finally
         {
             IsRunning = false;
-            RefreshHistory();
+            RefreshHistoryNode();
         }
     }
 
@@ -155,6 +506,7 @@ public partial class ApiConsoleViewModel : ObservableObject
         var label = Summarize($"{Method.Trim().ToUpperInvariant()} {path}");
         _favorites.Add(HistoryTypes.Api, label, FormatParams(Method.Trim().ToUpperInvariant(), path, string.IsNullOrWhiteSpace(RequestBody) ? null : RequestBody));
         StatusText = UiText.T("Common_FavoriteAddedFmt", label);
+        RebuildTree();
     }
 
     /// <summary>履歴から読み込む（autoRun=true ならそのまま送信）。</summary>

@@ -7,52 +7,123 @@
         <!-- ツールバー（幅が狭いときは折り返して全ボタンを表示） -->
         <Border DockPanel.Dock="Top" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,4">
             <WrapPanel Orientation="Horizontal">
-                <ComboBox Width="90" VerticalAlignment="Center" Margin="0,2,0,2" ItemsSource="{Binding Methods}" SelectedItem="{Binding Method, Mode=TwoWay}" />
+                <Button Content="☰" Padding="8,2" Margin="0,2,6,2" Command="{Binding ToggleTreeCommand}"
+                        ToolTip.Tip="{loc:Tr ApiTree_ToggleTip}"
+                        AutomationProperties.AutomationId="ApiTreeToggle" />
+                <ComboBox Width="90" VerticalAlignment="Center" Margin="0,2,0,2" ItemsSource="{Binding Methods}" SelectedItem="{Binding Method, Mode=TwoWay}"
+                          AutomationProperties.AutomationId="ApiMethod" />
                 <TextBox Width="400" Margin="6,2,6,2" VerticalContentAlignment="Center" FontFamily="Consolas, Menlo, monospace"
-                         Text="{Binding Path, Mode=TwoWay}"
-                         ToolTip.Tip="{loc:Tr Api_PathTip}" />
-                <Button Content="{loc:Tr Api_Send}" Padding="10,2" Margin="0,2,12,2" Command="{Binding SendCommand}" />
-                <TextBlock Text="{loc:Tr Common_HistoryLabel}" VerticalAlignment="Center" Margin="0,2,4,2" />
-                <ComboBox Width="220" VerticalAlignment="Center" Margin="0,2,0,2" ItemsSource="{Binding HistoryItems}" SelectedItem="{Binding SelectedHistoryItem, Mode=TwoWay}"
-                          ToolTip.Tip="{loc:Tr Api_HistoryTip}">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding Summary}" />
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
-                <Button Content="⟳" Padding="8,2" Margin="6,2,12,2" Command="{Binding RefreshHistoryCommand}" />
+                         Text="{Binding Path, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         ToolTip.Tip="{loc:Tr Api_PathTip}"
+                         AutomationProperties.AutomationId="ApiPath" />
+                <Button Content="{loc:Tr Api_Send}" Padding="10,2" Margin="0,2,12,2" Command="{Binding SendCommand}"
+                        AutomationProperties.AutomationId="ApiSend" />
                 <Button Content="{loc:Tr Common_AddFavorite}" Padding="10,2" Margin="0,2,0,2" Command="{Binding AddFavoriteCommand}" />
+                <Button Content="⟳" Padding="8,2" Margin="6,2,0,2" Command="{Binding ReloadTreeCommand}"
+                        ToolTip.Tip="{loc:Tr ApiTree_Refresh}"
+                        AutomationProperties.AutomationId="ApiTreeReload" />
             </WrapPanel>
         </Border>
 
         <!-- ステータス -->
         <Border DockPanel.Dock="Bottom" Background="#F7F7F7" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="8,4">
-            <TextBlock Text="{Binding StatusText}" />
+            <TextBlock Text="{Binding StatusText}" AutomationProperties.AutomationId="ApiStatus" />
         </Border>
 
         <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="4" />
-                <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
 
-            <DockPanel Grid.Row="0" Margin="8,8,8,0">
-                <TextBlock DockPanel.Dock="Top" Text="{loc:Tr Api_BodyLabel}" Margin="0,0,0,4" Foreground="#666666" />
-                <TextBox Height="110" FontFamily="Consolas, Menlo, monospace" FontSize="12" AcceptsReturn="True"
-                         ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                         TextWrapping="NoWrap"
-                         Text="{Binding RequestBody, Mode=TwoWay}" />
+            <!-- エンドポイント ツリー -->
+            <DockPanel Grid.Column="0" Width="310" IsVisible="{Binding IsTreeVisible}">
+                <Border DockPanel.Dock="Top" Background="#F7F7F7" Padding="6,4" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Left" Text="🔍" VerticalAlignment="Center" Margin="0,0,4,0" />
+                        <TextBox Text="{Binding TreeFilter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 Watermark="{loc:Tr ApiTree_SearchPlaceholder}"
+                                 AutomationProperties.AutomationId="ApiTreeFilter" />
+                    </DockPanel>
+                </Border>
+                <Grid>
+                    <TreeView ItemsSource="{Binding TreeNodes}"
+                              SelectedItem="{Binding SelectedTreeNode, Mode=TwoWay}"
+                              BorderThickness="0" Padding="2"
+                              AutomationProperties.AutomationId="ApiTree">
+                        <TreeView.Styles>
+                            <Style Selector="TreeViewItem">
+                                <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                                <Setter Property="AutomationProperties.Name" Value="{Binding Title}" />
+                            </Style>
+                        </TreeView.Styles>
+                        <TreeView.ItemTemplate>
+                            <TreeDataTemplate ItemsSource="{Binding Children}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding Method}" FontSize="10" FontWeight="Bold" Width="48"
+                                               Foreground="#555555" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding Title}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                            </TreeDataTemplate>
+                        </TreeView.ItemTemplate>
+                    </TreeView>
+                    <ProgressBar Height="3" VerticalAlignment="Top" IsIndeterminate="True"
+                                 IsVisible="{Binding IsTreeLoading}"
+                                 AutomationProperties.AutomationId="ApiTreeLoading" />
+                </Grid>
             </DockPanel>
 
-            <GridSplitter Grid.Row="1" Height="4" HorizontalAlignment="Stretch" Background="#DDDDDD" />
+            <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch" Background="#DDDDDD"
+                          IsVisible="{Binding IsTreeVisible}" />
 
-            <TextBox Grid.Row="2" Margin="8,4,8,8" Text="{Binding ResponseText}" IsReadOnly="True"
-                     FontFamily="Consolas, Menlo, monospace" FontSize="12"
-                     ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                     TextWrapping="NoWrap"
-                     ToolTip.Tip="{loc:Tr Api_ResponseTip}" />
+            <Grid Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="4" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <!-- 選択したエンドポイントのパラメータ -->
+                <ItemsControl Grid.Row="0" Margin="8,8,8,0" ItemsSource="{Binding Parameters}"
+                              IsVisible="{Binding HasParameters}"
+                              AutomationProperties.AutomationId="ApiParams">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,16,4">
+                                <TextBlock Text="{Binding Label}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                                <TextBox Width="260" FontFamily="Consolas, Menlo, monospace" FontSize="12"
+                                         Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         AutomationProperties.AutomationId="{Binding AutomationId}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <DockPanel Grid.Row="1" Margin="8,4,8,0">
+                    <TextBlock DockPanel.Dock="Top" Text="{loc:Tr Api_BodyLabel}" Margin="0,0,0,4" Foreground="#666666" />
+                    <TextBox Height="110" FontFamily="Consolas, Menlo, monospace" FontSize="12" AcceptsReturn="True"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                             TextWrapping="NoWrap"
+                             Text="{Binding RequestBody, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             AutomationProperties.AutomationId="ApiBody" />
+                </DockPanel>
+
+                <GridSplitter Grid.Row="2" Height="4" HorizontalAlignment="Stretch" Background="#DDDDDD" />
+
+                <TextBox Grid.Row="3" Margin="8,4,8,8" Text="{Binding ResponseText}" IsReadOnly="True"
+                         FontFamily="Consolas, Menlo, monospace" FontSize="12"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                         TextWrapping="NoWrap"
+                         ToolTip.Tip="{loc:Tr Api_ResponseTip}"
+                         AutomationProperties.AutomationId="ApiResponse" />
+            </Grid>
         </Grid>
     </DockPanel>
 </UserControl>
