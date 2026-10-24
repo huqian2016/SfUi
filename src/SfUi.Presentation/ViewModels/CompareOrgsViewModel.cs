@@ -511,7 +511,7 @@ public partial class CompareOrgsViewModel : ObservableObject, IDisposable
         }
 
         var document = WindowReportBuilder.Document(
-            _title,
+            Title,
             DiffOnly ? UiText.T("Report_CompareDiffOnly") : null,
             null,
             sections);

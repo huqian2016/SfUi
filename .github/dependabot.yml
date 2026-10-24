@@ -5,6 +5,21 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      # Avalonia は 1 つのセットとして更新する（個別に上がると Avalonia.Base の
+      # メジャーが混在し、IBinding / IClipboard の API 不整合でビルドが壊れる）
+      avalonia:
+        patterns:
+          - "Avalonia*"
+      microsoft-extensions:
+        patterns:
+          - "Microsoft.Extensions.*"
+    ignore:
+      # Avalonia 12 は破壊的変更（IClipboard.SetTextAsync 廃止、IBinding の移動）を含み、
+      # Avalonia.AvaloniaEdit / Avalonia.Controls.DataGrid がまだ 12 に対応していない。
+      # 11.x の間はマイナー/パッチのみ自動更新する。
+      - dependency-name: "Avalonia*"
+        update-types: ["version-update:semver-major"]
   # GitHub Actions（ci.yml / codeql.yml）
   - package-ecosystem: "github-actions"
     directory: "/"
