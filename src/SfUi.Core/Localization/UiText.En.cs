@@ -1876,6 +1876,14 @@ public static partial class UiText
         ["Scratch_SnapshotSelect"] = "Select a snapshot.",
         ["Scratch_SnapshotDeleteConfirmFmt"] = "Delete the snapshot \"{0}\"? This cannot be undone.",
         ["Scratch_SnapshotDeletedFmt"] = "Deleted the snapshot: {0}",
-        ["Scratch_SnapshotUseDoneFmt"] = "Using snapshot {0} in the profile."
+        ["Scratch_SnapshotUseDoneFmt"] = "Using snapshot {0} in the profile.",
+        ["Scratch_WarnNotDevHubFmt"] = "The selected org ({0}) is not a Dev Hub. Enable Dev Hub in its Setup, or pick another org.",
+        ["Scratch_WarnSnapshotStripsFmt"] = "Creating from a snapshot ignores {0} in definition.json; definition.snapshot.json is used instead.",
+        ["Scratch_SnapshotDefinitionFmt"] = "Snapshot definition written: {0} (removed: {1})",
+        ["Scratch_ErrNotADevHub"] = "The selected org is not a Dev Hub. Enable Dev Hub in Setup > Dev Hub, or select a Dev Hub org.",
+        ["Scratch_ErrSnapshotOptionsFmt"] = "A scratch org created from a snapshot can't use these definition settings: {0}.",
+        ["Scratch_DevHubMarker"] = "Dev Hub",
+        ["Scratch_NotDevHubMarker"] = "not a Dev Hub",
+        ["Scratch_ErrSnapshotNotEnabled"] = "Scratch Org Snapshots isn't enabled for this Dev Hub. Enable it in Setup > Dev Hub (Scratch Org Snapshots), or clear the snapshot name."
     };
 }

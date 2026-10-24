@@ -1877,6 +1877,14 @@ public static partial class UiText
         ["Scratch_SnapshotSelect"] = "스냅샷을 선택하세요",
         ["Scratch_SnapshotDeleteConfirmFmt"] = "스냅샷 '{0}'을(를) 삭제할까요? 되돌릴 수 없습니다.",
         ["Scratch_SnapshotDeletedFmt"] = "스냅샷을 삭제했습니다: {0}",
-        ["Scratch_SnapshotUseDoneFmt"] = "스냅샷 {0}을(를) 프로필에서 사용합니다"
+        ["Scratch_SnapshotUseDoneFmt"] = "스냅샷 {0}을(를) 프로필에서 사용합니다",
+        ["Scratch_WarnNotDevHubFmt"] = "선택한 조직({0})은(는) Dev Hub가 아닙니다. 해당 조직의 Setup에서 Dev Hub를 사용하도록 설정하거나 다른 조직을 선택하세요.",
+        ["Scratch_WarnSnapshotStripsFmt"] = "스냅샷으로 만들 때 definition.json의 {0}은(는) 사용되지 않습니다(definition.snapshot.json 사용).",
+        ["Scratch_SnapshotDefinitionFmt"] = "스냅샷용 정의 파일을 만들었습니다: {0} (제외: {1})",
+        ["Scratch_ErrNotADevHub"] = "선택한 조직은 Dev Hub가 아닙니다. Setup > Dev Hub에서 사용하도록 설정하거나 Dev Hub 조직을 선택하세요.",
+        ["Scratch_ErrSnapshotOptionsFmt"] = "스냅샷으로 만들 때 다음 정의는 사용할 수 없습니다: {0}.",
+        ["Scratch_DevHubMarker"] = "Dev Hub",
+        ["Scratch_NotDevHubMarker"] = "Dev Hub가 아님",
+        ["Scratch_ErrSnapshotNotEnabled"] = "이 Dev Hub에서는 Scratch Org 스냅샷이 활성화되어 있지 않습니다. Setup > Dev Hub에서 활성화하거나 스냅샷 이름을 비우세요."
     };
 }

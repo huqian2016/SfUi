@@ -4,6 +4,7 @@ using Xunit;
 namespace SfUi.Tests;
 
 /// <summary>スクラッチ組織のプロファイル / コマンド組み立て / 実行計画 / ZIP 入出力のテスト。</summary>
+[Collection("Localization")]
 public class ScratchOrgTests
 {
     private static readonly DateTimeOffset FixedNow = new(2026, 10, 23, 13, 45, 59, TimeSpan.FromHours(9));
@@ -795,6 +796,96 @@ public class ScratchOrgTests
 
             Assert.Null(ScratchNamedCredentialPresets.Write(root, "SapApi", ScratchNamedCredentialPreset.Sap));
             Assert.False(ScratchNamedCredentialPresets.IsValidApiName("1bad"));
+        }
+        finally
+        {
+            TryDelete(root);
+        }
+    }
+
+    [Fact]
+    public void DescribeKnownError_MapsDevHubAndSnapshotErrors()
+    {
+        var devHub = ScratchOrgService.DescribeKnownError(
+            "NotADevHubError", "Parsing --target-dev-hub The specified org x is not a Dev Hub.");
+        Assert.Equal(UiText.T("Scratch_ErrNotADevHub"), devHub);
+
+        var snapshot = ScratchOrgService.DescribeKnownError(
+            "orgSnapshot", "Org snapshots don\u2019t support one or more options you specified: features, edition");
+        Assert.Contains("features", snapshot);
+        Assert.Contains("edition", snapshot);
+        Assert.Equal("plain", ScratchOrgService.DescribeKnownError("Other", "plain"));
+
+        var notEnabled = ScratchOrgService.DescribeKnownError(
+            "INVALID_TYPE", "Scratch Org Snapshots isn't enabled for your Dev Hub.");
+        Assert.Equal(UiText.T("Scratch_ErrSnapshotNotEnabled"), notEnabled);
+    }
+
+    [Fact]
+    public void SnapshotDefinition_StripsUnsupportedKeysOnly()
+    {
+        var root = CreateTempRoot();
+        try
+        {
+            var source = Path.Combine(root, "definition.json");
+            File.WriteAllText(source, """
+                {
+                  "orgName": "Keep Me",
+                  "edition": "Developer",
+                  "features": ["Communities"],
+                  "settings": { "lightningExperienceSettings": { "enableS1DesktopEnabled": true } }
+                }
+                """);
+
+            var unsupported = ScratchDefinitionEditor.ListSnapshotUnsupportedKeys(source);
+            Assert.Contains("edition", unsupported);
+            Assert.Contains("features", unsupported);
+            Assert.DoesNotContain("settings", unsupported);
+
+            var destination = ScratchDefinitionEditor.SnapshotDefinitionPath(source);
+            Assert.Equal(Path.Combine(root, "definition.snapshot.json"), destination);
+
+            var removed = ScratchDefinitionEditor.CreateSnapshotSafeDefinition(source, destination);
+
+            Assert.Equal(2, removed.Count);
+            Assert.Contains("features", removed);
+            Assert.Contains("edition", removed);
+            using var document = System.Text.Json.JsonDocument.Parse(File.ReadAllText(destination));
+            Assert.False(document.RootElement.TryGetProperty("edition", out _));
+            Assert.False(document.RootElement.TryGetProperty("features", out _));
+            Assert.Equal("Keep Me", document.RootElement.GetProperty("orgName").GetString());
+            Assert.True(document.RootElement.GetProperty("settings")
+                .TryGetProperty("lightningExperienceSettings", out _));
+        }
+        finally
+        {
+            TryDelete(root);
+        }
+    }
+
+    [Fact]
+    public void BuildPlan_UsesSnapshotDefinitionFile()
+    {
+        var root = CreateTempRoot();
+        try
+        {
+            var files = CreateFiles(root, includeSeed: false);
+            var profile = new ScratchProfile
+            {
+                Name = "dev",
+                UseMetadata = false,
+                UseCustomMetadata = false,
+                UsePermissionSets = false,
+                UseSeedData = false,
+                SnapshotName = "Nightly",
+            };
+            var snapshotDefinition = Path.Combine(root, "definition.snapshot.json");
+
+            var steps = ScratchOrgService.BuildPlan(profile, "hub", "scratch-dev", files, snapshotDefinition);
+
+            Assert.Contains(snapshotDefinition, steps[0].CommandLine);
+            Assert.Contains("--snapshot", steps[0].CommandLine);
+            Assert.DoesNotContain(files.DefinitionFile, steps[0].CommandLine);
         }
         finally
         {

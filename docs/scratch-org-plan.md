@@ -73,6 +73,9 @@ data/scratch/
 - スナップショット: `sf org list snapshot --target-dev-hub <hub> --json` / `sf org create snapshot --target-dev-hub <hub> --source-org <src> --name <n> [--description <desc>] --json` / `sf org delete snapshot --target-dev-hub <hub> --snapshot <name> --no-prompt --json`。
 - 作成タブでスナップショットを選ぶと「プロファイルで使用」で `--snapshot` に反映される（shape ID とは**排他**。検証でエラーになる）。
 - Dev Hub が未選択の場合はスナップショット操作を実行せず、メッセージで促す。
+- **スナップショット作成の制約**: sf の `SNAPSHOT_UNSUPPORTED_OPTIONS` = `features` / `orgPreferences` / `edition` / `sourceOrg` / `settingsPath` / `releaseVersion`。そのためスナップショット使用時は、**このアプリが `definition.snapshot.json`（上記キーを除いた定義）を自動生成**して `--definition-file` に渡す（definition.json 自体は書き換えない）。プレビューにも自動でこのパスが表示され、警告欄に除外キーが出る。
+- Dev Hub 側で **Setup > Dev Hub > Scratch Org Snapshots が有効**である必要がある（未有効だと `INVALID_TYPE: Scratch Org Snapshots isn't enabled for your Dev Hub`）。アプリはこのエラーを分かりやすく表示する。
+- Dev Hub 選択コンボは組織名の後ろに `Dev Hub` / `Dev Hub ではありません` を表示する。Dev Hub 以外を選んで実行すると `NotADevHubError` になるため、アプリは**実行前に警告**し、失敗時も `NotADevHubError` を分かりやすい文言に変換する。
 
 ### Experience Cloud グループ（P3）
 
@@ -105,5 +108,7 @@ data/scratch/
 
 - Org Shape は**設定・機能・ライセンスのみ**を写し、メタデータは含まない（メタデータは手順 2 以降で入れる）。
 - スクラッチ組織の期限は**延長できない**。必要ならスナップショット + 再作成。
+- スナップショットは Dev Hub で**有効化が必要**（Setup > Dev Hub > Scratch Org Snapshots）。有効化されていないと一覧 / 作成 / スナップショットからの組織作成はすべて失敗する。
+- スナップショット作成は `sf org create snapshot --source-org`（削除は `--snapshot`）と、shape とは**フラグ名が違う**点に注意。
 - `--source-org` は 15 桁の shape ID。指定時は定義ファイルの edition / features が上書きされる。
 - `sf data import tree` は `__mdt` レコードには使えないため、カスタム メタデータはメタデータ デプロイ（`customMetadata`）で入れる。

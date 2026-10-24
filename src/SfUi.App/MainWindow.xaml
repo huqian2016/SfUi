@@ -153,7 +153,7 @@
                         Command="{Binding OpenScratchOrgCommand}"
                         AutomationProperties.AutomationId="OpenScratchOrg"
                         AutomationProperties.Name="{loc:Tr Main_Scratch}">
-                    <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconAdd}" />
+                    <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconScratchOrg}" />
                     <Button.ToolTip>
                         <StackPanel MaxWidth="360">
                             <TextBlock Text="{loc:Tr Main_Scratch}" FontWeight="SemiBold" />

@@ -568,6 +568,20 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
             warnings.Add(UiText.T("Scratch_InvalidShapeAndSnapshot"));
         }
 
+        if (SelectedDevHub is { IsDevHub: false } hub)
+        {
+            warnings.Add(UiText.T("Scratch_WarnNotDevHubFmt", hub.Alias ?? hub.Username));
+        }
+
+        if (!string.IsNullOrWhiteSpace(profile.SnapshotName) && File.Exists(files.DefinitionFile))
+        {
+            var unsupported = ScratchDefinitionEditor.ListSnapshotUnsupportedKeys(files.DefinitionFile);
+            if (unsupported.Count > 0)
+            {
+                warnings.Add(UiText.T("Scratch_WarnSnapshotStripsFmt", string.Join(", ", unsupported)));
+            }
+        }
+
         if (usesDeploy && !hasSources)
         {
             warnings.Add(UiText.T("Scratch_WarnNoSources"));
@@ -600,7 +614,8 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
 
         WarningText = string.Join(Environment.NewLine, warnings);
 
-        var steps = ScratchOrgService.BuildPlan(profile, devHub, alias, files);
+        var previewDefinition = ResolveDefinitionFileForPreview(profile, files);
+        var steps = ScratchOrgService.BuildPlan(profile, devHub, alias, files, previewDefinition);
         var builder = new StringBuilder();
         for (var index = 0; index < steps.Count; index++)
         {
@@ -608,6 +623,45 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
         }
 
         CommandPreview = builder.ToString().TrimEnd();
+    }
+
+    // ---- スナップショット用の定義ファイル ----
+
+    /// <summary>
+    /// プレビュー用の定義ファイル パス。スナップショット使用時は sf が受け付けないキーを除いた
+    /// definition.snapshot.json を使う（ここでは書き出さない）。
+    /// </summary>
+    private static string ResolveDefinitionFileForPreview(ScratchProfile profile, ScratchProfileFiles files) =>
+        string.IsNullOrWhiteSpace(profile.SnapshotName) || !File.Exists(files.DefinitionFile)
+            ? files.DefinitionFile
+            : ScratchDefinitionEditor.SnapshotDefinitionPath(files.DefinitionFile);
+
+    /// <summary>
+    /// 実行用の定義ファイルを用意する。スナップショット使用時は edition / features などを除いた
+    /// definition.snapshot.json を書き出す（そのままだと sf が orgSnapshot エラーで失敗する）。
+    /// </summary>
+    private string EnsureDefinitionFileForRun(ScratchProfile profile, ScratchProfileFiles files)
+    {
+        if (string.IsNullOrWhiteSpace(profile.SnapshotName) || !File.Exists(files.DefinitionFile))
+        {
+            return files.DefinitionFile;
+        }
+
+        var destination = ScratchDefinitionEditor.SnapshotDefinitionPath(files.DefinitionFile);
+        try
+        {
+            var removed = ScratchDefinitionEditor.CreateSnapshotSafeDefinition(files.DefinitionFile, destination);
+            AppendLog(UiText.T(
+                "Scratch_SnapshotDefinitionFmt",
+                destination,
+                removed.Count == 0 ? "-" : string.Join(", ", removed)));
+            return destination;
+        }
+        catch (Exception ex)
+        {
+            AppendLog(UiText.T("Common_FailedFmt", ex.Message));
+            return files.DefinitionFile;
+        }
     }
 
     // ---- プロファイル操作 ----
@@ -1207,7 +1261,8 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
 
         var files = _profiles.GetFiles(profile.Name);
         var alias = ScratchProfileNaming.ExpandAlias(profile.AliasPattern, profile.Name, DateTimeOffset.Now);
-        var steps = ScratchOrgService.BuildPlan(profile, devHub, alias, files);
+        var runDefinition = EnsureDefinitionFileForRun(profile, files);
+        var steps = ScratchOrgService.BuildPlan(profile, devHub, alias, files, runDefinition);
 
         _cts = new CancellationTokenSource();
         IsRunning = true;

@@ -88,6 +88,30 @@ public class OrgServiceTests
     }
 
     [Fact]
+    public void ParseOrgList_ReadsDevHubFlag()
+    {
+        using var document = JsonDocument.Parse(
+            """
+            {"status":0,"result":{
+              "devHubs":[{"username":"hub@example.com","alias":"hub","isDevHub":true}],
+              "other":[{"username":"plain@example.com","alias":"plain","isDevHub":false}]
+            }}
+            """);
+
+        var orgs = OrgService.ParseOrgList(document.RootElement.GetProperty("result"));
+
+        var hub = orgs.Single(o => o.Username == "hub@example.com");
+        Assert.True(hub.IsDevHub);
+        Assert.StartsWith(hub.DisplayName, hub.DevHubDisplayName);
+        Assert.True(hub.DevHubDisplayName.Length > hub.DisplayName.Length);
+
+        var plain = orgs.Single(o => o.Username == "plain@example.com");
+        Assert.False(plain.IsDevHub);
+        Assert.True(plain.DevHubDisplayName.Length > plain.DisplayName.Length);
+        Assert.NotEqual(hub.DevHubDisplayName, plain.DevHubDisplayName);
+    }
+
+    [Fact]
     public void ParseFrontDoorUrl_ReturnsUrl_OnSuccess()
     {
         using var document = JsonDocument.Parse(

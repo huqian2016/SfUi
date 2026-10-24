@@ -77,7 +77,8 @@ public sealed class OrgService
                     InstanceUrl: GetString(item, "instanceUrl"),
                     ConnectedStatus: GetString(item, "connectedStatus"),
                     IsDefault: isDefault,
-                    IsSandbox: GetBool(item, "isSandbox")));
+                    IsSandbox: GetBool(item, "isSandbox"),
+                    IsDevHub: GetBool(item, "isDevHub")));
             }
         }
 

@@ -115,7 +115,8 @@ public sealed class ScratchOrgService
         ScratchProfile profile,
         string devHub,
         string alias,
-        ScratchProfileFiles files)
+        ScratchProfileFiles files,
+        string? definitionFile = null)
     {
         var steps = new List<ScratchOrgStep>();
         var profileDirectory = Path.GetDirectoryName(files.ProjectFile) ?? string.Empty;
@@ -125,7 +126,7 @@ public sealed class ScratchOrgService
             UiText.T("Scratch_StepCreate"),
             BuildCreateArgs(
                 devHub,
-                files.DefinitionFile,
+                definitionFile ?? files.DefinitionFile,
                 alias,
                 profile.DurationDays,
                 profile.WaitMinutes,
@@ -381,9 +382,9 @@ public sealed class ScratchOrgService
             return UiText.T("Scratch_ErrorTimeout");
         }
 
-        if (!string.IsNullOrWhiteSpace(result.StdOut) && TryReadMessage(result.StdOut, out var message))
+        if (!string.IsNullOrWhiteSpace(result.StdOut) && TryReadError(result.StdOut, out var code, out var message))
         {
-            return message;
+            return DescribeKnownError(code, message);
         }
 
         var stderrLines = (result.StdErr ?? string.Empty)
@@ -398,14 +399,61 @@ public sealed class ScratchOrgService
         return UiText.T("Scratch_ErrorExitFmt", result.ExitCode);
     }
 
-    private static bool TryReadMessage(string stdout, out string message)
+    /// <summary>
+    /// sf のエラー JSON（name / code / message）から、よくある失敗を分かりやすい文言に変換する。
+    /// </summary>
+    public static string DescribeKnownError(string? code, string message)
     {
+        if (string.Equals(code, "NotADevHubError", StringComparison.OrdinalIgnoreCase))
+        {
+            return UiText.T("Scratch_ErrNotADevHub");
+        }
+
+        if (string.Equals(code, "orgSnapshot", StringComparison.OrdinalIgnoreCase))
+        {
+            var keys = ScratchDefinitionEditor.SnapshotUnsupportedKeys;
+            var found = keys
+                .Where(key => message.Contains(key, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            return found.Count > 0
+                ? UiText.T("Scratch_ErrSnapshotOptionsFmt", string.Join(", ", found))
+                : UiText.T("Scratch_ErrSnapshotOptionsFmt", string.Join(", ", keys));
+        }
+
+        if (string.Equals(code, "INVALID_TYPE", StringComparison.OrdinalIgnoreCase)
+            && message.Contains("Snapshot", StringComparison.OrdinalIgnoreCase))
+        {
+            return UiText.T("Scratch_ErrSnapshotNotEnabled");
+        }
+
+        return message;
+    }
+
+    private static bool TryReadError(string stdout, out string? code, out string message)
+    {
+        code = null;
         message = string.Empty;
         try
         {
             using var document = JsonDocument.Parse(stdout);
-            if (document.RootElement.ValueKind == JsonValueKind.Object
-                && document.RootElement.TryGetProperty("message", out var value)
+            var root = document.RootElement;
+            if (root.ValueKind != JsonValueKind.Object)
+            {
+                return false;
+            }
+
+            foreach (var key in new[] { "name", "code" })
+            {
+                if (root.TryGetProperty(key, out var codeValue)
+                    && codeValue.ValueKind == JsonValueKind.String
+                    && !string.IsNullOrWhiteSpace(codeValue.GetString()))
+                {
+                    code = codeValue.GetString();
+                    break;
+                }
+            }
+
+            if (root.TryGetProperty("message", out var value)
                 && value.ValueKind == JsonValueKind.String
                 && !string.IsNullOrWhiteSpace(value.GetString()))
             {

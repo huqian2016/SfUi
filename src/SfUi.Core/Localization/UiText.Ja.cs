@@ -1876,6 +1876,14 @@ public static partial class UiText
         ["Scratch_SnapshotSelect"] = "スナップショットを選択してください",
         ["Scratch_SnapshotDeleteConfirmFmt"] = "スナップショット「{0}」を削除しますか？元に戻せません。",
         ["Scratch_SnapshotDeletedFmt"] = "スナップショットを削除しました: {0}",
-        ["Scratch_SnapshotUseDoneFmt"] = "スナップショット {0} をプロファイルで使用します"
+        ["Scratch_SnapshotUseDoneFmt"] = "スナップショット {0} をプロファイルで使用します",
+        ["Scratch_WarnNotDevHubFmt"] = "選択した組織 ({0}) は Dev Hub ではありません。Setup の Dev Hub を有効化するか、別の組織を選んでください。",
+        ["Scratch_WarnSnapshotStripsFmt"] = "スナップショットから作成するため、definition.json の {0} は使用されません（definition.snapshot.json を使用します）。",
+        ["Scratch_SnapshotDefinitionFmt"] = "スナップショット用の定義ファイルを書き出しました: {0}（除外: {1}）",
+        ["Scratch_ErrNotADevHub"] = "選択した組織は Dev Hub ではありません。Setup → Dev Hub で有効化するか、Dev Hub の組織を選択してください。",
+        ["Scratch_ErrSnapshotOptionsFmt"] = "スナップショットから作成する場合、次の定義は使用できません: {0}。",
+        ["Scratch_DevHubMarker"] = "Dev Hub",
+        ["Scratch_NotDevHubMarker"] = "Dev Hub ではありません",
+        ["Scratch_ErrSnapshotNotEnabled"] = "この Dev Hub では Scratch Org スナップショットが有効になっていません。Setup > Dev Hub で有効化するか、スナップショット名を空にしてください。"
     };
 }

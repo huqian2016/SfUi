@@ -1877,6 +1877,14 @@ public static partial class UiText
         ["Scratch_SnapshotSelect"] = "请选择快照",
         ["Scratch_SnapshotDeleteConfirmFmt"] = "删除快照“{0}”？无法撤销。",
         ["Scratch_SnapshotDeletedFmt"] = "已删除快照: {0}",
-        ["Scratch_SnapshotUseDoneFmt"] = "将在配置中使用快照 {0}"
+        ["Scratch_SnapshotUseDoneFmt"] = "将在配置中使用快照 {0}",
+        ["Scratch_WarnNotDevHubFmt"] = "所选组织 ({0}) 不是 Dev Hub。请在该组织的 Setup 中启用 Dev Hub，或选择其他组织。",
+        ["Scratch_WarnSnapshotStripsFmt"] = "从快照创建时不使用 definition.json 中的 {0}（改用 definition.snapshot.json）。",
+        ["Scratch_SnapshotDefinitionFmt"] = "已生成快照专用定义文件: {0}（已移除: {1}）",
+        ["Scratch_ErrNotADevHub"] = "所选组织不是 Dev Hub。请在 Setup > Dev Hub 中启用，或选择 Dev Hub 组织。",
+        ["Scratch_ErrSnapshotOptionsFmt"] = "从快照创建时不能使用以下定义: {0}。",
+        ["Scratch_DevHubMarker"] = "Dev Hub",
+        ["Scratch_NotDevHubMarker"] = "不是 Dev Hub",
+        ["Scratch_ErrSnapshotNotEnabled"] = "此 Dev Hub 未启用 Scratch Org 快照。请在 Setup > Dev Hub 中启用，或清空快照名称。"
     };
 }
