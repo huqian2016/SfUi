@@ -19,6 +19,7 @@ public partial class ApexViewModel : ObservableObject
     private readonly AppSettingsStore _settings;
     private readonly ApexSuggestionProvider _suggestions;
     private readonly AppLog _log;
+    private readonly IReportExportDialog _reportDialog;
 
     [ObservableProperty]
     private string _apexCode = "System.debug('Hello SfUi');";
@@ -61,7 +62,7 @@ public partial class ApexViewModel : ObservableObject
 
     public ObservableCollection<HistoryEntry> HistoryItems { get; } = new();
 
-    public ApexViewModel(ApexService service, HistoryStore history, FavoritesStore favorites, IFilePickerService filePicker, AppSettingsStore settings, SObjectDescribeService describes, OrgMetadataService metadata, AppLog log)
+    public ApexViewModel(ApexService service, HistoryStore history, FavoritesStore favorites, IFilePickerService filePicker, AppSettingsStore settings, SObjectDescribeService describes, OrgMetadataService metadata, AppLog log, IReportExportDialog reportDialog)
     {
         _service = service;
         _history = history;
@@ -70,8 +71,40 @@ public partial class ApexViewModel : ObservableObject
         _settings = settings;
         _suggestions = new ApexSuggestionProvider(describes, metadata);
         _log = log;
+        _reportDialog = reportDialog;
         _aiAssistEnabled = settings.Current.ApexAiAssist;
         RefreshHistory();
+    }
+
+    [RelayCommand]
+    private async Task ExportReportAsync()
+    {
+        if (string.IsNullOrWhiteSpace(ApexCode) && string.IsNullOrWhiteSpace(ResultLogs))
+        {
+            StatusText = UiText.T("Report_NoData");
+            return;
+        }
+
+        var report = ReportDocumentFactory.FromText(
+            UiText.T("Report_ApexTitle"),
+            CurrentOrg,
+            ResultSummary,
+            (UiText.T("Report_QueryHeading"), ApexCode ?? string.Empty),
+            (UiText.T("Report_OutputHeading"), ResultLogs ?? string.Empty));
+
+        var outcome = await ReportExportRunner.RunAsync(
+            _reportDialog,
+            report,
+            $"apex-{DateTime.Now:yyyyMMdd-HHmmss}",
+            null);
+        if (outcome.Canceled)
+        {
+            return;
+        }
+
+        StatusText = outcome.Error is null
+            ? ReportExportRunner.DescribeSuccess(outcome, string.Empty)
+            : UiText.T("Report_FailedFmt", outcome.Error);
     }
 
     [RelayCommand]

@@ -25,7 +25,7 @@
                         ToolTip="{loc:Tr Common_RefreshTip}" />
                 <Border Width="1" Height="20" VerticalAlignment="Center" Background="#CCCCCC" Margin="0,2,12,2" />
                 <Button Content="{loc:Tr Common_AddFavorite}" Padding="10,2" Margin="0,2,6,2" Command="{Binding AddFavoriteCommand}" />
-                <Button Content="{loc:Tr Soql_ExportCsv}" Padding="10,2" Margin="0,2,6,2" Command="{Binding ExportCsvCommand}" />
+                <Button Content="{loc:Tr Report_Export}" Padding="10,2" Margin="0,2,6,2" Command="{Binding ExportReportCommand}" AutomationProperties.AutomationId="SoqlExportReport" />
                 <Button Content="{loc:Tr Soql_CopyResults}" Padding="10,2" Margin="0,2,6,2" Command="{Binding CopyResultsCommand}" />
                 <Button Content="{Binding DeployButtonText}" Padding="10,2" Margin="0,2,0,2" Command="{Binding DeployCommand}"
                         AutomationProperties.AutomationId="SoqlDeployButton" />

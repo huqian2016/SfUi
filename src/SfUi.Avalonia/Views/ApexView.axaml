@@ -16,6 +16,7 @@
                           AutomationProperties.AutomationId="ApexDebugOnlyCheckBox" />
                 <Button Content="{loc:Tr Apex_LoadFile}" Padding="10,2" Margin="0,2,6,2" Command="{Binding LoadFileCommand}" />
                 <Button Content="{loc:Tr Apex_SaveFile}" Padding="10,2" Margin="0,2,12,2" Command="{Binding SaveFileCommand}" />
+                <Button Content="{loc:Tr Report_Export}" Padding="10,2" Margin="0,2,12,2" Command="{Binding ExportReportCommand}" AutomationProperties.AutomationId="ApexExportReport" />
                 <Border Width="1" Height="20" VerticalAlignment="Center" Background="#CCCCCC" Margin="0,2,12,2" />
                 <TextBlock Text="{loc:Tr Common_HistoryLabel}" VerticalAlignment="Center" Margin="0,2,4,2" />
                 <ComboBox Width="240" VerticalAlignment="Center" ItemsSource="{Binding HistoryItems}" SelectedItem="{Binding SelectedHistoryItem, Mode=TwoWay}"

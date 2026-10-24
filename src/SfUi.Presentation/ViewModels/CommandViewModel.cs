@@ -16,6 +16,7 @@ public partial class CommandViewModel : ObservableObject
     private readonly AppSettingsStore _settings;
     private readonly IDialogService _dialogs;
     private readonly AppLog _log;
+    private readonly IReportExportDialog _reportDialog;
 
     private CancellationTokenSource? _cts;
 
@@ -49,7 +50,7 @@ public partial class CommandViewModel : ObservableObject
 
     public ObservableCollection<HistoryEntry> HistoryItems { get; } = new();
 
-    public CommandViewModel(SfCliRunner runner, HistoryStore history, FavoritesStore favorites, AppSettingsStore settings, IDialogService dialogs, AppLog log)
+    public CommandViewModel(SfCliRunner runner, HistoryStore history, FavoritesStore favorites, AppSettingsStore settings, IDialogService dialogs, AppLog log, IReportExportDialog reportDialog)
     {
         _runner = runner;
         _history = history;
@@ -57,7 +58,39 @@ public partial class CommandViewModel : ObservableObject
         _settings = settings;
         _dialogs = dialogs;
         _log = log;
+        _reportDialog = reportDialog;
         RefreshHistory();
+    }
+
+    [RelayCommand]
+    private async Task ExportReportAsync()
+    {
+        if (string.IsNullOrWhiteSpace(StdOut) && string.IsNullOrWhiteSpace(StdErr))
+        {
+            StatusText = UiText.T("Report_NoData");
+            return;
+        }
+
+        var report = ReportDocumentFactory.FromText(
+            UiText.T("Report_CommandTitle"),
+            CurrentOrg,
+            CommandText,
+            (UiText.T("Report_RequestHeading"), "sf " + CommandText),
+            (UiText.T("Report_OutputHeading"), string.Join(Environment.NewLine, new[] { StdOut, StdErr }.Where(part => !string.IsNullOrWhiteSpace(part)))));
+
+        var outcome = await ReportExportRunner.RunAsync(
+            _reportDialog,
+            report,
+            $"command-{DateTime.Now:yyyyMMdd-HHmmss}",
+            null);
+        if (outcome.Canceled)
+        {
+            return;
+        }
+
+        StatusText = outcome.Error is null
+            ? ReportExportRunner.DescribeSuccess(outcome, string.Empty)
+            : UiText.T("Report_FailedFmt", outcome.Error);
     }
 
     [RelayCommand]

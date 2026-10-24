@@ -1,0 +1,70 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:SfUi.Avalonia"
+        x:Class="SfUi.Avalonia.Dialogs.ReportExportDialog"
+        Title="{Binding Title}" Width="640" SizeToContent="Height" CanResize="False"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False" Background="#F7F7F7">
+    <StackPanel Margin="16">
+
+        <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8" />
+
+        <TextBlock Text="{Binding ContentsLabel}" Foreground="#666666" Margin="0,0,0,4" />
+        <Border Background="#FFFFFF" BorderBrush="#DDDDDD" BorderThickness="1" Padding="8" MaxHeight="120">
+            <ScrollViewer>
+                <ItemsControl ItemsSource="{Binding Sections}" AutomationProperties.AutomationId="ReportSections">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}" FontSize="12" TextTrimming="CharacterEllipsis" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Border>
+
+        <TextBlock Text="{Binding FormatsLabel}" Foreground="#666666" Margin="0,14,0,4" />
+        <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto">
+            <CheckBox Grid.Row="0" Grid.Column="0" Content="{Binding FormatCsv}" IsChecked="{Binding Csv}" Margin="0,2"
+                      AutomationProperties.AutomationId="ReportFormatCsv" />
+            <CheckBox Grid.Row="0" Grid.Column="1" Content="{Binding FormatMarkdown}" IsChecked="{Binding Markdown}" Margin="0,2"
+                      AutomationProperties.AutomationId="ReportFormatMarkdown" />
+            <CheckBox Grid.Row="1" Grid.Column="0" Content="{Binding FormatHtml}" IsChecked="{Binding Html}" Margin="0,2"
+                      AutomationProperties.AutomationId="ReportFormatHtml" />
+            <CheckBox Grid.Row="1" Grid.Column="1" Content="{Binding FormatExcel}" IsChecked="{Binding Excel}" Margin="0,2"
+                      AutomationProperties.AutomationId="ReportFormatExcel" />
+            <CheckBox Grid.Row="2" Grid.Column="0" Content="{Binding FormatPdf}" IsChecked="{Binding Pdf}" Margin="0,2"
+                      AutomationProperties.AutomationId="ReportFormatPdf" />
+        </Grid>
+
+        <CheckBox Content="{Binding IncludeAnalysisLabel}" IsChecked="{Binding IncludeAnalysis}" Margin="0,10,0,0"
+                  AutomationProperties.AutomationId="ReportIncludeAnalysis" />
+
+        <Grid Margin="0,12,0,0" ColumnDefinitions="Auto,90,24,Auto,*" RowDefinitions="Auto,Auto">
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding MaxRowsLabel}" VerticalAlignment="Center" Margin="0,0,8,0" />
+            <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding MaxRowsText}"
+                     AutomationProperties.AutomationId="ReportMaxRows" />
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="{Binding FileNameLabel}" VerticalAlignment="Center" Margin="0,8,8,0" />
+            <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="4" Margin="0,8,0,0" Text="{Binding BaseName}"
+                     AutomationProperties.AutomationId="ReportBaseName" />
+        </Grid>
+
+        <TextBlock Text="{Binding OutputFolderLabel}" Foreground="#666666" Margin="0,14,0,4" />
+        <DockPanel>
+            <Button DockPanel.Dock="Right" Content="{Binding BrowseLabel}" Padding="12,3" Margin="6,0,0,0"
+                    Command="{Binding BrowseCommand}" AutomationProperties.AutomationId="ReportBrowse" />
+            <TextBox Text="{Binding OutputDirectory}" AutomationProperties.AutomationId="ReportOutputFolder" />
+        </DockPanel>
+
+        <CheckBox Content="{Binding OpenAfterSaveLabel}" IsChecked="{Binding OpenAfterSave}" Margin="0,10,0,0"
+                  AutomationProperties.AutomationId="ReportOpenAfter" />
+
+        <TextBlock Text="{Binding ErrorText}" Foreground="#C62828" Margin="0,10,0,0" TextWrapping="Wrap"
+                   AutomationProperties.AutomationId="ReportError" />
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0" Spacing="8">
+            <Button Content="{Binding CancelLabel}" MinWidth="90" Padding="12,4" Click="Cancel_Click"
+                    AutomationProperties.AutomationId="ReportExportCancel" />
+            <Button Content="{Binding ExportLabel}" MinWidth="110" Padding="12,4" Click="Export_Click"
+                    AutomationProperties.AutomationId="ReportExportOk" />
+        </StackPanel>
+    </StackPanel>
+</Window>

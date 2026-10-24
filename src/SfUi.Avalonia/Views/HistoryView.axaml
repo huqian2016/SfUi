@@ -34,6 +34,7 @@
                             ToolTip.Tip="{loc:Tr History_CopyParamsTip}" />
                     <Button Content="{loc:Tr History_DeleteSelected}" Padding="10,2" Margin="0,0,6,0" Command="{Binding DeleteSelectedCommand}" />
                     <Button Content="{loc:Tr History_ClearAll}" Padding="10,2" Command="{Binding ClearAllCommand}" />
+                    <Button Content="{loc:Tr Report_Export}" Padding="10,2" Margin="0,0,6,0" Command="{Binding ExportReportCommand}" AutomationProperties.AutomationId="HistoryExportReport" />
                 </StackPanel>
                 <TextBlock Text="{Binding StatusMessage}" Foreground="#555555" Margin="0,4,0,0" TextWrapping="Wrap" />
             </StackPanel>

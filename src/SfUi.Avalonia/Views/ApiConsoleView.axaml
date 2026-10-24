@@ -61,6 +61,7 @@
                             AutomationProperties.AutomationId="ApiMethodDelete" />
 
                     <Button Content="{loc:Tr Common_AddFavorite}" Padding="10,2" Margin="0,2,0,2" Command="{Binding AddFavoriteCommand}" />
+                    <Button Content="{loc:Tr Report_Export}" Padding="10,2" Margin="0,2,0,2" Command="{Binding ExportReportCommand}" AutomationProperties.AutomationId="ApiExportReport" />
                     <Button Content="⟳" Padding="8,2" Margin="6,2,0,2" Command="{Binding ReloadTreeCommand}"
                             ToolTip.Tip="{loc:Tr ApiTree_Refresh}"
                             AutomationProperties.AutomationId="ApiTreeReload" />

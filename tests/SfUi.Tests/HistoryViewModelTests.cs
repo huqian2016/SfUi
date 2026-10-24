@@ -43,7 +43,7 @@ public class HistoryViewModelTests : IDisposable
     }
 
     private HistoryViewModel CreateViewModel() =>
-        new(_store, _dialogs, new FakeClipboard(), new FakeDispatcher(), _log);
+        new(_store, _dialogs, new FakeClipboard(), new FakeDispatcher(), _log, new FakeReportDialog());
 
     private HistoryEntry Append(string summary)
     {
@@ -173,6 +173,15 @@ public class HistoryViewModelTests : IDisposable
         public string? Prompt(string title, string prompt, string defaultValue = "") => null;
     }
 
+    private sealed class FakeReportDialog : IReportExportDialog
+    {
+        public Task<ReportExportOptions?> ShowAsync(
+            ReportDocument document,
+            string suggestedBaseName,
+            string? initialDirectory,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<ReportExportOptions?>(null);
+    }
     private sealed class FakeClipboard : IClipboardService
     {
         public bool TrySetText(string text) => true;

@@ -104,6 +104,7 @@ public partial class App : Application
         services.AddSfUiCore(paths);
         services.AddSingleton<IDialogService, WpfDialogService>();
         services.AddSingleton<IFilePickerService, WpfFilePickerService>();
+        services.AddSingleton<IReportExportDialog, WpfReportExportDialog>();
         services.AddSingleton<IUiDispatcher, WpfUiDispatcher>();
         services.AddSingleton<IClipboardService, WpfClipboardService>();
         services.AddSingleton<IAppWindowService, WpfAppWindowService>();

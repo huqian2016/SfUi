@@ -14,6 +14,7 @@ public partial class HistoryViewModel : ObservableObject
     private readonly IClipboardService _clipboard;
     private readonly IUiDispatcher _ui;
     private readonly AppLog _log;
+    private readonly IReportExportDialog _reportDialog;
 
     [ObservableProperty]
     private TypeFilterOption? _typeFilter;
@@ -62,17 +63,71 @@ public partial class HistoryViewModel : ObservableObject
     /// <summary>再実行を要求する（View のダブルクリックから呼ばれる）。</summary>
     public void RequestReplay(HistoryEntry entry) => ReplayRequested?.Invoke(entry);
 
-    public HistoryViewModel(HistoryStore history, IDialogService dialogs, IClipboardService clipboard, IUiDispatcher ui, AppLog log)
+    public HistoryViewModel(HistoryStore history, IDialogService dialogs, IClipboardService clipboard, IUiDispatcher ui, AppLog log, IReportExportDialog reportDialog)
     {
         _history = history;
         _dialogs = dialogs;
         _clipboard = clipboard;
         _ui = ui;
         _log = log;
+        _reportDialog = reportDialog;
         _history.Changed += OnHistoryChanged;
         UiText.LanguageChanged += OnLanguageChanged;
         BuildTypeFilters();
         Refresh();
+    }
+
+    [RelayCommand]
+    private async Task ExportReportAsync()
+    {
+        if (Entries.Count == 0)
+        {
+            StatusMessage = UiText.T("Report_NoData");
+            return;
+        }
+
+        var table = new ReportTable
+        {
+            Name = UiText.T("Report_HistoryTitle"),
+            Columns = new[]
+            {
+                UiText.T("Report_ColTimestamp"),
+                UiText.T("Report_ColType"),
+                UiText.T("Report_ColSummary"),
+                UiText.T("Report_ColOrg"),
+                UiText.T("Report_ColStatus"),
+                UiText.T("Report_ColDurationMs"),
+            },
+            NumericColumns = new HashSet<int> { 5 },
+            Rows = Entries.Select(entry => (IReadOnlyList<string?>)new[]
+            {
+                entry.Timestamp.ToString("yyyy-MM-dd HH:mm:ss"),
+                entry.Type,
+                entry.Summary,
+                entry.Org,
+                entry.Status,
+                entry.DurationMs?.ToString("N0"),
+            }).ToList(),
+        };
+
+        var report = ReportDocumentFactory.FromTable(
+            UiText.T("Report_HistoryTitle"),
+            TypeFilter?.Label,
+            SearchText,
+            table);
+        var outcome = await ReportExportRunner.RunAsync(
+            _reportDialog,
+            report,
+            $"history-{DateTime.Now:yyyyMMdd-HHmmss}",
+            null);
+        if (outcome.Canceled)
+        {
+            return;
+        }
+
+        StatusMessage = outcome.Error is null
+            ? ReportExportRunner.DescribeSuccess(outcome, string.Empty)
+            : UiText.T("Report_FailedFmt", outcome.Error);
     }
 
     private void OnHistoryChanged()

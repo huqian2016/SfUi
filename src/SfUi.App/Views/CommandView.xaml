@@ -13,7 +13,7 @@
                 <ComboBox Width="300" ItemsSource="{Binding HistoryItems}" SelectedItem="{Binding SelectedHistoryItem, Mode=TwoWay}"
                           DisplayMemberPath="Summary" ToolTip="{loc:Tr Command_HistoryTip}" />
                 <Button Content="⟳" Padding="8,2" Margin="0,0,12,0" Command="{Binding RefreshHistoryCommand}" />
-                <Button Content="{loc:Tr Common_AddFavorite}" Padding="10,2" Command="{Binding AddFavoriteCommand}" />
+                <Button Content="{loc:Tr Common_AddFavorite}" Padding="10,2" Margin="0,0,6,0" Command="{Binding AddFavoriteCommand}" />
             </StackPanel>
         </Border>
 

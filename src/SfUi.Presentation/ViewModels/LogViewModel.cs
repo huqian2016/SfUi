@@ -15,6 +15,7 @@ public partial class LogViewModel : ObservableObject
     private readonly IFilePickerService _filePicker;
     private readonly IAppWindowService _windowService;
     private readonly AppLog _log;
+    private readonly IReportExportDialog _reportDialog;
 
     /// <summary>現在表示中のログの出所（ログ Id or ファイル名）。</summary>
     private string? _contentSourceLabel;
@@ -36,12 +37,67 @@ public partial class LogViewModel : ObservableObject
 
     public ObservableCollection<ApexLogInfo> Logs { get; } = new();
 
-    public LogViewModel(ApexService service, IFilePickerService filePicker, IAppWindowService windowService, AppLog log)
+    public LogViewModel(ApexService service, IFilePickerService filePicker, IAppWindowService windowService, AppLog log, IReportExportDialog reportDialog)
     {
         _service = service;
         _filePicker = filePicker;
         _windowService = windowService;
         _log = log;
+        _reportDialog = reportDialog;
+    }
+
+    [RelayCommand]
+    private async Task ExportReportAsync()
+    {
+        if (Logs.Count == 0)
+        {
+            StatusText = UiText.T("Report_NoData");
+            return;
+        }
+
+        var table = new ReportTable
+        {
+            Name = UiText.T("Report_LogsTitle"),
+            Columns = new[]
+            {
+                UiText.T("Report_ColId"),
+                UiText.T("Report_ColStartTime"),
+                UiText.T("Report_ColOperation"),
+                UiText.T("Report_ColStatus"),
+                UiText.T("Report_ColDurationMs"),
+                UiText.T("Report_ColSize"),
+            },
+            NumericColumns = new HashSet<int> { 4, 5 },
+            Rows = Logs.Select(item => (IReadOnlyList<string?>)new[]
+            {
+                item.Id,
+                item.StartTime,
+                item.Operation,
+                item.Status,
+                item.DurationMs?.ToString("N0"),
+                item.LogLength?.ToString("N0"),
+            }).ToList(),
+        };
+
+        var report = ReportDocumentFactory.FromTable(UiText.T("Report_LogsTitle"), CurrentOrg, null, table);
+        if (!string.IsNullOrWhiteSpace(LogContent))
+        {
+            report.Sections.Add(new ReportSection { Heading = UiText.T("Report_LogsHeading"), Text = LogContent });
+        }
+
+        var outcome = await ReportExportRunner.RunAsync(
+            _reportDialog,
+            report,
+            $"debug-logs-{DateTime.Now:yyyyMMdd-HHmmss}",
+            null);
+        if (outcome.Canceled)
+        {
+            return;
+        }
+
+        StatusText = outcome.Error is null
+            ? ReportExportRunner.DescribeSuccess(outcome, string.Empty)
+            : UiText.T("Report_FailedFmt", outcome.Error);
     }
 
     [RelayCommand]

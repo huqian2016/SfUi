@@ -22,6 +22,7 @@ public partial class SoqlViewModel : ObservableObject
     private readonly SObjectDescribeService _describes;
     private readonly AppSettingsStore _settings;
     private readonly AppLog _log;
+    private readonly IReportExportDialog _reportDialog;
     private readonly UiDebouncer _liveCountDebouncer;
     private CancellationTokenSource? _liveCountCts;
 
@@ -75,7 +76,7 @@ public partial class SoqlViewModel : ObservableObject
 
     public ObservableCollection<HistoryEntry> HistoryItems { get; } = new();
 
-    public SoqlViewModel(SoqlService service, HistoryStore history, FavoritesStore favorites, IFilePickerService filePicker, IClipboardService clipboard, SObjectDescribeService describes, AppSettingsStore settings, IUiDispatcher ui, AppLog log)
+    public SoqlViewModel(SoqlService service, HistoryStore history, FavoritesStore favorites, IFilePickerService filePicker, IClipboardService clipboard, SObjectDescribeService describes, AppSettingsStore settings, IUiDispatcher ui, AppLog log, IReportExportDialog reportDialog)
     {
         _service = service;
         _history = history;
@@ -85,6 +86,7 @@ public partial class SoqlViewModel : ObservableObject
         _describes = describes;
         _settings = settings;
         _log = log;
+        _reportDialog = reportDialog;
         _aiAssistEnabled = settings.Current.SoqlAiAssist;
         _liveCountDebouncer = new UiDebouncer(1200, ui);
         RefreshHistory();
@@ -420,6 +422,38 @@ public partial class SoqlViewModel : ObservableObject
             StatusText = UiText.T("Soql_CsvFailedFmt", ex.Message);
             _log.Error("CSV 出力に失敗", ex);
         }
+    }
+
+    [RelayCommand]
+    private async Task ExportReportAsync()
+    {
+        var table = GetCurrentTable();
+        if (table is null || table.Rows.Count == 0)
+        {
+            StatusText = UiText.T("Report_NoData");
+            return;
+        }
+
+        var report = ReportDocumentFactory.FromTable(
+            UiText.T("Report_SoqlTitle"),
+            CurrentOrg,
+            SoqlText,
+            ReportDocumentFactory.TableFromDataTable("SOQL", table),
+            new ReportSection { Heading = UiText.T("Report_QueryHeading"), Text = SoqlText });
+        var initialDirectory = !string.IsNullOrWhiteSpace(CurrentFolder) && Directory.Exists(CurrentFolder) ? CurrentFolder : null;
+        var outcome = await ReportExportRunner.RunAsync(
+            _reportDialog,
+            report,
+            $"soql-{DateTime.Now:yyyyMMdd-HHmmss}",
+            initialDirectory);
+        if (outcome.Canceled)
+        {
+            return;
+        }
+
+        StatusText = outcome.Error is null
+            ? ReportExportRunner.DescribeSuccess(outcome, initialDirectory ?? string.Empty)
+            : UiText.T("Report_FailedFmt", outcome.Error);
     }
 
     [RelayCommand]

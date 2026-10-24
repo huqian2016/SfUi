@@ -23,6 +23,7 @@ public partial class ApiConsoleViewModel : ObservableObject
     private readonly AppSettingsStore _settings;
     private readonly IDialogService _dialogs;
     private readonly AppLog _log;
+    private readonly IReportExportDialog _reportDialog;
     private readonly Dictionary<string, IReadOnlyList<string>> _objectsByOrg = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _versionByOrg = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _instanceByOrg = new(StringComparer.OrdinalIgnoreCase);
@@ -130,7 +131,8 @@ public partial class ApiConsoleViewModel : ObservableObject
         FavoritesStore favorites,
         AppSettingsStore settings,
         IDialogService dialogs,
-        AppLog log)
+        AppLog log,
+        IReportExportDialog reportDialog)
     {
         _client = client;
         _describes = describes;
@@ -139,6 +141,7 @@ public partial class ApiConsoleViewModel : ObservableObject
         _settings = settings;
         _dialogs = dialogs;
         _log = log;
+        _reportDialog = reportDialog;
         Parameters.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasParameters));
         RebuildTree();
     }
@@ -625,6 +628,56 @@ public partial class ApiConsoleViewModel : ObservableObject
             IsRunning = false;
             RefreshHistoryNode();
         }
+    }
+
+    [RelayCommand]
+    private async Task ExportReportAsync()
+    {
+        if (string.IsNullOrWhiteSpace(ResponseText))
+        {
+            StatusText = UiText.T("Report_NoData");
+            return;
+        }
+
+        var request = new ReportSection
+        {
+            Heading = UiText.T("Report_RequestHeading"),
+            KeyValues = new[]
+            {
+                new KeyValuePair<string, string>(UiText.T("Report_ColMethod"), Method),
+                new KeyValuePair<string, string>(UiText.T("Report_ColPath"), Path),
+                new KeyValuePair<string, string>(UiText.T("Report_ColStatus"), StatusText),
+            },
+        };
+
+        var report = ReportDocumentFactory.FromText(
+            UiText.T("Report_RestTitle"),
+            CurrentOrg,
+            $"{Method} {Path}",
+            (UiText.T("Report_ResponseHeading"), ResponseText ?? string.Empty));
+        report.Sections.Insert(0, request);
+        if (!string.IsNullOrWhiteSpace(RequestBody))
+        {
+            report.Sections.Insert(1, new ReportSection
+            {
+                Heading = UiText.T("Report_RequestHeading") + " (body)",
+                Text = RequestBody,
+            });
+        }
+
+        var outcome = await ReportExportRunner.RunAsync(
+            _reportDialog,
+            report,
+            $"rest-{DateTime.Now:yyyyMMdd-HHmmss}",
+            null);
+        if (outcome.Canceled)
+        {
+            return;
+        }
+
+        StatusText = outcome.Error is null
+            ? ReportExportRunner.DescribeSuccess(outcome, string.Empty)
+            : UiText.T("Report_FailedFmt", outcome.Error);
     }
 
     [RelayCommand]
