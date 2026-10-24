@@ -1,4 +1,4 @@
-﻿<Window x:Class="SfUi.App.Views.OrgInfoWindow"
+<Window x:Class="SfUi.App.Views.OrgInfoWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="clr-namespace:SfUi.App.Views"
@@ -22,6 +22,7 @@
                             Command="{Binding RefreshAllCommand}" IsEnabled="{Binding CanRefresh}"
                             ToolTip="{loc:Tr OrgInfo_RefreshAllTip}" />
                     <Button Content="{loc:Tr Report_Export}" Padding="10,2" Command="{Binding ExportReportCommand}" AutomationProperties.AutomationId="OrgInfoExportReport" />
+                    <Button Content="{loc:Tr Erd_ExportButton}" Padding="10,2" Margin="8,0,0,0" Command="{Binding ExportErdCommand}" AutomationProperties.AutomationId="OrgInfoExportErd" />
                     <Button Content="{loc:Tr Common_Cancel}" Padding="10,2" Margin="6,0,0,0"
                             Command="{Binding CancelCommand}" IsEnabled="{Binding IsBusy}" />
                     <Border Width="1" Background="#CCCCCC" Margin="12,2,12,2" />

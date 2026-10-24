@@ -1,0 +1,81 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:SfUi.Avalonia"
+        x:Class="SfUi.Avalonia.Dialogs.ErdExportDialog"
+        Title="{Binding Title}" Width="820" Height="680" MinWidth="720" MinHeight="520"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False" Background="#F7F7F7">
+    <DockPanel Margin="16">
+
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button Content="{Binding ExportLabel}" Click="Export_Click" Padding="16,4"
+                    AutomationProperties.AutomationId="ErdExportOk" />
+            <Button Content="{Binding CancelLabel}" Click="Cancel_Click" Padding="16,4" Margin="8,0,0,0"
+                    AutomationProperties.AutomationId="ErdExportCancel" />
+        </StackPanel>
+
+        <StackPanel DockPanel.Dock="Top">
+            <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold" />
+            <TextBlock Text="{Binding Org}" Foreground="#666666" FontSize="11" Margin="0,2,0,0" />
+
+            <Grid Margin="0,10,0,0" ColumnDefinitions="Auto,*,Auto,Auto">
+                <TextBlock Text="{Binding FilterLabel}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                <TextBox Grid.Column="1" Text="{Binding FilterText}"
+                         AutomationProperties.AutomationId="ErdFilter" />
+                <Button Grid.Column="2" Content="{Binding SelectAllLabel}" Command="{Binding SelectAllCommand}"
+                        Padding="10,2" Margin="8,0,0,0" />
+                <Button Grid.Column="3" Content="{Binding ClearLabel}" Command="{Binding ClearSelectionCommand}"
+                        Padding="10,2" Margin="6,0,0,0" />
+            </Grid>
+
+            <WrapPanel Margin="0,10,0,0">
+                <TextBlock Text="{Binding NameStyleLabel}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                <ComboBox ItemsSource="{Binding NameStyleOptions}" SelectedIndex="{Binding NameStyleIndex}"
+                          Width="180" AutomationProperties.AutomationId="ErdNameStyle" />
+                <CheckBox Content="{Binding IncludeStandardLabel}" IsChecked="{Binding IncludeStandardObjects}"
+                          Margin="18,0,0,0" VerticalAlignment="Center" AutomationProperties.AutomationId="ErdIncludeStandard" />
+                <CheckBox Content="{Binding IncludeParentsLabel}" IsChecked="{Binding IncludeReferencedParents}"
+                          Margin="18,0,0,0" VerticalAlignment="Center" AutomationProperties.AutomationId="ErdIncludeParents" />
+            </WrapPanel>
+
+            <TextBlock Text="{Binding FormatsLabel}" Foreground="#666666" Margin="0,12,0,4" />
+            <WrapPanel>
+                <CheckBox Content="Mermaid (.md/.mmd)" IsChecked="{Binding Mermaid}" Margin="0,2,16,2" AutomationProperties.AutomationId="ErdFormatMermaid" />
+                <CheckBox Content="DBML (.dbml)" IsChecked="{Binding Dbml}" Margin="0,2,16,2" AutomationProperties.AutomationId="ErdFormatDbml" />
+                <CheckBox Content="draw.io (.drawio)" IsChecked="{Binding Drawio}" Margin="0,2,16,2" AutomationProperties.AutomationId="ErdFormatDrawio" />
+                <CheckBox Content="PlantUML (.puml)" IsChecked="{Binding PlantUml}" Margin="0,2,16,2" AutomationProperties.AutomationId="ErdFormatPlantUml" />
+                <CheckBox Content="Graphviz (.dot)" IsChecked="{Binding Dot}" Margin="0,2,16,2" AutomationProperties.AutomationId="ErdFormatDot" />
+                <CheckBox Content="SVG (.svg)" IsChecked="{Binding Svg}" Margin="0,2,16,2" AutomationProperties.AutomationId="ErdFormatSvg" />
+                <CheckBox Content="PNG (.png)" IsChecked="{Binding Png}" Margin="0,2,16,2" AutomationProperties.AutomationId="ErdFormatPng" />
+                <CheckBox Content="JPEG (.jpg)" IsChecked="{Binding Jpeg}" Margin="0,2,16,2" AutomationProperties.AutomationId="ErdFormatJpeg" />
+                <CheckBox Content="WebP (.webp)" IsChecked="{Binding Webp}" Margin="0,2,16,2" AutomationProperties.AutomationId="ErdFormatWebp" />
+            </WrapPanel>
+
+            <Grid Margin="0,12,0,0" RowDefinitions="Auto,Auto" ColumnDefinitions="110,*,Auto">
+                <TextBlock Text="{Binding OutputLabel}" VerticalAlignment="Center" />
+                <TextBox Grid.Column="1" Text="{Binding OutputDirectory}"
+                         AutomationProperties.AutomationId="ErdOutputFolder" />
+                <Button Grid.Column="2" Content="{Binding BrowseLabel}" Command="{Binding BrowseCommand}"
+                        Padding="10,2" Margin="8,0,0,0" AutomationProperties.AutomationId="ErdBrowse" />
+                <TextBlock Grid.Row="1" Text="{Binding FileNameLabel}" VerticalAlignment="Center" Margin="0,8,0,0" />
+                <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,8,0,0"
+                         Text="{Binding BaseName}" AutomationProperties.AutomationId="ErdBaseName" />
+            </Grid>
+
+            <CheckBox Content="{Binding OpenAfterSaveLabel}" IsChecked="{Binding OpenAfterSave}" Margin="0,10,0,0" />
+            <TextBlock Text="{Binding ErrorText}" Foreground="#C00000" TextWrapping="Wrap" Margin="0,8,0,0"
+                       AutomationProperties.AutomationId="ErdErrorText" />
+        </StackPanel>
+
+        <Border BorderBrush="#DDDDDD" BorderThickness="1" Background="#FFFFFF" Margin="0,10,0,0">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding FilteredObjects}" AutomationProperties.AutomationId="ErdObjects">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <CheckBox Content="{Binding DisplayName}" IsChecked="{Binding IsSelected}" Margin="8,3" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Border>
+    </DockPanel>
+</Window>

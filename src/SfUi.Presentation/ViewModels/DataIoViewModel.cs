@@ -12,6 +12,8 @@ public sealed partial class DataIoViewModel : ObservableObject, IDisposable
     private readonly SObjectDescribeService _describes;
     private readonly IDialogService _dialogs;
     private readonly IReportExportDialog _reportDialog;
+    private readonly ErdService _erd;
+    private readonly IErdExportDialog _erdDialog;
     private readonly AppLog _log;
     private bool _initialized;
     private bool _suppressObjectText;
@@ -27,10 +29,14 @@ public sealed partial class DataIoViewModel : ObservableObject, IDisposable
         UserAccessViewModel userAccess,
         IDialogService dialogs,
         IReportExportDialog reportDialog,
+        ErdService erd,
+        IErdExportDialog erdDialog,
         AppLog log)
     {
         _describes = describes;
         _reportDialog = reportDialog;
+        _erd = erd;
+        _erdDialog = erdDialog;
         Export = export;
         Import = import;
         ObjectAccess = objectAccess;
@@ -269,6 +275,50 @@ public sealed partial class DataIoViewModel : ObservableObject, IDisposable
 
     private void ShowMessage(string message) =>
         _dialogs.Warning(message, "SfUi");
+
+    [RelayCommand]
+    private async Task ExportErdAsync()
+    {
+        var target = TargetOrg;
+        if (string.IsNullOrWhiteSpace(target))
+        {
+            return;
+        }
+
+        try
+        {
+            var objects = await _erd.ListObjectsAsync(target).ConfigureAwait(true);
+            var result = await _erdDialog.ShowAsync(target, objects, "erd-" + target.Replace('@', '-'), null).ConfigureAwait(true);
+            if (result is null)
+            {
+                return;
+            }
+
+            var document = await _erd.BuildAsync(target, result.ObjectApiNames, result.BuildOptions).ConfigureAwait(true);
+            var export = ErdExportService.Export(new ErdExportRequest
+            {
+                Document = document,
+                OutputDirectory = result.OutputDirectory,
+                BaseName = result.BaseName,
+                Mermaid = result.Mermaid,
+                Dbml = result.Dbml,
+                Drawio = result.Drawio,
+                PlantUml = result.PlantUml,
+                Dot = result.Dot,
+                Svg = result.Svg,
+                Png = result.Png,
+                Jpeg = result.Jpeg,
+                Webp = result.Webp,
+                OpenFolder = result.OpenFolder,
+            });
+            StatusMessage = ErdExportService.DescribeResult(export);
+        }
+        catch (Exception ex)
+        {
+            _log.Error("ER 図の出力に失敗しました", ex);
+            StatusMessage = UiText.T("Common_FailedFmt", ex.Message);
+        }
+    }
 
     [RelayCommand]
     private async Task ExportReportAsync()

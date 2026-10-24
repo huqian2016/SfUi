@@ -43,6 +43,8 @@ public partial class App : Application
             services.AddSingleton<IDialogService, AvaloniaDialogService>();
             services.AddSingleton<IFilePickerService, AvaloniaFilePickerService>();
         services.AddSingleton<IReportExportDialog, AvaloniaReportExportDialog>();
+        services.AddSingleton<IErdExportDialog, AvaloniaErdExportDialog>();
+        services.AddSingleton<ErdService>();
             services.AddSingleton<IUiDispatcher, AvaloniaUiDispatcher>();
             services.AddSingleton<IClipboardService, AvaloniaClipboardService>();
             services.AddSingleton<IAppWindowService, AvaloniaAppWindowService>();

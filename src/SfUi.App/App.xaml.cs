@@ -105,6 +105,8 @@ public partial class App : Application
         services.AddSingleton<IDialogService, WpfDialogService>();
         services.AddSingleton<IFilePickerService, WpfFilePickerService>();
         services.AddSingleton<IReportExportDialog, WpfReportExportDialog>();
+        services.AddSingleton<IErdExportDialog, WpfErdExportDialog>();
+        services.AddSingleton<ErdService>();
         services.AddSingleton<IUiDispatcher, WpfUiDispatcher>();
         services.AddSingleton<IClipboardService, WpfClipboardService>();
         services.AddSingleton<IAppWindowService, WpfAppWindowService>();
