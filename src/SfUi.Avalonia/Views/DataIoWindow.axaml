@@ -1,4 +1,4 @@
-<Window xmlns="https://github.com/avaloniaui"
+﻿<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="clr-namespace:SfUi.Avalonia.Views"
         xmlns:loc="clr-namespace:SfUi.Avalonia"
@@ -21,6 +21,7 @@
                 <TextBlock Text="{Binding DescribeSummary}" Margin="10,0,0,0" VerticalAlignment="Center" Foreground="#555555" />
                 <TextBlock Text="{Binding StatusMessage}" Margin="16,0,0,0" VerticalAlignment="Center"
                            Foreground="#555555" TextTrimming="CharacterEllipsis" />
+                <Button Content="{loc:Tr Report_Export}" Padding="10,2" Margin="16,0,0,0" Command="{Binding ExportReportCommand}" AutomationProperties.AutomationId="DataIoExportReport" />
                 <views:HelpButton Topic="DataIo" Margin="16,0,0,0" />
             </StackPanel>
         </Border>

@@ -1,4 +1,4 @@
-<Window xmlns="https://github.com/avaloniaui"
+﻿<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:loc="clr-namespace:SfUi.Avalonia"
         xmlns:vm="clr-namespace:SfUi.App.ViewModels;assembly=SfUi.Presentation"
@@ -36,6 +36,7 @@
                         FontWeight="SemiBold"
                         Command="{Binding DeployCommand}"
                         AutomationProperties.Name="{loc:Tr SourceEditor_Deploy}" />
+                <Button Content="{loc:Tr Report_Export}" Padding="10,2" Margin="8,0,0,0" Command="{Binding ExportReportCommand}" AutomationProperties.AutomationId="SourceEditorExportReport" />
                 <Button x:Name="SourceEditorValidateButton" Content="{loc:Tr SourceEditor_Validate}" Padding="12,3" Margin="8,0,0,0"
                         Command="{Binding ValidateCommand}"
                         AutomationProperties.Name="{loc:Tr SourceEditor_Validate}" />

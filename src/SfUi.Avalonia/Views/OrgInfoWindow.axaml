@@ -1,4 +1,4 @@
-<Window xmlns="https://github.com/avaloniaui"
+﻿<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="clr-namespace:SfUi.Avalonia.Views"
         xmlns:vm="clr-namespace:SfUi.App.ViewModels;assembly=SfUi.Presentation"
@@ -17,6 +17,7 @@
                     <Button Content="{loc:Tr OrgInfo_RefreshAll}" Padding="10,2"
                             Command="{Binding RefreshAllCommand}" IsEnabled="{Binding CanRefresh}"
                             ToolTip.Tip="{loc:Tr OrgInfo_RefreshAllTip}" />
+                    <Button Content="{loc:Tr Report_Export}" Padding="10,2" Margin="8,0,0,0" Command="{Binding ExportReportCommand}" AutomationProperties.AutomationId="OrgInfoExportReport" />
                     <Button Content="{loc:Tr Common_Cancel}" Padding="10,2" Margin="6,0,0,0"
                             Command="{Binding CancelCommand}" IsEnabled="{Binding IsBusy}" />
                     <Border Width="1" Background="#CCCCCC" Margin="12,2,12,2" />

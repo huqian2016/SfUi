@@ -1,4 +1,4 @@
-<Window x:Class="SfUi.App.Views.SourceEditorWindow"
+﻿<Window x:Class="SfUi.App.Views.SourceEditorWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:loc="clr-namespace:SfUi.App"
@@ -46,6 +46,7 @@
                 <Button x:Name="SourceEditorDeleteButton" Content="{loc:Tr SourceEditor_Delete}" Padding="12,3" Margin="8,0,0,0"
                         Command="{Binding DeleteMemberCommand}"
                         AutomationProperties.Name="{loc:Tr SourceEditor_Delete}" />
+                <Button Content="{loc:Tr Report_Export}" Padding="10,2" Command="{Binding ExportReportCommand}" AutomationProperties.AutomationId="SourceEditorExportReport" />
                 <Button x:Name="SourceEditorAiButton" Content="AI" Padding="12,3" Margin="8,0,0,0"
                         Command="{Binding ToggleAiPanelCommand}"
                         ToolTip="{loc:Tr OrgInfo_Ai_ToggleTip}"

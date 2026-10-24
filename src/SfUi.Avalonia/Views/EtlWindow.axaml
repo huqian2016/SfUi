@@ -1,4 +1,4 @@
-<Window xmlns="https://github.com/avaloniaui"
+﻿<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:loc="clr-namespace:SfUi.Avalonia"
         x:Class="SfUi.Avalonia.Views.EtlWindow"
@@ -40,6 +40,7 @@
                                     Command="{Binding DeleteJobCommand}" AutomationProperties.Name="{loc:Tr Etl_DeleteJob}" />
                             <Button x:Name="EtlExportJobButton" Content="{loc:Tr Etl_ExportJob}" Padding="10,2" Margin="8,0,0,0"
                                     Command="{Binding ExportJobCommand}" AutomationProperties.Name="{loc:Tr Etl_ExportJob}" />
+                            <Button Content="{loc:Tr Report_Export}" Padding="10,2" Margin="8,0,0,0" Command="{Binding ExportReportCommand}" AutomationProperties.AutomationId="EtlExportReport" />
                             <Button x:Name="EtlImportJobButton" Content="{loc:Tr Etl_ImportJob}" Padding="10,2" Margin="8,0,0,0"
                                     Command="{Binding ImportJobCommand}" AutomationProperties.Name="{loc:Tr Etl_ImportJob}" />
                         </StackPanel>

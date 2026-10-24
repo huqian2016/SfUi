@@ -142,6 +142,7 @@ public sealed class EtlConnection
 public sealed partial class EtlViewModel : ObservableObject, IDisposable
 {
     private readonly AppLog _log;
+    private readonly IReportExportDialog _reportDialog;
     private readonly AppPaths _paths;
     private readonly IDialogService _dialogs;
     private readonly IFilePickerService _files;
@@ -164,9 +165,11 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
         SfCliRunner sfCli,
         ICredentialProtector protector,
         BackupService backup,
-        HistoryStore history)
+        HistoryStore history,
+        IReportExportDialog reportDialog)
     {
         _log = log;
+        _reportDialog = reportDialog;
         _paths = paths;
         _dialogs = dialogs;
         _files = files;
@@ -1598,6 +1601,42 @@ public sealed partial class EtlViewModel : ObservableObject, IDisposable
             _log.Warn($"接続設定の保存に失敗しました: {ex.Message}");
             _dialogs.Warning(ex.Message, UiText.T("Etl_Title"));
         }
+    }
+
+    [RelayCommand]
+    private async Task ExportReportAsync()
+    {
+        var columns = new[]
+        {
+            UiText.T("Report_ColStep"),
+            UiText.T("Report_ColSource"),
+            UiText.T("Report_ColTarget"),
+            UiText.T("Report_ColObject"),
+            UiText.T("Report_ColMappings"),
+        };
+        var rows = Steps
+            .Select(step => (IReadOnlyList<string?>)new[]
+            {
+                step.StepId,
+                step.SelectedSourceType,
+                step.SelectedTargetType,
+                step.EffectiveObjectName,
+                step.Mappings.Count.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            })
+            .ToList();
+        var table = WindowReportBuilder.Table(UiText.T("Report_EtlSection"), columns, rows, 4);
+        var section = WindowReportBuilder.Section(table.Name, table);
+        if (section is null)
+        {
+            return;
+        }
+
+        var document = WindowReportBuilder.Document(
+            UiText.T("Report_EtlTitle"),
+            UiText.T("Report_EtlSubtitle"),
+            null,
+            new[] { section });
+        await ReportExportRunner.RunAsync(_reportDialog, document, "etl", null);
     }
 
     public void Dispose()

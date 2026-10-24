@@ -216,10 +216,11 @@ public sealed partial class SourceEditorViewModel : ObservableObject
     private readonly ApexSuggestionProvider _suggestions;
     private readonly AiChatViewModel _ai;
     private readonly IFilePickerService _filePicker;
+    private readonly IReportExportDialog _reportDialog;
     private CancellationTokenSource? _draftCts;
     private CancellationTokenSource? _suggestCts;
 
-    public SourceEditorViewModel(ISourceEditorService service, IDialogService dialogs, AppLog log, ApexSuggestionProvider suggestions, AiChatViewModel ai, IFilePickerService filePicker)
+    public SourceEditorViewModel(ISourceEditorService service, IDialogService dialogs, AppLog log, ApexSuggestionProvider suggestions, AiChatViewModel ai, IFilePickerService filePicker, IReportExportDialog reportDialog)
     {
         _service = service;
         _dialogs = dialogs;
@@ -227,6 +228,7 @@ public sealed partial class SourceEditorViewModel : ObservableObject
         _suggestions = suggestions;
         _ai = ai;
         _filePicker = filePicker;
+        _reportDialog = reportDialog;
         _ai.ApplyRequested += ApplyAiSnippet;
 
         Groups.Add(new SourceMemberGroupViewModel(SourceMemberKind.ApexClass, UiText.T("SourceEditor_GroupApexClass")));

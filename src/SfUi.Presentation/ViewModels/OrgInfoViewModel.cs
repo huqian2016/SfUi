@@ -24,6 +24,7 @@ public partial class OrgInfoViewModel : ObservableObject, IDisposable
     private readonly OrgExportService _exportService;
     private readonly IFilePickerService _filePicker;
     private readonly IUiDispatcher _ui;
+    private readonly IReportExportDialog _reportDialog;
     private readonly List<OrgInfoCustomTabViewModel> _customTabs = new();
 
     private string _orgKey = string.Empty;
@@ -84,7 +85,7 @@ public partial class OrgInfoViewModel : ObservableObject, IDisposable
 
     public bool CanRefresh => !IsBusy;
 
-    public OrgInfoViewModel(OrgInfoService service, OrgInfoCacheStore cache, OrgInfoSearchService search, ToolLauncherService toolLauncher, AiChatViewModel ai, OrgInfoPreferencesStore preferences, IAppWindowService windows, OrgExportService export, IFilePickerService filePicker, IUiDispatcher ui, AppLog log)
+    public OrgInfoViewModel(OrgInfoService service, OrgInfoCacheStore cache, OrgInfoSearchService search, ToolLauncherService toolLauncher, AiChatViewModel ai, OrgInfoPreferencesStore preferences, IAppWindowService windows, OrgExportService export, IFilePickerService filePicker, IUiDispatcher ui, IReportExportDialog reportDialog, AppLog log)
     {
         _service = service;
         _cache = cache;
@@ -96,6 +97,7 @@ public partial class OrgInfoViewModel : ObservableObject, IDisposable
         _exportService = export;
         _filePicker = filePicker;
         _ui = ui;
+        _reportDialog = reportDialog;
         _log = log;
         _searchDebounce = new UiDebouncer(300, ui);
     }
@@ -653,6 +655,49 @@ public partial class OrgInfoViewModel : ObservableObject, IDisposable
             ? UiText.T("OrgInfo_Search_NoMatch")
             : UiText.T("OrgInfo_Search_ResultCountFmt", SearchResults.Count);
         IsSearchPanelOpen = true;
+    }
+
+    [RelayCommand]
+    private async Task ExportReportAsync()
+    {
+        var sections = new List<ReportSection>();
+        foreach (var tab in Sections)
+        {
+            if (!tab.HasData)
+            {
+                continue;
+            }
+
+            if (tab is OrgInfoSectionViewModel section && section.Columns.Count > 0 && section.FilteredRows.Count > 0)
+            {
+                var columns = section.Columns.Select(c => c.Label).ToList();
+                var rows = section.FilteredRows
+                    .Select(row => (IReadOnlyList<string?>)section.Columns.Select(c => (string?)row[c.Key]).ToList())
+                    .ToList();
+                var table = WindowReportBuilder.Table(section.Title, columns, rows);
+                var sectionModel = WindowReportBuilder.Section(section.Title, table);
+                if (sectionModel is not null)
+                {
+                    sections.Add(sectionModel);
+                }
+            }
+            else if (tab.BuildAttachmentText(20000) is { Length: > 0 } text)
+            {
+                sections.Add(new ReportSection { Heading = tab.Title, Text = text });
+            }
+        }
+
+        if (sections.Count == 0)
+        {
+            return;
+        }
+
+        var document = WindowReportBuilder.Document(
+            UiText.T("Report_OrgInfoTitle"),
+            UiText.T("Report_OrgInfoSubtitle"),
+            null,
+            sections);
+        await ReportExportRunner.RunAsync(_reportDialog, document, "org-info", null);
     }
 
     private void UpdateLastFetched()

@@ -18,6 +18,7 @@ public partial class CompareOrgsViewModel : ObservableObject, IDisposable
     private readonly IFilePickerService _filePicker;
     private readonly ToolLauncherService _toolLauncher;
     private readonly IAppWindowService _appWindows;
+    private readonly IReportExportDialog _reportDialog;
     private readonly AppLog _log;
     private readonly List<OrgInfo> _allOrgs = new();
     private readonly List<CompareObjectCandidate> _objectCandidates = new();
@@ -27,7 +28,7 @@ public partial class CompareOrgsViewModel : ObservableObject, IDisposable
     private bool _suspendRefresh;
     private bool _disposed;
 
-    public CompareOrgsViewModel(OrgCompareService compare, OrgRecordCompareService recordCompare, OrgCompareStateStore state, IFilePickerService filePicker, ToolLauncherService toolLauncher, IAppWindowService appWindows, AppLog log)
+    public CompareOrgsViewModel(OrgCompareService compare, OrgRecordCompareService recordCompare, OrgCompareStateStore state, IFilePickerService filePicker, ToolLauncherService toolLauncher, IAppWindowService appWindows, IReportExportDialog reportDialog, AppLog log)
     {
         _compare = compare;
         _recordCompare = recordCompare;
@@ -35,6 +36,7 @@ public partial class CompareOrgsViewModel : ObservableObject, IDisposable
         _filePicker = filePicker;
         _toolLauncher = toolLauncher;
         _appWindows = appWindows;
+        _reportDialog = reportDialog;
         _log = log;
         _title = UiText.T("Compare_Title");
 
@@ -463,6 +465,57 @@ public partial class CompareOrgsViewModel : ObservableObject, IDisposable
             _log.Error("組織比較: CSV 出力に失敗しました", ex);
             StatusMessage = UiText.T("Common_FailedFmt", ex.Message);
         }
+    }
+
+    [RelayCommand]
+    private async Task ExportReportAsync()
+    {
+        var sections = new List<ReportSection>();
+        foreach (var category in Categories)
+        {
+            if (category.Table is not { Rows.Count: > 0 } table)
+            {
+                continue;
+            }
+
+            var dataTable = OrgCompareService.BuildDataTable(table, DiffOnly);
+            var columns = new List<string>();
+            foreach (System.Data.DataColumn column in dataTable.Columns)
+            {
+                columns.Add(column.ColumnName);
+            }
+
+            var rows = new List<IReadOnlyList<string?>>();
+            foreach (System.Data.DataRow dataRow in dataTable.Rows)
+            {
+                var values = new List<string?>(columns.Count);
+                foreach (System.Data.DataColumn column in dataTable.Columns)
+                {
+                    values.Add(dataRow[column] is { } value ? Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) : null);
+                }
+
+                rows.Add(values);
+            }
+
+            var reportTable = WindowReportBuilder.Table(category.Id, columns, rows);
+            var sectionModel = WindowReportBuilder.Section(category.Id, reportTable);
+            if (sectionModel is not null)
+            {
+                sections.Add(sectionModel);
+            }
+        }
+
+        if (sections.Count == 0)
+        {
+            return;
+        }
+
+        var document = WindowReportBuilder.Document(
+            _title,
+            DiffOnly ? UiText.T("Report_CompareDiffOnly") : null,
+            null,
+            sections);
+        await ReportExportRunner.RunAsync(_reportDialog, document, "org-compare", null);
     }
 
     public void Dispose()

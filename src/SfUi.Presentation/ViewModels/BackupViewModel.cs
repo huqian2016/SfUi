@@ -1,5 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using SfUi.Core;
+using SfUi.Presentation;
 
 namespace SfUi.App.ViewModels;
 
@@ -7,12 +9,14 @@ namespace SfUi.App.ViewModels;
 public sealed partial class BackupViewModel : ObservableObject, IDisposable
 {
     private bool _initialized;
+    private readonly IReportExportDialog _reportDialog;
 
-    public BackupViewModel(BackupTabViewModel backup, RestoreTabViewModel restore, CompareTabViewModel compare, AppLog log)
+    public BackupViewModel(BackupTabViewModel backup, RestoreTabViewModel restore, CompareTabViewModel compare, IReportExportDialog reportDialog, AppLog log)
     {
         Backup = backup;
         Restore = restore;
         Compare = compare;
+        _reportDialog = reportDialog;
         Backup.BackupCompleted += () =>
         {
             Restore.RefreshBackups();
@@ -53,6 +57,34 @@ public sealed partial class BackupViewModel : ObservableObject, IDisposable
         await Backup.LoadAsync();
         Restore.RefreshBackups();
         Compare.RefreshBackups();
+    }
+
+    [RelayCommand]
+    private async Task ExportReportAsync()
+    {
+        var columns = new[]
+        {
+            UiText.T("Report_BackupColId"),
+            UiText.T("Report_BackupColLabel"),
+            UiText.T("Report_BackupColSummary"),
+            UiText.T("Report_BackupColDescription"),
+        };
+        var rows = Restore.Backups
+            .Select(item => (IReadOnlyList<string?>)new[] { item.Id, item.Title, item.Summary, item.Description })
+            .ToList();
+        var table = WindowReportBuilder.Table(UiText.T("Report_BackupSection"), columns, rows);
+        var section = WindowReportBuilder.Section(table.Name, table);
+        if (section is null)
+        {
+            return;
+        }
+
+        var document = WindowReportBuilder.Document(
+            UiText.T("Report_BackupTitle"),
+            null,
+            Org is null ? null : (string.IsNullOrWhiteSpace(Org.Alias) ? Org.Username : Org.Alias),
+            new[] { section });
+        await ReportExportRunner.RunAsync(_reportDialog, document, "backup", null);
     }
 
     public void Dispose()

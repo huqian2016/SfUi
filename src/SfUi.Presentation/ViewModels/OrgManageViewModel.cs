@@ -62,6 +62,7 @@ public sealed partial class OrgManageOrgRowViewModel : ObservableObject
 public sealed partial class OrgManageViewModel : ObservableObject, IDisposable
 {
     private readonly OrgService _orgs;
+    private readonly IReportExportDialog _reportDialog;
     private readonly OrgManageService _manage;
     private readonly OrgManageStateStore _state;
     private readonly BackupService _backups;
@@ -84,9 +85,11 @@ public sealed partial class OrgManageViewModel : ObservableObject, IDisposable
         OrgHealthViewModel health,
         MigrationInventoryViewModel inventory,
         IDialogService dialogs,
+        IReportExportDialog reportDialog,
         AppLog log)
     {
         _orgs = orgs;
+        _reportDialog = reportDialog;
         _manage = manage;
         _state = state;
         _backups = backups;
@@ -800,6 +803,44 @@ public sealed partial class OrgManageViewModel : ObservableObject, IDisposable
     {
         _cts?.Cancel();
         _testCts?.Cancel();
+    }
+
+    [RelayCommand]
+    private async Task ExportReportAsync()
+    {
+        var columns = new[]
+        {
+            UiText.T("Report_ColAlias"),
+            UiText.T("Report_ColUsername"),
+            UiText.T("Report_ColOrgId"),
+            UiText.T("Report_ColType"),
+            UiText.T("Report_ColDefault"),
+            UiText.T("Report_ColTag"),
+        };
+        var rows = Orgs
+            .Select(org => (IReadOnlyList<string?>)new[]
+            {
+                org.AliasText,
+                org.Username,
+                org.OrgIdText,
+                org.TypeText,
+                org.DefaultMark,
+                org.Tag,
+            })
+            .ToList();
+        var table = WindowReportBuilder.Table(UiText.T("Report_OrgManageSection"), columns, rows);
+        var section = WindowReportBuilder.Section(table.Name, table);
+        if (section is null)
+        {
+            return;
+        }
+
+        var document = WindowReportBuilder.Document(
+            UiText.T("Report_OrgManageTitle"),
+            null,
+            null,
+            new[] { section });
+        await ReportExportRunner.RunAsync(_reportDialog, document, "org-manage", null);
     }
 
     public void Dispose()

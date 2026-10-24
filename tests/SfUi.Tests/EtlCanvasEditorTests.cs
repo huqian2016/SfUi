@@ -60,7 +60,7 @@ public class EtlCanvasEditorTests : IDisposable
         var history = new HistoryStore(_paths, _log, settings);
         return new EtlViewModel(
             _log, _paths, new FakeDialogs(), new FakeFiles(), new FakeDispatcher(), _rest, _sfCli,
-            new FakeProtector(), backup, history);
+            new FakeProtector(), backup, history, new NullReportDialog());
     }
 
     private EtlStepViewModel CreateStep()

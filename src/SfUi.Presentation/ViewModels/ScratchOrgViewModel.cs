@@ -39,6 +39,7 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
     private readonly IFilePickerService _filePicker;
     private readonly ToolLauncherService _launcher;
     private readonly AppLog _log;
+    private readonly IReportExportDialog _reportDialog;
     private readonly StringBuilder _logBuilder = new();
     private readonly List<string> _batchSelection = new();
 
@@ -61,8 +62,10 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
         IDialogService dialogs,
         IFilePickerService filePicker,
         ToolLauncherService launcher,
+        IReportExportDialog reportDialog,
         AppLog log)
     {
+        _reportDialog = reportDialog;
         _orgs = orgs;
         _profiles = profiles;
         _service = service;
@@ -1870,6 +1873,69 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
         }
 
         LogText = _logBuilder.ToString();
+    }
+
+    [RelayCommand]
+    private async Task ExportReportAsync()
+    {
+        var sections = new List<ReportSection>();
+
+        if (ProfileRows.Count > 0)
+        {
+            var table = WindowReportBuilder.Table(
+                UiText.T("Scratch_ProfilesTitle"),
+                new[] { UiText.T("Scratch_ProfileName") },
+                ProfileRows.Select(row => (IReadOnlyList<string?>)new[] { row.Name }).ToList());
+            var section = WindowReportBuilder.Section(table.Name, table);
+            if (section is not null)
+            {
+                sections.Add(section);
+            }
+        }
+
+        if (History.Count > 0)
+        {
+            var columns = new[]
+            {
+                UiText.T("Report_ColStarted"),
+                UiText.T("Report_ColFinished"),
+                UiText.T("Report_ColProfile"),
+                UiText.T("Report_ColAlias"),
+                UiText.T("Report_ColDevHub"),
+                UiText.T("Report_ColSuccess"),
+                UiText.T("Report_ColMessage"),
+            };
+            var rows = History
+                .Select(run => (IReadOnlyList<string?>)new[]
+                {
+                    run.StartedAt.ToString("yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture),
+                    run.FinishedAt.ToString("yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture),
+                    run.ProfileName,
+                    run.Alias,
+                    run.DevHub,
+                    run.Success ? UiText.T("Common_Yes") : UiText.T("Common_No"),
+                    run.Message,
+                })
+                .ToList();
+            var table = WindowReportBuilder.Table(UiText.T("Report_ScratchHistorySection"), columns, rows);
+            var section = WindowReportBuilder.Section(table.Name, table);
+            if (section is not null)
+            {
+                sections.Add(section);
+            }
+        }
+
+        if (sections.Count == 0)
+        {
+            return;
+        }
+
+        var document = WindowReportBuilder.Document(
+            UiText.T("Report_ScratchTitle"),
+            null,
+            null,
+            sections);
+        await ReportExportRunner.RunAsync(_reportDialog, document, "scratch-org", null);
     }
 
     public void Dispose()

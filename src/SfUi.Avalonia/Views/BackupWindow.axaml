@@ -1,4 +1,4 @@
-<Window xmlns="https://github.com/avaloniaui"
+﻿<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="clr-namespace:SfUi.Avalonia.Views"
         xmlns:loc="clr-namespace:SfUi.Avalonia"
@@ -14,6 +14,7 @@
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="{Binding Org.DisplayName}" FontWeight="SemiBold" VerticalAlignment="Center" />
                 <TextBlock Text="{Binding Org.Username}" Foreground="#666666" Margin="8,0,0,0" VerticalAlignment="Center" />
+                <Button Content="{loc:Tr Report_Export}" Padding="10,2" Margin="16,0,0,0" Command="{Binding ExportReportCommand}" AutomationProperties.AutomationId="BackupExportReport" />
                 <views:HelpButton Topic="Backup" Margin="16,0,0,0" />
             </StackPanel>
         </Border>

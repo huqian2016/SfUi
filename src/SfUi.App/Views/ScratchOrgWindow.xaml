@@ -1,4 +1,4 @@
-<Window x:Class="SfUi.App.Views.ScratchOrgWindow"
+﻿<Window x:Class="SfUi.App.Views.ScratchOrgWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:loc="clr-namespace:SfUi.App"
@@ -30,6 +30,7 @@
                             </DataTemplate>
                         </ComboBox.ItemTemplate>
                     </ComboBox>
+                    <Button Content="{loc:Tr Report_Export}" Padding="10,2" Command="{Binding ExportReportCommand}" AutomationProperties.AutomationId="ScratchExportReport" />
                     <Button Content="{loc:Tr Scratch_RefreshOrgs}" Margin="6,0,0,0" Padding="10,2"
                             Command="{Binding RefreshOrgsCommand}"
                             IsEnabled="{Binding CanEdit}"

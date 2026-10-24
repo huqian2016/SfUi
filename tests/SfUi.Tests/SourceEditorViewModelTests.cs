@@ -48,7 +48,7 @@ public class SourceEditorViewModelTests : IDisposable
         var suggestions = new ApexSuggestionProvider(new SObjectDescribeService(rest, _log), new OrgMetadataService(rest, _log));
         var settings = new AppSettingsStore(_paths, _log);
         var ai = new AiChatViewModel(new AiChatClient(settings, _log), new HistoryStore(_paths, _log, settings), _log);
-        return new(_service, _dialogs, _log, suggestions, ai, _filePicker);
+        return new(_service, _dialogs, _log, suggestions, ai, _filePicker, new NullReportDialog());
     }
 
     private static OrgInfo CreateOrg() => new(

@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using SfUi.Core;
 using SfUi.Presentation;
 
@@ -10,6 +11,7 @@ public sealed partial class DataIoViewModel : ObservableObject, IDisposable
 {
     private readonly SObjectDescribeService _describes;
     private readonly IDialogService _dialogs;
+    private readonly IReportExportDialog _reportDialog;
     private readonly AppLog _log;
     private bool _initialized;
     private bool _suppressObjectText;
@@ -24,9 +26,11 @@ public sealed partial class DataIoViewModel : ObservableObject, IDisposable
         RecordAccessViewModel recordAccess,
         UserAccessViewModel userAccess,
         IDialogService dialogs,
+        IReportExportDialog reportDialog,
         AppLog log)
     {
         _describes = describes;
+        _reportDialog = reportDialog;
         Export = export;
         Import = import;
         ObjectAccess = objectAccess;
@@ -265,6 +269,55 @@ public sealed partial class DataIoViewModel : ObservableObject, IDisposable
 
     private void ShowMessage(string message) =>
         _dialogs.Warning(message, "SfUi");
+
+    [RelayCommand]
+    private async Task ExportReportAsync()
+    {
+        var sections = new List<ReportSection>();
+
+        if (Export.ResultView?.Table is { } exportTable && exportTable.Rows.Count > 0)
+        {
+            var columns = exportTable.Columns.Cast<System.Data.DataColumn>().Select(c => c.ColumnName).ToList();
+            var rows = exportTable.Rows
+                .Cast<System.Data.DataRow>()
+                .Select(row => (IReadOnlyList<string?>)exportTable.Columns.Cast<System.Data.DataColumn>()
+                    .Select(column => row[column] is { } value ? Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) : null)
+                    .ToList())
+                .ToList();
+            var table = WindowReportBuilder.Table(UiText.T("Report_DataExportSection"), columns, rows);
+            var section = WindowReportBuilder.Section(table.Name, table);
+            if (section is not null)
+            {
+                sections.Add(section);
+            }
+        }
+
+        if (Import.Results.Count > 0)
+        {
+            var columns = new[] { UiText.T("DataImport_ColRow"), UiText.T("DataImport_ColStatus"), UiText.T("DataImport_ColId"), UiText.T("DataImport_ColError") };
+            var rows = Import.Results
+                .Select(result => (IReadOnlyList<string?>)new[] { result.RowText, result.StatusText, result.Id, result.Error })
+                .ToList();
+            var table = WindowReportBuilder.Table(UiText.T("Report_DataImportSection"), columns, rows);
+            var section = WindowReportBuilder.Section(table.Name, table);
+            if (section is not null)
+            {
+                sections.Add(section);
+            }
+        }
+
+        if (sections.Count == 0)
+        {
+            return;
+        }
+
+        var document = WindowReportBuilder.Document(
+            UiText.T("Report_DataIoTitle"),
+            TargetOrg,
+            TargetOrg,
+            sections);
+        await ReportExportRunner.RunAsync(_reportDialog, document, "data-io", null);
+    }
 
     public void Dispose()
     {

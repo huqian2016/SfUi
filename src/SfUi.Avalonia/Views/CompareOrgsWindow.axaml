@@ -1,4 +1,4 @@
-<Window xmlns="https://github.com/avaloniaui"
+﻿<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="clr-namespace:SfUi.Avalonia.Views"
         xmlns:vm="clr-namespace:SfUi.App.ViewModels;assembly=SfUi.Presentation"
@@ -42,6 +42,7 @@
                             Command="{Binding RefreshAllCommand}" IsEnabled="{Binding CanInteract}" />
                     <CheckBox Content="{loc:Tr Compare_DiffOnly}" Margin="12,0,0,0" VerticalAlignment="Center"
                               IsChecked="{Binding DiffOnly, Mode=TwoWay}" />
+                    <Button Content="{loc:Tr Report_Export}" Padding="10,2" Margin="8,0,0,0" Command="{Binding ExportReportCommand}" AutomationProperties.AutomationId="CompareExportReport" />
                     <Button Content="{loc:Tr Compare_ExportCsv}" Padding="10,2" Margin="12,0,0,0"
                             Command="{Binding ExportCsvCommand}" IsEnabled="{Binding CanInteract}" />
                     <views:HelpButton Topic="CompareOrgs" Margin="12,0,0,0" />
