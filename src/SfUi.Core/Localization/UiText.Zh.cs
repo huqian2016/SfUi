@@ -1885,6 +1885,10 @@ public static partial class UiText
         ["Scratch_ErrSnapshotOptionsFmt"] = "从快照创建时不能使用以下定义: {0}。",
         ["Scratch_DevHubMarker"] = "Dev Hub",
         ["Scratch_NotDevHubMarker"] = "不是 Dev Hub",
-        ["Scratch_ErrSnapshotNotEnabled"] = "此 Dev Hub 未启用 Scratch Org 快照。请在 Setup > Dev Hub 中启用，或清空快照名称。"
+        ["Scratch_ErrSnapshotNotEnabled"] = "此 Dev Hub 未启用 Scratch Org 快照。请在 Setup > Dev Hub 中启用，或清空快照名称。",
+        ["Scratch_ErrSettingsDeployFmt"] = "Scratch 组织已创建，但设置部署失败: {0} 请修正 definition.json，然后删除该组织或手动部署设置。",
+        ["Scratch_WarnLegacyCommunitiesKey"] = "definition.json 中存在无效的 CommunitiesSettings 键 \"enableNetworks\"（导致部署失败）。请使用“添加 Experience 设置”迁移为 enableNetworksEnabled。",
+        ["Scratch_LegacyCommunitiesKeyFixed"] = "已将 definition.json 中无效的 CommunitiesSettings 键 enableNetworks 迁移为 enableNetworksEnabled。",
+        ["Scratch_WarnAliasExistsFmt"] = "别名 {0} 已被现有已认证组织使用。请在别名模式中加入 {{time}}，或先删除该组织。"
     };
 }

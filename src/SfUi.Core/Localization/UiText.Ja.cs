@@ -1884,6 +1884,10 @@ public static partial class UiText
         ["Scratch_ErrSnapshotOptionsFmt"] = "スナップショットから作成する場合、次の定義は使用できません: {0}。",
         ["Scratch_DevHubMarker"] = "Dev Hub",
         ["Scratch_NotDevHubMarker"] = "Dev Hub ではありません",
-        ["Scratch_ErrSnapshotNotEnabled"] = "この Dev Hub では Scratch Org スナップショットが有効になっていません。Setup > Dev Hub で有効化するか、スナップショット名を空にしてください。"
+        ["Scratch_ErrSnapshotNotEnabled"] = "この Dev Hub では Scratch Org スナップショットが有効になっていません。Setup > Dev Hub で有効化するか、スナップショット名を空にしてください。",
+        ["Scratch_ErrSettingsDeployFmt"] = "スクラッチ組織は作成されましたが、設定のデプロイに失敗しました: {0} definition.json を修正し、不要なら組織を削除するか設定を手動でデプロイしてください。",
+        ["Scratch_WarnLegacyCommunitiesKey"] = "definition.json に無効な CommunitiesSettings キー \"enableNetworks\" があります（デプロイが失敗します）。「Experience 設定を追加」で enableNetworksEnabled に移行してください。",
+        ["Scratch_LegacyCommunitiesKeyFixed"] = "definition.json の無効な CommunitiesSettings キー enableNetworks を enableNetworksEnabled に移行しました。",
+        ["Scratch_WarnAliasExistsFmt"] = "エイリアス {0} は既存の認証済み組織で使用されています。エイリアス パターンに {{time}} を追加するか、既存の組織を削除してください。"
     };
 }

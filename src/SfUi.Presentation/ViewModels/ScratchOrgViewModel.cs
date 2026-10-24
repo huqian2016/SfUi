@@ -518,6 +518,12 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
                          || profile.UseConnectedApps || profile.UseReports;
 
         var warnings = new List<string>();
+        if (!string.IsNullOrWhiteSpace(alias)
+            && Orgs.Any(o => string.Equals(o.Alias, alias, StringComparison.OrdinalIgnoreCase)))
+        {
+            warnings.Add(UiText.T("Scratch_WarnAliasExistsFmt", alias));
+        }
+
         if (!File.Exists(files.DefinitionFile))
         {
             warnings.Add(UiText.T("Scratch_WarnMissingDefinitionFmt", files.DefinitionFile));
@@ -561,6 +567,11 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
         if (profile.UseExperienceCloud && !ScratchDefinitionEditor.HasExperienceSettings(files.DefinitionFile))
         {
             warnings.Add(UiText.T("Scratch_WarnExperienceWithoutSettings"));
+        }
+
+        if (ScratchDefinitionEditor.HasLegacyCommunitiesKey(files.DefinitionFile))
+        {
+            warnings.Add(UiText.T("Scratch_WarnLegacyCommunitiesKey"));
         }
 
         if (!string.IsNullOrWhiteSpace(profile.OrgShapeId) && !string.IsNullOrWhiteSpace(profile.SnapshotName))
@@ -642,6 +653,8 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
     /// </summary>
     private string EnsureDefinitionFileForRun(ScratchProfile profile, ScratchProfileFiles files)
     {
+        MigrateLegacyCommunitiesKey(files.DefinitionFile);
+
         if (string.IsNullOrWhiteSpace(profile.SnapshotName) || !File.Exists(files.DefinitionFile))
         {
             return files.DefinitionFile;
@@ -661,6 +674,28 @@ public sealed partial class ScratchOrgViewModel : ObservableObject, IDisposable
         {
             AppendLog(UiText.T("Common_FailedFmt", ex.Message));
             return files.DefinitionFile;
+        }
+    }
+
+    /// <summary>
+    /// 旧バージョンが書き出した CommunitiesSettings のキー（enableNetworks）を enableNetworksEnabled に
+    /// 直す。これを残すとスクラッチ組織の作成が設定デプロイで失敗する（exit 68）。
+    /// </summary>
+    private void MigrateLegacyCommunitiesKey(string definitionFile)
+    {
+        if (!ScratchDefinitionEditor.HasLegacyCommunitiesKey(definitionFile))
+        {
+            return;
+        }
+
+        try
+        {
+            ScratchDefinitionEditor.AddExperienceSettings(definitionFile);
+            AppendLog(UiText.T("Scratch_LegacyCommunitiesKeyFixed"));
+        }
+        catch (Exception ex)
+        {
+            AppendLog(UiText.T("Common_FailedFmt", ex.Message));
         }
     }
 

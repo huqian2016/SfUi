@@ -80,7 +80,7 @@ data/scratch/
 ### Experience Cloud グループ（P3）
 
 - `manifest/experience.xml`（Network / Site / ExperienceBundle / Audience / NavigationMenu / BrandingSet / CustomSite / ManagedContent など）を deploy する。
-- 「Experience 設定を追加」で `definition.json` に `Communities` / `SiteDotCom` 機能と `communitiesSettings.enableNetworks=true` を追記する（既存値は保持、書換済なら「既にある」と表示）。
+- 「Experience 設定を追加」で `definition.json` に `Communities` / `SiteDotCom` 機能と `communitiesSettings.enableNetworksEnabled=true`（Metadata API の項目名。`enableNetworks` はデプロイで失敗する） を追記する（既存値は保持、書換済なら「既にある」と表示）。
 
 ### Named Credential プリセット（P3）
 

@@ -426,6 +426,12 @@ public sealed class ScratchOrgService
             return UiText.T("Scratch_ErrSnapshotNotEnabled");
         }
 
+        if (string.Equals(code, "ProblemDeployingSettings", StringComparison.OrdinalIgnoreCase))
+        {
+            // 組織自体は作成済み。設定のデプロイだけが失敗しているので、その旨を明示する。
+            return UiText.T("Scratch_ErrSettingsDeployFmt", message);
+        }
+
         return message;
     }
 

@@ -1885,6 +1885,10 @@ public static partial class UiText
         ["Scratch_ErrSnapshotOptionsFmt"] = "스냅샷으로 만들 때 다음 정의는 사용할 수 없습니다: {0}.",
         ["Scratch_DevHubMarker"] = "Dev Hub",
         ["Scratch_NotDevHubMarker"] = "Dev Hub가 아님",
-        ["Scratch_ErrSnapshotNotEnabled"] = "이 Dev Hub에서는 Scratch Org 스냅샷이 활성화되어 있지 않습니다. Setup > Dev Hub에서 활성화하거나 스냅샷 이름을 비우세요."
+        ["Scratch_ErrSnapshotNotEnabled"] = "이 Dev Hub에서는 Scratch Org 스냅샷이 활성화되어 있지 않습니다. Setup > Dev Hub에서 활성화하거나 스냅샷 이름을 비우세요.",
+        ["Scratch_ErrSettingsDeployFmt"] = "스크래치 조직은 만들어졌지만 설정 배포에 실패했습니다: {0} definition.json을 수정한 뒤 조직을 삭제하거나 설정을 수동으로 배포하세요.",
+        ["Scratch_WarnLegacyCommunitiesKey"] = "definition.json에 유효하지 않은 CommunitiesSettings 키 \"enableNetworks\"이(가) 있습니다(배포 실패). \"Experience 설정 추가\"로 enableNetworksEnabled로 마이그레이션하세요.",
+        ["Scratch_LegacyCommunitiesKeyFixed"] = "definition.json의 유효하지 않은 CommunitiesSettings 키 enableNetworks를 enableNetworksEnabled로 마이그레이션했습니다.",
+        ["Scratch_WarnAliasExistsFmt"] = "별칭 {0}은(는) 이미 인증된 조직에서 사용 중입니다. 별칭 패턴에 {{time}}을(를) 추가하거나 기존 조직을 먼저 삭제하세요."
     };
 }

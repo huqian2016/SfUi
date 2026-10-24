@@ -1884,6 +1884,10 @@ public static partial class UiText
         ["Scratch_ErrSnapshotOptionsFmt"] = "A scratch org created from a snapshot can't use these definition settings: {0}.",
         ["Scratch_DevHubMarker"] = "Dev Hub",
         ["Scratch_NotDevHubMarker"] = "not a Dev Hub",
-        ["Scratch_ErrSnapshotNotEnabled"] = "Scratch Org Snapshots isn't enabled for this Dev Hub. Enable it in Setup > Dev Hub (Scratch Org Snapshots), or clear the snapshot name."
+        ["Scratch_ErrSnapshotNotEnabled"] = "Scratch Org Snapshots isn't enabled for this Dev Hub. Enable it in Setup > Dev Hub (Scratch Org Snapshots), or clear the snapshot name.",
+        ["Scratch_ErrSettingsDeployFmt"] = "The scratch org was created, but its settings failed to deploy: {0} Fix definition.json, then delete the org or deploy the settings manually.",
+        ["Scratch_WarnLegacyCommunitiesKey"] = "definition.json has the invalid CommunitiesSettings key \"enableNetworks\", which breaks the deploy. Use \"Add Experience settings\" to migrate it to enableNetworksEnabled.",
+        ["Scratch_LegacyCommunitiesKeyFixed"] = "Migrated the invalid CommunitiesSettings key enableNetworks to enableNetworksEnabled in definition.json.",
+        ["Scratch_WarnAliasExistsFmt"] = "The alias {0} is already used by an authenticated org. Add {{time}} to the alias pattern or delete the existing org first."
     };
 }

@@ -12,6 +12,16 @@ public static class ScratchDefinitionEditor
     private static readonly string[] ExperienceFeatures = { "Communities", "SiteDotCom" };
 
     /// <summary>
+    /// CommunitiesSettings のネットワーク有効化キー。スクラッチ定義では Metadata API の項目名
+    /// （enableNetworksEnabled）をそのまま使う。`enableNetworks` はデプロイ時に
+    /// 「Element {}enableNetworks invalid at this location」で失敗する。
+    /// </summary>
+    public const string CommunitiesNetworksKey = "enableNetworksEnabled";
+
+    /// <summary>旧バージョンが書き出していた誤ったキー（読み込み時に除去する）。</summary>
+    public const string LegacyCommunitiesNetworksKey = "enableNetworks";
+
+    /// <summary>
     /// スナップショットからスクラッチ組織を作るときに指定できない definition.json のキー
     /// （sf の SNAPSHOT_UNSUPPORTED_OPTIONS と一致）。
     /// </summary>
@@ -85,9 +95,28 @@ public static class ScratchDefinitionEditor
             }
 
             var hasFeatures = ExperienceFeatures.All(feature => ContainsFeature(features, feature));
-            var enableNetworks = root["settings"]?["communitiesSettings"]?["enableNetworks"];
+            var enableNetworks = root["settings"]?["communitiesSettings"]?[CommunitiesNetworksKey];
             return hasFeatures && enableNetworks is JsonValue value
                    && value.TryGetValue<bool>(out var enabled) && enabled;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>旧バージョンの誤ったキー（enableNetworks）が残っているか。</summary>
+    public static bool HasLegacyCommunitiesKey(string definitionFile)
+    {
+        try
+        {
+            if (!File.Exists(definitionFile))
+            {
+                return false;
+            }
+
+            var root = JsonNode.Parse(File.ReadAllText(definitionFile)) as JsonObject;
+            return root?["settings"]?["communitiesSettings"]?[LegacyCommunitiesNetworksKey] is not null;
         }
         catch
         {
@@ -152,11 +181,17 @@ public static class ScratchDefinitionEditor
             settings["communitiesSettings"] = communities;
         }
 
-        if (communities["enableNetworks"] is not JsonValue current
+        if (communities.Remove(LegacyCommunitiesNetworksKey))
+        {
+            // 旧バージョンの誤ったキー（enableNetworks）はデプロイできないため削除する。
+            changed = true;
+        }
+
+        if (communities[CommunitiesNetworksKey] is not JsonValue current
             || !current.TryGetValue<bool>(out var enabled)
             || !enabled)
         {
-            communities["enableNetworks"] = true;
+            communities[CommunitiesNetworksKey] = true;
             changed = true;
         }
 

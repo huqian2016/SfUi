@@ -767,10 +767,41 @@ public class ScratchOrgTests
             var rootElement = document.RootElement;
             Assert.Equal("Keep Me", rootElement.GetProperty("orgName").GetString());
             Assert.Contains("Communities", rootElement.GetProperty("features").EnumerateArray().Select(e => e.GetString()));
-            Assert.True(rootElement.GetProperty("settings").GetProperty("communitiesSettings").GetProperty("enableNetworks").GetBoolean());
+            Assert.True(rootElement.GetProperty("settings").GetProperty("communitiesSettings")
+                .GetProperty(ScratchDefinitionEditor.CommunitiesNetworksKey).GetBoolean());
             Assert.True(rootElement.GetProperty("settings").TryGetProperty("lightningExperienceSettings", out _));
 
             Assert.False(ScratchDefinitionEditor.AddExperienceSettings(path));
+        }
+        finally
+        {
+            TryDelete(root);
+        }
+    }
+
+    [Fact]
+    public void DefinitionEditor_MigratesLegacyEnableNetworksKey()
+    {
+        var root = CreateTempRoot();
+        try
+        {
+            var path = Path.Combine(root, "definition.json");
+            File.WriteAllText(path, """
+                {
+                  "features": ["Communities", "SiteDotCom"],
+                  "settings": { "communitiesSettings": { "enableNetworks": true } }
+                }
+                """);
+
+            // 旧キー（enableNetworks）はデプロイできないので「未設定」として扱う
+            Assert.False(ScratchDefinitionEditor.HasExperienceSettings(path));
+            Assert.True(ScratchDefinitionEditor.AddExperienceSettings(path));
+            Assert.True(ScratchDefinitionEditor.HasExperienceSettings(path));
+
+            using var document = System.Text.Json.JsonDocument.Parse(File.ReadAllText(path));
+            var communities = document.RootElement.GetProperty("settings").GetProperty("communitiesSettings");
+            Assert.False(communities.TryGetProperty(ScratchDefinitionEditor.LegacyCommunitiesNetworksKey, out _));
+            Assert.True(communities.GetProperty(ScratchDefinitionEditor.CommunitiesNetworksKey).GetBoolean());
         }
         finally
         {
@@ -819,6 +850,11 @@ public class ScratchOrgTests
         var notEnabled = ScratchOrgService.DescribeKnownError(
             "INVALID_TYPE", "Scratch Org Snapshots isn't enabled for your Dev Hub.");
         Assert.Equal(UiText.T("Scratch_ErrSnapshotNotEnabled"), notEnabled);
+
+        var settingsFailed = ScratchOrgService.DescribeKnownError(
+            "ProblemDeployingSettings",
+            "A scratch org was created with username test-abc@example.com, but the settings failed to deploy due to: enableNetworks");
+        Assert.Contains("test-abc@example.com", settingsFailed);
     }
 
     [Fact]
