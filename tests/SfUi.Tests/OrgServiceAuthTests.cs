@@ -86,7 +86,8 @@ public class OrgServiceAuthTests : IDisposable
             service.GetAuthAsync("dev@acme.example.com"));
 
         Assert.All(results, r => Assert.Equal("MOCK_TOKEN", r.AccessToken));
-        var displayCalls = ReadCalls()
+        var calls = WaitForCalls(c => c.Contains("org display --target-org dev@acme.example.com --json"));
+        var displayCalls = calls
             .Split('\n', StringSplitOptions.RemoveEmptyEntries)
             .Count(line => line.TrimStart().StartsWith("org display", StringComparison.Ordinal));
         Assert.Equal(1, displayCalls);
@@ -118,7 +119,8 @@ public class OrgServiceAuthTests : IDisposable
         var auth = await service.GetAuthAsync("dev@acme.example.com");
 
         Assert.Equal("REAL_TOKEN_123", auth.AccessToken);
-        var calls = ReadCalls();
+        var calls = WaitForCalls(c => c.Contains(
+            "org auth show-access-token --target-org dev@acme.example.com --json"));
         Assert.Contains("org display --target-org dev@acme.example.com --json", calls);
         Assert.Contains("org auth show-access-token --target-org dev@acme.example.com --json", calls);
     }
@@ -156,6 +158,23 @@ public class OrgServiceAuthTests : IDisposable
         }
 
         return builder.ToString();
+    }
+
+    /// <summary>
+    /// 子プロセスのログ書き込みが終わるのを待ってから呼び出し記録を返す
+    /// （CI の Windows では書き込み中のファイルが読めず、直後の ReadCalls が取りこぼすことがある）。
+    /// </summary>
+    private string WaitForCalls(Func<string, bool> predicate, int timeoutMs = 5000)
+    {
+        var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+        var calls = ReadCalls();
+        while (!predicate(calls) && DateTime.UtcNow < deadline)
+        {
+            Thread.Sleep(50);
+            calls = ReadCalls();
+        }
+
+        return calls;
     }
 
 
