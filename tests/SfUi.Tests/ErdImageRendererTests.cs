@@ -69,7 +69,7 @@ public class ErdImageRendererTests
     }
 
     [Fact]
-    public void Layout_PlacesNodesInGrid_AndSkipsUnknownTargets()
+    public void Layout_SkipsUnknownTargets_AndKeepsNodesInsideTheCanvas()
     {
         var layout = ErdImageRenderer.BuildLayout(CreateDocument());
 
@@ -78,6 +78,84 @@ public class ErdImageRendererTests
         Assert.True(layout.Width > 300);
         Assert.True(layout.Height > 100);
         Assert.All(layout.Nodes, node => Assert.True(node.X >= 40 && node.Y >= 40));
+    }
+
+    [Fact]
+    public void Layout_IsRadial_WithTheMostConnectedNodeInTheMiddle()
+    {
+        var document = CreateHubDocument(leafCount: 10);
+        var layout = ErdImageRenderer.BuildLayout(document);
+
+        Assert.Equal(11, layout.Nodes.Count);
+        var hub = layout.Nodes.Single(node => node.Entity.ApiName == "Hub__c");
+        var hubCenterX = hub.X + (hub.Width / 2);
+        var hubCenterY = hub.Y + (hub.Height / 2);
+
+        // 関連の最も多い Hub が図の中央付近に来る
+        Assert.InRange(hubCenterX, layout.Width * 0.35f, layout.Width * 0.65f);
+        Assert.InRange(hubCenterY, layout.Height * 0.35f, layout.Height * 0.65f);
+
+        // ノード同士は重ならない
+        for (var i = 0; i < layout.Nodes.Count; i++)
+        {
+            for (var j = i + 1; j < layout.Nodes.Count; j++)
+            {
+                var a = layout.Nodes[i];
+                var b = layout.Nodes[j];
+                var overlap = Math.Abs((a.X + (a.Width / 2)) - (b.X + (b.Width / 2))) < ((a.Width + b.Width) / 2) &&
+                              Math.Abs((a.Y + (a.Height / 2)) - (b.Y + (b.Height / 2))) < ((a.Height + b.Height) / 2);
+                Assert.False(overlap, $"{a.Entity.ApiName} overlaps {b.Entity.ApiName}");
+            }
+        }
+
+        // 次数の少ないリーフは中心から離れている
+        var leaves = layout.Nodes.Where(node => node.Entity.ApiName != "Hub__c").ToList();
+        Assert.All(leaves, leaf =>
+        {
+            var distance = MathF.Sqrt(
+                MathF.Pow((leaf.X + (leaf.Width / 2)) - hubCenterX, 2) +
+                MathF.Pow((leaf.Y + (leaf.Height / 2)) - hubCenterY, 2));
+            Assert.True(distance > hub.Width / 2, leaf.Entity.ApiName);
+        });
+    }
+
+    /// <summary>Hub 1 件に Leaf が放射状にぶら下がる文書（放射状レイアウトの検証用）。</summary>
+    private static ErdDocument CreateHubDocument(int leafCount)
+    {
+        var entities = new List<ErdEntity>
+        {
+            new()
+            {
+                ApiName = "Hub__c",
+                Label = "Hub",
+                Fields = new List<ErdField> { new() { ApiName = "Id", DataType = "Id", IsPrimaryKey = true } },
+            },
+        };
+        var relationships = new List<ErdRelationship>();
+        for (var i = 0; i < leafCount; i++)
+        {
+            var name = "Leaf" + i.ToString("00", System.Globalization.CultureInfo.InvariantCulture) + "__c";
+            entities.Add(new ErdEntity
+            {
+                ApiName = name,
+                Label = name,
+                Fields = new List<ErdField>
+                {
+                    new() { ApiName = "Id", DataType = "Id", IsPrimaryKey = true },
+                    new() { ApiName = "Hub__c", DataType = "reference", ReferenceTo = new[] { "Hub__c" } },
+                },
+            });
+            relationships.Add(new ErdRelationship
+            {
+                ChildApiName = name,
+                ParentApiName = "Hub__c",
+                FieldApiName = "Hub__c",
+                IsMasterDetail = true,
+                IsRequired = true,
+            });
+        }
+
+        return new ErdDocument { Title = "Hub", Entities = entities, Relationships = relationships };
     }
 
     [Fact]
