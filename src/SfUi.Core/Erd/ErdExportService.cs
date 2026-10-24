@@ -23,6 +23,9 @@ public sealed class ErdExportRequest
 
     public bool Dot { get; init; }
 
+    /// <summary>自己完結の HTML（図 + 表 + 検索）。</summary>
+    public bool Html { get; init; }
+
     public bool Svg { get; init; }
 
     public bool Png { get; init; }
@@ -40,7 +43,7 @@ public sealed record ErdExportResult(IReadOnlyList<string> Files)
     public string? PrimaryFile => Files.Count == 0 ? null : Files[0];
 }
 
-/// <summary>ER 図を選択された形式で書き出す（テキスト 5 形式 + 画像 4 形式）。</summary>
+/// <summary>ER 図を選択された形式で書き出す（テキスト 6 形式 + 画像 4 形式）。</summary>
 public static class ErdExportService
 {
     public static ErdExportResult Export(ErdExportRequest request)
@@ -91,6 +94,11 @@ public static class ErdExportService
         if (request.Dot)
         {
             WriteText("dot", ErdDiagramWriter.WriteDot(document));
+        }
+
+        if (request.Html)
+        {
+            WriteText("html", ErdDiagramWriter.WriteHtml(document));
         }
 
         if (request.Svg)

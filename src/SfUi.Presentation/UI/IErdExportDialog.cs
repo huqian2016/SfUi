@@ -47,6 +47,7 @@ public sealed record ErdExportDialogResult(
     bool Drawio,
     bool PlantUml,
     bool Dot,
+    bool Html,
     bool Svg,
     bool Png,
     bool Jpeg,
@@ -173,6 +174,9 @@ public sealed partial class ErdExportDialogViewModel : ObservableObject
     private bool _dot;
 
     [ObservableProperty]
+    private bool _html;
+
+    [ObservableProperty]
     private bool _svg = true;
 
     [ObservableProperty]
@@ -253,7 +257,7 @@ public sealed partial class ErdExportDialogViewModel : ObservableObject
             return null;
         }
 
-        if (!Mermaid && !Dbml && !Drawio && !PlantUml && !Dot && !Svg && !Png && !Jpeg && !Webp)
+        if (!Mermaid && !Dbml && !Drawio && !PlantUml && !Dot && !Html && !Svg && !Png && !Jpeg && !Webp)
         {
             ErrorText = UiText.T("Erd_NoFormats");
             return null;
@@ -293,6 +297,7 @@ public sealed partial class ErdExportDialogViewModel : ObservableObject
             Drawio,
             PlantUml,
             Dot,
+            Html,
             Svg,
             Png,
             Jpeg,

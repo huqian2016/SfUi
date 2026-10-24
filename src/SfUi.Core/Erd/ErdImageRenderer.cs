@@ -251,6 +251,13 @@ public static class ErdImageRenderer
         builder.Append("  <title>").Append(EscapeXml(document.Title)).AppendLine("</title>");
         builder.AppendLine("  <rect width=\"100%\" height=\"100%\" fill=\"#FFFFFF\" />");
 
+        // 鳥の足（子側の終端）。線種別ごとに色を合わせたマーカーを 3 つ定義する。
+        builder.AppendLine("  <defs>");
+        AppendCrowMarker(builder, "crow-detail", "#1F3A5F", "1.8");
+        AppendCrowMarker(builder, "crow-required", BorderColor, "1.4");
+        AppendCrowMarker(builder, "crow-optional", "#8A94A6", "1.2");
+        builder.AppendLine("  </defs>");
+
         builder.AppendLine("  <g id=\"edges\" fill=\"none\">");
         var showLabels = layout.Edges.Count <= 12;
         foreach (var edge in layout.Edges)
@@ -261,9 +268,10 @@ public static class ErdImageRenderer
             var stroke = isDetail ? "#1F3A5F" : isRequired ? BorderColor : "#8A94A6";
             var width = isDetail ? "2.4" : isRequired ? "1.8" : "1.4";
             var dash = isDetail || isRequired ? string.Empty : " stroke-dasharray=\"5 3\"";
+            var marker = isDetail ? "crow-detail" : isRequired ? "crow-required" : "crow-optional";
             builder.Append("    <path d=\"M ").Append(Format(edge.Points));
             builder.Append("\" stroke=\"").Append(stroke).Append("\" stroke-width=\"").Append(width)
-                .Append('"').Append(dash).Append(" marker-end=\"url(#crow)\" />").AppendLine();
+                .Append('"').Append(dash).Append(" marker-end=\"url(#").Append(marker).Append(")\" />").AppendLine();
 
             // 親側 = 1、子側 = N（親子の向きを明示）
             var first = edge.Points[0];
@@ -507,8 +515,17 @@ public static class ErdImageRenderer
         return ((first.X + last.X) / 2, ((first.Y + last.Y) / 2) - 2);
     }
 
-    private static string Number(float value) => value.ToString("0.##", CultureInfo.InvariantCulture);
+    /// <summary>鳥の足マーカー（子側の終端）を 1 つ出力する。</summary>
+    private static void AppendCrowMarker(StringBuilder builder, string id, string stroke, string width)
+    {
+        builder.Append("    <marker id=\"").Append(id)
+            .Append("\" viewBox=\"0 0 10 10\" refX=\"8\" refY=\"5\" markerWidth=\"9\" markerHeight=\"9\" orient=\"auto\">")
+            .Append("<path d=\"M 1 1 L 8 5 L 1 9\" fill=\"none\" stroke=\"").Append(stroke)
+            .Append("\" stroke-width=\"").Append(width).AppendLine("\" />");
+        builder.AppendLine("    </marker>");
+    }
 
+    private static string Number(float value) => value.ToString("0.##", CultureInfo.InvariantCulture);
 
     private static string EscapeXml(string value) => value
         .Replace("&", "&amp;")

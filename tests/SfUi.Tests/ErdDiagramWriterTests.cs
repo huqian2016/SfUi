@@ -156,8 +156,47 @@ public class ErdDiagramWriterTests
     }
 
     [Fact]
-    public void EmptyDocument_ProducesValidMinimalOutput()
+    public void Html_IsSelfContained_WithInlineSvgAndTables()
     {
+        var text = ErdDiagramWriter.WriteHtml(CreateDocument());
+
+        Assert.StartsWith("<!DOCTYPE html>", text);
+        Assert.Contains("<meta charset=\"utf-8\">", text);
+        Assert.Contains("<svg", text);
+        Assert.Contains("</svg>", text);
+        Assert.Contains("</html>", text);
+
+        // 外部参照を持たない（スタイル / スクリプトはすべて埋め込み）
+        Assert.DoesNotContain("<link ", text);
+        Assert.DoesNotContain("<script src=", text);
+
+        // リレーション表とオブジェクト表の行（図のハイライト用に data-node を持つ）
+        Assert.Contains("data-node=\"Contact\"", text);
+        Assert.Contains("data-node=\"Account\"", text);
+        Assert.Contains("<code>AccountId</code>", text);
+        Assert.Contains("取引先 (Account)", text);
+
+        // 検索・印刷の操作性
+        Assert.Contains("id=\"q\"", text);
+        Assert.Contains("id=\"print\"", text);
+    }
+
+    [Fact]
+    public void Html_EscapesMarkupAndFollowsNameStyle()
+    {
+        // API 名のみの指定ではラベル付き表記を出さない
+        var apiStyle = ErdDiagramWriter.WriteHtml(CreateDocument(ErdNameStyle.ApiName));
+        Assert.DoesNotContain("取引先 (Account)", apiStyle);
+        Assert.Contains("Thing__c", apiStyle);
+
+        // ラベル中の & < > はエスケープされる
+        var labeled = ErdDiagramWriter.WriteHtml(CreateDocument());
+        Assert.Contains("R&amp;D &lt;試験&gt;", labeled);
+        Assert.DoesNotContain("R&D <試験>", labeled);
+    }
+
+    [Fact]
+    public void EmptyDocument_ProducesValidMinimalOutput()    {
         var document = new ErdDocument { Title = "Empty" };
 
         Assert.Contains("erDiagram", ErdDiagramWriter.WriteMermaid(document));
@@ -165,6 +204,7 @@ public class ErdDiagramWriterTests
         Assert.Contains("digraph erd", ErdDiagramWriter.WriteDot(document));
         Assert.Contains("@startuml", ErdDiagramWriter.WritePlantUml(document));
         Assert.Contains("<mxfile", ErdDiagramWriter.WriteDrawio(document));
+        Assert.Contains("<!DOCTYPE html>", ErdDiagramWriter.WriteHtml(document));
     }
 
     [Theory]
@@ -173,6 +213,7 @@ public class ErdDiagramWriterTests
     [InlineData(ErdDiagramFormat.Drawio, "drawio")]
     [InlineData(ErdDiagramFormat.PlantUml, "puml")]
     [InlineData(ErdDiagramFormat.Dot, "dot")]
+    [InlineData(ErdDiagramFormat.Html, "html")]
     public void FileExtension_IsStable(ErdDiagramFormat format, string expected)
     {
         Assert.Equal(expected, ErdDiagramWriter.FileExtension(format));

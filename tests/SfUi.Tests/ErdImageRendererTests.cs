@@ -57,6 +57,18 @@ public class ErdImageRendererTests
     }
 
     [Fact]
+    public void Svg_DefinesCrowFootMarkersForEachEdgeStyle()
+    {
+        var svg = ErdImageRenderer.WriteSvg(CreateDocument());
+
+        Assert.Contains("<marker id=\"crow-detail\"", svg);
+        Assert.Contains("<marker id=\"crow-required\"", svg);
+        Assert.Contains("<marker id=\"crow-optional\"", svg);
+        Assert.Contains("url(#crow-", svg);
+        Assert.DoesNotContain("url(#crow)", svg);
+    }
+
+    [Fact]
     public void Layout_PlacesNodesInGrid_AndSkipsUnknownTargets()
     {
         var layout = ErdImageRenderer.BuildLayout(CreateDocument());

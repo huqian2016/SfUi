@@ -90,6 +90,27 @@ public sealed class ErdExportDialogViewModelTests
     }
 
     [Fact]
+    public void HtmlFormat_CanBeSelectedOnItsOwn()
+    {
+        var vm = CreateViewModel("Account");
+        vm.SelectAllCommand.Execute(null);
+        vm.Mermaid = false;
+        vm.Svg = false;
+
+        // HTML だけが未選択なら「形式を選択してください」で止まる
+        Assert.Null(vm.BuildResult());
+        Assert.Equal(UiText.T("Erd_NoFormats"), vm.ErrorText);
+
+        vm.Html = true;
+        var result = vm.BuildResult();
+
+        Assert.NotNull(result);
+        Assert.True(result!.Html);
+        Assert.False(result.Mermaid);
+        Assert.False(result.Svg);
+    }
+
+    [Fact]
     public void BuildResult_WithoutSelection_SetsError()
     {
         var vm = CreateViewModel("Account");

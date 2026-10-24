@@ -4,7 +4,7 @@ using System.Text;
 namespace SfUi.Core;
 
 /// <summary>
-/// ER 図をテキスト形式（Mermaid / DBML / draw.io / PlantUML / Graphviz DOT）へ書き出す。
+/// ER 図をテキスト形式（Mermaid / DBML / draw.io / PlantUML / Graphviz DOT / HTML）へ書き出す。
 /// 画像（SVG / PNG など）は <c>ErdImageRenderer</c> が同じ <see cref="ErdDocument"/> から描画する。
 /// </summary>
 public static class ErdDiagramWriter
@@ -16,6 +16,7 @@ public static class ErdDiagramWriter
         ErdDiagramFormat.Drawio => WriteDrawio(document),
         ErdDiagramFormat.PlantUml => WritePlantUml(document),
         ErdDiagramFormat.Dot => WriteDot(document),
+        ErdDiagramFormat.Html => WriteHtml(document),
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, "Unknown ERD format."),
     };
 
@@ -26,6 +27,7 @@ public static class ErdDiagramWriter
         ErdDiagramFormat.Drawio => "drawio",
         ErdDiagramFormat.PlantUml => "puml",
         ErdDiagramFormat.Dot => "dot",
+        ErdDiagramFormat.Html => "html",
         _ => "txt",
     };
 
@@ -36,6 +38,7 @@ public static class ErdDiagramWriter
         ErdDiagramFormat.Drawio => "draw.io",
         ErdDiagramFormat.PlantUml => "PlantUML",
         ErdDiagramFormat.Dot => "Graphviz DOT",
+        ErdDiagramFormat.Html => "HTML",
         _ => format.ToString(),
     };
 
@@ -343,6 +346,244 @@ public static class ErdDiagramWriter
         builder.AppendLine("</mxfile>");
         return builder.ToString();
     }
+
+    // ------------------------------------------------------------------- HTML
+
+    /// <summary>
+    /// 自己完結の HTML（図を SVG で埋め込み、リレーション / オブジェクトの表・検索・印刷付き）へ書き出す。
+    /// 外部ファイルを参照しないため、そのまま配布・共有できる。
+    /// </summary>
+    public static string WriteHtml(ErdDocument document)
+    {
+        var builder = new StringBuilder();
+        builder.AppendLine("<!DOCTYPE html>");
+        builder.Append("<html lang=\"").Append(EscapeXml(UiText.Language)).AppendLine("\">");
+        builder.AppendLine("<head>");
+        builder.AppendLine("<meta charset=\"utf-8\">");
+        builder.AppendLine("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
+        builder.Append("<title>").Append(EscapeXml(document.Title)).AppendLine("</title>");
+        builder.AppendLine("<style>");
+        builder.AppendLine(HtmlStyle);
+        builder.AppendLine("</style>");
+        builder.AppendLine("</head>");
+        builder.AppendLine("<body>");
+
+        // 見出し + メタ情報
+        builder.AppendLine("<header>");
+        builder.Append("  <h1>").Append(EscapeXml(document.Title)).AppendLine("</h1>");
+        builder.Append("  <p class=\"meta\">");
+        if (!string.IsNullOrWhiteSpace(document.Org))
+        {
+            builder.Append(EscapeXml(document.Org)).Append(" · ");
+        }
+        builder.Append(EscapeXml(UiText.T("Report_MetaGenerated"))).Append(": ")
+            .Append(EscapeXml(document.GeneratedAt.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)))
+            .Append(" · ")
+            .Append(EscapeXml(UiText.T("Erd_HtmlSummaryFmt", document.Entities.Count, document.Relationships.Count)))
+            .AppendLine("</p>");
+
+        // 凡例
+        builder.AppendLine("  <div class=\"legend\">");
+        builder.Append("    <span><i class=\"line detail\"></i>").Append(EscapeXml(UiText.T("Erd_HtmlMasterDetail"))).AppendLine("</span>");
+        builder.Append("    <span><i class=\"line required\"></i>").Append(EscapeXml(UiText.T("Erd_HtmlRequired"))).AppendLine("</span>");
+        builder.Append("    <span><i class=\"line optional\"></i>").Append(EscapeXml(UiText.T("Erd_HtmlOptional"))).AppendLine("</span>");
+        builder.Append("    <span class=\"hint\">").Append(EscapeXml(UiText.T("Erd_HtmlCardinality"))).AppendLine("</span>");
+        builder.AppendLine("  </div>");
+
+        // 検索 + 印刷
+        builder.AppendLine("  <div class=\"toolbar\">");
+        builder.Append("    <input id=\"q\" type=\"search\" placeholder=\"")
+            .Append(EscapeXml(UiText.T("Erd_HtmlSearchPlaceholder"))).AppendLine("\">");
+        builder.Append("    <button id=\"print\" type=\"button\">").Append(EscapeXml(UiText.T("Erd_HtmlPrint"))).AppendLine("</button>");
+        builder.AppendLine("  </div>");
+        builder.AppendLine("</header>");
+
+        // 図（SVG をそのまま埋め込む）
+        builder.AppendLine("<section class=\"diagram\">");
+        builder.AppendLine(InlineSvg(document));
+        builder.AppendLine("</section>");
+
+        // リレーション表
+        builder.AppendLine("<section>");
+        builder.Append("  <h2>").Append(EscapeXml(UiText.T("Erd_HtmlRelationships")))
+            .Append(" <span class=\"count\">").Append(document.Relationships.Count).AppendLine("</span></h2>");
+        builder.AppendLine("  <table class=\"searchable\">");
+        builder.Append("    <thead><tr><th>").Append(EscapeXml(UiText.T("Erd_HtmlChild")))
+            .Append("</th><th>").Append(EscapeXml(UiText.T("Erd_HtmlField")))
+            .Append("</th><th>").Append(EscapeXml(UiText.T("Erd_HtmlParent")))
+            .Append("</th><th>").Append(EscapeXml(UiText.T("Erd_HtmlType"))).AppendLine("</th></tr></thead>");
+        builder.AppendLine("    <tbody>");
+        foreach (var relationship in document.Relationships)
+        {
+            var (typeLabel, typeClass) = RelationshipType(relationship);
+            builder.Append("      <tr data-node=\"").Append(EscapeXml(relationship.ChildApiName)).AppendLine("\">");
+            builder.Append("        <td>").Append(EscapeXml(document.DisplayNameOf(relationship.ChildApiName))).AppendLine("</td>");
+            builder.Append("        <td><code>").Append(EscapeXml(relationship.FieldApiName)).Append("</code>");
+            if (!string.IsNullOrWhiteSpace(relationship.FieldLabel) &&
+                !string.Equals(relationship.FieldLabel, relationship.FieldApiName, StringComparison.OrdinalIgnoreCase))
+            {
+                builder.Append(" <span class=\"sub\">").Append(EscapeXml(relationship.FieldLabel)).Append("</span>");
+            }
+
+            builder.AppendLine("</td>");
+            builder.Append("        <td>").Append(EscapeXml(document.DisplayNameOf(relationship.ParentApiName))).AppendLine("</td>");
+            builder.Append("        <td><span class=\"tag ").Append(typeClass).Append("\">").Append(EscapeXml(typeLabel)).AppendLine("</span></td>");
+            builder.AppendLine("      </tr>");
+        }
+
+        builder.AppendLine("    </tbody>");
+        builder.AppendLine("  </table>");
+        builder.AppendLine("</section>");
+
+        // オブジェクト表
+        builder.AppendLine("<section>");
+        builder.Append("  <h2>").Append(EscapeXml(UiText.T("Erd_ObjectsLabel")))
+            .Append(" <span class=\"count\">").Append(document.Entities.Count).AppendLine("</span></h2>");
+        builder.AppendLine("  <table class=\"searchable\">");
+        builder.Append("    <thead><tr><th>").Append(EscapeXml(UiText.T("Erd_ObjectsLabel")))
+            .Append("</th><th>").Append(EscapeXml(UiText.T("Erd_HtmlKeyFields")))
+            .Append("</th><th>").Append(EscapeXml(UiText.T("Erd_HtmlReferences"))).AppendLine("</th></tr></thead>");
+        builder.AppendLine("    <tbody>");
+        foreach (var entity in document.Entities)
+        {
+            var keys = entity.Fields
+                .Where(field => field.IsPrimaryKey || field.IsLookup)
+                .Select(field => field.ApiName)
+                .Take(12)
+                .ToList();
+            var references = document.Relationships.Count(item =>
+                string.Equals(item.ChildApiName, entity.ApiName, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(item.ParentApiName, entity.ApiName, StringComparison.OrdinalIgnoreCase));
+
+            builder.Append("      <tr data-node=\"").Append(EscapeXml(entity.ApiName)).AppendLine("\">");
+            builder.Append("        <td>").Append(EscapeXml(entity.DisplayName(document.NameStyle))).AppendLine("</td>");
+            builder.Append("        <td>");
+            if (keys.Count == 0)
+            {
+                builder.Append('—');
+            }
+            else
+            {
+                builder.Append(string.Join(", ", keys.Select(key => "<code>" + EscapeXml(key) + "</code>")));
+            }
+
+            builder.AppendLine("</td>");
+            builder.Append("        <td>").Append(references).AppendLine("</td>");
+            builder.AppendLine("      </tr>");
+        }
+
+        builder.AppendLine("    </tbody>");
+        builder.AppendLine("  </table>");
+        builder.AppendLine("</section>");
+
+        builder.AppendLine("<script>");
+        builder.AppendLine(HtmlScript);
+        builder.AppendLine("</script>");
+        builder.AppendLine("</body>");
+        builder.AppendLine("</html>");
+        return builder.ToString();
+    }
+
+    private static (string Label, string CssClass) RelationshipType(ErdRelationship relationship) =>
+        relationship.IsMasterDetail
+            ? (UiText.T("Erd_HtmlMasterDetail"), "detail")
+            : relationship.IsRequired
+                ? (UiText.T("Erd_HtmlRequired"), "required")
+                : (UiText.T("Erd_HtmlOptional"), "optional");
+
+    /// <summary>SVG（XML 宣言を除いたもの）を HTML に埋め込める形で返す。</summary>
+    private static string InlineSvg(ErdDocument document)
+    {
+        var svg = ErdImageRenderer.WriteSvg(document);
+        var start = svg.IndexOf("<svg", StringComparison.Ordinal);
+        return start < 0 ? svg : svg[start..].TrimEnd();
+    }
+
+    private const string HtmlStyle = """
+        :root { color-scheme: light; }
+        * { box-sizing: border-box; }
+        body {
+          margin: 0; padding: 24px 28px 48px;
+          font-family: "Segoe UI", "Yu Gothic UI", "Hiragino Sans", Meiryo, sans-serif;
+          color: #1F2937; background: #F7F8FA;
+        }
+        header h1 { margin: 0 0 4px; font-size: 22px; }
+        .meta { margin: 0 0 10px; color: #4B5563; font-size: 12px; }
+        .legend { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin: 0 0 10px; font-size: 12px; }
+        .legend .hint { color: #6B7280; }
+        .legend .line { display: inline-block; width: 34px; height: 0; margin-right: 6px; vertical-align: middle; border-top: 2.4px solid #1F3A5F; }
+        .legend .line.required { border-top: 1.8px solid #4A6FA5; }
+        .legend .line.optional { border-top: 1.4px dashed #8A94A6; }
+        .toolbar { display: flex; gap: 8px; margin: 0 0 16px; }
+        .toolbar input {
+          flex: 1 1 auto; max-width: 420px; padding: 6px 10px; font-size: 13px;
+          border: 1px solid #CBD5E1; border-radius: 6px; background: #FFFFFF;
+        }
+        .toolbar button {
+          padding: 6px 14px; font-size: 13px; border-radius: 6px; cursor: pointer;
+          border: 1px solid #4A6FA5; background: #FFFFFF; color: #1F3A5F;
+        }
+        .toolbar button:hover { background: #E8EEF8; }
+        .diagram {
+          overflow: auto; padding: 12px; margin-bottom: 20px;
+          background: #FFFFFF; border: 1px solid #DCE3ED; border-radius: 10px;
+        }
+        .diagram svg { display: block; max-width: none; height: auto; }
+        section { margin-bottom: 22px; }
+        h2 { font-size: 15px; margin: 0 0 8px; display: flex; align-items: center; gap: 8px; }
+        h2 .count {
+          font-size: 11px; font-weight: 600; color: #1F3A5F;
+          background: #E8EEF8; border-radius: 10px; padding: 1px 8px;
+        }
+        table { width: 100%; border-collapse: collapse; background: #FFFFFF; font-size: 13px; }
+        thead th {
+          position: sticky; top: 0; z-index: 1;
+          text-align: left; font-weight: 600; color: #374151; background: #EEF2F7;
+          border-bottom: 1px solid #DCE3ED; padding: 7px 10px;
+        }
+        tbody td { padding: 6px 10px; border-bottom: 1px solid #EEF1F5; vertical-align: top; }
+        tbody tr:hover { background: #F5F8FE; cursor: pointer; }
+        code { font-family: Consolas, "Cascadia Mono", monospace; font-size: 12px; color: #B45309; }
+        .sub { color: #6B7280; font-size: 12px; }
+        .tag { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+        .tag.detail { color: #FFFFFF; background: #1F3A5F; }
+        .tag.required { color: #FFFFFF; background: #4A6FA5; }
+        .tag.optional { color: #374151; background: #E5E7EB; }
+        svg g.hl > rect { stroke: #C2410C; stroke-width: 3; }
+        @media print {
+          body { background: #FFFFFF; padding: 0; }
+          .toolbar { display: none; }
+          .diagram { border: none; overflow: visible; }
+          section { break-inside: auto; }
+          tbody tr:hover { background: transparent; }
+        }
+        """;
+
+    private const string HtmlScript = """
+        (function () {
+          var search = document.getElementById('q');
+          if (search) {
+            search.addEventListener('input', function () {
+              var term = search.value.trim().toLowerCase();
+              document.querySelectorAll('table.searchable tbody tr').forEach(function (row) {
+                var match = !term || row.textContent.toLowerCase().indexOf(term) >= 0;
+                row.style.display = match ? '' : 'none';
+              });
+            });
+          }
+          document.querySelectorAll('tbody tr[data-node]').forEach(function (row) {
+            row.addEventListener('click', function () {
+              var group = document.getElementById(row.getAttribute('data-node'));
+              if (!group) { return; }
+              document.querySelectorAll('svg g.hl').forEach(function (item) { item.classList.remove('hl'); });
+              group.classList.add('hl');
+              group.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            });
+          });
+          var printButton = document.getElementById('print');
+          if (printButton) { printButton.addEventListener('click', function () { window.print(); }); }
+        })();
+        """;
 
     // ----------------------------------------------------------------- helpers
 

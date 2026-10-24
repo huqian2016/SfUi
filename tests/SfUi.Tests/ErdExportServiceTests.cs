@@ -67,6 +67,25 @@ public class ErdExportServiceTests : IDisposable
     }
 
     [Fact]
+    public void Export_WritesHtml()
+    {
+        var result = ErdExportService.Export(new ErdExportRequest
+        {
+            Document = CreateDocument(),
+            OutputDirectory = _sandbox,
+            BaseName = "erd-html",
+            Mermaid = false,
+            Html = true,
+        });
+
+        var file = Assert.Single(result.Files);
+        Assert.EndsWith("erd-html.html", file, StringComparison.Ordinal);
+        var html = File.ReadAllText(file);
+        Assert.Contains("<!DOCTYPE html>", html);
+        Assert.Contains("<svg", html);
+    }
+
+    [Fact]
     public void Export_Throws_WhenDocumentIsEmpty()
     {
         var error = Assert.Throws<ReportExportException>(() => ErdExportService.Export(new ErdExportRequest

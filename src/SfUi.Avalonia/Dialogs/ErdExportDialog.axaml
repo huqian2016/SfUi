@@ -47,6 +47,7 @@
                 <CheckBox Content="draw.io (.drawio)" IsChecked="{Binding Drawio}" Margin="0,2,16,2" AutomationProperties.AutomationId="ErdFormatDrawio" />
                 <CheckBox Content="PlantUML (.puml)" IsChecked="{Binding PlantUml}" Margin="0,2,16,2" AutomationProperties.AutomationId="ErdFormatPlantUml" />
                 <CheckBox Content="Graphviz (.dot)" IsChecked="{Binding Dot}" Margin="0,2,16,2" AutomationProperties.AutomationId="ErdFormatDot" />
+                <CheckBox Content="HTML (.html)" IsChecked="{Binding Html}" Margin="0,2,16,2" AutomationProperties.AutomationId="ErdFormatHtml" />
                 <CheckBox Content="SVG (.svg)" IsChecked="{Binding Svg}" Margin="0,2,16,2" AutomationProperties.AutomationId="ErdFormatSvg" />
                 <CheckBox Content="PNG (.png)" IsChecked="{Binding Png}" Margin="0,2,16,2" AutomationProperties.AutomationId="ErdFormatPng" />
                 <CheckBox Content="JPEG (.jpg)" IsChecked="{Binding Jpeg}" Margin="0,2,16,2" AutomationProperties.AutomationId="ErdFormatJpeg" />

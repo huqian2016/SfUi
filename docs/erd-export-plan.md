@@ -11,7 +11,7 @@
 | 項目 | 決定 |
 | --- | --- |
 | 「編集可能」の解釈 | テキスト形式（Mermaid / DBML / DOT / PlantUML）はそのまま手編集、draw.io は図としてドラッグ編集 |
-| 形式 | **Mermaid / DBML / draw.io / PlantUML / DOT** の 5 つ + **画像**（PNG / JPEG / WebP / SVG） |
+| 形式 | **Mermaid / DBML / draw.io / PlantUML / DOT / HTML** の 6 つ + **画像**（PNG / JPEG / WebP / SVG） |
 | 名前表示 | ダイアログで **ラベル / API 名 / ラベル＋API 名** を選択（既定 = ラベル＋API 名） |
 | 画像生成 | 自前レイアウト（グリッド配置 + 直交エッジ）→ **SVG はテキスト生成**、ラスターは **SkiaSharp** で描画（クロスプラットフォーム） |
 | 生成方向 | 一方向（再生成で手編集は失われる）。手編集は `.drawio` 側で行う運用を README に明記 |
@@ -46,6 +46,7 @@ SalesforceRestClient.QueryAsync(tooling: true)        → 参照関係（1 回�
 | draw.io | `.drawio` | `mxGraphModel` のノード（スイムレーン）+ エッジ。diagrams.net / VS Code で編集 |
 | PlantUML | `.puml` | `entity` + `||--o{`。plantuml.com / VS Code |
 | DOT | `.dot` | Graphviz。`dot -Tsvg` で高品質レイアウト |
+| HTML | `.html` | **自己完結**（外部ファイル参照なし）。SVG 図の埋め込み + リレーション表 / オブジェクト表 + 絞り込み検索 + 印刷（PDF 保存）。行クリックで図のノードを強調 |
 | SVG | `.svg` | 自前レイアウトのベクター画像（Excel/PowerPoint に貼れる） |
 | PNG / JPEG / WebP | `.png` / `.jpg` / `.webp` | SkiaSharp で SVG と同じレイアウトをラスタライズ |
 
@@ -69,7 +70,7 @@ SalesforceRestClient.QueryAsync(tooling: true)        → 参照関係（1 回�
 - オブジェクト選択（検索 + チェック、全選択 / 標準のみ / 選択解除）
 - 表示名: `ラベル` / `API 名` / `ラベル＋API 名`
 - オプション: 標準オブジェクトを含む、中間オブジェクトを多対多に畳む、カスタム項目のみ
-- 出力形式: Mermaid / DBML / draw.io / PlantUML / DOT / SVG / PNG / JPEG / WebP（複数選択）
+- 出力形式: Mermaid / DBML / draw.io / PlantUML / DOT / HTML / SVG / PNG / JPEG / WebP（複数選択）
 - 出力先フォルダー + ファイル名（既定 `erd-<org>-<yyyyMMdd-HHmmss>`）
 
 ---

@@ -690,6 +690,7 @@ public partial class OrgInfoViewModel : ObservableObject, IDisposable
                 Drawio = result.Drawio,
                 PlantUml = result.PlantUml,
                 Dot = result.Dot,
+                Html = result.Html,
                 Svg = result.Svg,
                 Png = result.Png,
                 Jpeg = result.Jpeg,

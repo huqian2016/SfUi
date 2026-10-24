@@ -21,6 +21,9 @@ public enum ErdDiagramFormat
     Drawio,
     PlantUml,
     Dot,
+
+    /// <summary>自己完結の HTML（図を SVG で埋め込み、表と検索付き）。</summary>
+    Html,
 }
 
 /// <summary>ER 図の 1 項目。</summary>
