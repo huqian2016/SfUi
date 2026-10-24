@@ -26,7 +26,9 @@ public partial class ApiConsoleViewModel : ObservableObject
     private readonly Dictionary<string, IReadOnlyList<string>> _objectsByOrg = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _versionByOrg = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _instanceByOrg = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, IReadOnlyList<string>> _customApisByOrg = new(StringComparer.OrdinalIgnoreCase);
     private IReadOnlyList<string> _objectNames = Array.Empty<string>();
+    private IReadOnlyList<string> _customApiNames = Array.Empty<string>();
 
     /// <summary>直近にツリーから適用したエンドポイント（パラメータ検証に使う）。</summary>
     private RestApiNode? _appliedNode;
@@ -249,16 +251,49 @@ public partial class ApiConsoleViewModel : ObservableObject
             }
 
             _objectNames = objects;
+
+            if (forceObjects || !_customApisByOrg.TryGetValue(org, out var customApis))
+            {
+                customApis = await LoadCustomApisAsync(org, ApiVersion);
+                _customApisByOrg[org] = customApis;
+            }
+
+            _customApiNames = customApis;
         }
         catch (Exception ex)
         {
             _log.Warn($"REST ツリー: 組織データの取得に失敗: {ex.Message}");
             _objectNames = Array.Empty<string>();
+            _customApiNames = Array.Empty<string>();
         }
         finally
         {
             IsTreeLoading = false;
             RebuildTree();
+        }
+    }
+
+    /// <summary>組織のカスタム API（/actions/custom の一覧）を取得する（失敗時は空）。</summary>
+    private async Task<IReadOnlyList<string>> LoadCustomApisAsync(string org, string version)
+    {
+        try
+        {
+            var (status, body) = await _client.SendConsoleAsync(
+                org,
+                HttpMethod.Get,
+                $"/services/data/v{version}/actions/custom");
+            if ((int)status is < 200 or > 299)
+            {
+                _log.Warn($"REST ツリー: カスタム API の取得に失敗: HTTP {(int)status}");
+                return Array.Empty<string>();
+            }
+
+            return RestCustomApiCatalog.ParseNames(body);
+        }
+        catch (Exception ex)
+        {
+            _log.Warn($"REST ツリー: カスタム API の取得に失敗: {ex.Message}");
+            return Array.Empty<string>();
         }
     }
 
@@ -286,6 +321,7 @@ public partial class ApiConsoleViewModel : ObservableObject
                 TreeNodes.Add(new RestTreeNodeViewModel(group));
             }
 
+            TreeNodes.Add(new RestTreeNodeViewModel(RestCustomApiCatalog.BuildGroup(_customApiNames)));
             TreeNodes.Add(new RestTreeNodeViewModel(RestApiCatalog.BuildObjectGroup(() => _objectNames)));
         }
 
@@ -364,6 +400,15 @@ public partial class ApiConsoleViewModel : ObservableObject
                 node.IsExpanded = true;
                 TreeNodes.Add(node);
             }
+        }
+
+        var custom = RestCustomApiCatalog.BuildGroup(_customApiNames);
+        var customMatches = FilterRequests(custom, filter);
+        if (customMatches.Count > 0)
+        {
+            var node = new RestTreeNodeViewModel(new RestApiNode(custom.Id, custom.Title, Children: customMatches));
+            node.IsExpanded = true;
+            TreeNodes.Add(node);
         }
 
         var objects = _objectNames

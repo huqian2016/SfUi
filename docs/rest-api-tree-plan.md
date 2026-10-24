@@ -53,6 +53,11 @@ Bulk API 2.0
   ├ GET  取り込みジョブ一覧      /jobs/ingest
   ├ GET  取り込みジョブ (id)     /jobs/ingest/{id}
   └ GET  クエリ ジョブ一覧       /jobs/query
+カスタム API
+  ├ アクション (/actions/custom)  ← 組織の /actions/custom を取得（POST /actions/custom/{name}）
+  └ Apex REST (/services/apexrest)
+      ├ GET  呼び出し            /services/apexrest/{mapping}
+      └ POST 呼び出し            /services/apexrest/{mapping}
 ```
 
 各 SObject ノードの子（8 件）:
@@ -108,6 +113,17 @@ https://xxx.my.salesforce.com/services/data/v68.0/sobjects/Account/{id}
 - **Avalonia のメソッド ボタン**: `Classes.selected="{Binding IsGetMethod}"` のような
   クラス バインディング + `Style Selector="Button.method.selected"` で色分け（DataTrigger は無い）。
 
+## カスタム API（2026-10-24）
+
+- **アクション**: `GET /services/data/v{version}/actions/custom` は「API 名 → URL」のオブジェクトを返すので、
+  それをツリーの子（`POST /services/data/v{version}/actions/custom/{name}`）にする。
+  組織ごとに 1 回だけ取得してキャッシュ（失敗時は WARN ログ + 「カスタム API が見つかりません」表示）。
+- **Apex REST**: `@RestResource(urlMapping='…')` は API から列挙できない（Tooling の `ApexClass.Body` は
+  WHERE で絞れず、全件取得はタイムアウトした）ため、`/services/apexrest/{mapping}` の
+  GET / POST テンプレート + `urlMapping` 入力欄を提供する。
+- `urlMapping` はスラッシュを含むため `RestApiParameter.Escape = false`（URL エンコードしない）。
+- 解析は `RestCustomApiCatalog.ParseNames`（`/actions/standard` の `{actions:[…]}` 形式や不正 JSON は空）。
+
 ## 今後の候補（P2 / P3）
 
 - **P2**: 送信結果からの「このリクエストをツリーに保存」、履歴のメソッド別グルーピング、
@@ -122,5 +138,6 @@ https://xxx.my.salesforce.com/services/data/v68.0/sobjects/Account/{id}
 - UI 自動操作 E2E（WPF）: ツリー表示 → SObject → A → Account → 「GET 1 件取得」→ パス自動入力 →
   引数 `id` 入力でパス即時更新 → 未入力での送信ガード → 絞り込み（`limits`）→ 絶対 URL →
   メソッド ボタン（POST で本文表示 / GET で非表示）→ 実行（HTTP 200）→ 「生の応答を表示」で本文が変わる →
-  ツリー非表示（全 18 項目）。
+  カスタム API（アクション `apex` で POST + パス + 本文 / Apex REST の `{mapping}` 入力欄）→
+  ツリー非表示（全 25 項目）。
 - スモーク: WPF / Avalonia ともに終了コード 0。

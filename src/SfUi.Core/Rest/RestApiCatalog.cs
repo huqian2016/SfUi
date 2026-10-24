@@ -11,11 +11,13 @@ public enum RestApiNodeKind
 }
 
 /// <summary>エンドポイント選択時に入力を求めるパラメータ（Id / q など）。</summary>
+/// <param name="Escape">URL エンコードするか（Apex REST の urlMapping のようにスラッシュを含む値は false）。</param>
 public sealed record RestApiParameter(
     string Name,
     string LabelKey,
     string? DefaultValue = null,
-    bool Required = true);
+    bool Required = true,
+    bool Escape = true);
 
 /// <summary>REST ツリーの 1 ノード（静的カタログ / 組織の SObject から生成）。</summary>
 public sealed record RestApiNode(
@@ -330,7 +332,8 @@ public static class RestApiCatalog
         {
             if (values.TryGetValue(parameter.Name, out var value) && !string.IsNullOrWhiteSpace(value))
             {
-                path = path.Replace("{" + parameter.Name + "}", Uri.EscapeDataString(value.Trim()));
+                var trimmed = parameter.Escape ? value.Trim() : value.Trim().TrimStart('/');
+                path = path.Replace("{" + parameter.Name + "}", parameter.Escape ? Uri.EscapeDataString(trimmed) : trimmed);
             }
         }
 

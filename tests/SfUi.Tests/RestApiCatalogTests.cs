@@ -149,4 +149,77 @@ public class RestApiCatalogTests
         var loaded = letters[0].ChildFactory!();
         Assert.Equal(new[] { "Account", "Asset" }, loaded.Select(node => node.Title));
     }
+
+    [Fact]
+    public void CustomApiCatalog_ParseNames_ReadsNameMap()
+    {
+        var json = """
+            {
+              "apex": "/services/data/v68.0/actions/custom/apex",
+              "sendNotification": "/services/data/v68.0/actions/custom/sendNotification"
+            }
+            """;
+
+        var names = RestCustomApiCatalog.ParseNames(json);
+
+        Assert.Equal(new[] { "apex", "sendNotification" }, names);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("null")]
+    [InlineData("not json")]
+    [InlineData("""[{"name":"apex"}]""")]
+    [InlineData("""{"actions":[{"name":"deactivateFlowRecord"}]}""")]
+    public void CustomApiCatalog_ParseNames_IgnoresUnexpectedPayloads(string json) =>
+        Assert.Empty(RestCustomApiCatalog.ParseNames(json));
+
+    [Fact]
+    public void CustomApiCatalog_BuildGroup_ListsActionsAndApexRest()
+    {
+        var group = RestCustomApiCatalog.BuildGroup(new[] { "apex", "sendNotification" });
+
+        Assert.Equal("group.custom", group.Id);
+        Assert.Equal(2, group.Children!.Count);
+
+        var actions = group.Children[0];
+        var requests = actions.Children!.Where(child => child.Kind == RestApiNodeKind.Request).ToList();
+        Assert.Equal(2, requests.Count);
+        var apex = requests.Single(node => node.Title == "apex");
+        Assert.Equal("POST", apex.Method);
+        Assert.Equal("/services/data/v{version}/actions/custom/apex", apex.PathTemplate);
+        Assert.NotNull(apex.BodyTemplate);
+
+        var apexRest = group.Children[1];
+        var get = apexRest.Children!.Single(node => node.Method == "GET");
+        var post = apexRest.Children!.Single(node => node.Method == "POST");
+        Assert.Equal("/services/apexrest/{mapping}", get.PathTemplate);
+        Assert.Equal("/services/apexrest/{mapping}", post.PathTemplate);
+        Assert.All(new[] { get, post }, node => Assert.False(node.Parameters![0].Escape));
+    }
+
+    [Fact]
+    public void CustomApiCatalog_BuildGroup_WithoutActions_ShowsPlaceholder()
+    {
+        var group = RestCustomApiCatalog.BuildGroup(Array.Empty<string>());
+
+        var actions = group.Children![0];
+        var only = Assert.Single(actions.Children!);
+        Assert.Equal(RestApiNodeKind.Folder, only.Kind);
+        Assert.Empty(only.Children ?? Array.Empty<RestApiNode>());
+    }
+
+    [Fact]
+    public void BuildPath_ApexRestMapping_KeepsSlashes()
+    {
+        var group = RestCustomApiCatalog.BuildGroup(Array.Empty<string>());
+        var get = group.Children![1].Children!.Single(node => node.Method == "GET");
+
+        var path = RestApiCatalog.BuildPath(
+            get,
+            "68.0",
+            new Dictionary<string, string> { ["mapping"] = "/invoice/" });
+
+        Assert.Equal("/services/apexrest/invoice/", path);
+    }
 }
