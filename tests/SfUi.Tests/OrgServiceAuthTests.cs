@@ -119,10 +119,12 @@ public class OrgServiceAuthTests : IDisposable
         var auth = await service.GetAuthAsync("dev@acme.example.com");
 
         Assert.Equal("REAL_TOKEN_123", auth.AccessToken);
-        var calls = WaitForCalls(c => c.Contains(
-            "org auth show-access-token --target-org dev@acme.example.com --json"));
+
+        // REAL_TOKEN_123 は show-access-token の戻り値なので、フォールバックが動いたこと自体は
+        // トークンで保証される。ログの検証は display の呼び出しだけにする（並列プロセスの
+        // ログ書き込みタイミングに依存させない）。
+        var calls = WaitForCalls(c => c.Contains("org display --target-org dev@acme.example.com --json"));
         Assert.Contains("org display --target-org dev@acme.example.com --json", calls);
-        Assert.Contains("org auth show-access-token --target-org dev@acme.example.com --json", calls);
     }
 
     [Fact]
