@@ -189,30 +189,44 @@ public class OrgServiceAuthTests : IDisposable
     {
         if (OperatingSystem.IsWindows())
         {
+            // 並列実行（org display と org auth show-access-token）でログ ファイルが衝突しないよう、
+            // サブコマンドごとに別ファイルへ記録する（%RANDOM% は同時起動だと同じ値になり得る）。
+            // 追記の競合に備えて、書き込み失敗時は短い待機で再試行する。
             var path = Path.Combine(_sandbox, "sf.cmd");
             var sb = new StringBuilder();
             sb.AppendLine("@echo off");
-            sb.AppendLine("set \"CALLS=%~dp0calls.%RANDOM%.log\"");
-            sb.AppendLine($"if \"%1 %2\"==\"org display\" (");
+            sb.AppendLine("if \"%1 %2\"==\"org display\" goto do_display");
+            sb.AppendLine("if \"%1 %2 %3\"==\"org auth show-access-token\" goto do_token");
+            sb.AppendLine("goto do_other");
+            sb.AppendLine(":do_display");
             if (displayDelayMs > 0)
             {
-                sb.AppendLine("  ping -n 2 127.0.0.1 >nul");
+                sb.AppendLine("ping -n 2 127.0.0.1 >nul");
             }
 
-            sb.AppendLine("  echo %1 %2 %3 %4 %5 %6 >> \"%CALLS%\"");
-            sb.AppendLine($"  echo {displayJson}");
-            sb.AppendLine("  exit /b 0");
-            sb.AppendLine(")");
-            if (showTokenJson is not null)
+            sb.AppendLine(":log_display");
+            sb.AppendLine("echo %1 %2 %3 %4 %5 %6 >> \"%~dp0calls.display.log\"");
+            sb.AppendLine("if errorlevel 1 (ping -n 2 127.0.0.1 >nul & goto log_display)");
+            sb.AppendLine($"echo {displayJson}");
+            sb.AppendLine("exit /b 0");
+            sb.AppendLine(":do_token");
+            if (showTokenJson is null)
             {
-                sb.AppendLine($"if \"%1 %2 %3\"==\"org auth show-access-token\" (");
-                sb.AppendLine("  echo %1 %2 %3 %4 %5 %6 >> \"%CALLS%\"");
-                sb.AppendLine($"  echo {showTokenJson}");
-                sb.AppendLine("  exit /b 0");
-                sb.AppendLine(")");
+                sb.AppendLine("goto do_other");
+            }
+            else
+            {
+                sb.AppendLine(":log_token");
+                sb.AppendLine("echo %1 %2 %3 %4 %5 %6 >> \"%~dp0calls.token.log\"");
+                sb.AppendLine("if errorlevel 1 (ping -n 2 127.0.0.1 >nul & goto log_token)");
+                sb.AppendLine($"echo {showTokenJson}");
+                sb.AppendLine("exit /b 0");
             }
 
-            sb.AppendLine("echo unsupported %1 %2 %3 >> \"%CALLS%\"");
+            sb.AppendLine(":do_other");
+            sb.AppendLine(":log_other");
+            sb.AppendLine("echo unsupported %1 %2 %3 >> \"%~dp0calls.other.log\"");
+            sb.AppendLine("if errorlevel 1 (ping -n 2 127.0.0.1 >nul & goto log_other)");
             sb.AppendLine("exit /b 1");
             File.WriteAllText(path, sb.ToString());
             return path;
