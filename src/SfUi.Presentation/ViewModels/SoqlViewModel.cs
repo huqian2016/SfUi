@@ -23,6 +23,7 @@ public partial class SoqlViewModel : ObservableObject
     private readonly AppSettingsStore _settings;
     private readonly AppLog _log;
     private readonly IReportExportDialog _reportDialog;
+    private readonly SoqlResultCacheStore? _cache;
     private readonly UiDebouncer _liveCountDebouncer;
     private CancellationTokenSource? _liveCountCts;
 
@@ -37,6 +38,18 @@ public partial class SoqlViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isRunning;
+
+    /// <summary>いま表示している結果がキャッシュ（前回の実行結果）か。</summary>
+    [ObservableProperty]
+    private bool _isCachedResult;
+
+    /// <summary>キャッシュ バッジの表示文字列（例: キャッシュ · 10:24）。</summary>
+    [ObservableProperty]
+    private string _cachedResultText = string.Empty;
+
+    /// <summary>キャッシュ バッジのツールチップ（取得日時と行数）。</summary>
+    [ObservableProperty]
+    private string _cachedResultTooltip = string.Empty;
 
     [ObservableProperty]
     private string _statusText = UiText.T("Common_Ready");
@@ -76,7 +89,7 @@ public partial class SoqlViewModel : ObservableObject
 
     public ObservableCollection<HistoryEntry> HistoryItems { get; } = new();
 
-    public SoqlViewModel(SoqlService service, HistoryStore history, FavoritesStore favorites, IFilePickerService filePicker, IClipboardService clipboard, SObjectDescribeService describes, AppSettingsStore settings, IUiDispatcher ui, AppLog log, IReportExportDialog reportDialog)
+    public SoqlViewModel(SoqlService service, HistoryStore history, FavoritesStore favorites, IFilePickerService filePicker, IClipboardService clipboard, SObjectDescribeService describes, AppSettingsStore settings, IUiDispatcher ui, AppLog log, IReportExportDialog reportDialog, SoqlResultCacheStore? cache = null)
     {
         _service = service;
         _history = history;
@@ -87,6 +100,7 @@ public partial class SoqlViewModel : ObservableObject
         _settings = settings;
         _log = log;
         _reportDialog = reportDialog;
+        _cache = cache;
         _aiAssistEnabled = settings.Current.SoqlAiAssist;
         _liveCountDebouncer = new UiDebouncer(1200, ui);
         RefreshHistory();
@@ -333,20 +347,30 @@ public partial class SoqlViewModel : ObservableObject
         }
 
         IsRunning = true;
-        StatusText = UiText.T("Common_Running");
         var stopwatch = Stopwatch.StartNew();
+
+        // 結果の先頭に Id 列を固定で用意する（集計など括弧を含む選択リストでは補わない）
+        var (effectiveSoql, idInjected) = SoqlQueryEditor.EnsureIdSelected(soql);
+
+        // まず前回の結果（キャッシュ）があれば即表示し、裏で最新を取得する
+        var showingCache = TryShowCachedResult(effectiveSoql, soql);
+        StatusText = showingCache
+            ? UiText.T("Soql_CacheRefreshingFmt", _cachedAtText)
+            : UiText.T("Common_Running");
+
         try
         {
-            // 結果の先頭に Id 列を固定で用意する（集計など括弧を含む選択リストでは補わない）
-            var (effectiveSoql, idInjected) = SoqlQueryEditor.EnsureIdSelected(soql);
             var execution = await _service.ExecuteSoqlAsync(CurrentOrg, effectiveSoql, UseToolingApi, PreferRest, CurrentFolder);
             _resultObjectName = SoqlQueryEditor.TryGetObjectName(soql);
+            ClearCachedResult();
             BuildResultModel(execution.Result.Table);
             StatusText = UiText.T("Soql_ResultFmt", execution.Engine, execution.Result.TotalSize, execution.Duration.TotalMilliseconds);
             if (idInjected)
             {
                 _log.Info("SOQL: 選択リストに Id を補って実行しました。");
             }
+
+            SaveCachedResult(effectiveSoql, soql, execution);
 
             _history.Append(
                 new HistoryEntry
@@ -366,9 +390,19 @@ public partial class SoqlViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            _resultObjectName = null;
-            ClearResultModel();
-            StatusText = UiText.T("Common_FailedFmt", ex.Message);
+            // キャッシュを表示している場合はそのまま残し、更新に失敗したことを伝える
+            if (IsCachedResult)
+            {
+                StatusText = UiText.T("Soql_CacheRefreshFailedFmt", ex.Message, _cachedAtText);
+                _log.Warn($"SOQL: 最新の取得に失敗したためキャッシュを表示したままにします: {ex.Message}");
+            }
+            else
+            {
+                _resultObjectName = null;
+                ClearResultModel();
+                StatusText = UiText.T("Common_FailedFmt", ex.Message);
+            }
+
             _history.Append(
                 new HistoryEntry
                 {
@@ -484,6 +518,99 @@ public partial class SoqlViewModel : ObservableObject
     }
 
     // ---- 結果グリッド（Id 列の固定・セル編集・組織へ反映） ----
+
+    /// <summary>キャッシュ表示中の取得時刻（バッジ・ステータス用）。</summary>
+    private string _cachedAtText = string.Empty;
+
+    /// <summary>
+    /// 前回の実行結果（キャッシュ）があれば即座に表示する。
+    /// 表示できたときは true を返し、裏で最新を取得したら <see cref="ClearCachedResult"/> で消す。
+    /// </summary>
+    private bool TryShowCachedResult(string effectiveSoql, string originalSoql)
+    {
+        ClearCachedResult();
+        if (_cache is null || string.IsNullOrWhiteSpace(CurrentOrg))
+        {
+            return false;
+        }
+
+        SoqlCacheEntry? entry;
+        SoqlResult? result;
+        try
+        {
+            entry = _cache.Find(CurrentOrg, effectiveSoql, UseToolingApi);
+            result = entry is null ? null : SoqlResultCacheStore.ToResult(entry);
+        }
+        catch (Exception ex)
+        {
+            _log.Warn($"SOQL: キャッシュの読み込みに失敗: {ex.Message}");
+            return false;
+        }
+
+        if (entry is null || result is null)
+        {
+            return false;
+        }
+
+        _resultObjectName = SoqlQueryEditor.TryGetObjectName(originalSoql);
+        BuildResultModel(result.Table);
+
+        _cachedAtText = entry.CachedAt.LocalDateTime.ToString("HH:mm", System.Globalization.CultureInfo.CurrentCulture);
+        IsCachedResult = true;
+        CachedResultText = UiText.T("Soql_CacheBadgeFmt", _cachedAtText);
+        CachedResultTooltip = UiText.T(
+            "Soql_CacheTooltipFmt",
+            entry.CachedAt.LocalDateTime.ToString("yyyy-MM-dd HH:mm", System.Globalization.CultureInfo.CurrentCulture),
+            entry.RowCount);
+        _log.Info($"SOQL: キャッシュした結果を表示しました（{entry.RowCount} 行 / {_cachedAtText} 取得）。最新を取得します。");
+        return true;
+    }
+
+    /// <summary>キャッシュ表示のバッジを消す（最新の結果に置き換わったとき）。</summary>
+    private void ClearCachedResult()
+    {
+        _cachedAtText = string.Empty;
+        IsCachedResult = false;
+        CachedResultText = string.Empty;
+        CachedResultTooltip = string.Empty;
+    }
+
+    /// <summary>実行結果を次回表示用にキャッシュへ保存する。</summary>
+    private void SaveCachedResult(string effectiveSoql, string originalSoql, SoqlExecution execution)
+    {
+        if (_cache is null || string.IsNullOrWhiteSpace(CurrentOrg))
+        {
+            return;
+        }
+
+        try
+        {
+            // 大きすぎる結果はキャッシュしない（古いキャッシュも消す）
+            if (execution.Result.RowCount > SoqlResultCacheStore.MaxRows ||
+                execution.Result.RawJson.Length > SoqlResultCacheStore.MaxRawBytes)
+            {
+                _cache.Remove(CurrentOrg, effectiveSoql, UseToolingApi);
+                return;
+            }
+
+            _cache.Save(CurrentOrg, new SoqlCacheEntry
+            {
+                Query = SoqlResultCacheStore.NormalizeQuery(effectiveSoql),
+                DisplayQuery = originalSoql,
+                UseToolingApi = UseToolingApi,
+                Engine = execution.Engine,
+                TotalSize = execution.Result.TotalSize,
+                Done = execution.Result.Done,
+                RowCount = execution.Result.RowCount,
+                CachedAt = DateTimeOffset.Now,
+                RawJson = execution.Result.RawJson,
+            });
+        }
+        catch (Exception ex)
+        {
+            _log.Warn($"SOQL: 結果のキャッシュ保存に失敗: {ex.Message}");
+        }
+    }
 
     /// <summary>現在の表示内容（未反映の編集を含む）を DataTable 化する（CSV/コピー用）。</summary>
     private DataTable? GetCurrentTable()
@@ -715,6 +842,12 @@ public partial class SoqlViewModel : ObservableObject
                     ? UiText.T("Soql_DeployPartialFmt", succeeded, failed, firstError ?? string.Empty)
                     : UiText.T("Soql_DeployFailedFmt", firstError ?? string.Empty);
             _log.Info($"SOQL 反映: {StatusText}");
+
+            // 反映でデータが変わったため、このクエリのキャッシュは古くなった
+            if (succeeded > 0)
+            {
+                InvalidateCacheForCurrentQuery();
+            }
         }
         catch (Exception ex)
         {
@@ -724,6 +857,25 @@ public partial class SoqlViewModel : ObservableObject
         finally
         {
             IsRunning = false;
+        }
+    }
+
+    /// <summary>組織へ反映した結果が古くならないよう、現在のクエリのキャッシュを破棄する。</summary>
+    private void InvalidateCacheForCurrentQuery()
+    {
+        if (_cache is null || string.IsNullOrWhiteSpace(CurrentOrg))
+        {
+            return;
+        }
+
+        try
+        {
+            var (effectiveSoql, _) = SoqlQueryEditor.EnsureIdSelected(SoqlText.Trim());
+            _cache.Remove(CurrentOrg, effectiveSoql, UseToolingApi);
+        }
+        catch (Exception ex)
+        {
+            _log.Warn($"SOQL: キャッシュの破棄に失敗: {ex.Message}");
         }
     }
 

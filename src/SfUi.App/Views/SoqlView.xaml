@@ -35,6 +35,23 @@
         <!-- ステータス -->
         <Border DockPanel.Dock="Bottom" Background="#F7F7F7" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="8,4">
             <DockPanel>
+                <!-- キャッシュ表示中のバッジ（最新結果に置き換わると消える） -->
+                <Border DockPanel.Dock="Left" Background="#FFF3CD" BorderBrush="#E0A800" BorderThickness="1"
+                        CornerRadius="9" Padding="8,0" Margin="0,0,10,0" VerticalAlignment="Center"
+                        ToolTip="{Binding CachedResultTooltip}">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsCachedResult}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <TextBlock Text="{Binding CachedResultText}" Foreground="#8A6100" FontWeight="SemiBold"
+                               VerticalAlignment="Center" AutomationProperties.AutomationId="SoqlCacheBadge" />
+                </Border>
                 <TextBlock DockPanel.Dock="Right" Text="{Binding LiveCountText}" Foreground="#666666" Margin="12,0,0,0"
                            AutomationProperties.AutomationId="SoqlLiveCountText" />
                 <TextBlock Text="{Binding StatusText}" TextTrimming="CharacterEllipsis"
