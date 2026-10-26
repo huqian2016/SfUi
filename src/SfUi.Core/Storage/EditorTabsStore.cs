@@ -6,6 +6,9 @@ public sealed class EditorTabHostState
     /// <summary>タブの本文（順序どおり）。</summary>
     public List<string> Tabs { get; set; } = new();
 
+    /// <summary>タブ名（null / 空 = 既定の連番。旧バージョンのファイルでは未設定）。</summary>
+    public List<string?>? Titles { get; set; }
+
     /// <summary>選択中タブの位置（0 始まり）。</summary>
     public int Selected { get; set; }
 }

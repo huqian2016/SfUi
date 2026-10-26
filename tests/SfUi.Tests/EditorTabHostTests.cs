@@ -175,4 +175,156 @@ public class EditorTabHostTests
 
         Assert.True(count >= 4, $"Changed fired {count} times");
     }
+
+    // ---- タブ名の変更・複製・永続化 ----
+
+    private static EditorTabHost<DummyTab> CreateRenamableHost(Func<DummyTab, string?> prompt) =>
+        new(() => new DummyTab(), (tab, title) => tab.Title = title, "Tab_Soql",
+            tab => tab.Text, (tab, text) => tab.Text = text, tab => tab.Title)
+        {
+            TitlePrompt = prompt,
+        };
+
+    [Fact]
+    public void RenameTab_SetsCustomTitleAndKeepsItAfterAddingTabs()
+    {
+        var host = CreateRenamableHost(_ => "My query");
+        var first = host.AddTab();
+
+        host.RenameTabCommand.Execute(first);
+
+        Assert.Equal("My query", first.Title);
+        Assert.True(host.HasCustomTitle(first));
+
+        var second = host.AddTab();
+        Assert.Equal("My query", first.Title);
+        Assert.Equal(UiText.T("Main_EditorTabTitleFmt", UiText.T("Tab_Soql"), 2), second.Title);
+    }
+
+    [Fact]
+    public void RenameTab_EmptyInput_RestoresPositionalTitle()
+    {
+        var host = CreateRenamableHost(_ => "Temp");
+        var first = host.AddTab();
+        host.RenameTab(first);
+
+        host.TitlePrompt = _ => "   ";
+        host.RenameTab(first);
+
+        Assert.False(host.HasCustomTitle(first));
+        Assert.Equal(UiText.T("Main_EditorTabTitleFmt", UiText.T("Tab_Soql"), 1), first.Title);
+    }
+
+    [Fact]
+    public void RenameTab_NullPromptResultOrMissingProvider_DoesNothing()
+    {
+        var host = CreateRenamableHost(_ => null);
+        var first = host.AddTab();
+        var before = first.Title;
+
+        host.RenameTab(first);
+        Assert.Equal(before, first.Title);
+
+        var noPrompt = CreateHost();
+        var tab = noPrompt.AddTab();
+        var defaultTitle = tab.Title;
+        noPrompt.RenameTab(tab);
+        Assert.Equal(defaultTitle, tab.Title);
+    }
+
+    [Fact]
+    public void DuplicateTab_CopiesTextAndInsertsAfterSource()
+    {
+        var host = CreateRenamableHost(_ => null);
+        host.AddTab();
+        var source = host.AddTab();
+        source.Text = "SELECT Id FROM Account";
+        var last = host.AddTab();
+        var sourceIndex = host.Tabs.IndexOf(source);
+
+        var copy = host.DuplicateTab(source);
+
+        Assert.NotNull(copy);
+        Assert.Equal(4, host.Tabs.Count);
+        Assert.Same(copy, host.Tabs[sourceIndex + 1]);
+        Assert.Same(last, host.Tabs[sourceIndex + 2]);
+        Assert.Equal("SELECT Id FROM Account", copy!.Text);
+        Assert.Same(copy, host.SelectedTab);
+    }
+
+    [Fact]
+    public void DuplicateTab_CustomTitle_GetsCopySuffix()
+    {
+        var host = CreateRenamableHost(_ => "Reports");
+        var source = host.AddTab();
+        host.RenameTab(source);
+
+        var copy = host.DuplicateTab(source);
+
+        Assert.NotNull(copy);
+        Assert.Equal(UiText.T("Main_EditorTabCopyFmt", "Reports"), copy!.Title);
+        Assert.True(host.HasCustomTitle(copy));
+    }
+
+    [Fact]
+    public void DuplicateTab_DefaultTitle_UsesPositionalNumbering()
+    {
+        var host = CreateRenamableHost(_ => null);
+        var source = host.AddTab();
+
+        var copy = host.DuplicateTab(source);
+
+        Assert.NotNull(copy);
+        Assert.False(host.HasCustomTitle(copy!));
+        Assert.Equal(UiText.T("Main_EditorTabTitleFmt", UiText.T("Tab_Soql"), 2), copy.Title);
+    }
+
+    [Fact]
+    public void DuplicateTab_UnknownTab_ReturnsNull()
+    {
+        var host = CreateHost();
+        host.AddTab();
+
+        Assert.Null(host.DuplicateTab(new DummyTab()));
+    }
+
+    [Fact]
+    public void ExportTitles_RoundTripsThroughRestoreTitles()
+    {
+        var host = CreateRenamableHost(_ => null);
+        host.AddTab();
+        var second = host.AddTab();
+        host.TitlePrompt = _ => "Named";
+        host.RenameTab(second);
+
+        var titles = host.ExportTitles();
+
+        Assert.Equal(2, titles.Count);
+        Assert.Null(titles[0]);
+        Assert.Equal("Named", titles[1]);
+
+        var restored = CreateRenamableHost(_ => null);
+        restored.AddTab();
+        restored.AddTab();
+        restored.RestoreTitles(titles);
+
+        Assert.False(restored.HasCustomTitle(restored.Tabs[0]));
+        Assert.True(restored.HasCustomTitle(restored.Tabs[1]));
+        Assert.Equal("Named", restored.Tabs[1].Title);
+    }
+
+    [Fact]
+    public void RestoreFromTexts_ClearsCustomTitles()
+    {
+        var host = CreateRenamableHost(_ => "Named");
+        var first = host.AddTab();
+        host.RenameTab(first);
+
+        host.RestoreFromTexts(new[] { "SELECT Id FROM Account", "SELECT Id FROM Contact" }, 1);
+
+        Assert.Equal(2, host.Tabs.Count);
+        Assert.False(host.HasCustomTitle(host.Tabs[0]));
+        Assert.Equal("SELECT Id FROM Contact", host.Tabs[1].Text);
+        Assert.Same(host.Tabs[1], host.SelectedTab);
+    }
 }

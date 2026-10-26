@@ -221,7 +221,11 @@ public partial class MainViewModel : ObservableObject
             (vm, title) => vm.TabTitle = title,
             "Tab_Soql",
             vm => vm.SoqlText,
-            (vm, text) => vm.SoqlText = text);
+            (vm, text) => vm.SoqlText = text,
+            vm => vm.TabTitle)
+        {
+            TitlePrompt = tab => _dialogs.Prompt(UiText.T("Main_RenameTabTitle"), UiText.T("Main_RenameTabPrompt"), tab.TabTitle),
+        };
         ApexTabs = new EditorTabHost<ApexViewModel>(
             () => CreateApexTab(apexFactory),
             (vm, title) => vm.TabTitle = title,
@@ -303,6 +307,7 @@ public partial class MainViewModel : ObservableObject
         if (state?.Tabs is { Count: > 0 })
         {
             host.RestoreFromTexts(state.Tabs, state.Selected);
+            host.RestoreTitles(state.Titles);
         }
         else
         {
@@ -366,6 +371,7 @@ public partial class MainViewModel : ObservableObject
     private static EditorTabHostState ToEditorTabsState<T>(EditorTabHost<T> host) where T : class => new()
     {
         Tabs = host.ExportTexts(),
+        Titles = host.ExportTitles(),
         Selected = host.SelectedIndex,
     };
 

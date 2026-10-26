@@ -11,7 +11,7 @@ SfUi is a Windows/macOS desktop workspace for the **Salesforce CLI (`sf`)**: SOQ
 | `src/SfUi.App` | `net9.0-windows` (WPF) | Views, dialogs, DI composition, `Localization.cs` (XAML markup extension). |
 | `src/SfUi.Avalonia` | `net9.0` | Avalonia shell with the same ViewModels. |
 | `src/SfUi.Etl` | `net9.0` | ETL engine, connectors, expressions. |
-| `tests/SfUi.Tests` | `net9.0` | xUnit. Currently **1163 tests** — keep them green. |
+| `tests/SfUi.Tests` | `net9.0` | xUnit. Currently **1201 tests** — keep them green. |
 
 `Nullable` and `ImplicitUsings` are enabled everywhere.
 

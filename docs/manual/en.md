@@ -218,6 +218,11 @@ The manual is available in four languages (English / 日本語 / 简体中文 / 
 4. REST is used first, falling back to the CLI when necessary.
 
 - **Multiple tabs**: press **+** at the right end of the tab strip to add another query tab ("SOQL 2", …). Each tab keeps its own editor text, results and running state, so several queries can run side by side. Close a tab with **×** (the last remaining tab cannot be closed). Tab contents are saved automatically and restored on the next launch.
+- **Rename a tab 🖉**: use the pencil icon in the sub-tab header. Leaving the name empty restores the default numbering ("SOQL 1", …). Custom names survive tab reordering and are restored on the next launch.
+- **Duplicate a tab ⧉**: use the copy icon in the sub-tab header to create a new tab next to the current one with the same query text and name ("… (copy)"). Handy when you want to tweak a query without retyping it.
+- **Multi-statement scripts**: separate several SOQL statements with `;` to run them top to bottom. Each statement gets its **own result pane** stacked vertically (up to 20 statements) and a scrollbar appears when the panes do not fit. Every pane has a **filter box** that narrows just that result (shown as visible / total rows). A single statement still uses the classic single grid.
+- **Comments**: `--` line comments and `/* … */` block comments are supported. They are stripped before execution and never appear in the pane titles — handy as separators between statements.
+- **Cached results**: re-running the same query shows the previous result immediately and refreshes it in the background. While the cache is shown, a "Cached · time" badge appears in the status bar and disappears once the latest result arrives.
 - **Builder**: compose object, fields, conditions, order and LIMIT in the GUI and run.
 - **CSV export**: save the result grid as CSV (UTF-8 with BOM; opens directly in Excel).
 - **History**: every query is recorded and can be recalled from the history combo.

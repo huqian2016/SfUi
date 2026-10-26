@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:loc="clr-namespace:SfUi.Avalonia"
+             xmlns:views="clr-namespace:SfUi.Avalonia.Views"
              xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
              x:Class="SfUi.Avalonia.Views.SoqlView">
     <UserControl.Styles>
@@ -113,7 +114,22 @@
             <DataGrid x:Name="SoqlGrid" Grid.Row="3"
                       ItemsSource="{Binding Rows}"
                       AutoGenerateColumns="False" IsReadOnly="False"
-                      HeadersVisibility="Column" GridLinesVisibility="All" />
+                      HeadersVisibility="Column" GridLinesVisibility="All"
+                      IsVisible="{Binding IsSingleStatement}" />
+
+            <!-- 複数 SOQL（; 区切り）: 文ごとの結果枠を縦に並べる（あふれたらスクロールバー） -->
+            <ScrollViewer Grid.Row="3"
+                          VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                          IsVisible="{Binding IsMultiStatement}"
+                          AutomationProperties.AutomationId="SoqlResultPanes">
+                <ItemsControl ItemsSource="{Binding Results}" Margin="0,0,2,0">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <views:SoqlResultPaneView Margin="0,0,0,6" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
         </Grid>
     </DockPanel>
 </UserControl>

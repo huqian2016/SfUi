@@ -63,6 +63,18 @@ public partial class SoqlViewModel : ObservableObject
     /// <summary>列構成が作り直されたときに通知する（ビューの列再構築用）。</summary>
     public event Action? ResultColumnsChanged;
 
+    /// <summary>複数 SOQL（<c>;</c> 区切り）を実行したときの結果枠（最大 20）。</summary>
+    public ObservableCollection<SoqlResultPaneViewModel> Results { get; } = new();
+
+    /// <summary>複数文のスクリプトを実行した結果を表示中か（単一文のグリッドを隠す）。</summary>
+    [ObservableProperty]
+    private bool _isMultiStatement;
+
+    /// <summary>単一文の結果グリッドを表示するか（複数文のときは false）。</summary>
+    public bool IsSingleStatement => !IsMultiStatement;
+
+    partial void OnIsMultiStatementChanged(bool value) => OnPropertyChanged(nameof(IsSingleStatement));
+
     /// <summary>組織へ未反映の編集セル数。</summary>
     [ObservableProperty]
     private int _pendingEditCount;
@@ -346,14 +358,36 @@ public partial class SoqlViewModel : ObservableObject
             return;
         }
 
+        // "--" コメントを除き ";" で複数の SOQL に分割する（1 文なら従来どおり単一の結果グリッド）
+        var statements = SoqlScript.Split(soql);
+        if (statements.Count == 0)
+        {
+            StatusText = UiText.T("Soql_EnterQuery");
+            return;
+        }
+
+        if (statements.Count == 1)
+        {
+            await ExecuteSingleAsync(statements[0].Text, soql);
+            return;
+        }
+
+        await ExecuteScriptAsync(statements, soql);
+    }
+
+    private async Task ExecuteSingleAsync(string statement, string originalSoql)
+    {
+        IsMultiStatement = false;
+        Results.Clear();
+        var soql = originalSoql;
         IsRunning = true;
         var stopwatch = Stopwatch.StartNew();
 
         // 結果の先頭に Id 列を固定で用意する（集計など括弧を含む選択リストでは補わない）
-        var (effectiveSoql, idInjected) = SoqlQueryEditor.EnsureIdSelected(soql);
+        var (effectiveSoql, idInjected) = SoqlQueryEditor.EnsureIdSelected(statement);
 
         // まず前回の結果（キャッシュ）があれば即表示し、裏で最新を取得する
-        var showingCache = TryShowCachedResult(effectiveSoql, soql);
+        var showingCache = TryShowCachedResult(effectiveSoql, statement);
         StatusText = showingCache
             ? UiText.T("Soql_CacheRefreshingFmt", _cachedAtText)
             : UiText.T("Common_Running");
@@ -361,7 +395,7 @@ public partial class SoqlViewModel : ObservableObject
         try
         {
             var execution = await _service.ExecuteSoqlAsync(CurrentOrg, effectiveSoql, UseToolingApi, PreferRest, CurrentFolder);
-            _resultObjectName = SoqlQueryEditor.TryGetObjectName(soql);
+            _resultObjectName = SoqlQueryEditor.TryGetObjectName(statement);
             ClearCachedResult();
             BuildResultModel(execution.Result.Table);
             StatusText = UiText.T("Soql_ResultFmt", execution.Engine, execution.Result.TotalSize, execution.Duration.TotalMilliseconds);
@@ -424,6 +458,120 @@ public partial class SoqlViewModel : ObservableObject
             RefreshHistory();
         }
     }
+
+    /// <summary>
+    /// 複数の SOQL（<c>;</c> 区切り）を上から順に実行し、文ごとの結果枠を埋める。
+    /// 失敗した文はその枠にエラーを表示し、残りの文は続けて実行する。
+    /// </summary>
+    private async Task ExecuteScriptAsync(IReadOnlyList<SoqlStatement> statements, string originalSoql)
+    {
+        if (CurrentOrg is not { Length: > 0 } org)
+        {
+            StatusText = UiText.T("Msg_SelectOrg");
+            return;
+        }
+
+        IsMultiStatement = true;
+        ClearResultModel();
+        ClearCachedResult();
+        Results.Clear();
+
+        var panes = new List<SoqlResultPaneViewModel>(statements.Count);
+        foreach (var statement in statements)
+        {
+            var pane = new SoqlResultPaneViewModel(statement.Index, statement.Text, OpenRecordFromPaneAsync);
+            Results.Add(pane);
+            panes.Add(pane);
+
+            // キャッシュがあれば先に表示しておく（裏で最新に置き換わる）
+            if (_cache is null)
+            {
+                continue;
+            }
+
+            try
+            {
+                var (effectiveSoql, _) = SoqlQueryEditor.EnsureIdSelected(statement.Text);
+                var entry = _cache.Find(org, effectiveSoql, UseToolingApi);
+                var cached = entry is null ? null : SoqlResultCacheStore.ToResult(entry);
+                if (entry is not null && cached is not null)
+                {
+                    pane.SetCached(cached.Table, entry.CachedAt);
+                }
+            }
+            catch (Exception ex)
+            {
+                _log.Warn($"SOQL: キャッシュの読み込みに失敗: {ex.Message}");
+            }
+        }
+
+        IsRunning = true;
+        var stopwatch = Stopwatch.StartNew();
+        var succeeded = 0;
+        var failed = 0;
+        string? firstError = null;
+        try
+        {
+            for (var i = 0; i < statements.Count; i++)
+            {
+                var statement = statements[i];
+                var pane = panes[i];
+                StatusText = UiText.T("Soql_ScriptRunningFmt", i + 1, statements.Count);
+                if (!pane.IsCachedResult)
+                {
+                    pane.SetRunning();
+                }
+
+                try
+                {
+                    var (effectiveSoql, idInjected) = SoqlQueryEditor.EnsureIdSelected(statement.Text);
+                    var execution = await _service.ExecuteSoqlAsync(org, effectiveSoql, UseToolingApi, PreferRest, CurrentFolder);
+                    pane.SetResult(execution.Result.Table, UiText.T("Soql_ResultFmt", execution.Engine, execution.Result.TotalSize, execution.Duration.TotalMilliseconds));
+                    if (idInjected)
+                    {
+                        _log.Info($"SOQL: 文 {i + 1} の選択リストに Id を補って実行しました。");
+                    }
+
+                    SaveCachedResult(effectiveSoql, statement.Text, execution);
+                    succeeded++;
+                }
+                catch (Exception ex)
+                {
+                    pane.SetError(ex.Message);
+                    failed++;
+                    firstError ??= ex.Message;
+                    _log.Error($"SOQL: 文 {i + 1} の実行に失敗", ex);
+                }
+            }
+
+            stopwatch.Stop();
+            StatusText = failed == 0
+                ? UiText.T("Soql_ScriptDoneFmt", succeeded)
+                : UiText.T("Soql_ScriptPartialFmt", succeeded, failed, firstError ?? string.Empty);
+            _log.Info($"SOQL スクリプト実行: {StatusText}");
+
+            _history.Append(
+                new HistoryEntry
+                {
+                    Type = HistoryTypes.Soql,
+                    Org = CurrentOrg,
+                    Folder = CurrentFolder,
+                    Params = originalSoql,
+                    Summary = UiText.T("Soql_ScriptSummaryFmt", statements.Count, Summarize(statements[0].Text)),
+                    Status = failed == 0 ? "success" : "error",
+                    DurationMs = (int)stopwatch.Elapsed.TotalMilliseconds,
+                },
+                result: string.Join("\n--\n", panes.Select(pane => pane.HasError ? $"ERROR: {pane.ErrorText}" : $"[{pane.Rows.Count} rows]")));
+        }
+        finally
+        {
+            IsRunning = false;
+            RefreshHistory();
+        }
+    }
+
+    /// <summary>結果枠の Id リンクからレコードページを開く。</summary>
+    private Task OpenRecordFromPaneAsync(SoqlGridRow row) => OpenRecordAsync(row);
 
     [RelayCommand]
     private async Task ExportCsvAsync()
