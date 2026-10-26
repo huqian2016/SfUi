@@ -47,7 +47,8 @@ public static class SoqlCompletionParser
 
     /// <summary>
     /// カーソル位置のテキストから補完コンテキストを解析する。
-    /// 句はカーソルより前、FROM オブジェクトは全文（FROM はカーソルより後ろにあることが多い）から求める。
+    /// 複数の SOQL（<c>;</c> 区切り）のときはカーソルを含む文だけを対象にする。
+    /// 句はカーソルより前、FROM オブジェクトはその文全体（FROM はカーソルより後ろにあることが多い）から求める。
     /// </summary>
     public static SoqlCompletionContext Parse(string? text, int caret)
     {
@@ -60,9 +61,13 @@ public static class SoqlCompletionParser
             return new SoqlCompletionContext(SoqlClause.None, string.Empty, caret, Array.Empty<string>(), Array.Empty<string>(), EmptyAliases, true);
         }
 
+        // 複数文の 2 文目以降を書いているとき、1 文目の FROM を拾わないよう文単位で切り出す
+        var (statementStart, statementEnd) = StatementRange(text, caret);
+        var statement = text[statementStart..statementEnd];
+
         // カーソル直前の語（「Account.」のようなドット付きパスを含む）を切り出す
         var start = caret;
-        while (start > 0 && (IsWordChar(text[start - 1]) || text[start - 1] == '.'))
+        while (start > statementStart && (IsWordChar(text[start - 1]) || text[start - 1] == '.'))
         {
             start--;
         }
@@ -77,9 +82,80 @@ public static class SoqlCompletionParser
             path.AddRange(word[..lastDot].Split('.', StringSplitOptions.RemoveEmptyEntries));
         }
 
-        var clause = DetectClause(head[..start]);
-        var (objects, aliases) = ParseFromList(text);
+        var clause = DetectClause(statement[..Math.Max(0, start - statementStart)]);
+        var (objects, aliases) = ParseFromList(statement);
         return new SoqlCompletionContext(clause, prefix, start, path, objects, aliases, false);
+    }
+
+    /// <summary>
+    /// カーソルを含む 1 文の範囲を返す（先頭は文の開始位置、終端は <c>;</c> の位置またはテキスト末尾）。
+    /// 文字列リテラル・コメント内の <c>;</c> は区切りとみなさない。
+    /// </summary>
+    public static (int Start, int End) StatementRange(string? text, int caret)
+    {
+        text ??= string.Empty;
+        caret = Math.Clamp(caret, 0, text.Length);
+        var start = 0;
+        var insideString = false;
+        for (var i = 0; i < text.Length; i++)
+        {
+            var c = text[i];
+            if (insideString)
+            {
+                if (c == '\\')
+                {
+                    i++;
+                }
+                else if (c == '\'')
+                {
+                    insideString = false;
+                }
+
+                continue;
+            }
+
+            if (c == '\'')
+            {
+                insideString = true;
+                continue;
+            }
+
+            if (c == '-' && i + 1 < text.Length && text[i + 1] == '-')
+            {
+                var newline = text.IndexOf('\n', i + 2);
+                if (newline < 0)
+                {
+                    break;   // 以降は行コメント
+                }
+
+                i = newline;
+                continue;
+            }
+
+            if (c == '/' && i + 1 < text.Length && text[i + 1] == '*')
+            {
+                var close = text.IndexOf("*/", i + 2, StringComparison.Ordinal);
+                if (close < 0)
+                {
+                    break;   // 以降はブロック コメント
+                }
+
+                i = close + 1;
+                continue;
+            }
+
+            if (c == ';')
+            {
+                if (i >= caret)
+                {
+                    return (start, i);
+                }
+
+                start = i + 1;
+            }
+        }
+
+        return (start, text.Length);
     }
 
     /// <summary>カーソルより前のテキストから現在の句を判定する。</summary>
@@ -186,7 +262,7 @@ public static class SoqlCompletionParser
         return (objects, aliases);
     }
 
-    /// <summary>カーソルが文字列リテラルまたは行コメント（--）の中にあるか。</summary>
+    /// <summary>カーソルが文字列リテラルまたはコメント（-- / /* */）の中にあるか。</summary>
     public static bool IsInsideStringOrComment(string head)
     {
         var insideString = false;
@@ -222,6 +298,18 @@ public static class SoqlCompletionParser
                 }
 
                 i = newline;
+                continue;
+            }
+
+            if (c == '/' && i + 1 < head.Length && head[i + 1] == '*')
+            {
+                var close = head.IndexOf("*/", i + 2, StringComparison.Ordinal);
+                if (close < 0)
+                {
+                    return true;   // 閉じていないブロック コメント = カーソルはコメント内
+                }
+
+                i = close + 1;
             }
         }
 
@@ -271,6 +359,24 @@ public static class SoqlCompletionParser
                 while (i < chars.Length && chars[i] != '\n')
                 {
                     chars[i] = ' ';
+                    i++;
+                }
+
+                i--;   // 外側の for で 1 進む
+                continue;
+            }
+
+            if (c == '/' && i + 1 < chars.Length && chars[i + 1] == '*')
+            {
+                var close = new string(chars).IndexOf("*/", i + 2, StringComparison.Ordinal);
+                var last = close < 0 ? chars.Length - 1 : close + 1;
+                while (i <= last)
+                {
+                    if (i < chars.Length && chars[i] != '\n')
+                    {
+                        chars[i] = ' ';
+                    }
+
                     i++;
                 }
 

@@ -28,6 +28,12 @@ public static class SoqlCountQueryBuilder
         var text = soql.Trim().TrimEnd(';').TrimEnd();
         var sanitized = SoqlCompletionParser.StripLiterals(text);
 
+        // 複数の SOQL（; 区切り）はカーソル位置の文が分からないため、ライブ件数は出さない
+        if (sanitized.IndexOf(';') >= 0)
+        {
+            return null;
+        }
+
         var fromMatch = FromPattern.Match(sanitized);
         if (!fromMatch.Success || fromMatch.Index == 0)
         {

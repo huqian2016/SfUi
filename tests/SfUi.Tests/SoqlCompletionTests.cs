@@ -162,8 +162,64 @@ public class SoqlCompletionTests
         Assert.Equal("Account", SoqlCompletionEngine.ResolveRelationship(describe, "account"));
         Assert.Null(SoqlCompletionEngine.ResolveRelationship(describe, "Unknown"));
     }
+    [Fact]
+    public void Parser_UsesOnlyTheStatementContainingTheCaret()
+    {
+        // 2 文目の FROM を入力中: 1 文目の Account ではなく入力中の Cont を対象にする
+        var typingSecond = SoqlCompletionParser.Parse("SELECT Id FROM Account;\nSELECT Id FROM Cont", 43);
+        Assert.Equal(SoqlClause.From, typingSecond.Clause);
+        Assert.Equal("Cont", typingSecond.Prefix);
+        Assert.Equal(new[] { "Cont" }, typingSecond.FromObjects);
+
+        // 2 文目の項目を入力中: 対象は Contact（1 文目の Account ではない）
+        var fieldsSecond = SoqlCompletionParser.Parse("SELECT Id FROM Account;\nSELECT Nam FROM Contact", 34);
+        Assert.Equal(SoqlClause.Select, fieldsSecond.Clause);
+        Assert.Equal("Nam", fieldsSecond.Prefix);
+        Assert.Equal(new[] { "Contact" }, fieldsSecond.FromObjects);
+
+        // 2 文目で別名を使う場合、別名もその文の FROM から解決する
+        var aliasSecond = SoqlCompletionParser.Parse("SELECT Id FROM Account; SELECT c.Nam FROM Contact c WHERE c.Nam", 63);
+        Assert.Equal(SoqlClause.Where, aliasSecond.Clause);
+        Assert.Equal(new[] { "Contact" }, aliasSecond.FromObjects);
+        Assert.Equal("Contact", aliasSecond.Aliases["c"]);
+    }
+
+    [Fact]
+    public void StatementRange_SplitsOnTopLevelSemicolonsOnly()
+    {
+        // 文字列リテラル・コメント内の ; は区切りではない
+        var inString = SoqlCompletionParser.StatementRange("SELECT Id FROM Contact WHERE Name = 'a;b'", 44);
+        Assert.Equal((0, 41), inString);
+
+        var two = SoqlCompletionParser.StatementRange("SELECT Id FROM Account; SELECT Id FROM Contact", 19);
+        Assert.Equal("SELECT Id FROM Account", "SELECT Id FROM Account; SELECT Id FROM Contact"[two.Start..two.End]);
+
+        var second = SoqlCompletionParser.StatementRange("SELECT Id FROM Account; SELECT Id FROM Contact", 30);
+        Assert.Equal(" SELECT Id FROM Contact", "SELECT Id FROM Account; SELECT Id FROM Contact"[second.Start..second.End]);
+    }
+
+    [Fact]
+    public void Parser_IgnoresBlockComments()
+    {
+        // ブロック コメント内の FROM は対象にしない（文字列・-- と同じ扱い）
+        var context = SoqlCompletionParser.Parse("SELECT Id FROM Contact WHERE /* FROM Account */ Nam", 51);
+        Assert.Equal(SoqlClause.Where, context.Clause);
+        Assert.Equal(new[] { "Contact" }, context.FromObjects);
+        Assert.Equal("Nam", context.Prefix);
+
+        var insideComment = SoqlCompletionParser.Parse("SELECT Id FROM Contact /* SELECT", 32);
+        Assert.True(insideComment.InsideString);
+        Assert.Equal(SoqlClause.None, insideComment.Clause);
+    }
 
     // ---- 件数クエリ ----
+
+    [Fact]
+    public void CountBuilder_SkipsMultipleStatements()
+    {
+        Assert.Null(SoqlCountQueryBuilder.Build("SELECT Id FROM Account; SELECT Id FROM Contact"));
+        Assert.Null(SoqlCountQueryBuilder.Build("SELECT Id FROM Account WHERE Name = 'x'; -- 2nd\nSELECT Id FROM Contact"));
+    }
 
     [Fact]
     public void CountBuilder_BuildsFromWhereClause()
