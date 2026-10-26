@@ -49,6 +49,7 @@
             <DataGrid x:Name="PaneGrid" Height="240"
                       ItemsSource="{Binding VisibleRows}"
                       AutoGenerateColumns="False" IsReadOnly="True"
+                      SelectionMode="Extended"
                       HeadersVisibility="Column" GridLinesVisibility="All"
                       AutomationProperties.AutomationId="SoqlPaneGrid"
                       AutomationProperties.Name="{Binding Title}" />

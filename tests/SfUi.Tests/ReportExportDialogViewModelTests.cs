@@ -107,6 +107,29 @@ public sealed class ReportExportDialogViewModelTests
         }
     }
 
+    [Fact]
+    public void BuildOptions_AcceptsGroupedMaxRowsRestoredFromSettings()
+    {
+        var store = CreateStore(out var sandbox);
+        try
+        {
+            store.SaveReport(new ReportExportDefaults { MaxRows = 1200, OutputDirectory = @"C:\saved\report" });
+
+            var vm = new ReportExportDialogViewModel(CreateDocument(), "report", null, new FakeFilePicker(), store);
+            Assert.Equal("1,200", vm.MaxRowsText);
+
+            var options = vm.BuildOptions();
+
+            Assert.NotNull(options);
+            Assert.Equal(1200, options!.MaxRows);
+            Assert.Null(vm.ErrorText);
+        }
+        finally
+        {
+            Directory.Delete(sandbox, recursive: true);
+        }
+    }
+
     private static ExportSettingsStore CreateStore(out string sandbox)
     {
         sandbox = Path.Combine(Path.GetTempPath(), "sfui-tests", Guid.NewGuid().ToString("N"));

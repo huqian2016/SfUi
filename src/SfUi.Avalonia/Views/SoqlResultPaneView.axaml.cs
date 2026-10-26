@@ -26,6 +26,16 @@ public partial class SoqlResultPaneView : UserControl
     {
         AvaloniaXamlLoader.Load(this);
         DataContextChanged += (_, _) => Subscribe();
+
+        // テンプレート列のセルは既定ではコピーされないため、Ctrl+C で TSV を書き出す
+        var grid = this.FindControl<DataGrid>("PaneGrid");
+        if (grid is not null)
+        {
+            SoqlGridClipboard.Attach(
+                grid,
+                () => ViewModel?.Columns.ToList() ?? new List<SoqlGridColumn>(),
+                () => ViewModel?.VisibleRows.ToList() ?? new List<SoqlGridRow>());
+        }
     }
 
     private void Subscribe()

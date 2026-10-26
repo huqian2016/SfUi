@@ -145,12 +145,12 @@ public class SoqlResultPaneViewModelTests
     }
 
     [Fact]
-    public void ToFilteredTable_ReturnsVisibleRowsOnly()
+    public void ToTable_ReturnsVisibleRowsOnly()
     {
         var pane = CreatePaneWithRows();
         pane.FilterText = "retail";
 
-        var table = pane.ToFilteredTable();
+        var table = pane.ToTable();
 
         Assert.NotNull(table);
         Assert.Single(table!.Rows);

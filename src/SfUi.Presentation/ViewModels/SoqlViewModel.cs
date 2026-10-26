@@ -576,8 +576,8 @@ public partial class SoqlViewModel : ObservableObject
     [RelayCommand]
     private async Task ExportCsvAsync()
     {
-        var table = GetCurrentTable();
-        if (table is null || table.Rows.Count == 0)
+        var tables = GetResultTables().Where(info => info.Table is { Rows.Count: > 0 }).ToList();
+        if (tables.Count == 0)
         {
             StatusText = UiText.T("Soql_NoResultsToExport");
             return;
@@ -596,8 +596,28 @@ public partial class SoqlViewModel : ObservableObject
 
         try
         {
-            File.WriteAllText(fileName, CsvExporter.ToCsv(table), new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
-            StatusText = UiText.T("Soql_CsvSavedFmt", fileName);
+            if (tables.Count == 1)
+            {
+                File.WriteAllText(fileName, CsvExporter.ToCsv(tables[0].Table!), new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
+                StatusText = UiText.T("Soql_CsvSavedFmt", fileName);
+                return;
+            }
+
+            // 複数文: 選んだファイル名に -1 / -2 … を付けて文ごとに書き出す
+            var directory = Path.GetDirectoryName(fileName);
+            if (string.IsNullOrEmpty(directory))
+            {
+                directory = initialDirectory ?? Directory.GetCurrentDirectory();
+            }
+
+            var baseName = Path.GetFileNameWithoutExtension(fileName);
+            for (var i = 0; i < tables.Count; i++)
+            {
+                var path = Path.Combine(directory, $"{baseName}-{i + 1}.csv");
+                File.WriteAllText(path, CsvExporter.ToCsv(tables[i].Table!), new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
+            }
+
+            StatusText = UiText.T("Soql_CsvSavedMultiFmt", tables.Count, directory);
         }
         catch (Exception ex)
         {
@@ -609,19 +629,27 @@ public partial class SoqlViewModel : ObservableObject
     [RelayCommand]
     private async Task ExportReportAsync()
     {
-        var table = GetCurrentTable();
-        if (table is null || table.Rows.Count == 0)
+        var tables = GetResultTables().Where(info => info.Table is { Rows.Count: > 0 }).ToList();
+        if (tables.Count == 0)
         {
             StatusText = UiText.T("Report_NoData");
             return;
         }
 
+        // 複数文: 先頭にスクリプト全体、続けて文ごとの表を並べる（1 文のときは従来と同じ 1 表）
         var report = ReportDocumentFactory.FromTable(
             UiText.T("Report_SoqlTitle"),
             CurrentOrg,
             SoqlText,
-            ReportDocumentFactory.TableFromDataTable("SOQL", table),
+            ReportDocumentFactory.TableFromDataTable(tables[0].Name, tables[0].Table!),
             new ReportSection { Heading = UiText.T("Report_QueryHeading"), Text = SoqlText });
+        for (var i = 1; i < tables.Count; i++)
+        {
+            report.Sections.Add(ReportSection.FromTable(
+                ReportDocumentFactory.TableFromDataTable(tables[i].Name, tables[i].Table!),
+                tables[i].Title));
+        }
+
         var initialDirectory = !string.IsNullOrWhiteSpace(CurrentFolder) && Directory.Exists(CurrentFolder) ? CurrentFolder : null;
         var outcome = await ReportExportRunner.RunAsync(
             _reportDialog,
@@ -641,18 +669,43 @@ public partial class SoqlViewModel : ObservableObject
     [RelayCommand]
     private void CopyResults()
     {
-        var table = GetCurrentTable();
-        if (table is null || table.Rows.Count == 0)
+        var tables = GetResultTables().Where(info => info.Table is { Rows.Count: > 0 } || info.Error is not null).ToList();
+        if (tables.Count == 0)
         {
             StatusText = UiText.T("Soql_NoResultsToCopy");
             return;
         }
 
         var builder = new StringBuilder();
-        builder.AppendLine(string.Join("\t", table.Columns.Cast<DataColumn>().Select(c => c.ColumnName)));
-        foreach (DataRow row in table.Rows)
+        for (var index = 0; index < tables.Count; index++)
         {
-            builder.AppendLine(string.Join("\t", table.Columns.Cast<DataColumn>().Select(c => row[c] is DBNull ? "" : row[c]?.ToString())));
+            var info = tables[index];
+            if (IsMultiStatement)
+            {
+                if (index > 0)
+                {
+                    builder.AppendLine();
+                }
+
+                builder.AppendLine(info.Title);
+            }
+
+            if (info.Error is { } error)
+            {
+                builder.AppendLine(UiText.T("Soql_CopyErrorFmt", error));
+                continue;
+            }
+
+            if (info.Table is not { } table)
+            {
+                continue;
+            }
+
+            builder.AppendLine(string.Join("\t", table.Columns.Cast<DataColumn>().Select(c => c.ColumnName)));
+            foreach (DataRow row in table.Rows)
+            {
+                builder.AppendLine(string.Join("\t", table.Columns.Cast<DataColumn>().Select(c => row[c] is DBNull ? "" : row[c]?.ToString())));
+            }
         }
 
         if (_clipboard.TrySetText(builder.ToString()))
@@ -663,6 +716,42 @@ public partial class SoqlViewModel : ObservableObject
         {
             StatusText = UiText.T("Msg_CopyFailedFmt", "Clipboard not available");
         }
+    }
+
+    /// <summary>コピー / CSV / レポート出力の対象の表（1 件 = 単一文・複数件 = 文ごと）。</summary>
+    private sealed record ResultTableInfo(string Title, string Name, DataTable? Table, string? Error);
+
+    /// <summary>出力・コピー用の表を集める（複数文は絞り込み中の行を文ごとに返す）。</summary>
+    private List<ResultTableInfo> GetResultTables()
+    {
+        var tables = new List<ResultTableInfo>();
+        if (IsMultiStatement && Results.Count > 0)
+        {
+            foreach (var pane in Results)
+            {
+                var table = pane.ToTable();
+                var error = pane.HasError ? pane.ErrorText : null;
+                if (table is null && error is null)
+                {
+                    continue;
+                }
+
+                tables.Add(new ResultTableInfo(
+                    pane.Title,
+                    UiText.T("Soql_PaneTableNameFmt", pane.Index + 1),
+                    table,
+                    error));
+            }
+
+            return tables;
+        }
+
+        if (GetCurrentTable() is { } single)
+        {
+            tables.Add(new ResultTableInfo("SOQL", "SOQL", single, null));
+        }
+
+        return tables;
     }
 
     // ---- 結果グリッド（Id 列の固定・セル編集・組織へ反映） ----

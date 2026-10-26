@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SfUi.Core;
@@ -185,7 +186,13 @@ public sealed partial class ReportExportDialogViewModel : ObservableObject
         var maxRows = 5000;
         if (!string.IsNullOrWhiteSpace(MaxRowsText))
         {
-            if (!int.TryParse(MaxRowsText.Trim(), out maxRows) || maxRows < 0)
+            // 保存済み設定は「5,000」のように桁区切り付きで復元されるため、区切りを許して解析する
+            if (!int.TryParse(
+                    MaxRowsText.Trim(),
+                    NumberStyles.AllowThousands | NumberStyles.AllowLeadingSign,
+                    CultureInfo.CurrentCulture,
+                    out maxRows)
+                || maxRows < 0)
             {
                 ErrorText = UiText.T("Report_MaxRowsLabel");
                 return null;

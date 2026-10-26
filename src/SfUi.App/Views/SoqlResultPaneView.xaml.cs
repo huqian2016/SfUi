@@ -1,6 +1,7 @@
 using System.Collections.Specialized;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Markup;
 using SfUi.App.ViewModels;
 using SfUi.Core;
@@ -74,6 +75,7 @@ public partial class SoqlResultPaneView : UserControl
                     Header = column.Key,
                     Width = new DataGridLength(170),
                     CellTemplate = (DataTemplate)XamlReader.Parse(IdCellTemplateXaml.Replace("__NAME__", openRecord)),
+                    ClipboardContentBinding = new Binding(nameof(SoqlGridRow.RecordId)),
                 });
                 continue;
             }
@@ -83,6 +85,8 @@ public partial class SoqlResultPaneView : UserControl
                 Header = column.Key,
                 Width = new DataGridLength(160),
                 CellTemplate = (DataTemplate)XamlReader.Parse(ReadOnlyCellTemplateXaml.Replace("__I__", index.ToString())),
+                // テンプレート列は既定だとセル コピーの内容が空になるため、値を明示的に結び付ける
+                ClipboardContentBinding = new Binding($"Cells[{index}].Value"),
             });
         }
     }

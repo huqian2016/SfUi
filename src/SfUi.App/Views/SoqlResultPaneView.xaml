@@ -53,6 +53,7 @@
             <DataGrid x:Name="PaneGrid" Height="240" ItemsSource="{Binding VisibleRows}"
                       AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
                       SelectionUnit="CellOrRowHeader" RowHeaderWidth="0"
+                      ClipboardCopyMode="IncludeHeader"
                       HeadersVisibility="Column" GridLinesVisibility="All"
                       AlternatingRowBackground="#F7F9FB"
                       EnableRowVirtualization="True"

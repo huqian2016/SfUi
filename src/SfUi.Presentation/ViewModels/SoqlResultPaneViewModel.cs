@@ -117,8 +117,8 @@ public sealed partial class SoqlResultPaneViewModel : ObservableObject
         OnPropertyChanged(nameof(CountText));
     }
 
-    /// <summary>絞り込み後の一覧を DataTable にする（コピー / 出力用）。</summary>
-    public DataTable? ToFilteredTable()
+    /// <summary>絞り込み後の一覧を DataTable にする（コピー / CSV / レポート出力用）。</summary>
+    public DataTable? ToTable()
     {
         if (Columns.Count == 0)
         {

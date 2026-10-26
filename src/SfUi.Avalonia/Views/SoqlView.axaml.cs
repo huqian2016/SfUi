@@ -72,6 +72,16 @@ public partial class SoqlView : UserControl
 
         DataContextChanged += (_, _) => Subscribe();
         Subscribe();
+
+        // テンプレート列のセルは既定ではコピーされないため、Ctrl+C で TSV を書き出す
+        var resultsGrid = this.FindControl<DataGrid>("SoqlGrid");
+        if (resultsGrid is not null)
+        {
+            SoqlGridClipboard.Attach(
+                resultsGrid,
+                () => ViewModel?.Columns.ToList() ?? new List<SoqlGridColumn>(),
+                () => ViewModel?.Rows.ToList() ?? new List<SoqlGridRow>());
+        }
     }
 
     /// <summary>ViewModel → エディタ（履歴・お気に入りからの読み込み）と結果グリッドの再構築。</summary>
