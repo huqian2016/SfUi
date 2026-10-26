@@ -23,8 +23,8 @@ public class SoqlViewModelScriptTests : IDisposable
         Directory.CreateDirectory(_sandbox);
         _paths = AppPaths.Resolve(dataRootOverride: _sandbox, baseDirectory: _sandbox, appDataDirectory: _sandbox);
         _log = new AppLog(_paths);
-        _fakeSf = Path.Combine(_sandbox, "sf.cmd");
-        File.WriteAllText(_fakeSf, FakeSfScript);
+        _fakeSf = Path.Combine(_sandbox, OperatingSystem.IsWindows() ? "sf.cmd" : "sf");
+        WriteFakeSf(_fakeSf);
     }
 
     public void Dispose()
@@ -43,17 +43,40 @@ public class SoqlViewModelScriptTests : IDisposable
     }
 
     /// <summary>BOOM を含むクエリだけ失敗するフェイク sf（それ以外は 2 行の結果を返す）。</summary>
-    private const string FakeSfScript =
-        "@echo off\r\n"
-        + "echo %* | findstr /C:\"BOOM\" >nul\r\n"
-        + "if errorlevel 1 goto ok\r\n"
-        + "echo {\"status\":1,\"name\":\"MALFORMED_QUERY\",\"message\":\"boom\",\"exitCode\":1}\r\n"
-        + "exit /b 1\r\n"
-        + ":ok\r\n"
-        + "echo {\"status\":0,\"result\":{\"totalSize\":2,\"done\":true,\"records\":["
-        + "{\"attributes\":{\"type\":\"Account\"},\"Id\":\"001A\",\"Name\":\"Acme\"},"
-        + "{\"attributes\":{\"type\":\"Account\"},\"Id\":\"001B\",\"Name\":\"Globex\"}]}}\r\n"
-        + "exit /b 0\r\n";
+    private static void WriteFakeSf(string path)
+    {
+        var payload = "{\"status\":0,\"result\":{\"totalSize\":2,\"done\":true,\"records\":["
+            + "{\"attributes\":{\"type\":\"Account\"},\"Id\":\"001A\",\"Name\":\"Acme\"},"
+            + "{\"attributes\":{\"type\":\"Account\"},\"Id\":\"001B\",\"Name\":\"Globex\"}]}}";
+        if (OperatingSystem.IsWindows())
+        {
+            File.WriteAllText(
+                path,
+                "@echo off\r\n"
+                + "echo %* | findstr /C:\"BOOM\" >nul\r\n"
+                + "if errorlevel 1 goto ok\r\n"
+                + "echo {\"status\":1,\"name\":\"MALFORMED_QUERY\",\"message\":\"boom\",\"exitCode\":1}\r\n"
+                + "exit /b 1\r\n"
+                + ":ok\r\n"
+                + "echo " + payload + "\r\n"
+                + "exit /b 0\r\n");
+            return;
+        }
+
+        File.WriteAllText(
+            path,
+            "#!/bin/sh\n"
+            + "case \"$*\" in\n"
+            + "  *BOOM*) echo '{\"status\":1,\"name\":\"MALFORMED_QUERY\",\"message\":\"boom\",\"exitCode\":1}'; exit 1 ;;\n"
+            + "esac\n"
+            + "echo '" + payload + "'\n"
+            + "exit 0\n");
+        File.SetUnixFileMode(
+            path,
+            UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute
+            | UnixFileMode.GroupRead | UnixFileMode.GroupExecute
+            | UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
+    }
 
     private SoqlViewModel CreateViewModel()
     {
