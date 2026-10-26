@@ -10,11 +10,13 @@ public sealed class AvaloniaErdExportDialog : IErdExportDialog
 {
     private readonly TopLevelAccessor _top;
     private readonly IFilePickerService _filePicker;
+    private readonly ExportSettingsStore _settings;
 
-    public AvaloniaErdExportDialog(TopLevelAccessor top, IFilePickerService filePicker)
+    public AvaloniaErdExportDialog(TopLevelAccessor top, IFilePickerService filePicker, ExportSettingsStore settings)
     {
         _top = top;
         _filePicker = filePicker;
+        _settings = settings;
     }
 
     public async Task<ErdExportDialogResult?> ShowAsync(
@@ -24,7 +26,7 @@ public sealed class AvaloniaErdExportDialog : IErdExportDialog
         string? initialDirectory,
         CancellationToken cancellationToken = default)
     {
-        var viewModel = new ErdExportDialogViewModel(org, objects, suggestedBaseName, initialDirectory, _filePicker);
+        var viewModel = new ErdExportDialogViewModel(org, objects, suggestedBaseName, initialDirectory, _filePicker, _settings);
         var window = new ErdExportDialog(viewModel);
         var owner = _top.Current as Window;
         var accepted = owner is not null && await window.ShowDialog<bool>(owner).ConfigureAwait(true);

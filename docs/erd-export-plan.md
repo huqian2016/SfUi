@@ -75,6 +75,7 @@ SalesforceRestClient.QueryAsync(tooling: true)        → 参照関係（1 回�
 - オプション: 標準オブジェクトを含む、中間オブジェクトを多対多に畳む、カスタム項目のみ
 - 出力形式: Mermaid / DBML / draw.io / PlantUML / DOT / HTML / SVG / PNG / JPEG / WebP（複数選択）
 - 出力先フォルダー + ファイル名（既定 `erd-<org>-<yyyyMMdd-HHmmss>`）
+- **設定の記憶**: 形式・表示名・オプション・出力先は `data/export-settings.json` に保存し、次回起動時（ダイアログを開いたとき）に復元する（`ExportSettingsStore`）。
 
 ---
 

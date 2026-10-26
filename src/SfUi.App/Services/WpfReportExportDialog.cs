@@ -10,8 +10,13 @@ namespace SfUi.App.Services;
 public sealed class WpfReportExportDialog : IReportExportDialog
 {
     private readonly IFilePickerService _filePicker;
+    private readonly ExportSettingsStore _settings;
 
-    public WpfReportExportDialog(IFilePickerService filePicker) => _filePicker = filePicker;
+    public WpfReportExportDialog(IFilePickerService filePicker, ExportSettingsStore settings)
+    {
+        _filePicker = filePicker;
+        _settings = settings;
+    }
 
     public Task<ReportExportOptions?> ShowAsync(
         ReportDocument document,
@@ -21,7 +26,7 @@ public sealed class WpfReportExportDialog : IReportExportDialog
     {
         try
         {
-            var viewModel = new ReportExportDialogViewModel(document, suggestedBaseName, initialDirectory, _filePicker);
+            var viewModel = new ReportExportDialogViewModel(document, suggestedBaseName, initialDirectory, _filePicker, _settings);
             var window = new ReportExportDialogWindow(viewModel)
             {
                 Owner = Application.Current?.MainWindow,

@@ -36,6 +36,7 @@ public static class SfUiServiceCollectionExtensions
         services.AddSingleton<OrgExportService>();
         services.AddSingleton<OrgCompareService>();
         services.AddSingleton<OrgCompareStateStore>();
+        services.AddSingleton<ExportSettingsStore>();
         services.AddSingleton<OrgRecordCompareService>();
         services.AddSingleton<FieldUsageService>();
         services.AddSingleton<SObjectDescribeService>();

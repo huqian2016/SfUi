@@ -13,6 +13,7 @@ namespace SfUi.App.ViewModels;
 public sealed partial class ReportExportDialogViewModel : ObservableObject
 {
     private readonly IFilePickerService _filePicker;
+    private readonly ExportSettingsStore? _settings;
 
     [ObservableProperty]
     private bool _csv = true;
@@ -51,14 +52,29 @@ public sealed partial class ReportExportDialogViewModel : ObservableObject
         ReportDocument document,
         string suggestedBaseName,
         string? initialDirectory,
-        IFilePickerService filePicker)
+        IFilePickerService filePicker,
+        ExportSettingsStore? settings = null)
     {
         _filePicker = filePicker;
+        _settings = settings;
         Document = document;
         _baseName = suggestedBaseName;
-        _outputDirectory = string.IsNullOrWhiteSpace(initialDirectory)
-            ? Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
-            : initialDirectory;
+        var defaults = settings?.LoadReport();
+        _outputDirectory = !string.IsNullOrWhiteSpace(initialDirectory)
+            ? initialDirectory!
+            : defaults?.OutputDirectory ?? Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+
+        if (defaults is not null)
+        {
+            Csv = defaults.Csv;
+            Markdown = defaults.Markdown;
+            Html = defaults.Html;
+            Excel = defaults.Excel;
+            Pdf = defaults.Pdf;
+            IncludeAnalysis = defaults.IncludeAnalysis;
+            MaxRowsText = defaults.MaxRows.ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
+            OpenAfterSave = defaults.OpenAfterSave;
+        }
 
         Sections.Add($"{UiText.T("Report_MetaTitle")}: {document.Title}");
         if (!string.IsNullOrWhiteSpace(document.Org))
@@ -177,6 +193,10 @@ public sealed partial class ReportExportDialogViewModel : ObservableObject
         }
 
         ErrorText = null;
+
+        // 次回同じ設定で開けるよう保存する
+        SaveDefaults(formats, maxRows);
+
         return new ReportExportOptions
         {
             Formats = formats,
@@ -186,6 +206,35 @@ public sealed partial class ReportExportDialogViewModel : ObservableObject
             BaseName = string.IsNullOrWhiteSpace(BaseName) ? "report" : BaseName.Trim(),
             OpenAfterSave = OpenAfterSave,
         };
+    }
+
+    /// <summary>今の設定を保存する（次回起動時に復元する）。</summary>
+    private void SaveDefaults(ReportFormats formats, int maxRows)
+    {
+        if (_settings is null)
+        {
+            return;
+        }
+
+        try
+        {
+            _settings.SaveReport(new ReportExportDefaults
+            {
+                Csv = formats.HasFlag(ReportFormats.Csv),
+                Markdown = formats.HasFlag(ReportFormats.Markdown),
+                Html = formats.HasFlag(ReportFormats.Html),
+                Excel = formats.HasFlag(ReportFormats.Excel),
+                Pdf = formats.HasFlag(ReportFormats.Pdf),
+                IncludeAnalysis = IncludeAnalysis,
+                MaxRows = maxRows,
+                OpenAfterSave = OpenAfterSave,
+                OutputDirectory = string.IsNullOrWhiteSpace(OutputDirectory) ? null : OutputDirectory.Trim(),
+            });
+        }
+        catch
+        {
+            // 設定の保存に失敗しても出力自体は続行する
+        }
     }
 
     /// <summary>形式ボタン（CSV など）をまとめて切り替える。主にテスト・既定値用。</summary>

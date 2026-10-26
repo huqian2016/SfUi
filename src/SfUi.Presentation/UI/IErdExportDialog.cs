@@ -70,19 +70,25 @@ public sealed partial class ErdExportDialogViewModel : ObservableObject
 {
     private readonly IReadOnlyList<ErdExportObjectRow> _allObjects;
     private readonly IFilePickerService _filePicker;
+    private readonly ExportSettingsStore? _settings;
 
     public ErdExportDialogViewModel(
         string org,
         IReadOnlyList<ErdObjectInfo> objects,
         string suggestedBaseName,
         string? initialDirectory,
-        IFilePickerService filePicker)
+        IFilePickerService filePicker,
+        ExportSettingsStore? settings = null)
     {
         Org = org;
         _filePicker = filePicker;
+        _settings = settings;
         _allObjects = objects.Select(info => new ErdExportObjectRow(info, OnSelectionChanged)).ToList();
         _baseName = suggestedBaseName;
-        _outputDirectory = initialDirectory ?? string.Empty;
+        var defaults = settings?.LoadErd();
+        _outputDirectory = !string.IsNullOrWhiteSpace(initialDirectory)
+            ? initialDirectory!
+            : defaults?.OutputDirectory ?? string.Empty;
 
         foreach (var row in _allObjects)
         {
@@ -96,6 +102,11 @@ public sealed partial class ErdExportDialogViewModel : ObservableObject
             UiText.T("Erd_NameStyleBoth"),
         };
         _nameStyleIndex = 2;
+
+        if (defaults is not null)
+        {
+            ApplyDefaults(defaults);
+        }
     }
 
     public string Org { get; }
@@ -282,6 +293,9 @@ public sealed partial class ErdExportDialogViewModel : ObservableObject
             _ => ErdNameStyle.LabelAndApiName,
         };
 
+        // 次回同じ設定で開けるよう保存する
+        SaveDefaults();
+
         return new ErdExportDialogResult(
             selected,
             new ErdBuildOptions
@@ -303,5 +317,69 @@ public sealed partial class ErdExportDialogViewModel : ObservableObject
             Jpeg,
             Webp,
             OpenAfterSave);
+    }
+
+    /// <summary>前回の設定をダイアログへ反映する。</summary>
+    private void ApplyDefaults(ErdExportDefaults defaults)
+    {
+        _nameStyleIndex = defaults.NameStyle switch
+        {
+            ErdNameStyle.Label => 0,
+            ErdNameStyle.ApiName => 1,
+            _ => 2,
+        };
+        IncludeStandardObjects = defaults.IncludeStandardObjects;
+        IncludeReferencedParents = defaults.IncludeReferencedParents;
+        Mermaid = defaults.Mermaid;
+        Dbml = defaults.Dbml;
+        Drawio = defaults.Drawio;
+        PlantUml = defaults.PlantUml;
+        Dot = defaults.Dot;
+        Html = defaults.Html;
+        Svg = defaults.Svg;
+        Png = defaults.Png;
+        Jpeg = defaults.Jpeg;
+        Webp = defaults.Webp;
+        OpenAfterSave = defaults.OpenAfterSave;
+    }
+
+    /// <summary>今の設定を保存する（次回起動時に復元する）。</summary>
+    private void SaveDefaults()
+    {
+        if (_settings is null)
+        {
+            return;
+        }
+
+        try
+        {
+            _settings.SaveErd(new ErdExportDefaults
+            {
+                NameStyle = NameStyleIndex switch
+                {
+                    0 => ErdNameStyle.Label,
+                    1 => ErdNameStyle.ApiName,
+                    _ => ErdNameStyle.LabelAndApiName,
+                },
+                IncludeStandardObjects = IncludeStandardObjects,
+                IncludeReferencedParents = IncludeReferencedParents,
+                Mermaid = Mermaid,
+                Dbml = Dbml,
+                Drawio = Drawio,
+                PlantUml = PlantUml,
+                Dot = Dot,
+                Html = Html,
+                Svg = Svg,
+                Png = Png,
+                Jpeg = Jpeg,
+                Webp = Webp,
+                OpenAfterSave = OpenAfterSave,
+                OutputDirectory = string.IsNullOrWhiteSpace(OutputDirectory) ? null : OutputDirectory.Trim(),
+            });
+        }
+        catch
+        {
+            // 設定の保存に失敗しても出力自体は続行する
+        }
     }
 }

@@ -9,8 +9,13 @@ namespace SfUi.App.Services;
 public sealed class WpfErdExportDialog : IErdExportDialog
 {
     private readonly IFilePickerService _filePicker;
+    private readonly ExportSettingsStore _settings;
 
-    public WpfErdExportDialog(IFilePickerService filePicker) => _filePicker = filePicker;
+    public WpfErdExportDialog(IFilePickerService filePicker, ExportSettingsStore settings)
+    {
+        _filePicker = filePicker;
+        _settings = settings;
+    }
 
     public Task<ErdExportDialogResult?> ShowAsync(
         string org,
@@ -21,7 +26,7 @@ public sealed class WpfErdExportDialog : IErdExportDialog
     {
         try
         {
-            var viewModel = new ErdExportDialogViewModel(org, objects, suggestedBaseName, initialDirectory, _filePicker);
+            var viewModel = new ErdExportDialogViewModel(org, objects, suggestedBaseName, initialDirectory, _filePicker, _settings);
             var window = new ErdExportDialogWindow(viewModel)
             {
                 Owner = Application.Current?.MainWindow,

@@ -121,6 +121,79 @@ public sealed class ErdExportDialogViewModelTests
         Assert.Equal(UiText.T("Erd_NoObjectsSelected"), vm.ErrorText);
     }
 
+    [Fact]
+    public void Constructor_RestoresSavedDefaults()
+    {
+        var store = CreateStore(out var sandbox);
+        try
+        {
+            store.SaveErd(new ErdExportDefaults
+            {
+                NameStyle = ErdNameStyle.ApiName,
+                Mermaid = false,
+                Html = true,
+                IncludeStandardObjects = false,
+                OutputDirectory = @"C:\saved\erd",
+            });
+
+            var vm = new ErdExportDialogViewModel(
+                "org", new[] { new ErdObjectInfo("Account", "Account", false, false) }, "erd", null, new FakeFilePicker(), store);
+
+            Assert.Equal(1, vm.NameStyleIndex);
+            Assert.False(vm.Mermaid);
+            Assert.True(vm.Html);
+            Assert.False(vm.IncludeStandardObjects);
+            Assert.Equal(@"C:\saved\erd", vm.OutputDirectory);
+        }
+        finally
+        {
+            Directory.Delete(sandbox, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void BuildResult_SavesDefaults_ForTheNextRun()
+    {
+        var store = CreateStore(out var sandbox);
+        try
+        {
+            var vm = new ErdExportDialogViewModel(
+                "org", new[] { new ErdObjectInfo("Account", "Account", false, false) }, "erd", null, new FakeFilePicker(), store);
+            vm.SelectAllCommand.Execute(null);
+            vm.Html = true;
+            vm.Mermaid = false;
+            vm.NameStyleIndex = 0;
+            vm.OutputDirectory = @"C:\fresh\erd";
+
+            var result = vm.BuildResult();
+
+            Assert.NotNull(result);
+            var saved = store.LoadErd();
+            Assert.True(saved.Html);
+            Assert.False(saved.Mermaid);
+            Assert.Equal(ErdNameStyle.Label, saved.NameStyle);
+            Assert.Equal(@"C:\fresh\erd", saved.OutputDirectory);
+
+            // 失敗（キャンセル相当）では保存しない
+            var cancelVm = new ErdExportDialogViewModel(
+                "org", new[] { new ErdObjectInfo("Account", "Account", false, false) }, "erd", null, new FakeFilePicker(), store);
+            Assert.Null(cancelVm.BuildResult());
+            Assert.True(store.LoadErd().Html);
+        }
+        finally
+        {
+            Directory.Delete(sandbox, recursive: true);
+        }
+    }
+
+    private static ExportSettingsStore CreateStore(out string sandbox)
+    {
+        sandbox = Path.Combine(Path.GetTempPath(), "sfui-tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(sandbox);
+        var paths = AppPaths.Resolve(dataRootOverride: sandbox, baseDirectory: sandbox, appDataDirectory: sandbox);
+        return new ExportSettingsStore(paths, new AppLog(paths));
+    }
+
     private sealed class FakeFilePicker : IFilePickerService
     {
         public Task<string?> OpenFileAsync(string title, string filter, string? initialDirectory = null)
