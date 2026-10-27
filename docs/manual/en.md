@@ -714,6 +714,8 @@ Run recurring work (reports, integrations, housekeeping) **unattended**. Open th
 - **Calendar tab** — month view (Sunday first) that highlights today, Japanese holidays and the selected day, with the planned times in each cell. Use ` ◀ ` / ` ▶ ` to change month and **Today** to jump back. Clicking a day shows **that day's jobs** and the **selected job's details** (type, schedule, next run, last run, target org) on the right.
 - **Run history tab** — started time, job, type, status, duration, org and result, with the output excerpt below. The **Export** button writes CSV / Markdown / HTML / Excel / PDF. History is kept for **90 days / 500 runs** by default.
 
+![Scheduler window](images/en/28-scheduler.png)
+
 ### 18.2 Job types
 
 | Type | What you configure |
