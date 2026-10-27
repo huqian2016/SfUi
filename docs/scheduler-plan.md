@@ -1,6 +1,6 @@
 # スケジューラ（ジョブ予約実行）設計書
 
-最終更新: 2026-10-06 / ステータス: **Phase 1〜2 実装済み（Core 基盤 + WPF UI）→ Phase 3〜5 未着手**
+最终更新: 2026-10-27 / ステータス: **Phase 1〜5 完了（Core / WPF / Avalonia / 8 ジョブ種別 / レポート出力 / マニュアル）**
 
 対象リポジトリ: `c:\huqian\vscode\SfUi`（.NET 9 / SfUi.Core + SfUi.Presentation + WPF + Avalonia）
 
@@ -542,4 +542,56 @@ data/scheduler/
 2. Avalonia への移植（カレンダー / 編集ダイアログ / トースト / `MacKeepAwakeService`）
 3. 履歴のレポート出力（CSV / Excel / PDF）と週表示
 4. マニュアル（`docs/manual/` 4 言語）とスクリーンショットの更新
+
+---
+
+## 17. Phase 3〜5 実装状況（2026-10-27）
+
+### 17.1 Phase 3: ジョブ種別の拡充
+
+| 種別 | Executor | 使うサービス / 主な設定 |
+| --- | --- | --- |
+| 匿名 Apex | `ApexJobExecutor` | `ApexService.ExecuteAnonymousAsync`（コンパイル エラー / 例外を要約） |
+| データ バックアップ | `BackupJobExecutor` | `BackupService.RunBackupAsync`（オブジェクト / ラベル / 説明。空なら自動生成） |
+| データ投入 | `DataImportJobExecutor` | `CsvParser` + `SObjectDescribeService.DescribeAsync` + `ImportBatchPlanner.BuildPlan` → `DataImportService.RunRestAsync / RunBulkAsync`（一時 CSV は終了時に削除） |
+| データ エクスポート | `DataExportJobExecutor` | `DataExportService.RunRestAsync / RunBulkAsync`（REST は CSV / JSON を自前で書き出し） |
+| REST API 呼び出し | `RestApiJobExecutor` | `SalesforceRestClient.SendConsoleAsync`（GET / POST / PATCH / DELETE、2xx 以外は失敗） |
+| OS コマンドライン | `ShellCommandJobExecutor` + `ShellRunner` | Windows は `cmd.exe /d /s /c`、macOS は `/bin/sh -c`。出力は 20 万文字で打ち切り、タイムアウト / キャンセルで**プロセス ツリーごと kill**。**ユーザー設定・自己責任**（編集ダイアログと詳細パネルに警告を表示） |
+| （既存）SOQL | `SoqlJobExecutor` | 変更なし |
+| （既存）`sf` コマンド | `SfCommandJobExecutor` | 変更なし |
+
+- エディタは種別に応じて入力欄を切り替える（SOQL / Apex / バックアップ / 投入 / エクスポート / sf / REST / シェル）。**対象組織が必須なのは SOQL・Apex・バックアップ・投入・エクスポート・REST** で、`sf` コマンドと OS コマンドラインは組織不要。
+- 入力検証は種別ごと（Apex コード必須 / オブジェクト必須 / CSV 必須 / 出力先必須（Bulk）/ REST パス必須 など）。
+
+### 17.2 Phase 4: Avalonia 移植
+
+- `Views/SchedulerWindow.axaml`（カレンダー + 履歴）、`Dialogs/SchedulerJobEditorDialog.axaml`、`Views/NotificationWindow.axaml`（`Transitions` によるフェードイン 0.25 秒 / フェードアウト 0.6 秒）。
+- `Services/DesktopKeepAwakeService`（Windows は `SetThreadExecutionState`、macOS は `caffeinate -i -s -w <PID>`）、`Services/AvaloniaToastPresenter`、`Services/AvaloniaSchedulerJobEditor`。
+- `IAppWindowService.OpenScheduler` を実装（`NotPortedYet` を廃止）。メイン ツールバーに `OpenScheduler` ボタン + `IconCalendar`。`--open scheduler` の開発フラグを追加。
+- **API 変更**: `ISchedulerJobEditor.Edit` → `EditAsync`（Avalonia の `ShowDialog<T>` を待つため）。WPF 実装は `ShowDialog()` を同期実行して `Task.FromResult` で返す。
+
+### 17.3 Phase 5: 仕上げ
+
+- 実行履歴の**レポート出力**（CSV / Markdown / HTML / Excel / PDF）を追加（`IReportExportDialog` + `ReportExportRunner`、既定のファイル名 `scheduler-yyyyMMdd-HHmmss`）。
+- 履歴タブに**保持期間の表示**（例: 保持: 90 日 / 最大 500 件）を追加。
+- ユーザーマニュアル（`docs/manual/{en,ja,zh,ko}.md`）に**第 18 章「スケジューラ」**を追加し、各ウィンドウのヘルプ アイコンから開けるようにした（`ManualLinks.Topic.Scheduler`、アンカー `18-…`）。
+- README（EN/JA）のスケジューラ説明を 8 種別 + レポート出力 + 両 UI 対応に更新。
+
+### 17.4 検証
+
+| 項目 | 結果 |
+| --- | --- |
+| `dotnet build SfUi.sln -c Debug` | 成功 |
+| `dotnet test` | **1,282 件すべて成功**（+14: 種別ペイロード組み立て 9 / `ShellRunner` 5） |
+| WPF / Avalonia の `--smoke` | 両方 exit 0 |
+| UI E2E（WPF） | `C:\huqian\sfui-scheduler-e2e.ps1` → **18/18 PASS**（見逃しトースト、事前/開始/終了トースト、履歴 3 行、OS コマンド実行と出力記録、編集ダイアログ） |
+| UI E2E（Avalonia） | `C:\huqian\sfui-scheduler-e2e-avalonia.ps1` → **14/14 PASS**（起動トースト、カレンダー、履歴 2 行、3 種トースト、編集ダイアログ） |
+
+### 17.5 将来の候補
+
+- 週表示（時刻表）・ドラッグでの予定移動
+- ETL ジョブ / デプロイ検証の予約実行
+- OS 標準トースト通知（アクション センター）・メール / Slack 連携
+- ジョブのエクスポート / インポート（複数 PC 間の共有）
+
 

@@ -1,0 +1,250 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:SfUi.Avalonia"
+        xmlns:views="clr-namespace:SfUi.Avalonia.Views"
+        x:Class="SfUi.Avalonia.Views.SchedulerWindow"
+        Title="{loc:Tr Sched_Title}"
+        Width="1180" Height="780" MinWidth="900" MinHeight="520"
+        WindowStartupLocation="CenterOwner"
+        FontSize="13">
+    <Window.Styles>
+        <Style Selector="Border.day">
+            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="BorderBrush" Value="#E2E6EC" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        <Style Selector="Border.day.selected">
+            <Setter Property="Background" Value="#E8F0FE" />
+            <Setter Property="BorderBrush" Value="#1A73E8" />
+        </Style>
+        <Style Selector="Border.day.other">
+            <Setter Property="Opacity" Value="0.45" />
+        </Style>
+    </Window.Styles>
+
+    <DockPanel>
+        <!-- ツールバー -->
+        <Border DockPanel.Dock="Top" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="10,6">
+            <DockPanel>
+                <views:HelpButton Topic="Scheduler" DockPanel.Dock="Right" Margin="12,0,0,0" VerticalAlignment="Center" />
+                <TextBlock DockPanel.Dock="Right" Text="{Binding NextRunText}" VerticalAlignment="Center"
+                           Foreground="#555555" AutomationProperties.AutomationId="SchedulerNextRun" />
+                <WrapPanel>
+                    <Button Content="{loc:Tr Sched_NewJob}" Command="{Binding NewJobCommand}" Margin="0,0,6,0" Padding="10,4"
+                            AutomationProperties.AutomationId="SchedulerNewJob" />
+                    <Button Content="{loc:Tr Sched_RunNow}" Command="{Binding RunNowCommand}"
+                            CommandParameter="{Binding SelectedJob}" Margin="0,0,6,0" Padding="10,4"
+                            AutomationProperties.AutomationId="SchedulerRunNow" />
+                    <Button Content="{loc:Tr Sched_EditJob}" Command="{Binding EditJobCommand}"
+                            CommandParameter="{Binding SelectedJob}" Margin="0,0,6,0" Padding="10,4"
+                            AutomationProperties.AutomationId="SchedulerEditJob" />
+                    <Button Content="{loc:Tr Sched_ToggleEnabled}" Command="{Binding ToggleEnabledCommand}"
+                            CommandParameter="{Binding SelectedJob}" Margin="0,0,6,0" Padding="10,4"
+                            AutomationProperties.AutomationId="SchedulerToggleEnabled" />
+                    <Button Content="{loc:Tr Sched_SkipNext}" Command="{Binding SkipNextCommand}"
+                            CommandParameter="{Binding SelectedJob}" Margin="0,0,6,0" Padding="10,4" />
+                    <Button Content="{loc:Tr Sched_DuplicateJob}" Command="{Binding DuplicateJobCommand}"
+                            CommandParameter="{Binding SelectedJob}" Margin="0,0,6,0" Padding="10,4" />
+                    <Button Content="{loc:Tr Sched_DeleteJob}" Command="{Binding DeleteJobCommand}"
+                            CommandParameter="{Binding SelectedJob}" Margin="0,0,6,0" Padding="10,4" />
+                    <Button Content="{loc:Tr Sched_Refresh}" Command="{Binding RefreshAllCommand}" Padding="10,4" />
+                </WrapPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- ステータス バー -->
+        <Border DockPanel.Dock="Bottom" Background="#F7F7F7" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="10,4">
+            <WrapPanel>
+                <TextBlock Text="{Binding StatusText}" AutomationProperties.AutomationId="SchedulerStatus" />
+                <TextBlock Text="   |   " Foreground="#AAAAAA" />
+                <TextBlock Text="{Binding NextRunText}" Foreground="#555555" />
+                <Border Margin="12,0,0,0" Padding="6,1" CornerRadius="8" Background="#E3F4EA"
+                        IsVisible="{Binding IsKeepAwakeActive}">
+                    <TextBlock Text="{loc:Tr Sched_KeepAwake}" Foreground="#0B6E4F" FontSize="11" />
+                </Border>
+                <Border Margin="12,0,0,0" Padding="6,1" CornerRadius="8" Background="#FDECEA"
+                        IsVisible="{Binding IsLockHeldByOther}">
+                    <TextBlock Text="{loc:Tr Sched_LockHeldByOther}" Foreground="#B3261E" FontSize="11" />
+                </Border>
+            </WrapPanel>
+        </Border>
+
+        <TabControl Margin="8">
+            <!-- ===== カレンダー ===== -->
+            <TabItem Header="{loc:Tr Sched_TabCalendar}">
+                <Grid Margin="4" ColumnDefinitions="2*,10,1.1*">
+                    <DockPanel Grid.Column="0">
+                        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
+                            <Button Content="◀" Command="{Binding PrevMonthCommand}" Width="30" Height="26" Padding="0"
+                                    ToolTip.Tip="{loc:Tr Sched_PrevMonth}" />
+                            <TextBlock Text="{Binding MonthText}" FontSize="16" FontWeight="SemiBold" Margin="10,0"
+                                       VerticalAlignment="Center" AutomationProperties.AutomationId="SchedulerMonth" />
+                            <Button Content="▶" Command="{Binding NextMonthCommand}" Width="30" Height="26" Padding="0"
+                                    ToolTip.Tip="{loc:Tr Sched_NextMonth}" />
+                            <Button Content="{loc:Tr Sched_Today}" Command="{Binding GoTodayCommand}"
+                                    Margin="10,0,0,0" Padding="10,2" />
+                        </StackPanel>
+
+                        <ItemsControl DockPanel.Dock="Top" ItemsSource="{Binding WeekdayHeaders}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="7" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}" HorizontalAlignment="Center" Foreground="#666666"
+                                               Margin="0,0,0,4" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <ItemsControl ItemsSource="{Binding Days}" AutomationProperties.AutomationId="SchedulerCalendar">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="7" Rows="6" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Background="Transparent" BorderThickness="0" Padding="0" Margin="1"
+                                            HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                                            Command="{Binding $parent[Window].DataContext.SelectDayCommand}"
+                                            CommandParameter="{Binding}">
+                                        <Border Classes="day" Classes.selected="{Binding IsSelected}"
+                                                Classes.other="{Binding !IsCurrentMonth}"
+                                                CornerRadius="3" Padding="4" MinHeight="74">
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding DayText}" FontWeight="SemiBold"
+                                                           Foreground="#333333" />
+                                                <ItemsControl ItemsSource="{Binding Jobs}" Margin="0,2,0,0"
+                                                              MaxHeight="56" ClipToBounds="True">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <TextBlock Text="{Binding TimeText}" FontSize="10"
+                                                                       Foreground="#1A73E8" />
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </StackPanel>
+                                        </Border>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </DockPanel>
+
+                    <!-- 右: 日別予定 + 詳細 -->
+                    <DockPanel Grid.Column="2">
+                        <TextBlock DockPanel.Dock="Top" Text="{Binding SelectedDayHeader}" FontWeight="SemiBold"
+                                   FontSize="14" Margin="0,0,0,6"
+                                   AutomationProperties.AutomationId="SchedulerDayHeader" />
+
+                        <Border DockPanel.Dock="Bottom" Background="#FAFAFA" BorderBrush="#E2E6EC" BorderThickness="1"
+                                CornerRadius="4" Padding="10" Margin="0,8,0,0" MinHeight="170">
+                            <StackPanel>
+                                <TextBlock Text="{loc:Tr Sched_SelectedJobTitle}" FontWeight="SemiBold"
+                                           Foreground="#666666" Margin="0,0,0,4" />
+                                <TextBlock Text="{Binding SelectedJob.Name}" FontWeight="SemiBold" FontSize="14"
+                                           AutomationProperties.AutomationId="SchedulerSelectedJobName" />
+                                <Grid Margin="0,8,0,0" ColumnDefinitions="Auto,*">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="{loc:Tr Sched_TypeLabel}"
+                                               Foreground="#666666" Margin="0,0,8,2" />
+                                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SelectedJob.TypeLabel}" />
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="{loc:Tr Sched_ScheduleLabel}"
+                                               Foreground="#666666" Margin="0,0,8,2" />
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SelectedJob.ScheduleLabel}"
+                                               TextWrapping="Wrap" />
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="{loc:Tr Sched_NextRunLabel}"
+                                               Foreground="#666666" Margin="0,0,8,2" />
+                                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SelectedJob.NextRunText}" />
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="{loc:Tr Sched_LastRunLabel}"
+                                               Foreground="#666666" Margin="0,0,8,2" />
+                                    <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding SelectedJob.LastRunText}" />
+                                    <TextBlock Grid.Row="4" Grid.Column="0" Text="{loc:Tr Sched_OrgLabel}"
+                                               Foreground="#666666" Margin="0,0,8,2" />
+                                    <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding SelectedJob.OrgLabel}" />
+                                </Grid>
+                                <Border Background="#FDECEA" BorderBrush="#F3B6B0" BorderThickness="1" CornerRadius="4"
+                                        Padding="8,4" Margin="0,8,0,0" IsVisible="{Binding HasSelectedJobWarning}">
+                                    <TextBlock Text="{loc:Tr Sched_ShellWarning}" Foreground="#B3261E"
+                                               TextWrapping="Wrap" FontSize="11" />
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <ListBox ItemsSource="{Binding SelectedDayJobs}" SelectedItem="{Binding SelectedJob}"
+                                 AutomationProperties.AutomationId="SchedulerDayAgenda">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,2" ColumnDefinitions="48,*,Auto">
+                                        <TextBlock Grid.Column="0" Text="{Binding TimeText}" Foreground="#1A73E8" />
+                                        <TextBlock Grid.Column="1" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Grid.Column="2" Text="{Binding TypeLabel}" Foreground="#777777"
+                                                   FontSize="11" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </DockPanel>
+                </Grid>
+            </TabItem>
+
+            <!-- ===== 実行履歴 ===== -->
+            <TabItem Header="{loc:Tr Sched_TabHistory}">
+                <Grid Margin="4" RowDefinitions="Auto,*,Auto,200">
+                    <WrapPanel Grid.Row="0" Margin="0,0,0,6">
+                        <TextBlock Text="{loc:Tr Sched_HistoryHeader}" FontWeight="SemiBold" FontSize="15"
+                                   VerticalAlignment="Center" />
+                        <Button Content="{loc:Tr Sched_Refresh}" Command="{Binding RefreshAllCommand}"
+                                Margin="16,0,0,0" Padding="10,2" />
+                        <Button Content="{loc:Tr Report_Export}" Command="{Binding ExportReportCommand}"
+                                Margin="8,0,0,0" Padding="10,2"
+                                AutomationProperties.AutomationId="SchedulerExportReport" />
+                        <TextBlock Text="{Binding RetentionText}" Foreground="#777777" VerticalAlignment="Center"
+                                   Margin="16,0,0,0" FontSize="11" />
+                        <TextBlock Text="{loc:Tr Sched_HistoryEmpty}" Foreground="#888888" VerticalAlignment="Center"
+                                   Margin="16,0,0,0" IsVisible="{Binding !Runs.Count}" />
+                    </WrapPanel>
+
+                    <DataGrid Grid.Row="1" ItemsSource="{Binding Runs}" SelectedItem="{Binding SelectedRun}"
+                              AutoGenerateColumns="False" IsReadOnly="True" CanUserReorderColumns="False"
+                              GridLinesVisibility="Horizontal"
+                              AutomationProperties.AutomationId="SchedulerRunHistory">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="{loc:Tr Sched_ColumnTime}" Binding="{Binding StartedAtText}" Width="150" />
+                            <DataGridTextColumn Header="{loc:Tr Sched_ColumnJob}" Binding="{Binding JobName}" Width="*" />
+                            <DataGridTextColumn Header="{loc:Tr Sched_ColumnType}" Binding="{Binding TypeLabel}" Width="150" />
+                            <DataGridTextColumn Header="{loc:Tr Sched_ColumnStatus}" Binding="{Binding StatusLabel}" Width="90" />
+                            <DataGridTextColumn Header="{loc:Tr Sched_ColumnDuration}" Binding="{Binding DurationText}" Width="80" />
+                            <DataGridTextColumn Header="{loc:Tr Sched_ColumnOrg}" Binding="{Binding TargetOrg}" Width="140" />
+                            <DataGridTextColumn Header="{loc:Tr Sched_ColumnResult}" Binding="{Binding Summary}" Width="2*" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <TextBlock Grid.Row="2" Text="{Binding SelectedRun.Error}" Foreground="#B3261E"
+                               TextWrapping="Wrap" Margin="0,6,0,0" />
+
+                    <Border Grid.Row="3" BorderBrush="#E2E6EC" BorderThickness="1" CornerRadius="4" Margin="0,6,0,0">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Top" Text="{loc:Tr Sched_DetailTitle}" FontWeight="SemiBold"
+                                       Margin="8,4" />
+                            <TextBox Text="{Binding SelectedRun.OutputPreview, Mode=OneWay}" IsReadOnly="True"
+                                     AcceptsReturn="True" TextWrapping="NoWrap"
+                                     ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                     FontFamily="Consolas" FontSize="12" BorderThickness="0"
+                                     AutomationProperties.AutomationId="SchedulerRunOutput" />
+                        </DockPanel>
+                    </Border>
+                </Grid>
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</Window>

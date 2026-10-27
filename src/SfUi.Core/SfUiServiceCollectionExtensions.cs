@@ -64,8 +64,15 @@ public static class SfUiServiceCollectionExtensions
         services.AddSingleton<IKeepAwakeService, NoopKeepAwakeService>();
         services.AddSingleton<ScheduledJobStore>();
         services.AddSingleton<JobRunStore>();
+        services.AddSingleton<ShellRunner>();
         services.AddSingleton<IScheduledJobExecutor, SoqlJobExecutor>();
+        services.AddSingleton<IScheduledJobExecutor, ApexJobExecutor>();
+        services.AddSingleton<IScheduledJobExecutor, BackupJobExecutor>();
+        services.AddSingleton<IScheduledJobExecutor, DataImportJobExecutor>();
+        services.AddSingleton<IScheduledJobExecutor, DataExportJobExecutor>();
         services.AddSingleton<IScheduledJobExecutor, SfCommandJobExecutor>();
+        services.AddSingleton<IScheduledJobExecutor, RestApiJobExecutor>();
+        services.AddSingleton<IScheduledJobExecutor, ShellCommandJobExecutor>();
         services.AddSingleton<SchedulerService>();
         return services;
     }

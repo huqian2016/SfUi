@@ -1,0 +1,70 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:SfUi.Avalonia"
+        xmlns:vm="clr-namespace:SfUi.App.ViewModels;assembly=SfUi.Presentation"
+        x:Class="SfUi.Avalonia.Views.NotificationWindow"
+        Title="SfUi"
+        Width="372" SizeToContent="Height"
+        SystemDecorations="None"
+        TransparencyLevelHint="Transparent"
+        Background="Transparent"
+        CanResize="False"
+        ShowInTaskbar="False"
+        Topmost="True"
+        AutomationProperties.AutomationId="ToastHost">
+    <Window.Styles>
+        <Style Selector="Border.toast">
+            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="BorderBrush" Value="#D0D7E2" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="12,10" />
+            <Setter Property="Margin" Value="0,4" />
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.6" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.toast.shown">
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="Border.toast.fading">
+            <Setter Property="Opacity" Value="0" />
+        </Style>
+        <Style Selector="TextBlock.toastTitle">
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="#1B2B44" />
+        </Style>
+        <Style Selector="TextBlock.toastTitle.warning">
+            <Setter Property="Foreground" Value="#B3261E" />
+        </Style>
+    </Window.Styles>
+
+    <ItemsControl ItemsSource="{Binding Notifications}" Margin="8">
+        <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:NotificationItemViewModel">
+                <Border Classes="toast" Classes.fading="{Binding IsFadingOut}"
+                        Loaded="OnToastLoaded">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Classes="toastTitle" Classes.warning="{Binding IsWarning}"
+                                       Text="{Binding Title}"
+                                       AutomationProperties.AutomationId="ToastTitle" />
+                            <TextBlock Text="{Binding Message}" TextWrapping="Wrap" Margin="0,3,0,0"
+                                       Foreground="#444444"
+                                       AutomationProperties.AutomationId="ToastMessage" />
+                        </StackPanel>
+                        <Button Grid.Column="1" Content="✕" Width="24" Height="24" Margin="8,0,0,0"
+                                VerticalAlignment="Top" Background="Transparent" BorderThickness="0"
+                                Command="{Binding DismissCommand}"
+                                ToolTip.Tip="{loc:Tr Sched_ToastClose}"
+                                AutomationProperties.AutomationId="ToastClose"
+                                AutomationProperties.Name="{loc:Tr Sched_ToastClose}" />
+                    </Grid>
+                </Border>
+            </DataTemplate>
+        </ItemsControl.ItemTemplate>
+    </ItemsControl>
+</Window>

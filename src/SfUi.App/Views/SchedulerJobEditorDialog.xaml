@@ -34,7 +34,8 @@
                     <Button Content="{loc:Tr Sched_EditorSaveAndRun}" Click="OnSaveAndRun"
                             Width="150" Padding="0,4" Margin="0,0,8,0"
                             AutomationProperties.AutomationId="JobEditorSaveAndRun" />
-                    <Button Content="{loc:Tr Common_Cancel}" IsCancel="True" Width="90" Padding="0,4" />
+                    <Button Content="{loc:Tr Common_Cancel}" IsCancel="True" Width="90" Padding="0,4"
+                            AutomationProperties.AutomationId="JobEditorCancel" />
                 </StackPanel>
             </DockPanel>
         </Border>
@@ -82,13 +83,15 @@
 
                 <!-- 実行内容 -->
                 <TextBlock Text="{loc:Tr Sched_EditorQuery}" Style="{StaticResource SectionHeader}"
-                           Visibility="{Binding IsSoql, Converter={StaticResource BoolToVis}}" />
+                           Visibility="{Binding UsesSoql, Converter={StaticResource BoolToVis}}" />
                 <TextBox Text="{Binding SoqlQuery, UpdateSourceTrigger=PropertyChanged}"
-                         Height="150" AcceptsReturn="True" TextWrapping="NoWrap"
+                         Height="130" AcceptsReturn="True" TextWrapping="NoWrap"
                          VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
                          FontFamily="Consolas"
-                         Visibility="{Binding IsSoql, Converter={StaticResource BoolToVis}}"
+                         Visibility="{Binding UsesSoql, Converter={StaticResource BoolToVis}}"
                          AutomationProperties.AutomationId="JobEditorQuery" />
+
+                <!-- SOQL: 結果 CSV -->
                 <Grid Visibility="{Binding IsSoql, Converter={StaticResource BoolToVis}}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
@@ -99,6 +102,92 @@
                     <TextBox Grid.Column="1" Text="{Binding CsvPath}" Margin="0,8,0,0" />
                 </Grid>
 
+                <!-- 匿名 Apex -->
+                <TextBlock Text="{loc:Tr Sched_EditorApex}" Style="{StaticResource SectionHeader}"
+                           Visibility="{Binding IsApex, Converter={StaticResource BoolToVis}}" />
+                <TextBox Text="{Binding ApexCode, UpdateSourceTrigger=PropertyChanged}"
+                         Height="150" AcceptsReturn="True" TextWrapping="NoWrap"
+                         VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                         FontFamily="Consolas"
+                         Visibility="{Binding IsApex, Converter={StaticResource BoolToVis}}"
+                         AutomationProperties.AutomationId="JobEditorApex" />
+
+                <!-- バックアップ -->
+                <StackPanel Visibility="{Binding IsBackup, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="{loc:Tr Sched_EditorBackupObjects}" Style="{StaticResource SectionHeader}" />
+                    <TextBox Text="{Binding BackupObjects, UpdateSourceTrigger=PropertyChanged}"
+                             ToolTip="{loc:Tr Sched_EditorBackupObjectsTip}"
+                             AutomationProperties.AutomationId="JobEditorBackupObjects" />
+                    <Grid Margin="0,6,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="12" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="{loc:Tr Sched_EditorBackupLabel}" Foreground="#555555" Margin="0,0,0,3" />
+                            <TextBox Text="{Binding BackupLabel, UpdateSourceTrigger=PropertyChanged}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="{loc:Tr Sched_EditorBackupDescription}" Foreground="#555555" Margin="0,0,0,3" />
+                            <TextBox Text="{Binding BackupDescription, UpdateSourceTrigger=PropertyChanged}" />
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+
+                <!-- データ投入 -->
+                <StackPanel Visibility="{Binding IsDataImport, Converter={StaticResource BoolToVis}}">
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="12" />
+                            <ColumnDefinition Width="200" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="{loc:Tr Sched_EditorImportObject}" Foreground="#555555" Margin="0,0,0,3" />
+                            <TextBox Text="{Binding ImportObject, UpdateSourceTrigger=PropertyChanged}"
+                                     AutomationProperties.AutomationId="JobEditorImportObject" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="{loc:Tr Sched_EditorImportOperation}" Foreground="#555555" Margin="0,0,0,3" />
+                            <ComboBox ItemsSource="{Binding ImportOperations}" DisplayMemberPath="Label"
+                                      SelectedValuePath="Key" SelectedValue="{Binding ImportOperation}"
+                                      AutomationProperties.AutomationId="JobEditorImportOperation" />
+                        </StackPanel>
+                    </Grid>
+                    <TextBlock Text="{loc:Tr Sched_EditorImportCsv}" Foreground="#555555" Margin="0,8,0,3" />
+                    <TextBox Text="{Binding ImportCsvPath, UpdateSourceTrigger=PropertyChanged}"
+                             AutomationProperties.AutomationId="JobEditorImportCsv" />
+                    <TextBlock Text="{loc:Tr Sched_EditorImportExternalId}" Foreground="#555555" Margin="0,8,0,3" />
+                    <TextBox Text="{Binding ImportExternalId, UpdateSourceTrigger=PropertyChanged}" />
+                </StackPanel>
+
+                <!-- データ エクスポート -->
+                <StackPanel Visibility="{Binding IsDataExport, Converter={StaticResource BoolToVis}}">
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="12" />
+                            <ColumnDefinition Width="200" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="{loc:Tr Sched_EditorOutputPath}" Foreground="#555555" Margin="0,0,0,3" />
+                            <TextBox Text="{Binding OutputPath, UpdateSourceTrigger=PropertyChanged}"
+                                     AutomationProperties.AutomationId="JobEditorOutputPath" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="{loc:Tr Sched_ColumnResult}" Foreground="#555555" Margin="0,0,0,3" />
+                            <ComboBox ItemsSource="{Binding ExportFormats}" SelectedItem="{Binding ExportFormat}" />
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+
+                <!-- Bulk API 共通 -->
+                <CheckBox Content="{loc:Tr Sched_EditorUseBulk}" IsChecked="{Binding UseBulk}" Margin="0,10,0,0"
+                          Visibility="{Binding UsesBulk, Converter={StaticResource BoolToVis}}"
+                          AutomationProperties.AutomationId="JobEditorUseBulk" />
+
+                <!-- sf コマンド -->
                 <TextBlock Text="{loc:Tr Sched_EditorSfArguments}" Style="{StaticResource SectionHeader}"
                            Visibility="{Binding IsSfCommand, Converter={StaticResource BoolToVis}}" />
                 <TextBox Text="{Binding SfArguments, UpdateSourceTrigger=PropertyChanged}"
@@ -107,6 +196,40 @@
                          Visibility="{Binding IsSfCommand, Converter={StaticResource BoolToVis}}"
                          ToolTip="{loc:Tr Sched_EditorSfArgumentsTip}"
                          AutomationProperties.AutomationId="JobEditorSfArguments" />
+
+                <!-- REST API -->
+                <StackPanel Visibility="{Binding IsRestApi, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="{loc:Tr Sched_EditorRestMethod}" Style="{StaticResource SectionHeader}" />
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <ComboBox ItemsSource="{Binding RestMethods}" SelectedItem="{Binding RestMethod}" Width="120" />
+                        <TextBlock Text="{loc:Tr Sched_EditorRestPath}" VerticalAlignment="Center" Margin="16,0,8,0"
+                                   Foreground="#555555" />
+                        <TextBox Text="{Binding RestPath, UpdateSourceTrigger=PropertyChanged}" Width="440"
+                                 AutomationProperties.AutomationId="JobEditorRestPath" />
+                    </StackPanel>
+                    <TextBlock Text="{loc:Tr Sched_EditorRestBody}" Foreground="#555555" Margin="0,0,0,3" />
+                    <TextBox Text="{Binding RestBody, UpdateSourceTrigger=PropertyChanged}"
+                             Height="80" AcceptsReturn="True" TextWrapping="Wrap"
+                             VerticalScrollBarVisibility="Auto" FontFamily="Consolas"
+                             AutomationProperties.AutomationId="JobEditorRestBody" />
+                </StackPanel>
+
+                <!-- OS コマンドライン -->
+                <StackPanel Visibility="{Binding IsShell, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="{loc:Tr Sched_EditorShellCommand}" Style="{StaticResource SectionHeader}" />
+                    <TextBox Text="{Binding ShellCommandLine, UpdateSourceTrigger=PropertyChanged}"
+                             Height="60" AcceptsReturn="True" TextWrapping="Wrap"
+                             FontFamily="Consolas"
+                             ToolTip="{loc:Tr Sched_EditorShellTip}"
+                             AutomationProperties.AutomationId="JobEditorShellCommand" />
+                    <TextBlock Text="{loc:Tr Sched_EditorWorkingDirectory}" Foreground="#555555" Margin="0,8,0,3" />
+                    <TextBox Text="{Binding ShellWorkingDirectory, UpdateSourceTrigger=PropertyChanged}"
+                             AutomationProperties.AutomationId="JobEditorShellWorkingDirectory" />
+                    <Border Background="#FDECEA" BorderBrush="#F3B6B0" BorderThickness="1" CornerRadius="4"
+                            Padding="8,6" Margin="0,8,0,0">
+                        <TextBlock Text="{loc:Tr Sched_ShellWarning}" Foreground="#B3261E" TextWrapping="Wrap" />
+                    </Border>
+                </StackPanel>
 
                 <!-- スケジュール -->
                 <TextBlock Text="{loc:Tr Sched_EditorSchedule}" Style="{StaticResource SectionHeader}" />

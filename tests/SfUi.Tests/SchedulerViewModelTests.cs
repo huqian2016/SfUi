@@ -112,7 +112,7 @@ public class SchedulerViewModelTests : IDisposable
     }
 
     [Fact]
-    public void NewJob_AddsThroughEditor()
+    public async Task NewJob_AddsThroughEditor()
     {
         var viewModel = CreateViewModel();
         viewModel.Initialize(Array.Empty<OrgInfo>(), null);
@@ -124,7 +124,7 @@ public class SchedulerViewModelTests : IDisposable
             Schedule = new JobSchedule { Kind = ScheduleKinds.Once, OnceAt = DateTimeOffset.Now.AddHours(2) },
         }, RunNow: false);
 
-        viewModel.NewJobCommand.Execute(null);
+        await viewModel.NewJobCommand.ExecuteAsync(null);
 
         var job = Assert.Single(_jobs.Jobs);
         Assert.Equal("新しいジョブ", job.Name);
@@ -246,6 +246,152 @@ public class SchedulerViewModelTests : IDisposable
         Assert.Equal(UiText.T("Sched_ValidationPastTime"), editor.ValidationMessage);
     }
 
+    private SchedulerJobEditorViewModel CreateEditor(string type)
+    {
+        var editor = new SchedulerJobEditorViewModel(_settings);
+        editor.Load(new ScheduledJob { JobType = type, TargetOrg = "hks4sand1" }, Array.Empty<OrgInfo>());
+        editor.Name = "テスト";
+        editor.SelectedOrg = new OrgInfo("hks4sand1", "acc", "00D", "https://example", "Connected", false, true);
+        editor.ScheduleKind = ScheduleKinds.Once;
+        editor.OnceDate = DateTime.Today.AddDays(1);
+        editor.OnceTime = "10:00";
+        return editor;
+    }
+
+    [Fact]
+    public void Editor_BuildsApexPayload()
+    {
+        var editor = CreateEditor(ScheduledJobTypes.Apex);
+        editor.ApexCode = "System.debug('hi');";
+
+        var job = editor.TryBuild();
+
+        Assert.NotNull(job);
+        Assert.Equal(ScheduledJobTypes.Apex, job!.JobType);
+        Assert.Equal("System.debug('hi');", job.GetPayload<ApexJobPayload>().Code);
+    }
+
+    [Fact]
+    public void Editor_BuildsBackupPayload()
+    {
+        var editor = CreateEditor(ScheduledJobTypes.Backup);
+        editor.BackupObjects = "Account, Contact ,account";
+        editor.BackupLabel = "nightly";
+
+        var job = editor.TryBuild();
+
+        Assert.NotNull(job);
+        var payload = job!.GetPayload<BackupJobPayload>();
+        Assert.Equal(new[] { "Account", "Contact" }, payload.Objects);
+        Assert.Equal("nightly", payload.Label);
+    }
+
+    [Fact]
+    public void Editor_BuildsDataImportPayload()
+    {
+        var editor = CreateEditor(ScheduledJobTypes.DataImport);
+        editor.ImportObject = "Contact";
+        editor.ImportCsvPath = "C:\\tmp\\contacts.csv";
+        editor.ImportOperation = ScheduledImportOperations.Upsert;
+        editor.ImportExternalId = "ExternalId__c";
+        editor.UseBulk = true;
+
+        var job = editor.TryBuild();
+
+        Assert.NotNull(job);
+        var payload = job!.GetPayload<DataImportJobPayload>();
+        Assert.Equal("Contact", payload.ObjectName);
+        Assert.Equal(ScheduledImportOperations.Upsert, payload.Operation);
+        Assert.Equal("ExternalId__c", payload.ExternalIdField);
+        Assert.True(payload.UseBulk);
+    }
+
+    [Fact]
+    public void Editor_DataImport_RequiresCsvPath()
+    {
+        var editor = CreateEditor(ScheduledJobTypes.DataImport);
+        editor.ImportObject = "Contact";
+
+        Assert.Null(editor.TryBuild());
+        Assert.Equal(UiText.T("Sched_ValidationCsvRequired"), editor.ValidationMessage);
+    }
+
+    [Fact]
+    public void Editor_BuildsDataExportPayload()
+    {
+        var editor = CreateEditor(ScheduledJobTypes.DataExport);
+        editor.SoqlQuery = "SELECT Id FROM Account";
+        editor.OutputPath = "C:\\tmp\\accounts.csv";
+        editor.ExportFormat = "csv";
+
+        var job = editor.TryBuild();
+
+        Assert.NotNull(job);
+        var payload = job!.GetPayload<DataExportJobPayload>();
+        Assert.Equal("SELECT Id FROM Account", payload.Soql);
+        Assert.Equal("C:\\tmp\\accounts.csv", payload.OutputPath);
+        Assert.False(payload.UseBulk);
+    }
+
+    [Fact]
+    public void Editor_DataExport_BulkRequiresOutputPath()
+    {
+        var editor = CreateEditor(ScheduledJobTypes.DataExport);
+        editor.SoqlQuery = "SELECT Id FROM Account";
+        editor.UseBulk = true;
+
+        Assert.Null(editor.TryBuild());
+        Assert.Equal(UiText.T("Sched_ValidationOutputRequired"), editor.ValidationMessage);
+    }
+
+    [Fact]
+    public void Editor_BuildsRestPayload()
+    {
+        var editor = CreateEditor(ScheduledJobTypes.RestApi);
+        editor.RestMethod = "post";
+        editor.RestPath = "/services/data/v60.0/sobjects/Account";
+        editor.RestBody = "{\"Name\":\"A\"}";
+
+        var job = editor.TryBuild();
+
+        Assert.NotNull(job);
+        var payload = job!.GetPayload<RestApiJobPayload>();
+        Assert.Equal("POST", payload.Method);
+        Assert.Equal("/services/data/v60.0/sobjects/Account", payload.Path);
+        Assert.Equal("{\"Name\":\"A\"}", payload.Body);
+    }
+
+    [Fact]
+    public void Editor_BuildsShellPayload_WithoutOrg()
+    {
+        var editor = new SchedulerJobEditorViewModel(_settings);
+        editor.Load(new ScheduledJob { JobType = ScheduledJobTypes.Shell }, Array.Empty<OrgInfo>());
+        editor.Name = "シェル";
+        editor.ShellCommandLine = "echo hello";
+        editor.ShellWorkingDirectory = "C:\\tmp";
+        editor.ScheduleKind = ScheduleKinds.Once;
+        editor.OnceDate = DateTime.Today.AddDays(1);
+        editor.OnceTime = "10:00";
+
+        var job = editor.TryBuild();
+
+        Assert.NotNull(job);
+        Assert.Null(job!.TargetOrg);
+        var payload = job.GetPayload<ShellJobPayload>();
+        Assert.Equal("echo hello", payload.CommandLine);
+        Assert.Equal("C:\\tmp", payload.WorkingDirectory);
+    }
+
+    [Fact]
+    public void ImportOperations_MapToEnum()
+    {
+        Assert.Equal(DataImportOperation.Insert, ScheduledImportOperations.ToOperation("insert"));
+        Assert.Equal(DataImportOperation.Update, ScheduledImportOperations.ToOperation("update"));
+        Assert.Equal(DataImportOperation.Upsert, ScheduledImportOperations.ToOperation("upsert"));
+        Assert.Equal(DataImportOperation.Delete, ScheduledImportOperations.ToOperation("delete"));
+        Assert.Equal(DataImportOperation.Insert, ScheduledImportOperations.ToOperation("unknown"));
+    }
+
     [Fact]
     public void NotificationCenter_EnqueueAndDismiss()
     {
@@ -306,7 +452,8 @@ public class SchedulerViewModelTests : IDisposable
     {
         public SchedulerJobEditResult? Result { get; set; }
 
-        public SchedulerJobEditResult? Edit(ScheduledJob job, IReadOnlyList<OrgInfo> orgs) => Result;
+        public Task<SchedulerJobEditResult?> EditAsync(ScheduledJob job, IReadOnlyList<OrgInfo> orgs) =>
+            Task.FromResult(Result);
     }
 
     private sealed class FakeDispatcher : IUiDispatcher

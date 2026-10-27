@@ -131,6 +131,14 @@
                     <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconScratchOrg}" />
                 </Button>
 
+                <Button Classes="icon" Margin="0,0,10,0"
+                        Command="{Binding OpenSchedulerCommand}"
+                        AutomationProperties.AutomationId="OpenScheduler"
+                        ToolTip.Tip="{loc:Tr Main_SchedulerTip}"
+                        AutomationProperties.Name="{loc:Tr Main_Scheduler}">
+                    <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconCalendar}" />
+                </Button>
+
                 <TextBlock Text="{loc:Tr Main_FolderLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
                 <AutoCompleteBox x:Name="FolderComboBox" Width="230" Margin="0,0,4,0"
                                  ItemsSource="{Binding RecentFolders}"

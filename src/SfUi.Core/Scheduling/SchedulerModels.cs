@@ -35,12 +35,30 @@ public static class ScheduleKinds
 public static class ScheduledJobTypes
 {
     public const string Soql = "soql";
+    public const string Apex = "apex";
+    public const string Backup = "backup";
+    public const string DataImport = "dataimport";
+    public const string DataExport = "dataexport";
     public const string SfCommand = "sfcommand";
+    public const string RestApi = "restapi";
+    public const string Shell = "shell";
+
+    /// <summary>全種別（エディタの並び順）。</summary>
+    public static IReadOnlyList<string> All { get; } = new[]
+    {
+        Soql, Apex, Backup, DataImport, DataExport, SfCommand, RestApi, Shell,
+    };
 
     public static string ToLabel(string type) => type switch
     {
         Soql => UiText.T("Sched_TypeSoql"),
+        Apex => UiText.T("Sched_TypeApex"),
+        Backup => UiText.T("Sched_TypeBackup"),
+        DataImport => UiText.T("Sched_TypeDataImport"),
+        DataExport => UiText.T("Sched_TypeDataExport"),
         SfCommand => UiText.T("Sched_TypeSfCommand"),
+        RestApi => UiText.T("Sched_TypeRestApi"),
+        Shell => UiText.T("Sched_TypeShell"),
         _ => type,
     };
 }
@@ -380,4 +398,104 @@ public sealed class SfCommandJobPayload
 
     /// <summary>作業ディレクトリ（null = 既定）。</summary>
     public string? WorkingDirectory { get; set; }
+}
+
+/// <summary>匿名 Apex ジョブのパラメータ。</summary>
+public sealed class ApexJobPayload
+{
+    public string Code { get; set; } = "";
+}
+
+/// <summary>バックアップ ジョブのパラメータ。</summary>
+public sealed class BackupJobPayload
+{
+    /// <summary>対象オブジェクト（ API 名）。</summary>
+    public List<string> Objects { get; set; } = new();
+
+    /// <summary>ラベル（空 = 自動）。</summary>
+    public string? Label { get; set; }
+
+    /// <summary>説明（空 = 自動）。</summary>
+    public string? Description { get; set; }
+}
+
+/// <summary>データ投入（CSV）ジョブのパラメータ。</summary>
+public sealed class DataImportJobPayload
+{
+    public string ObjectName { get; set; } = "";
+
+    public string CsvPath { get; set; } = "";
+
+    /// <summary>insert / update / upsert / delete。</summary>
+    public string Operation { get; set; } = "insert";
+
+    /// <summary>upsert の外部 Id 項目。</summary>
+    public string? ExternalIdField { get; set; }
+
+    /// <summary>Bulk API 2.0 を使うか（false = REST バッチ）。</summary>
+    public bool UseBulk { get; set; }
+
+    /// <summary>空欄を null として送るか。</summary>
+    public bool EmptyAsNull { get; set; } = true;
+}
+
+/// <summary>データ エクスポート ジョブのパラメータ。</summary>
+public sealed class DataExportJobPayload
+{
+    public string Soql { get; set; } = "";
+
+    /// <summary>出力ファイル（.csv / .json）。空 = 保存しない。</summary>
+    public string? OutputPath { get; set; }
+
+    public bool UseBulk { get; set; }
+
+    /// <summary>bulk の出力形式（csv / json）。</summary>
+    public string ResultFormat { get; set; } = "csv";
+}
+
+/// <summary>REST API 呼び出しジョブのパラメータ。</summary>
+public sealed class RestApiJobPayload
+{
+    public string Method { get; set; } = "GET";
+
+    /// <summary>パス（/services/data/...）または完全な URL。</summary>
+    public string Path { get; set; } = "";
+
+    public string? Body { get; set; }
+}
+
+/// <summary>OS コマンドライン ジョブのパラメータ。</summary>
+public sealed class ShellJobPayload
+{
+    /// <summary>実行するコマンドライン（Windows は cmd.exe /c、macOS/Linux は sh -c）。</summary>
+    public string CommandLine { get; set; } = "";
+
+    public string? WorkingDirectory { get; set; }
+}
+
+/// <summary>データ投入の操作名（文字列 ↔ enum）。</summary>
+public static class ScheduledImportOperations
+{
+    public const string Insert = "insert";
+    public const string Update = "update";
+    public const string Upsert = "upsert";
+    public const string Delete = "delete";
+
+    public static IReadOnlyList<string> All { get; } = new[] { Insert, Update, Upsert, Delete };
+
+    public static string ToLabel(string operation) => operation switch
+    {
+        Update => UiText.T("Sched_OpUpdate"),
+        Upsert => UiText.T("Sched_OpUpsert"),
+        Delete => UiText.T("Sched_OpDelete"),
+        _ => UiText.T("Sched_OpInsert"),
+    };
+
+    public static DataImportOperation ToOperation(string operation) => operation switch
+    {
+        Update => DataImportOperation.Update,
+        Upsert => DataImportOperation.Upsert,
+        Delete => DataImportOperation.Delete,
+        _ => DataImportOperation.Insert,
+    };
 }

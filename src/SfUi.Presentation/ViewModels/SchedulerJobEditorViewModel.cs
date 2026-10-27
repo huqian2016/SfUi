@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using SfUi.Core;
@@ -21,13 +21,17 @@ public sealed partial class WeekdayOption : ObservableObject
     private bool _isSelected;
 }
 
-/// <summary>ジョブ種別の選択肢。</summary>
-public sealed record JobTypeOption(string Key, string Label);
+/// <summary>ドロップダウン用の選択肢（キー + ラベル）。</summary>
+public sealed record SchedulerOption(string Key, string Label)
+{
+    /// <summary>UIA / ログ用の表示名。</summary>
+    public override string ToString() => Label;
+}
 
 /// <summary>スケジュール種別の選択肢。</summary>
 public sealed record ScheduleKindOption(string Key, string Label);
 
-/// <summary>ジョブ編集ダイアログの ViewModel。</summary>
+/// <summary>ジョブ編集ダイアログの ViewModel（全ジョブ種別対応）。</summary>
 public sealed partial class SchedulerJobEditorViewModel : ObservableObject
 {
     private readonly AppSettingsStore _settings;
@@ -46,11 +50,8 @@ public sealed partial class SchedulerJobEditorViewModel : ObservableObject
     public ObservableCollection<OrgInfo> Orgs { get; } = new();
 
     /// <summary>ジョブ種別の選択肢。</summary>
-    public IReadOnlyList<JobTypeOption> JobTypes { get; } = new[]
-    {
-        new JobTypeOption(ScheduledJobTypes.Soql, ScheduledJobTypes.ToLabel(ScheduledJobTypes.Soql)),
-        new JobTypeOption(ScheduledJobTypes.SfCommand, ScheduledJobTypes.ToLabel(ScheduledJobTypes.SfCommand)),
-    };
+    public IReadOnlyList<SchedulerOption> JobTypes { get; } =
+        ScheduledJobTypes.All.Select(t => new SchedulerOption(t, ScheduledJobTypes.ToLabel(t))).ToList();
 
     /// <summary>スケジュール種別の選択肢。</summary>
     public IReadOnlyList<ScheduleKindOption> ScheduleKindOptions { get; } = new[]
@@ -61,6 +62,16 @@ public sealed partial class SchedulerJobEditorViewModel : ObservableObject
         new ScheduleKindOption(ScheduleKinds.Monthly, ScheduleKinds.ToLabel(ScheduleKinds.Monthly)),
         new ScheduleKindOption(ScheduleKinds.Interval, ScheduleKinds.ToLabel(ScheduleKinds.Interval)),
     };
+
+    /// <summary>データ投入の操作の選択肢。</summary>
+    public IReadOnlyList<SchedulerOption> ImportOperations { get; } =
+        ScheduledImportOperations.All.Select(o => new SchedulerOption(o, ScheduledImportOperations.ToLabel(o))).ToList();
+
+    /// <summary>REST のメソッド。</summary>
+    public IReadOnlyList<string> RestMethods { get; } = new[] { "GET", "POST", "PATCH", "DELETE" };
+
+    /// <summary>エクスポート形式。</summary>
+    public IReadOnlyList<string> ExportFormats { get; } = new[] { "csv", "json" };
 
     /// <summary>曜日チェックボックス。</summary>
     public IReadOnlyList<WeekdayOption> Weekdays { get; }
@@ -77,15 +88,72 @@ public sealed partial class SchedulerJobEditorViewModel : ObservableObject
     [ObservableProperty]
     private bool _isEnabled = true;
 
+    // ── SOQL / データ エクスポートで共用 ──
     [ObservableProperty]
     private string _soqlQuery = "";
 
     [ObservableProperty]
     private string _csvPath = "";
 
+    // ── 匿名 Apex ──
+    [ObservableProperty]
+    private string _apexCode = "";
+
+    // ── バックアップ ──
+    [ObservableProperty]
+    private string _backupObjects = "";
+
+    [ObservableProperty]
+    private string _backupLabel = "";
+
+    [ObservableProperty]
+    private string _backupDescription = "";
+
+    // ── データ投入 ──
+    [ObservableProperty]
+    private string _importObject = "";
+
+    [ObservableProperty]
+    private string _importCsvPath = "";
+
+    [ObservableProperty]
+    private string _importOperation = ScheduledImportOperations.Insert;
+
+    [ObservableProperty]
+    private string _importExternalId = "";
+
+    [ObservableProperty]
+    private bool _useBulk;
+
+    // ── データ エクスポート ──
+    [ObservableProperty]
+    private string _outputPath = "";
+
+    [ObservableProperty]
+    private string _exportFormat = "csv";
+
+    // ── sf コマンド ──
     [ObservableProperty]
     private string _sfArguments = "";
 
+    // ── REST API ──
+    [ObservableProperty]
+    private string _restMethod = "GET";
+
+    [ObservableProperty]
+    private string _restPath = "";
+
+    [ObservableProperty]
+    private string _restBody = "";
+
+    // ── OS コマンドライン ──
+    [ObservableProperty]
+    private string _shellCommandLine = "";
+
+    [ObservableProperty]
+    private string _shellWorkingDirectory = "";
+
+    // ── スケジュール ──
     [ObservableProperty]
     private string _scheduleKind = ScheduleKinds.Once;
 
@@ -110,6 +178,7 @@ public sealed partial class SchedulerJobEditorViewModel : ObservableObject
     [ObservableProperty]
     private bool _skipHolidays;
 
+    // ── 通知 ──
     [ObservableProperty]
     private bool _notifyEnabled = true;
 
@@ -125,6 +194,7 @@ public sealed partial class SchedulerJobEditorViewModel : ObservableObject
     [ObservableProperty]
     private bool _notifyOnFinish = true;
 
+    // ── 詳細 ──
     [ObservableProperty]
     private int _timeoutMinutes = 30;
 
@@ -134,11 +204,30 @@ public sealed partial class SchedulerJobEditorViewModel : ObservableObject
     [ObservableProperty]
     private string _validationMessage = "";
 
-    /// <summary>種別が SOQL か。</summary>
     public bool IsSoql => JobType == ScheduledJobTypes.Soql;
 
-    /// <summary>種別が sf コマンドか。</summary>
+    public bool IsApex => JobType == ScheduledJobTypes.Apex;
+
+    public bool IsBackup => JobType == ScheduledJobTypes.Backup;
+
+    public bool IsDataImport => JobType == ScheduledJobTypes.DataImport;
+
+    public bool IsDataExport => JobType == ScheduledJobTypes.DataExport;
+
     public bool IsSfCommand => JobType == ScheduledJobTypes.SfCommand;
+
+    public bool IsRestApi => JobType == ScheduledJobTypes.RestApi;
+
+    public bool IsShell => JobType == ScheduledJobTypes.Shell;
+
+    /// <summary>対象組織が必須の種別か。</summary>
+    public bool NeedsOrg => JobType is not (ScheduledJobTypes.Shell or ScheduledJobTypes.SfCommand);
+
+    /// <summary>SOQL 入力欄を出すか（SOQL / データ エクスポート）。</summary>
+    public bool UsesSoql => IsSoql || IsDataExport;
+
+    /// <summary>Bulk API の選択を出すか（データ投入 / エクスポート）。</summary>
+    public bool UsesBulk => IsDataImport || IsDataExport;
 
     public bool IsOnce => ScheduleKind == ScheduleKinds.Once;
 
@@ -157,7 +246,16 @@ public sealed partial class SchedulerJobEditorViewModel : ObservableObject
     partial void OnJobTypeChanged(string value)
     {
         OnPropertyChanged(nameof(IsSoql));
+        OnPropertyChanged(nameof(IsApex));
+        OnPropertyChanged(nameof(IsBackup));
+        OnPropertyChanged(nameof(IsDataImport));
+        OnPropertyChanged(nameof(IsDataExport));
         OnPropertyChanged(nameof(IsSfCommand));
+        OnPropertyChanged(nameof(IsRestApi));
+        OnPropertyChanged(nameof(IsShell));
+        OnPropertyChanged(nameof(NeedsOrg));
+        OnPropertyChanged(nameof(UsesSoql));
+        OnPropertyChanged(nameof(UsesBulk));
     }
 
     partial void OnScheduleKindChanged(string value)
@@ -186,18 +284,75 @@ public sealed partial class SchedulerJobEditorViewModel : ObservableObject
         SelectedOrg = Orgs.FirstOrDefault(o => string.Equals(o.Username, job.TargetOrg, StringComparison.OrdinalIgnoreCase))
             ?? Orgs.FirstOrDefault();
 
-        var payload = job.JobType == ScheduledJobTypes.SfCommand
-            ? (object)job.GetPayload<SfCommandJobPayload>()
-            : job.GetPayload<SoqlJobPayload>();
+        switch (job.JobType)
+        {
+            case ScheduledJobTypes.Soql:
+            {
+                var payload = job.GetPayload<SoqlJobPayload>();
+                SoqlQuery = payload.Query;
+                CsvPath = payload.CsvPath ?? "";
+                break;
+            }
 
-        if (payload is SoqlJobPayload soql)
-        {
-            SoqlQuery = soql.Query;
-            CsvPath = soql.CsvPath ?? "";
-        }
-        else if (payload is SfCommandJobPayload command)
-        {
-            SfArguments = command.Arguments;
+            case ScheduledJobTypes.Apex:
+            {
+                ApexCode = job.GetPayload<ApexJobPayload>().Code;
+                break;
+            }
+
+            case ScheduledJobTypes.Backup:
+            {
+                var payload = job.GetPayload<BackupJobPayload>();
+                BackupObjects = string.Join(",", payload.Objects);
+                BackupLabel = payload.Label ?? "";
+                BackupDescription = payload.Description ?? "";
+                break;
+            }
+
+            case ScheduledJobTypes.DataImport:
+            {
+                var payload = job.GetPayload<DataImportJobPayload>();
+                ImportObject = payload.ObjectName;
+                ImportCsvPath = payload.CsvPath;
+                ImportOperation = payload.Operation;
+                ImportExternalId = payload.ExternalIdField ?? "";
+                UseBulk = payload.UseBulk;
+                break;
+            }
+
+            case ScheduledJobTypes.DataExport:
+            {
+                var payload = job.GetPayload<DataExportJobPayload>();
+                SoqlQuery = payload.Soql;
+                OutputPath = payload.OutputPath ?? "";
+                UseBulk = payload.UseBulk;
+                ExportFormat = string.IsNullOrWhiteSpace(payload.ResultFormat) ? "csv" : payload.ResultFormat;
+                break;
+            }
+
+            case ScheduledJobTypes.SfCommand:
+            {
+                var payload = job.GetPayload<SfCommandJobPayload>();
+                SfArguments = payload.Arguments;
+                break;
+            }
+
+            case ScheduledJobTypes.RestApi:
+            {
+                var payload = job.GetPayload<RestApiJobPayload>();
+                RestMethod = string.IsNullOrWhiteSpace(payload.Method) ? "GET" : payload.Method;
+                RestPath = payload.Path;
+                RestBody = payload.Body ?? "";
+                break;
+            }
+
+            case ScheduledJobTypes.Shell:
+            {
+                var payload = job.GetPayload<ShellJobPayload>();
+                ShellCommandLine = payload.CommandLine;
+                ShellWorkingDirectory = payload.WorkingDirectory ?? "";
+                break;
+            }
         }
 
         var schedule = job.Schedule;
@@ -238,7 +393,7 @@ public sealed partial class SchedulerJobEditorViewModel : ObservableObject
             return null;
         }
 
-        if (SelectedOrg is null)
+        if (NeedsOrg && SelectedOrg is null)
         {
             ValidationMessage = UiText.T("Sched_ValidationOrgRequired");
             return null;
@@ -248,31 +403,11 @@ public sealed partial class SchedulerJobEditorViewModel : ObservableObject
         job.Name = Name.Trim();
         job.JobType = JobType;
         job.Enabled = IsEnabled;
-        job.TargetOrg = SelectedOrg.Username;
+        job.TargetOrg = SelectedOrg?.Username;
 
-        if (JobType == ScheduledJobTypes.Soql)
+        if (!BuildPayload(job))
         {
-            if (string.IsNullOrWhiteSpace(SoqlQuery))
-            {
-                ValidationMessage = UiText.T("Sched_ValidationQueryRequired");
-                return null;
-            }
-
-            job.SetPayload(new SoqlJobPayload
-            {
-                Query = SoqlQuery.Trim(),
-                CsvPath = string.IsNullOrWhiteSpace(CsvPath) ? null : CsvPath.Trim(),
-            });
-        }
-        else
-        {
-            if (string.IsNullOrWhiteSpace(SfArguments))
-            {
-                ValidationMessage = UiText.T("Sched_ValidationCommandRequired");
-                return null;
-            }
-
-            job.SetPayload(new SfCommandJobPayload { Arguments = SfArguments.Trim() });
+            return null;
         }
 
         var schedule = new JobSchedule
@@ -359,6 +494,150 @@ public sealed partial class SchedulerJobEditorViewModel : ObservableObject
         return job;
     }
 
+    /// <summary>種別ごとのペイロードを組み立てる（入力エラーで false）。</summary>
+    private bool BuildPayload(ScheduledJob job)
+    {
+        switch (JobType)
+        {
+            case ScheduledJobTypes.Soql:
+                if (string.IsNullOrWhiteSpace(SoqlQuery))
+                {
+                    ValidationMessage = UiText.T("Sched_ValidationQueryRequired");
+                    return false;
+                }
+
+                job.SetPayload(new SoqlJobPayload
+                {
+                    Query = SoqlQuery.Trim(),
+                    CsvPath = NullIfEmpty(CsvPath),
+                });
+                return true;
+
+            case ScheduledJobTypes.Apex:
+                if (string.IsNullOrWhiteSpace(ApexCode))
+                {
+                    ValidationMessage = UiText.T("Sched_ValidationApexRequired");
+                    return false;
+                }
+
+                job.SetPayload(new ApexJobPayload { Code = ApexCode });
+                return true;
+
+            case ScheduledJobTypes.Backup:
+            {
+                var objects = BackupObjects
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+                if (objects.Count == 0)
+                {
+                    ValidationMessage = UiText.T("Sched_ValidationObjectsRequired");
+                    return false;
+                }
+
+                job.SetPayload(new BackupJobPayload
+                {
+                    Objects = objects,
+                    Label = NullIfEmpty(BackupLabel),
+                    Description = NullIfEmpty(BackupDescription),
+                });
+                return true;
+            }
+
+            case ScheduledJobTypes.DataImport:
+                if (string.IsNullOrWhiteSpace(ImportObject))
+                {
+                    ValidationMessage = UiText.T("Sched_ValidationObjectRequired");
+                    return false;
+                }
+
+                if (string.IsNullOrWhiteSpace(ImportCsvPath))
+                {
+                    ValidationMessage = UiText.T("Sched_ValidationCsvRequired");
+                    return false;
+                }
+
+                job.SetPayload(new DataImportJobPayload
+                {
+                    ObjectName = ImportObject.Trim(),
+                    CsvPath = ImportCsvPath.Trim(),
+                    Operation = string.IsNullOrWhiteSpace(ImportOperation) ? ScheduledImportOperations.Insert : ImportOperation,
+                    ExternalIdField = NullIfEmpty(ImportExternalId),
+                    UseBulk = UseBulk,
+                    EmptyAsNull = true,
+                });
+                return true;
+
+            case ScheduledJobTypes.DataExport:
+                if (string.IsNullOrWhiteSpace(SoqlQuery))
+                {
+                    ValidationMessage = UiText.T("Sched_ValidationQueryRequired");
+                    return false;
+                }
+
+                if (UseBulk && string.IsNullOrWhiteSpace(OutputPath))
+                {
+                    ValidationMessage = UiText.T("Sched_ValidationOutputRequired");
+                    return false;
+                }
+
+                job.SetPayload(new DataExportJobPayload
+                {
+                    Soql = SoqlQuery.Trim(),
+                    OutputPath = NullIfEmpty(OutputPath),
+                    UseBulk = UseBulk,
+                    ResultFormat = string.IsNullOrWhiteSpace(ExportFormat) ? "csv" : ExportFormat,
+                });
+                return true;
+
+            case ScheduledJobTypes.SfCommand:
+                if (string.IsNullOrWhiteSpace(SfArguments))
+                {
+                    ValidationMessage = UiText.T("Sched_ValidationCommandRequired");
+                    return false;
+                }
+
+                job.SetPayload(new SfCommandJobPayload { Arguments = SfArguments.Trim() });
+                return true;
+
+            case ScheduledJobTypes.RestApi:
+                if (string.IsNullOrWhiteSpace(RestPath))
+                {
+                    ValidationMessage = UiText.T("Sched_ValidationPathRequired");
+                    return false;
+                }
+
+                job.SetPayload(new RestApiJobPayload
+                {
+                    Method = string.IsNullOrWhiteSpace(RestMethod) ? "GET" : RestMethod.ToUpperInvariant(),
+                    Path = RestPath.Trim(),
+                    Body = NullIfEmpty(RestBody),
+                });
+                return true;
+
+            case ScheduledJobTypes.Shell:
+                if (string.IsNullOrWhiteSpace(ShellCommandLine))
+                {
+                    ValidationMessage = UiText.T("Sched_ValidationCommandRequired");
+                    return false;
+                }
+
+                job.SetPayload(new ShellJobPayload
+                {
+                    CommandLine = ShellCommandLine.Trim(),
+                    WorkingDirectory = NullIfEmpty(ShellWorkingDirectory),
+                });
+                return true;
+
+            default:
+                ValidationMessage = UiText.T("Sched_ErrorUnknownTypeFmt", JobType);
+                return false;
+        }
+    }
+
+    private static string? NullIfEmpty(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
     private static ScheduledJob Clone(ScheduledJob job) => new()
     {
         Id = job.Id,
@@ -379,4 +658,3 @@ public sealed partial class SchedulerJobEditorViewModel : ObservableObject
         UpdatedAt = job.UpdatedAt,
     };
 }
-

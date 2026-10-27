@@ -1,0 +1,282 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:SfUi.Avalonia"
+        x:Class="SfUi.Avalonia.Dialogs.SchedulerJobEditorDialog"
+        Title="{Binding Title}"
+        Width="720" Height="700" MinWidth="620" MinHeight="560"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False"
+        FontSize="13">
+    <DockPanel Margin="14">
+        <Border DockPanel.Dock="Bottom" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="0,10,0,0" Margin="0,10,0,0">
+            <DockPanel>
+                <TextBlock Text="{Binding ValidationMessage}" Foreground="#B3261E" VerticalAlignment="Center"
+                           TextWrapping="Wrap" AutomationProperties.AutomationId="JobEditorValidation" />
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="{loc:Tr Sched_EditorSave}" Click="OnSave" Width="110" Padding="0,4"
+                            Margin="0,0,8,0" AutomationProperties.AutomationId="JobEditorSave" />
+                    <Button Content="{loc:Tr Sched_EditorSaveAndRun}" Click="OnSaveAndRun" Width="150" Padding="0,4"
+                            Margin="0,0,8,0" AutomationProperties.AutomationId="JobEditorSaveAndRun" />
+                    <Button Content="{loc:Tr Common_Cancel}" Click="OnCancel" Width="90" Padding="0,4"
+                            AutomationProperties.AutomationId="JobEditorCancel" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <ScrollViewer ScrollViewer.VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <!-- 基本情報 -->
+                <Grid ColumnDefinitions="*,12,220">
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="{loc:Tr Sched_EditorName}" Foreground="#555555" Margin="0,8,0,3" />
+                        <TextBox Text="{Binding Name, Mode=TwoWay}"
+                                 AutomationProperties.AutomationId="JobEditorName" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="{loc:Tr Sched_EditorType}" Foreground="#555555" Margin="0,8,0,3" />
+                        <ComboBox ItemsSource="{Binding JobTypes}" SelectedValueBinding="{Binding Key}"
+                                  SelectedValue="{Binding JobType, Mode=TwoWay}"
+                                  AutomationProperties.AutomationId="JobEditorType">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Label}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </StackPanel>
+                </Grid>
+
+                <Grid ColumnDefinitions="*,12,220">
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="{loc:Tr Sched_EditorOrg}" Foreground="#555555" Margin="0,8,0,3" />
+                        <ComboBox ItemsSource="{Binding Orgs}" SelectedItem="{Binding SelectedOrg, Mode=TwoWay}"
+                                  AutomationProperties.AutomationId="JobEditorOrg">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding DisplayName}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </StackPanel>
+                    <CheckBox Grid.Column="2" Content="{loc:Tr Sched_EnabledLabel}" IsChecked="{Binding IsEnabled}"
+                              VerticalAlignment="Bottom" Margin="0,20,0,4"
+                              AutomationProperties.AutomationId="JobEditorEnabled" />
+                </Grid>
+
+                <!-- SOQL / データ エクスポート -->
+                <TextBlock Text="{loc:Tr Sched_EditorQuery}" FontWeight="SemiBold" Margin="0,14,0,4"
+                           IsVisible="{Binding UsesSoql}" />
+                <TextBox Text="{Binding SoqlQuery, Mode=TwoWay}" Height="130" AcceptsReturn="True" TextWrapping="NoWrap"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                         FontFamily="Consolas" IsVisible="{Binding UsesSoql}"
+                         AutomationProperties.AutomationId="JobEditorQuery" />
+
+                <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding IsSoql}">
+                    <TextBlock Grid.Column="0" Text="{loc:Tr Sched_EditorCsvPath}" VerticalAlignment="Center"
+                               Margin="0,8,8,0" Foreground="#555555" />
+                    <TextBox Grid.Column="1" Text="{Binding CsvPath, Mode=TwoWay}" Margin="0,8,0,0" />
+                </Grid>
+
+                <!-- 匿名 Apex -->
+                <TextBlock Text="{loc:Tr Sched_EditorApex}" FontWeight="SemiBold" Margin="0,14,0,4"
+                           IsVisible="{Binding IsApex}" />
+                <TextBox Text="{Binding ApexCode, Mode=TwoWay}" Height="150" AcceptsReturn="True" TextWrapping="NoWrap"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                         FontFamily="Consolas" IsVisible="{Binding IsApex}"
+                         AutomationProperties.AutomationId="JobEditorApex" />
+
+                <!-- バックアップ -->
+                <StackPanel IsVisible="{Binding IsBackup}">
+                    <TextBlock Text="{loc:Tr Sched_EditorBackupObjects}" FontWeight="SemiBold" Margin="0,14,0,4" />
+                    <TextBox Text="{Binding BackupObjects, Mode=TwoWay}"
+                             ToolTip.Tip="{loc:Tr Sched_EditorBackupObjectsTip}"
+                             AutomationProperties.AutomationId="JobEditorBackupObjects" />
+                    <Grid Margin="0,6,0,0" ColumnDefinitions="*,12,*">
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="{loc:Tr Sched_EditorBackupLabel}" Foreground="#555555" Margin="0,0,0,3" />
+                            <TextBox Text="{Binding BackupLabel, Mode=TwoWay}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="{loc:Tr Sched_EditorBackupDescription}" Foreground="#555555" Margin="0,0,0,3" />
+                            <TextBox Text="{Binding BackupDescription, Mode=TwoWay}" />
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+
+                <!-- データ投入 -->
+                <StackPanel IsVisible="{Binding IsDataImport}">
+                    <Grid Margin="0,8,0,0" ColumnDefinitions="*,12,200">
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="{loc:Tr Sched_EditorImportObject}" Foreground="#555555" Margin="0,0,0,3" />
+                            <TextBox Text="{Binding ImportObject, Mode=TwoWay}"
+                                     AutomationProperties.AutomationId="JobEditorImportObject" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="{loc:Tr Sched_EditorImportOperation}" Foreground="#555555" Margin="0,0,0,3" />
+                            <ComboBox ItemsSource="{Binding ImportOperations}" SelectedValueBinding="{Binding Key}"
+                                      SelectedValue="{Binding ImportOperation, Mode=TwoWay}"
+                                      AutomationProperties.AutomationId="JobEditorImportOperation">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Label}" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </StackPanel>
+                    </Grid>
+                    <TextBlock Text="{loc:Tr Sched_EditorImportCsv}" Foreground="#555555" Margin="0,8,0,3" />
+                    <TextBox Text="{Binding ImportCsvPath, Mode=TwoWay}"
+                             AutomationProperties.AutomationId="JobEditorImportCsv" />
+                    <TextBlock Text="{loc:Tr Sched_EditorImportExternalId}" Foreground="#555555" Margin="0,8,0,3" />
+                    <TextBox Text="{Binding ImportExternalId, Mode=TwoWay}" />
+                </StackPanel>
+
+                <!-- データ エクスポート -->
+                <Grid IsVisible="{Binding IsDataExport}" Margin="0,8,0,0" ColumnDefinitions="*,12,200">
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="{loc:Tr Sched_EditorOutputPath}" Foreground="#555555" Margin="0,0,0,3" />
+                        <TextBox Text="{Binding OutputPath, Mode=TwoWay}"
+                                 AutomationProperties.AutomationId="JobEditorOutputPath" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="{loc:Tr Sched_EditorRestMethod}" Foreground="#555555" Margin="0,0,0,3" />
+                        <ComboBox ItemsSource="{Binding ExportFormats}" SelectedItem="{Binding ExportFormat, Mode=TwoWay}" />
+                    </StackPanel>
+                </Grid>
+
+                <!-- Bulk API 共通 -->
+                <CheckBox Content="{loc:Tr Sched_EditorUseBulk}" IsChecked="{Binding UseBulk}" Margin="0,10,0,0"
+                          IsVisible="{Binding UsesBulk}" AutomationProperties.AutomationId="JobEditorUseBulk" />
+
+                <!-- sf コマンド -->
+                <TextBlock Text="{loc:Tr Sched_EditorSfArguments}" FontWeight="SemiBold" Margin="0,14,0,4"
+                           IsVisible="{Binding IsSfCommand}" />
+                <TextBox Text="{Binding SfArguments, Mode=TwoWay}" Height="54" AcceptsReturn="True" TextWrapping="Wrap"
+                         FontFamily="Consolas" IsVisible="{Binding IsSfCommand}"
+                         ToolTip.Tip="{loc:Tr Sched_EditorSfArgumentsTip}"
+                         AutomationProperties.AutomationId="JobEditorSfArguments" />
+
+                <!-- REST API -->
+                <StackPanel IsVisible="{Binding IsRestApi}">
+                    <TextBlock Text="{loc:Tr Sched_EditorRestMethod}" FontWeight="SemiBold" Margin="0,14,0,4" />
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <ComboBox ItemsSource="{Binding RestMethods}" SelectedItem="{Binding RestMethod, Mode=TwoWay}"
+                                  Width="120" />
+                        <TextBlock Text="{loc:Tr Sched_EditorRestPath}" VerticalAlignment="Center" Margin="16,0,8,0"
+                                   Foreground="#555555" />
+                        <TextBox Text="{Binding RestPath, Mode=TwoWay}" Width="420"
+                                 AutomationProperties.AutomationId="JobEditorRestPath" />
+                    </StackPanel>
+                    <TextBlock Text="{loc:Tr Sched_EditorRestBody}" Foreground="#555555" Margin="0,0,0,3" />
+                    <TextBox Text="{Binding RestBody, Mode=TwoWay}" Height="80" AcceptsReturn="True" TextWrapping="Wrap"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto" FontFamily="Consolas"
+                             AutomationProperties.AutomationId="JobEditorRestBody" />
+                </StackPanel>
+
+                <!-- OS コマンドライン -->
+                <StackPanel IsVisible="{Binding IsShell}">
+                    <TextBlock Text="{loc:Tr Sched_EditorShellCommand}" FontWeight="SemiBold" Margin="0,14,0,4" />
+                    <TextBox Text="{Binding ShellCommandLine, Mode=TwoWay}" Height="60" AcceptsReturn="True"
+                             TextWrapping="Wrap" FontFamily="Consolas"
+                             ToolTip.Tip="{loc:Tr Sched_EditorShellTip}"
+                             AutomationProperties.AutomationId="JobEditorShellCommand" />
+                    <TextBlock Text="{loc:Tr Sched_EditorWorkingDirectory}" Foreground="#555555" Margin="0,8,0,3" />
+                    <TextBox Text="{Binding ShellWorkingDirectory, Mode=TwoWay}"
+                             AutomationProperties.AutomationId="JobEditorShellWorkingDirectory" />
+                    <Border Background="#FDECEA" BorderBrush="#F3B6B0" BorderThickness="1" CornerRadius="4"
+                            Padding="8,6" Margin="0,8,0,0">
+                        <TextBlock Text="{loc:Tr Sched_ShellWarning}" Foreground="#B3261E" TextWrapping="Wrap" />
+                    </Border>
+                </StackPanel>
+
+                <!-- スケジュール -->
+                <TextBlock Text="{loc:Tr Sched_EditorSchedule}" FontWeight="SemiBold" Margin="0,14,0,4" />
+                <ComboBox ItemsSource="{Binding ScheduleKindOptions}" SelectedValueBinding="{Binding Key}"
+                          SelectedValue="{Binding ScheduleKind, Mode=TwoWay}" Width="200" HorizontalAlignment="Left"
+                          AutomationProperties.AutomationId="JobEditorScheduleKind">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Label}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+
+                <StackPanel Orientation="Horizontal" Margin="0,10,0,0" IsVisible="{Binding IsOnce}">
+                    <TextBlock Text="{loc:Tr Sched_OnceAt}" VerticalAlignment="Center" Margin="0,0,8,0"
+                               Foreground="#555555" />
+                    <DatePicker SelectedDate="{Binding OnceDate, Mode=TwoWay}" Width="140" Margin="0,0,12,0" />
+                    <TextBlock Text="{loc:Tr Sched_TimeOfDay}" VerticalAlignment="Center" Margin="0,0,8,0"
+                               Foreground="#555555" />
+                    <TextBox Text="{Binding OnceTime, Mode=TwoWay}" Width="80" />
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,10,0,0" IsVisible="{Binding IsRecurring}">
+                    <TextBlock Text="{loc:Tr Sched_TimeOfDay}" VerticalAlignment="Center" Margin="0,0,8,0"
+                               Foreground="#555555" />
+                    <TextBox Text="{Binding TimeOfDay, Mode=TwoWay}" Width="80" Margin="0,0,16,0" />
+                    <StackPanel Orientation="Horizontal" IsVisible="{Binding IsMonthly}">
+                        <TextBlock Text="{loc:Tr Sched_MonthlyDays}" VerticalAlignment="Center" Margin="0,0,8,0"
+                                   Foreground="#555555" />
+                        <TextBox Text="{Binding MonthlyDaysText, Mode=TwoWay}" Width="140"
+                                 ToolTip.Tip="{loc:Tr Sched_MonthlyDaysTip}" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" IsVisible="{Binding IsInterval}">
+                        <TextBlock Text="{loc:Tr Sched_IntervalMinutes}" VerticalAlignment="Center" Margin="0,0,8,0"
+                                   Foreground="#555555" />
+                        <TextBox Text="{Binding IntervalMinutes, Mode=TwoWay}" Width="80" />
+                    </StackPanel>
+                </StackPanel>
+
+                <ItemsControl ItemsSource="{Binding Weekdays}" Margin="0,6,0,0" IsVisible="{Binding IsWeekly}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <CheckBox Content="{Binding Label}" IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                      Margin="0,0,12,0" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <StackPanel Orientation="Horizontal" Margin="0,8,0,0" IsVisible="{Binding IsRecurring}">
+                    <CheckBox Content="{loc:Tr Sched_EditorSkipWeekends}" IsChecked="{Binding SkipWeekends}"
+                              Margin="0,0,16,0" />
+                    <CheckBox Content="{loc:Tr Sched_EditorSkipHolidays}" IsChecked="{Binding SkipHolidays}" />
+                </StackPanel>
+
+                <!-- 通知 -->
+                <TextBlock Text="{loc:Tr Sched_EditorNotification}" FontWeight="SemiBold" Margin="0,14,0,4" />
+                <CheckBox Content="{loc:Tr Sched_EditorNotifyEnabled}" IsChecked="{Binding NotifyEnabled}"
+                          AutomationProperties.AutomationId="JobEditorNotifyEnabled" />
+                <StackPanel Orientation="Horizontal" Margin="0,6,0,0" IsVisible="{Binding NotifyEnabled}">
+                    <TextBlock Text="{loc:Tr Sched_EditorPreNotice}" VerticalAlignment="Center" Margin="0,0,8,0"
+                               Foreground="#555555" />
+                    <TextBox Text="{Binding PreNoticeMinutes, Mode=TwoWay}" Width="60" />
+                    <TextBlock Text="{loc:Tr Sched_MinutesUnit}" VerticalAlignment="Center" Margin="4,0,12,0" />
+                    <TextBox Text="{Binding PreNoticeSeconds, Mode=TwoWay}" Width="60" />
+                    <TextBlock Text="{loc:Tr Sched_SecondsUnit}" VerticalAlignment="Center" Margin="4,0,16,0" />
+                    <CheckBox Content="{loc:Tr Sched_EditorNotifyOnStart}" IsChecked="{Binding NotifyOnStart}"
+                              Margin="0,0,16,0" VerticalAlignment="Center" />
+                    <CheckBox Content="{loc:Tr Sched_EditorNotifyOnFinish}" IsChecked="{Binding NotifyOnFinish}"
+                              VerticalAlignment="Center" />
+                </StackPanel>
+
+                <!-- 詳細 -->
+                <TextBlock Text="{loc:Tr Sched_DetailTitle}" FontWeight="SemiBold" Margin="0,14,0,4" />
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="{loc:Tr Sched_EditorTimeout}" VerticalAlignment="Center" Margin="0,0,8,0"
+                               Foreground="#555555" />
+                    <TextBox Text="{Binding TimeoutMinutes, Mode=TwoWay}" Width="60" />
+                    <TextBlock Text="{loc:Tr Sched_MinutesUnit}" VerticalAlignment="Center" Margin="4,0,20,0" />
+                    <TextBlock Text="{loc:Tr Sched_EditorMissedGrace}" VerticalAlignment="Center" Margin="0,0,8,0"
+                               Foreground="#555555" />
+                    <TextBox Text="{Binding MissedGraceSeconds, Mode=TwoWay}" Width="60" />
+                    <TextBlock Text="{loc:Tr Sched_SecondsUnit}" VerticalAlignment="Center" Margin="4,0,0,0" />
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

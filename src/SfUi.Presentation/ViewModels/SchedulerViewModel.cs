@@ -11,7 +11,7 @@ namespace SfUi.App.ViewModels;
 public interface ISchedulerJobEditor
 {
     /// <summary>ジョブを編集する。キャンセル時は null。</summary>
-    SchedulerJobEditResult? Edit(ScheduledJob job, IReadOnlyList<OrgInfo> orgs);
+    Task<SchedulerJobEditResult?> EditAsync(ScheduledJob job, IReadOnlyList<OrgInfo> orgs);
 }
 
 /// <summary>ジョブ編集の結果。</summary>
@@ -101,6 +101,9 @@ public sealed class SchedulerJobRow
     public string LastRunStatusLabel => Job.LastRunStatus is null ? "—" : JobRunStatuses.ToLabel(Job.LastRunStatus);
 
     public string LastRunSummary => Job.LastRunSummary ?? "";
+
+    /// <summary>UIA / ログ用の表示名。</summary>
+    public override string ToString() => $"{TimeText} {Name}";
 }
 
 /// <summary>スケジュール ウィンドウの ViewModel（カレンダー / 実行履歴）。</summary>
@@ -114,6 +117,7 @@ public sealed partial class SchedulerViewModel : ObservableObject
     private readonly ISchedulerJobEditor _editor;
     private readonly IUiDispatcher _ui;
     private readonly AppLog _log;
+    private readonly IReportExportDialog? _reportDialog;
 
     private IReadOnlyList<OrgInfo> _orgs = Array.Empty<OrgInfo>();
     private DateOnly _monthAnchor = DateOnly.FromDateTime(DateTime.Today);
@@ -127,7 +131,8 @@ public sealed partial class SchedulerViewModel : ObservableObject
         ISchedulerJobEditor editor,
         NotificationCenterViewModel notificationCenter,
         IUiDispatcher ui,
-        AppLog log)
+        AppLog log,
+        IReportExportDialog? reportDialog = null)
     {
         _scheduler = scheduler;
         _jobStore = jobStore;
@@ -137,6 +142,7 @@ public sealed partial class SchedulerViewModel : ObservableObject
         _editor = editor;
         _ui = ui;
         _log = log;
+        _reportDialog = reportDialog;
         Notifications = notificationCenter;
         SelectedDate = DateOnly.FromDateTime(DateTime.Today);
 
@@ -183,6 +189,17 @@ public sealed partial class SchedulerViewModel : ObservableObject
 
     [ObservableProperty]
     private JobRunRecord? _selectedRun;
+
+    /// <summary>履歴の保持期間の説明（例: 90 日 / 500 件）。</summary>
+    public string RetentionText => UiText.T(
+        "Sched_RetentionFmt",
+        _settings.Current.SchedulerRunRetentionDays,
+        _settings.Current.SchedulerRunRetentionMax);
+
+    /// <summary>選択中ジョブが OS コマンドラインの場合の警告を出すか。</summary>
+    public bool HasSelectedJobWarning => SelectedJob is not null && SelectedJob.Job.JobType == ScheduledJobTypes.Shell;
+
+    partial void OnSelectedJobChanged(SchedulerJobRow? value) => OnPropertyChanged(nameof(HasSelectedJobWarning));
 
     [ObservableProperty]
     private string _monthText = "";
@@ -398,7 +415,7 @@ public sealed partial class SchedulerViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void NewJob()
+    private Task NewJobAsync()
     {
         var job = new ScheduledJob
         {
@@ -417,24 +434,19 @@ public sealed partial class SchedulerViewModel : ObservableObject
             },
         };
 
-        EditJobCore(job, isNew: true);
+        return EditJobCoreAsync(job);
     }
 
     [RelayCommand]
-    private void EditJob(SchedulerJobRow? row)
-    {
-        if (row is not null)
-        {
-            EditJobCore(row.Job, isNew: false);
-        }
-    }
+    private Task EditJobAsync(SchedulerJobRow? row) =>
+        row is null ? Task.CompletedTask : EditJobCoreAsync(row.Job);
 
-    private void EditJobCore(ScheduledJob job, bool isNew)
+    private async Task EditJobCoreAsync(ScheduledJob job)
     {
         SchedulerJobEditResult? result;
         try
         {
-            result = _editor.Edit(job, _orgs);
+            result = await _editor.EditAsync(job, _orgs).ConfigureAwait(true);
         }
         catch (Exception ex)
         {
@@ -641,6 +653,68 @@ public sealed partial class SchedulerViewModel : ObservableObject
             SelectedRun = run;
             SelectedJob = AllJobs.FirstOrDefault(r => r.JobId == run.JobId);
         }
+    }
+
+    /// <summary>実行履歴をレポート（CSV / Excel / PDF など）に出力する。</summary>
+    [RelayCommand]
+    private async Task ExportReportAsync()
+    {
+        if (_reportDialog is null)
+        {
+            return;
+        }
+
+        if (Runs.Count == 0)
+        {
+            Notify("Sched_HistoryEmpty");
+            return;
+        }
+
+        var table = new ReportTable
+        {
+            Name = UiText.T("Sched_HistoryHeader"),
+            Columns = new[]
+            {
+                UiText.T("Sched_ColumnTime"),
+                UiText.T("Sched_ColumnJob"),
+                UiText.T("Sched_ColumnType"),
+                UiText.T("Sched_ColumnStatus"),
+                UiText.T("Sched_ColumnDuration"),
+                UiText.T("Sched_ColumnOrg"),
+                UiText.T("Sched_ColumnResult"),
+            },
+            Rows = Runs.Select(run => (IReadOnlyList<string?>)new[]
+            {
+                run.StartedAtText,
+                run.JobName,
+                run.TypeLabel,
+                run.StatusLabel,
+                run.DurationText,
+                run.TargetOrg,
+                run.Error is null ? run.Summary : $"{run.Summary} ({run.Error})",
+            }).ToList(),
+        };
+
+        var report = ReportDocumentFactory.FromTable(
+            UiText.T("Sched_ReportTitle"),
+            RetentionText,
+            null,
+            table);
+
+        var outcome = await ReportExportRunner.RunAsync(
+            _reportDialog,
+            report,
+            $"scheduler-{DateTime.Now:yyyyMMdd-HHmmss}",
+            null);
+
+        if (outcome.Canceled)
+        {
+            return;
+        }
+
+        StatusText = outcome.Error is null
+            ? ReportExportRunner.DescribeSuccess(outcome, string.Empty)
+            : UiText.T("Report_FailedFmt", outcome.Error);
     }
 
     private void Notify(string key, params object[] args) =>

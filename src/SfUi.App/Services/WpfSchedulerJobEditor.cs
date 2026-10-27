@@ -16,7 +16,10 @@ public sealed class WpfSchedulerJobEditor : ISchedulerJobEditor
         _services = services;
     }
 
-    public SchedulerJobEditResult? Edit(ScheduledJob job, IReadOnlyList<OrgInfo> orgs)
+    public Task<SchedulerJobEditResult?> EditAsync(ScheduledJob job, IReadOnlyList<OrgInfo> orgs) =>
+        Task.FromResult(Edit(job, orgs));
+
+    private SchedulerJobEditResult? Edit(ScheduledJob job, IReadOnlyList<OrgInfo> orgs)
     {
         var dialog = _services.GetRequiredService<SchedulerJobEditorDialog>();
         dialog.ViewModel.Load(job, orgs);

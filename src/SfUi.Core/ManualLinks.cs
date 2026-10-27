@@ -49,6 +49,9 @@ public static class ManualLinks
 
         /// <summary>デバッグログ解析ウィンドウ（4.3 デバッグログと解析）。</summary>
         LogAnalyzer,
+
+        /// <summary>スケジュール（ジョブ予約実行）ウィンドウ（18. スケジューラ）。</summary>
+        Scheduler,
     }
 
     /// <summary>言語コード → 章アンカー（GitHub が生成する見出し ID と一致させること）。</summary>
@@ -68,6 +71,7 @@ public static class ManualLinks
             [Topic.BackupCompareRecords] = "93-compare-tab",
             [Topic.OrgManage] = "6-org-management",
             [Topic.LogAnalyzer] = "43-debug-logs-and-analysis",
+            [Topic.Scheduler] = "18-scheduler-scheduled-job-runs",
         },
         [UiText.Japanese] = new()
         {
@@ -83,6 +87,7 @@ public static class ManualLinks
             [Topic.BackupCompareRecords] = "93-比較タブ",
             [Topic.OrgManage] = "6-組織管理",
             [Topic.LogAnalyzer] = "43-デバッグログと解析",
+            [Topic.Scheduler] = "18-スケジューラジョブ予約実行",
         },
         [UiText.Chinese] = new()
         {
@@ -98,6 +103,7 @@ public static class ManualLinks
             [Topic.BackupCompareRecords] = "93-比较选项卡",
             [Topic.OrgManage] = "6-组织管理",
             [Topic.LogAnalyzer] = "43-调试日志与解析",
+            [Topic.Scheduler] = "18-计划任务定时执行作业",
         },
         [UiText.Korean] = new()
         {
@@ -113,6 +119,7 @@ public static class ManualLinks
             [Topic.BackupCompareRecords] = "93-비교-탭",
             [Topic.OrgManage] = "6-조직-관리",
             [Topic.LogAnalyzer] = "43-디버그-로그와-분석",
+            [Topic.Scheduler] = "18-스케줄러예약-작업-실행",
         },
     };
 

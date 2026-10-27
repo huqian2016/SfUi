@@ -25,6 +25,7 @@ This file is the shared source for the in-app manual and the GitHub-hosted manua
 15. [Source editor](#15-source-editor)
 16. [Troubleshooting / FAQ](#16-troubleshooting--faq)
 17. [Appendix (shortcuts, storage, privacy)](#17-appendix-shortcuts-storage-privacy)
+18. [Scheduler (scheduled job runs)](#18-scheduler-scheduled-job-runs)
 
 ---
 
@@ -701,3 +702,63 @@ Selecting a Flow member shows a node / connection graph instead of code.
 - Privacy policy: https://github.com/huqian2016/SfUi/blob/main/PRIVACY.md
 - License: MIT License (© HKS Tech K.K.)
 - SfUi is an independent tool, not affiliated with Salesforce, Inc.
+
+---
+
+## 18. Scheduler (Scheduled Job Runs)
+
+Run recurring work (reports, integrations, housekeeping) **unattended**. Open the separate window from the **Schedule** (calendar) icon in the top bar. Available in both the WPF and Avalonia builds.
+
+### 18.1 Window layout
+
+- **Calendar tab** — month view (Sunday first) that highlights today, Japanese holidays and the selected day, with the planned times in each cell. Use ` ◀ ` / ` ▶ ` to change month and **Today** to jump back. Clicking a day shows **that day's jobs** and the **selected job's details** (type, schedule, next run, last run, target org) on the right.
+- **Run history tab** — started time, job, type, status, duration, org and result, with the output excerpt below. The **Export** button writes CSV / Markdown / HTML / Excel / PDF. History is kept for **90 days / 500 runs** by default.
+
+### 18.2 Job types
+
+| Type | What you configure |
+| --- | --- |
+| SOQL query | SOQL, optional result CSV path |
+| Anonymous Apex | Apex code |
+| Data backup | Objects (comma separated), optional label / description |
+| Data import | Object API name, CSV file, operation (insert / update / upsert / delete), external Id field, Bulk API |
+| Data export | SOQL, output file, format (csv / json), Bulk API |
+| Salesforce CLI command | Arguments after ` sf ` (e.g. ` org list --json `) |
+| REST API call | Method (GET / POST / PATCH / DELETE), path, JSON body |
+| OS command line | Command line, working folder |
+
+- A target org is required for SOQL / Apex / backup / import / export / REST (not for CLI or OS command line jobs).
+- **The OS command line job is an advanced feature that you configure yourself.** It runs through ` cmd.exe /d /c ` on Windows and ` sh -c ` on macOS. **Only schedule commands you trust** (the dialog shows a warning).
+
+### 18.3 Schedule
+
+- Choose **Once / Daily / Weekly / Monthly / Interval (every N minutes)**.
+- Recurring schedules can **skip weekends** and **skip Japanese holidays** (including substitute and national holidays).
+- For monthly schedules, day 31 falls back to the **last day** of shorter months.
+- Runs are cancelled after the **timeout** (minutes). The **missed grace** (seconds) allows a run to start slightly late.
+
+### 18.4 Notifications
+
+- Configure the **advance notice** in **minutes and seconds** (1 minute by default) and toggle the **start** and **finish** notifications per job.
+- Notifications appear as **fade-in/fade-out pop-ups** in the bottom-right corner (up to 3). Failures and missed runs are shown in red.
+
+### 18.5 Missed runs and manual runs
+
+- If SfUi was not running (or the PC was asleep) at the scheduled time, the occurrence is recorded as **Missed** and is **never re-run automatically**.
+- Select the job and press **Run now** to execute it manually (missed runs are visible in the history).
+- **Skip next run** skips the next occurrence once and records it as *Skipped*.
+
+### 18.6 Keeping the PC awake
+
+- While a run is executing, or when the next run is within 10 minutes, SfUi **blocks idle sleep** (Windows: ` SetThreadExecutionState `, macOS: ` caffeinate `). The status bar shows *Sleep blocked*.
+- Turning the display off, forcing sleep or powering off is not prevented — such runs become *Missed*.
+
+### 18.7 Where data is stored
+
+| Content | Location |
+| --- | --- |
+| Job definitions | ` data\scheduler\jobs.json ` |
+| Run history | ` data\scheduler\runs\<yyyy-MM>\<runId>.json ` |
+| Single-instance lock | ` data\scheduler\scheduler.lock ` |
+
+- If two SfUi instances run on the same PC, only the **first one** runs the scheduler (the other window shows a notice).

@@ -168,8 +168,13 @@ public sealed class AvaloniaAppWindowService : IAppWindowService
         }
     }
 
-    /// <summary>スケジュール ウィンドウ（Avalonia 版は Phase 4 で移植予定）。</summary>
-    public void OpenScheduler(IReadOnlyList<OrgInfo> orgs, OrgInfo? currentOrg) => NotPortedYet("Schedule");
+    /// <summary>スケジュール ウィンドウを開く（カレンダー / 実行履歴）。</summary>
+    public void OpenScheduler(IReadOnlyList<OrgInfo> orgs, OrgInfo? currentOrg)
+    {
+        var viewModel = _services.GetRequiredService<SchedulerViewModel>();
+        viewModel.Initialize(orgs, currentOrg);
+        ShowOwned(new SchedulerWindow(viewModel));
+    }
 
     private void NotPortedYet(string feature)
     {

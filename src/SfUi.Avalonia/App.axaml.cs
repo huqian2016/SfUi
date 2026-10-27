@@ -91,6 +91,15 @@ public partial class App : Application
             services.AddSingleton<ISourceEditorService, SourceEditorService>();
             services.AddSingleton(new StartupOptions { SimulateSfMissing = simulateSfMissing });
             services.AddTransient<WelcomeViewModel>();
+
+            // スケジューラ（ジョブ予約実行）
+            services.AddSingleton<IKeepAwakeService, DesktopKeepAwakeService>();
+            services.AddSingleton<NotificationCenterViewModel>();
+            services.AddSingleton<SchedulerViewModel>();
+            services.AddSingleton<SchedulerJobEditorViewModel>();
+            services.AddSingleton<ISchedulerJobEditor, AvaloniaSchedulerJobEditor>();
+            services.AddSingleton<AvaloniaToastPresenter>();
+
             services.AddSingleton<MainWindow>();
             Services = services.BuildServiceProvider();
 
@@ -109,7 +118,31 @@ public partial class App : Application
             // メインウィンドウを閉じたら（子ウィンドウが残っていても）アプリを終了する
             desktop.ShutdownMode = ShutdownMode.OnMainWindowClose;
             _mainWindow = window;
+            // スケジューラ開始（通知ポップアップの配線もここで行う）
+            if (!_smokeTest)
+            {
+                try
+                {
+                    _ = Services.GetRequiredService<AvaloniaToastPresenter>();
+                    Services.GetRequiredService<SchedulerService>().Start();
+                }
+                catch (Exception ex)
+                {
+                    _log.Error("スケジューラを開始できませんでした", ex);
+                }
+            }
 
+            desktop.Exit += (_, _) =>
+            {
+                try
+                {
+                    Services.GetRequiredService<SchedulerService>().Stop();
+                }
+                catch (Exception ex)
+                {
+                    _log?.Warn($"スケジューラの停止に失敗しました: {ex.Message}");
+                }
+            };
             // 開発/スクリーンショット用: 指定タブを開いた状態で起動（--tab 0..7）
             if (int.TryParse(ReadOption(args, "--tab"), out var tabIndex) && tabIndex >= 0)
             {
@@ -187,8 +220,13 @@ public partial class App : Application
                     {
                         Services.GetRequiredService<IAppWindowService>().OpenSourceEditor(sourceOrg);
                         _log?.Info("--open sourceeditor: ソース エディタ ウィンドウを開きました");
-                    }
-                };
+                    }                    else if (string.Equals(openTarget, "scheduler", StringComparison.OrdinalIgnoreCase))
+                    {
+                        Services.GetRequiredService<IAppWindowService>().OpenScheduler(
+                            mainViewModel.Orgs.ToList(),
+                            mainViewModel.SelectedOrg);
+                        _log?.Info("--open scheduler: スケジュール ウィンドウを開きました");
+                    }                };
             }
 
             // ようこそ画面（毎回表示。--no-welcome / --open / --tab / スモーク時は表示しない）
