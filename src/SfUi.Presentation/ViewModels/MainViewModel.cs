@@ -962,6 +962,22 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
+    /// <summary>スケジュール（ジョブ予約実行）ウィンドウを新しいウィンドウで開く。</summary>
+    [RelayCommand]
+    private void OpenScheduler()
+    {
+        try
+        {
+            _windows.OpenScheduler(Orgs.ToList(), SelectedOrg);
+            StatusMessage = UiText.T("Msg_SchedulerOpened");
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = UiText.T("Common_FailedFmt", ex.Message);
+            _log.Error("スケジュール ウィンドウを開けませんでした", ex);
+        }
+    }
+
     /// <summary>ソース エディタ ウィンドウを新しいウィンドウで開く（組織を選択している場合のみ）。</summary>
     [RelayCommand]
     private void OpenSourceEditor()

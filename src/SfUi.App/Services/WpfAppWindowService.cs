@@ -21,6 +21,7 @@ public sealed class WpfAppWindowService : IAppWindowService
     private readonly LogAnalyzerWindowFactory _logAnalyzer;
     private readonly FieldUsageWindowFactory _fieldUsage;
     private readonly WelcomeWindowFactory _welcome;
+    private readonly SchedulerWindowFactory _scheduler;
 
     public WpfAppWindowService(
         OrgInfoWindowFactory orgInfo,
@@ -36,7 +37,8 @@ public sealed class WpfAppWindowService : IAppWindowService
         BackupCompareRecordsWindowFactory compareRecords,
         LogAnalyzerWindowFactory logAnalyzer,
         FieldUsageWindowFactory fieldUsage,
-        WelcomeWindowFactory welcome)
+        WelcomeWindowFactory welcome,
+        SchedulerWindowFactory scheduler)
     {
         _orgInfo = orgInfo;
         _compareOrgs = compareOrgs;
@@ -52,6 +54,7 @@ public sealed class WpfAppWindowService : IAppWindowService
         _logAnalyzer = logAnalyzer;
         _fieldUsage = fieldUsage;
         _welcome = welcome;
+        _scheduler = scheduler;
     }
 
     public void OpenOrgInfo(OrgInfo org) => _orgInfo.Open(org, ActiveOwner());
@@ -86,6 +89,9 @@ public sealed class WpfAppWindowService : IAppWindowService
         _fieldUsage.Open(org, objectApiName, fieldApiName, fieldLabel, ActiveOwner());
 
     public void OpenWelcome(Action? openSettings = null) => _welcome.Show(openSettings, ActiveOwner());
+
+    public void OpenScheduler(IReadOnlyList<OrgInfo> orgs, OrgInfo? currentOrg) =>
+        _scheduler.Open(orgs, currentOrg, ActiveOwner());
 
     /// <summary>アクティブ ウィンドウ（無ければメイン ウィンドウ）を親として返す。</summary>
     private static Window? ActiveOwner() =>

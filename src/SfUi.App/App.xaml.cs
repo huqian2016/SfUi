@@ -181,6 +181,18 @@ public partial class App : Application
         services.AddTransient<WelcomeViewModel>();
         services.AddSingleton<WelcomeWindowFactory>();
         services.AddTransient<WelcomeWindow>();
+
+        // スケジューラ（ジョブ予約実行）
+        services.AddSingleton<IKeepAwakeService, WindowsKeepAwakeService>();
+        services.AddSingleton<NotificationCenterViewModel>();
+        services.AddSingleton<SchedulerViewModel>();
+        services.AddSingleton<SchedulerJobEditorViewModel>();
+        services.AddTransient<SchedulerJobEditorDialog>();
+        services.AddSingleton<ISchedulerJobEditor, WpfSchedulerJobEditor>();
+        services.AddSingleton<SchedulerWindowFactory>();
+        services.AddTransient<SchedulerWindow>();
+        services.AddSingleton<WpfToastPresenter>();
+
         services.AddSingleton<MainWindow>();
         Services = services.BuildServiceProvider();
 
@@ -228,6 +240,20 @@ public partial class App : Application
         }
 
         _log.Info("MainWindow 表示");
+
+        // スケジューラ開始（通知ポップアップの配線もここで行う）
+        if (!_smokeTest)
+        {
+            try
+            {
+                _ = Services.GetRequiredService<WpfToastPresenter>();
+                Services.GetRequiredService<SchedulerService>().Start();
+            }
+            catch (Exception ex)
+            {
+                _log.Error("スケジューラを開始できませんでした", ex);
+            }
+        }
 
         if (_smokeTest)
         {
@@ -1129,6 +1155,19 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        try
+        {
+            if (Services is not null)
+            {
+                Services.GetService<SchedulerService>()?.Stop();
+                Services.GetService<WpfToastPresenter>()?.Dispose();
+            }
+        }
+        catch (Exception ex)
+        {
+            _log?.Warn($"スケジューラの停止に失敗しました: {ex.Message}");
+        }
+
         _log?.Info($"SfUi 終了 (ExitCode={e.ApplicationExitCode})");
         base.OnExit(e);
     }

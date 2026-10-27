@@ -61,6 +61,36 @@ public sealed class AppSettings
 
     /// <summary>匿名Apex 実行後に AI パネルへ自動送信するか（エラー時 = 修正方法、成功時 = 次のステップ）。</summary>
     public bool ApexAiAssist { get; set; } = true;
+
+    /// <summary>スケジューラ（ジョブ予約実行）を有効にするか。</summary>
+    public bool SchedulerEnabled { get; set; } = true;
+
+    /// <summary>新規ジョブの既定: 通知するか。</summary>
+    public bool SchedulerNotifyDefault { get; set; } = true;
+
+    /// <summary>新規ジョブの既定: 事前通知の分数。</summary>
+    public int SchedulerPreNoticeMinutes { get; set; } = 1;
+
+    /// <summary>新規ジョブの既定: 事前通知の秒数（0-59）。</summary>
+    public int SchedulerPreNoticeSeconds { get; set; }
+
+    /// <summary>予定時刻が近い間 / 実行中に PC のスリープを抑止するか。</summary>
+    public bool SchedulerKeepAwake { get; set; } = true;
+
+    /// <summary>次回実行の何分前からスリープを抑止するか。</summary>
+    public int SchedulerKeepAwakeLeadMinutes { get; set; } = 10;
+
+    /// <summary>同時実行するジョブ数の上限（1-4）。</summary>
+    public int SchedulerMaxConcurrent { get; set; } = 1;
+
+    /// <summary>見逃し判定の猶予（秒）。これ以上遅れた予定は実行せず「見逃し」として記録する。</summary>
+    public int SchedulerMissedGraceSeconds { get; set; } = 60;
+
+    /// <summary>ジョブ実行履歴の保持日数。</summary>
+    public int SchedulerRunRetentionDays { get; set; } = 90;
+
+    /// <summary>ジョブ実行履歴の最大件数。</summary>
+    public int SchedulerRunRetentionMax { get; set; } = 500;
 }
 
 /// <summary>設定の読み書き（settings.json）。</summary>

@@ -24,6 +24,18 @@ public sealed class AppPaths
     /// <summary>ETL ジョブ状態ディレクトリ（data/etl/jobs）。delta の watermark 等を保持し、run 削除の影響を受けない。</summary>
     public string EtlJobsRoot { get; }
 
+    /// <summary>スケジューラのルート（data/scheduler）。</summary>
+    public string SchedulerRoot { get; }
+
+    /// <summary>スケジュール済みジョブ定義ファイル（data/scheduler/jobs.json）。</summary>
+    public string SchedulerJobsFile { get; }
+
+    /// <summary>ジョブ実行履歴のルート（data/scheduler/runs/&lt;yyyy-MM&gt;）。</summary>
+    public string SchedulerRunsRoot { get; }
+
+    /// <summary>スケジューラの二重起動防止ロック ファイル（data/scheduler/scheduler.lock）。</summary>
+    public string SchedulerLockFile { get; }
+
     private AppPaths(string dataRoot)
     {
         DataRoot = dataRoot;
@@ -34,6 +46,10 @@ public sealed class AppPaths
         SettingsFile = Path.Combine(dataRoot, "settings.json");
         EtlRunsRoot = Path.Combine(dataRoot, "etl", "runs");
         EtlJobsRoot = Path.Combine(dataRoot, "etl", "jobs");
+        SchedulerRoot = Path.Combine(dataRoot, "scheduler");
+        SchedulerJobsFile = Path.Combine(SchedulerRoot, "jobs.json");
+        SchedulerRunsRoot = Path.Combine(SchedulerRoot, "runs");
+        SchedulerLockFile = Path.Combine(SchedulerRoot, "scheduler.lock");
 
         foreach (var directory in new[] { DataRoot, LogsDirectory, HistoryDirectory, ResultsDirectory, TempDirectory })
         {

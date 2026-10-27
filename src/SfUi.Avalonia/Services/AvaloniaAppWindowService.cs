@@ -168,6 +168,9 @@ public sealed class AvaloniaAppWindowService : IAppWindowService
         }
     }
 
+    /// <summary>スケジュール ウィンドウ（Avalonia 版は Phase 4 で移植予定）。</summary>
+    public void OpenScheduler(IReadOnlyList<OrgInfo> orgs, OrgInfo? currentOrg) => NotPortedYet("Schedule");
+
     private void NotPortedYet(string feature)
     {
         _log.Info($"Avalonia 版: {feature} ウィンドウは未移植（Phase C–E で実装）");

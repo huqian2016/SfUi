@@ -59,6 +59,14 @@ public static class SfUiServiceCollectionExtensions
         services.AddSingleton<ScratchOrgService>();
         services.AddSingleton<ScratchResourceService>();
         services.AddSingleton<ScratchSignupService>();
+
+        // スケジューラ（ジョブ予約実行）。IKeepAwakeService は UI 側で上書き登録できる。
+        services.AddSingleton<IKeepAwakeService, NoopKeepAwakeService>();
+        services.AddSingleton<ScheduledJobStore>();
+        services.AddSingleton<JobRunStore>();
+        services.AddSingleton<IScheduledJobExecutor, SoqlJobExecutor>();
+        services.AddSingleton<IScheduledJobExecutor, SfCommandJobExecutor>();
+        services.AddSingleton<SchedulerService>();
         return services;
     }
 }

@@ -49,4 +49,7 @@ public interface IAppWindowService
 
     /// <summary>ようこそ画面をモーダルで開く（「設定を開く」が選ばれたら openSettings を呼ぶ）。</summary>
     void OpenWelcome(Action? openSettings = null);
+
+    /// <summary>スケジュール（ジョブ予約実行）ウィンドウを開く。</summary>
+    void OpenScheduler(IReadOnlyList<OrgInfo> orgs, OrgInfo? currentOrg);
 }

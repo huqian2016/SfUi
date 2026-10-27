@@ -18,6 +18,9 @@ public static class HistoryTypes
     /// <summary>ETL 実行。</summary>
     public const string Etl = "etl";
 
+    /// <summary>スケジュール ジョブの実行。</summary>
+    public const string Schedule = "schedule";
+
     /// <summary>種別の表示ラベル（現在の言語）。</summary>
     public static string ToLabel(string type) => type.ToLowerInvariant() switch
     {
@@ -29,6 +32,7 @@ public static class HistoryTypes
         Org => UiText.T("Type_Org"),
         Data => UiText.T("Type_Data"),
         Etl => UiText.T("Type_Etl"),
+        Schedule => UiText.T("Type_Schedule"),
         _ => type,
     };
 }
