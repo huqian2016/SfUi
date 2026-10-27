@@ -36,6 +36,9 @@ public sealed class AppPaths
     /// <summary>スケジューラの二重起動防止ロック ファイル（data/scheduler/scheduler.lock）。</summary>
     public string SchedulerLockFile { get; }
 
+    /// <summary>予約実行ジョブの出力先の既定フォルダ（data/exports）。相対パスはここからの相対として解決する。</summary>
+    public string ExportsDirectory { get; }
+
     private AppPaths(string dataRoot)
     {
         DataRoot = dataRoot;
@@ -50,6 +53,7 @@ public sealed class AppPaths
         SchedulerJobsFile = Path.Combine(SchedulerRoot, "jobs.json");
         SchedulerRunsRoot = Path.Combine(SchedulerRoot, "runs");
         SchedulerLockFile = Path.Combine(SchedulerRoot, "scheduler.lock");
+        ExportsDirectory = Path.Combine(dataRoot, "exports");
 
         foreach (var directory in new[] { DataRoot, LogsDirectory, HistoryDirectory, ResultsDirectory, TempDirectory })
         {

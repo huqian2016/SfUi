@@ -135,8 +135,17 @@
                 <Grid IsVisible="{Binding IsDataExport}" Margin="0,8,0,0" ColumnDefinitions="*,12,200">
                     <StackPanel Grid.Column="0">
                         <TextBlock Text="{loc:Tr Sched_EditorOutputPath}" Foreground="#555555" Margin="0,0,0,3" />
-                        <TextBox Text="{Binding OutputPath, Mode=TwoWay}"
-                                 AutomationProperties.AutomationId="JobEditorOutputPath" />
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBox Text="{Binding OutputPath, Mode=TwoWay}"
+                                     AutomationProperties.AutomationId="JobEditorOutputPath" />
+                            <Button Grid.Column="1" Content="{loc:Tr Sched_Browse}" Margin="6,0,0,0" Padding="10,2"
+                                    Command="{Binding BrowseExportPathCommand}"
+                                    IsEnabled="{Binding CanBrowseExportPath}"
+                                    AutomationProperties.AutomationId="JobEditorOutputBrowse" />
+                        </Grid>
+                        <TextBlock Text="{Binding ExportPathHint}" Foreground="#777777" FontSize="11"
+                                   Margin="0,3,0,0" TextWrapping="Wrap"
+                                   AutomationProperties.AutomationId="JobEditorOutputPathHint" />
                     </StackPanel>
                     <StackPanel Grid.Column="2">
                         <TextBlock Text="{loc:Tr Sched_EditorRestMethod}" Foreground="#555555" Margin="0,0,0,3" />

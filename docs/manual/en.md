@@ -725,6 +725,8 @@ Run recurring work (reports, integrations, housekeeping) **unattended**. Open th
 | Data backup | Objects (comma separated), optional label / description |
 | Data import | Object API name, CSV file, operation (insert / update / upsert / delete), external Id field, Bulk API |
 | Data export | SOQL, output file, format (csv / json), Bulk API |
+
+> **Output file**: relative paths are saved under **`data/exports/`** (so the destination does not depend on how the app was started); an absolute path is used as-is. Use **Browse...** to pick a location, and the line under the box always shows the resolved absolute path.
 | Salesforce CLI command | Arguments after ` sf ` (e.g. ` org list --json `) |
 | REST API call | Method (GET / POST / PATCH / DELETE), path, JSON body |
 | OS command line | Command line, working folder |

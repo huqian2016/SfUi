@@ -8,11 +8,13 @@ public sealed class DataExportJobExecutor : IScheduledJobExecutor
 {
     private readonly DataExportService _export;
     private readonly AppLog _log;
+    private readonly AppPaths _paths;
 
-    public DataExportJobExecutor(DataExportService export, AppLog log)
+    public DataExportJobExecutor(DataExportService export, AppLog log, AppPaths paths)
     {
         _export = export;
         _log = log;
+        _paths = paths;
     }
 
     public string JobType => ScheduledJobTypes.DataExport;
@@ -32,7 +34,12 @@ public sealed class DataExportJobExecutor : IScheduledJobExecutor
 
         try
         {
-            var outputPath = string.IsNullOrWhiteSpace(payload.OutputPath) ? null : payload.OutputPath!.Trim();
+            // 相対パスは data/exports を基準に解決する（起動方法によって保存先が変わらないようにする）。
+            string? outputPath = JobPathResolver.ResolveOutput(payload.OutputPath, _paths);
+            if (outputPath.Length == 0)
+            {
+                outputPath = null;
+            }
 
             if (payload.UseBulk)
             {
@@ -54,8 +61,7 @@ public sealed class DataExportJobExecutor : IScheduledJobExecutor
                 var summary = UiText.T("Sched_SummaryExportFmt", bulk.Result.RowCount, writtenPath);
                 return JobRunResult.Ok(
                     summary,
-                    JobOutput.Truncate($"{payload.Soql}{Environment.NewLine}{writtenPath}{Environment.NewLine}rows={bulk.Result.RowCount} engine={bulk.Engine}"));
-            }
+                    JobOutput.Truncate($"{payload.Soql}{Environment.NewLine}{writtenPath}{Environment.NewLine}rows={bulk.Result.RowCount} engine={bulk.Engine}"));            }
 
             var result = await _export.RunRestAsync(job.TargetOrg, payload.Soql, progress: null, cancellationToken);
 

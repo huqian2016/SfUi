@@ -1,7 +1,9 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using SfUi.Core;
+using SfUi.Presentation;
 
 namespace SfUi.App.ViewModels;
 
@@ -35,11 +37,15 @@ public sealed record ScheduleKindOption(string Key, string Label);
 public sealed partial class SchedulerJobEditorViewModel : ObservableObject
 {
     private readonly AppSettingsStore _settings;
+    private readonly IFilePickerService? _filePicker;
+    private readonly AppPaths? _paths;
     private ScheduledJob? _editing;
 
-    public SchedulerJobEditorViewModel(AppSettingsStore settings)
+    public SchedulerJobEditorViewModel(AppSettingsStore settings, IFilePickerService? filePicker = null, AppPaths? paths = null)
     {
         _settings = settings;
+        _filePicker = filePicker;
+        _paths = paths;
         Weekdays = Enum.GetValues<DayOfWeek>()
             .OrderBy(d => d == DayOfWeek.Sunday ? 7 : (int)d)
             .Select(d => new WeekdayOption(d))
@@ -131,6 +137,69 @@ public sealed partial class SchedulerJobEditorViewModel : ObservableObject
 
     [ObservableProperty]
     private string _exportFormat = "csv";
+
+    /// <summary>出力パスの解決結果（相対パスは data/exports 配下になることを画面上に示す）。</summary>
+    public string ExportPathHint
+    {
+        get
+        {
+            if (_paths is null)
+            {
+                return string.Empty;
+            }
+
+            try
+            {
+                var resolved = JobPathResolver.ResolveOutput(OutputPath, _paths);
+                return UiText.T("Sched_ExportPathHintFmt", resolved.Length == 0 ? _paths.ExportsDirectory : resolved);
+            }
+            catch (Exception)
+            {
+                return string.Empty;
+            }
+        }
+    }
+
+    /// <summary>出力先の「参照...」ボタンを表示できるか。]</summary>
+    public bool CanBrowseExportPath => _filePicker is not null;
+
+    partial void OnOutputPathChanged(string value) => OnPropertyChanged(nameof(ExportPathHint));
+
+    /// <summary>出力先をファイル ダイアログで選ぶ。]</summary>
+    [RelayCommand]
+    private async Task BrowseExportPathAsync()
+    {
+        if (_filePicker is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var suggested = string.IsNullOrWhiteSpace(OutputPath) ? "export.csv" : Path.GetFileName(OutputPath.Trim());
+            string? initialDirectory = null;
+            if (_paths is not null)
+            {
+                var resolved = JobPathResolver.ResolveOutput(OutputPath, _paths);
+                initialDirectory = resolved.Length == 0 ? _paths.ExportsDirectory : Path.GetDirectoryName(resolved);
+            }
+
+            var picked = await _filePicker.SaveFileAsync(
+                UiText.T("Sched_ExportBrowseTitle"),
+                suggested,
+                UiText.T("Sched_ExportBrowseFilter"),
+                initialDirectory).ConfigureAwait(true);
+
+            if (!string.IsNullOrWhiteSpace(picked))
+            {
+                OutputPath = picked.Trim();
+            }
+        }
+        catch (Exception)
+        {
+            // ダイアログが使えない環境では何もしない
+        }
+    }
 
     // ── sf コマンド ──
     [ObservableProperty]
