@@ -176,7 +176,7 @@ public sealed partial class SchedulerViewModel : ObservableObject
 
     /// <summary>選択日の見出し（例: 2026/10/07 (水)）。</summary>
     public string SelectedDayHeader =>
-        SelectedDate.ToDateTime(TimeOnly.MinValue).ToString("yyyy/MM/dd (ddd)", CultureInfo.CurrentCulture);
+        SelectedDate.ToString("yyyy/MM/dd", CultureInfo.CurrentCulture) + " (" + JobSchedule.WeekdayLabel(SelectedDate.DayOfWeek) + ")";
 
     partial void OnSelectedDateChanged(DateOnly value)
     {

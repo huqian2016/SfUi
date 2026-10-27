@@ -247,7 +247,7 @@
                                         <TextBlock Grid.Column="0" Text="{Binding TimeText}" Foreground="#1A73E8" />
                                         <TextBlock Grid.Column="1" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
                                         <TextBlock Grid.Column="2" Text="{Binding TypeLabel}" Foreground="#777777"
-                                                   FontSize="11" />
+                                                   FontSize="11" Margin="8,0,0,0" />
                                     </Grid>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
