@@ -39,6 +39,15 @@ public sealed class AppPaths
     /// <summary>予約実行ジョブの出力先の既定フォルダ（data/exports）。相対パスはここからの相対として解決する。</summary>
     public string ExportsDirectory { get; }
 
+    /// <summary>ローカル レポートのルート（data/reports）。</summary>
+    public string ReportsRoot { get; }
+
+    /// <summary>レポート定義ファイル（data/reports/reports.json）。</summary>
+    public string ReportsFile { get; }
+
+    /// <summary>帳票レイアウト定義ファイル（data/reports/layouts.json・将来の SVF 風帳票用）。</summary>
+    public string ReportLayoutsFile { get; }
+
     private AppPaths(string dataRoot)
     {
         DataRoot = dataRoot;
@@ -54,6 +63,9 @@ public sealed class AppPaths
         SchedulerRunsRoot = Path.Combine(SchedulerRoot, "runs");
         SchedulerLockFile = Path.Combine(SchedulerRoot, "scheduler.lock");
         ExportsDirectory = Path.Combine(dataRoot, "exports");
+        ReportsRoot = Path.Combine(dataRoot, "reports");
+        ReportsFile = Path.Combine(ReportsRoot, "reports.json");
+        ReportLayoutsFile = Path.Combine(ReportsRoot, "layouts.json");
 
         foreach (var directory in new[] { DataRoot, LogsDirectory, HistoryDirectory, ResultsDirectory, TempDirectory })
         {

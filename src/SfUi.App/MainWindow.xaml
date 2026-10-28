@@ -163,6 +163,19 @@
                 </Button>
 
                 <Button Style="{StaticResource IconButton}" Margin="0,0,10,0"
+                        Command="{Binding OpenReportsCommand}"
+                        AutomationProperties.AutomationId="OpenReports"
+                        AutomationProperties.Name="{loc:Tr Main_Reports}">
+                    <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconReport}" />
+                    <Button.ToolTip>
+                        <StackPanel MaxWidth="360">
+                            <TextBlock Text="{loc:Tr Main_Reports}" FontWeight="SemiBold" />
+                            <TextBlock Text="{loc:Tr Main_ReportsTip}" TextWrapping="Wrap" Foreground="#555555" Margin="0,2,0,0" />
+                        </StackPanel>
+                    </Button.ToolTip>
+                </Button>
+
+                <Button Style="{StaticResource IconButton}" Margin="0,0,10,0"
                         Command="{Binding OpenSchedulerCommand}"
                         AutomationProperties.AutomationId="OpenScheduler"
                         AutomationProperties.Name="{loc:Tr Main_Scheduler}">

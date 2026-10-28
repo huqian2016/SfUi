@@ -75,6 +75,55 @@ public static class ReportExportService
             files.Add(path);
         }
 
+        if (options.Formats.HasFlag(ReportFormats.Tsv))
+        {
+            var path = Path.Combine(directory, baseName + ".tsv");
+            await File.WriteAllTextAsync(path, ReportDataWriter.WriteTsv(prepared), new UTF8Encoding(false), cancellationToken).ConfigureAwait(false);
+            files.Add(path);
+        }
+
+        if (options.Formats.HasFlag(ReportFormats.Json))
+        {
+            var path = Path.Combine(directory, baseName + ".json");
+            await File.WriteAllTextAsync(path, ReportDataWriter.WriteJson(prepared), new UTF8Encoding(false), cancellationToken).ConfigureAwait(false);
+            files.Add(path);
+        }
+
+        if (options.Formats.HasFlag(ReportFormats.JsonLines))
+        {
+            var path = Path.Combine(directory, baseName + ".jsonl");
+            await File.WriteAllTextAsync(path, ReportDataWriter.WriteJsonLines(prepared), new UTF8Encoding(false), cancellationToken).ConfigureAwait(false);
+            files.Add(path);
+        }
+
+        if (options.Formats.HasFlag(ReportFormats.Xml))
+        {
+            var path = Path.Combine(directory, baseName + ".xml");
+            await File.WriteAllTextAsync(path, ReportDataWriter.WriteXml(prepared), new UTF8Encoding(false), cancellationToken).ConfigureAwait(false);
+            files.Add(path);
+        }
+
+        if (options.Formats.HasFlag(ReportFormats.Yaml))
+        {
+            var path = Path.Combine(directory, baseName + ".yaml");
+            await File.WriteAllTextAsync(path, ReportDataWriter.WriteYaml(prepared), new UTF8Encoding(false), cancellationToken).ConfigureAwait(false);
+            files.Add(path);
+        }
+
+        if (options.Formats.HasFlag(ReportFormats.Png))
+        {
+            var path = Path.Combine(directory, baseName + ".png");
+            await Task.Run(() => ReportImageWriter.Write(path, prepared, ReportImageFormat.Png), cancellationToken).ConfigureAwait(false);
+            files.Add(path);
+        }
+
+        if (options.Formats.HasFlag(ReportFormats.Jpeg))
+        {
+            var path = Path.Combine(directory, baseName + ".jpg");
+            await Task.Run(() => ReportImageWriter.Write(path, prepared, ReportImageFormat.Jpeg), cancellationToken).ConfigureAwait(false);
+            files.Add(path);
+        }
+
         return new ReportExportResult { Files = files };
     }
 

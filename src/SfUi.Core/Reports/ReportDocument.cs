@@ -23,7 +23,28 @@ public enum ReportFormats
     /// <summary>PDF（インストール済みの Chromium 系ブラウザーで HTML を印刷）。</summary>
     Pdf = 16,
 
-    All = Csv | Markdown | Html | Excel | Pdf,
+    /// <summary>TSV（1 ファイルに全表）。</summary>
+    Tsv = 32,
+
+    /// <summary>JSON（メタ情報 + 全表）。</summary>
+    Json = 64,
+
+    /// <summary>JSON Lines（1 行 1 レコード）。</summary>
+    JsonLines = 128,
+
+    /// <summary>XML（table / row / 項目 API 名の要素）。</summary>
+    Xml = 256,
+
+    /// <summary>YAML（設定ファイル・AI 向け）。</summary>
+    Yaml = 512,
+
+    /// <summary>PNG 画像（表を描画・ブラウザー不要）。</summary>
+    Png = 1024,
+
+    /// <summary>JPEG 画像。</summary>
+    Jpeg = 2048,
+
+    All = Csv | Markdown | Html | Excel | Pdf | Tsv | Json | JsonLines | Xml | Yaml | Png | Jpeg,
 }
 
 /// <summary>レポート内の 1 表（列ヘッダー + 行）。</summary>

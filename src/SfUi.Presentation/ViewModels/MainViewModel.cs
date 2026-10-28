@@ -978,7 +978,23 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
-    /// <summary>ソース エディタ ウィンドウを新しいウィンドウで開く（組織を選択している場合のみ）。</summary>
+    /// <summary>ローカル レポート ウィンドウを新しいウィンドウで開く。</summary>
+    [RelayCommand]
+    private void OpenReports()
+    {
+        try
+        {
+            _windows.OpenReports(Orgs.ToList(), SelectedOrg);
+            StatusMessage = UiText.T("Msg_ReportsOpened");
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = UiText.T("Common_FailedFmt", ex.Message);
+            _log.Error("レポート ウィンドウを開けませんでした", ex);
+        }
+    }
+
+    /// <summary>ソース エディタ ウィンドウを新しいウィンドウで開く（組織を選択している場合のみ）。</summary></summary>
     [RelayCommand]
     private void OpenSourceEditor()
     {

@@ -48,6 +48,20 @@ public sealed class ReportExportDefaults
 
     public bool Pdf { get; set; }
 
+    public bool Tsv { get; set; }
+
+    public bool Json { get; set; }
+
+    public bool JsonLines { get; set; }
+
+    public bool Xml { get; set; }
+
+    public bool Yaml { get; set; }
+
+    public bool Png { get; set; }
+
+    public bool Jpeg { get; set; }
+
     public bool IncludeAnalysis { get; set; } = true;
 
     /// <summary>表ごとの最大行数（0 = 制限なし）。</summary>

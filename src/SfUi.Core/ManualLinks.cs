@@ -52,6 +52,9 @@ public static class ManualLinks
 
         /// <summary>スケジュール（ジョブ予約実行）ウィンドウ（18. スケジューラ）。</summary>
         Scheduler,
+
+        /// <summary>レポート ウィンドウ（19. ローカル レポート）。</summary>
+        Reports,
     }
 
     /// <summary>言語コード → 章アンカー（GitHub が生成する見出し ID と一致させること）。</summary>
@@ -72,6 +75,7 @@ public static class ManualLinks
             [Topic.OrgManage] = "6-org-management",
             [Topic.LogAnalyzer] = "43-debug-logs-and-analysis",
             [Topic.Scheduler] = "18-scheduler-scheduled-job-runs",
+            [Topic.Reports] = "19-reports-local-salesforce-reports",
         },
         [UiText.Japanese] = new()
         {
@@ -88,6 +92,7 @@ public static class ManualLinks
             [Topic.OrgManage] = "6-組織管理",
             [Topic.LogAnalyzer] = "43-デバッグログと解析",
             [Topic.Scheduler] = "18-スケジューラジョブ予約実行",
+            [Topic.Reports] = "19-レポートローカル-salesforce-レポート",
         },
         [UiText.Chinese] = new()
         {
@@ -104,6 +109,7 @@ public static class ManualLinks
             [Topic.OrgManage] = "6-组织管理",
             [Topic.LogAnalyzer] = "43-调试日志与解析",
             [Topic.Scheduler] = "18-计划任务定时执行作业",
+            [Topic.Reports] = "19-报表本地-salesforce-报表",
         },
         [UiText.Korean] = new()
         {
@@ -120,6 +126,7 @@ public static class ManualLinks
             [Topic.OrgManage] = "6-조직-관리",
             [Topic.LogAnalyzer] = "43-디버그-로그와-분석",
             [Topic.Scheduler] = "18-스케줄러예약-작업-실행",
+            [Topic.Reports] = "19-보고서로컬-salesforce-보고서",
         },
     };
 

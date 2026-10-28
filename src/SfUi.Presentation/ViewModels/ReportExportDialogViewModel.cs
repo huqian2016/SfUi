@@ -32,6 +32,27 @@ public sealed partial class ReportExportDialogViewModel : ObservableObject
     private bool _pdf;
 
     [ObservableProperty]
+    private bool _tsv;
+
+    [ObservableProperty]
+    private bool _json;
+
+    [ObservableProperty]
+    private bool _jsonLines;
+
+    [ObservableProperty]
+    private bool _xml;
+
+    [ObservableProperty]
+    private bool _yaml;
+
+    [ObservableProperty]
+    private bool _png;
+
+    [ObservableProperty]
+    private bool _jpeg;
+
+    [ObservableProperty]
     private bool _includeAnalysis = true;
 
     [ObservableProperty]
@@ -72,6 +93,13 @@ public sealed partial class ReportExportDialogViewModel : ObservableObject
             Html = defaults.Html;
             Excel = defaults.Excel;
             Pdf = defaults.Pdf;
+            Tsv = defaults.Tsv;
+            Json = defaults.Json;
+            JsonLines = defaults.JsonLines;
+            Xml = defaults.Xml;
+            Yaml = defaults.Yaml;
+            Png = defaults.Png;
+            Jpeg = defaults.Jpeg;
             IncludeAnalysis = defaults.IncludeAnalysis;
             MaxRowsText = defaults.MaxRows.ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
             OpenAfterSave = defaults.OpenAfterSave;
@@ -113,6 +141,20 @@ public sealed partial class ReportExportDialogViewModel : ObservableObject
     public string FormatExcel => UiText.T("Report_FormatExcel");
 
     public string FormatPdf => UiText.T("Report_FormatPdf");
+
+    public string FormatTsv => UiText.T("Report_FormatTsv");
+
+    public string FormatJson => UiText.T("Report_FormatJson");
+
+    public string FormatJsonLines => UiText.T("Report_FormatJsonLines");
+
+    public string FormatXml => UiText.T("Report_FormatXml");
+
+    public string FormatYaml => UiText.T("Report_FormatYaml");
+
+    public string FormatPng => UiText.T("Report_FormatPng");
+
+    public string FormatJpeg => UiText.T("Report_FormatJpeg");
 
     public string IncludeAnalysisLabel => UiText.T("Report_IncludeAnalysis");
 
@@ -169,6 +211,41 @@ public sealed partial class ReportExportDialogViewModel : ObservableObject
         if (Pdf)
         {
             formats |= ReportFormats.Pdf;
+        }
+
+        if (Tsv)
+        {
+            formats |= ReportFormats.Tsv;
+        }
+
+        if (Json)
+        {
+            formats |= ReportFormats.Json;
+        }
+
+        if (JsonLines)
+        {
+            formats |= ReportFormats.JsonLines;
+        }
+
+        if (Xml)
+        {
+            formats |= ReportFormats.Xml;
+        }
+
+        if (Yaml)
+        {
+            formats |= ReportFormats.Yaml;
+        }
+
+        if (Png)
+        {
+            formats |= ReportFormats.Png;
+        }
+
+        if (Jpeg)
+        {
+            formats |= ReportFormats.Jpeg;
         }
 
         if (formats == ReportFormats.None)
@@ -232,6 +309,13 @@ public sealed partial class ReportExportDialogViewModel : ObservableObject
                 Html = formats.HasFlag(ReportFormats.Html),
                 Excel = formats.HasFlag(ReportFormats.Excel),
                 Pdf = formats.HasFlag(ReportFormats.Pdf),
+                Tsv = formats.HasFlag(ReportFormats.Tsv),
+                Json = formats.HasFlag(ReportFormats.Json),
+                JsonLines = formats.HasFlag(ReportFormats.JsonLines),
+                Xml = formats.HasFlag(ReportFormats.Xml),
+                Yaml = formats.HasFlag(ReportFormats.Yaml),
+                Png = formats.HasFlag(ReportFormats.Png),
+                Jpeg = formats.HasFlag(ReportFormats.Jpeg),
                 IncludeAnalysis = IncludeAnalysis,
                 MaxRows = maxRows,
                 OpenAfterSave = OpenAfterSave,
@@ -252,5 +336,12 @@ public sealed partial class ReportExportDialogViewModel : ObservableObject
         Html = formats.HasFlag(ReportFormats.Html);
         Excel = formats.HasFlag(ReportFormats.Excel);
         Pdf = formats.HasFlag(ReportFormats.Pdf);
+        Tsv = formats.HasFlag(ReportFormats.Tsv);
+        Json = formats.HasFlag(ReportFormats.Json);
+        JsonLines = formats.HasFlag(ReportFormats.JsonLines);
+        Xml = formats.HasFlag(ReportFormats.Xml);
+        Yaml = formats.HasFlag(ReportFormats.Yaml);
+        Png = formats.HasFlag(ReportFormats.Png);
+        Jpeg = formats.HasFlag(ReportFormats.Jpeg);
     }
 }

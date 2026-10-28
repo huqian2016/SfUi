@@ -52,4 +52,7 @@ public interface IAppWindowService
 
     /// <summary>スケジュール（ジョブ予約実行）ウィンドウを開く。</summary>
     void OpenScheduler(IReadOnlyList<OrgInfo> orgs, OrgInfo? currentOrg);
+
+    /// <summary>ローカル レポート ウィンドウを開く。</summary>
+    void OpenReports(IReadOnlyList<OrgInfo> orgs, OrgInfo? currentOrg);
 }

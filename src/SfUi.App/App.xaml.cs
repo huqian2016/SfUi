@@ -193,6 +193,13 @@ public partial class App : Application
         services.AddTransient<SchedulerWindow>();
         services.AddSingleton<WpfToastPresenter>();
 
+        // ローカル レポート
+        services.AddSingleton<ReportsViewModel>();
+        services.AddTransient<ReportsWindow>();
+        services.AddSingleton<ReportsWindowFactory>();
+        services.AddTransient<ReportEditorViewModel>();
+        services.AddSingleton<IReportEditorDialog, WpfReportEditor>();
+
         services.AddSingleton<MainWindow>();
         Services = services.BuildServiceProvider();
 

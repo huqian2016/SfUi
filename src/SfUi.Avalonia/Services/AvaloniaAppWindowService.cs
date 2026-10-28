@@ -176,6 +176,9 @@ public sealed class AvaloniaAppWindowService : IAppWindowService
         ShowOwned(new SchedulerWindow(viewModel));
     }
 
+    /// <summary>ローカル レポート ウィンドウ（Avalonia 版は Phase 3 で実装）。</summary>
+    public void OpenReports(IReadOnlyList<OrgInfo> orgs, OrgInfo? currentOrg) => NotPortedYet("Reports");
+
     private void NotPortedYet(string feature)
     {
         _log.Info($"Avalonia 版: {feature} ウィンドウは未移植（Phase C–E で実装）");

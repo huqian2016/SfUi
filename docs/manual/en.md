@@ -26,6 +26,7 @@ This file is the shared source for the in-app manual and the GitHub-hosted manua
 16. [Troubleshooting / FAQ](#16-troubleshooting--faq)
 17. [Appendix (shortcuts, storage, privacy)](#17-appendix-shortcuts-storage-privacy)
 18. [Scheduler (scheduled job runs)](#18-scheduler-scheduled-job-runs)
+19. [Reports (local Salesforce reports)](#19-reports-local-salesforce-reports)
 
 ---
 
@@ -766,3 +767,29 @@ Run recurring work (reports, integrations, housekeeping) **unattended**. Open th
 | Single-instance lock | ` data\scheduler\scheduler.lock ` |
 
 - If two SfUi instances run on the same PC, only the **first one** runs the scheduler (the other window shows a notice).
+
+## 19. Reports (local Salesforce reports)
+
+Build Salesforce-style reports on your own data and keep them fresh with live update. Open the window from the **Reports** (bar-chart) icon in the top bar.
+
+### 19.1 Creating a report
+
+1. **New report** → choose the **object**.
+2. Add fields to **Columns** (optionally override the label and the number / currency / percent / date / boolean format).
+3. Add **Filters** (operator and value; `contains`, `in`, `is empty` and date literals such as `LAST_N_DAYS:30` are supported) and choose AND / OR.
+4. Optionally set **Grouping** (up to 3 fields, with day / week / month / quarter / year granularity), **Summaries** (sum / average / min / max / count / distinct count) and **Sorting**.
+5. Set the **row limit** and the **live update interval** (seconds, 0 = off) and press **Save**.
+
+### 19.2 Running and live update
+
+- The report runs when you save it and whenever you press **Run now**. The result shows the row grid, the group subtotals and the grand total; a warning appears when the row limit truncated the data.
+- **Live update** re-runs the report every few seconds (default 10 seconds, minimum 2 seconds). It pauses when the window is not visible and stops automatically after 3 consecutive failures. The status bar shows the last run, the next update and how many rows were added / changed / removed.
+
+### 19.3 Export
+
+- **Export** writes **CSV, TSV, Markdown, HTML, Excel, PDF, JSON, JSONL, XML, YAML and PNG / JPEG images** to `data/exports/` (relative paths resolve there). Several formats can be combined in one export.
+
+### 19.4 Storage and future form printing
+
+- Definitions are stored in `data/reports/reports.json`.
+- The layout model for the future SVF-style form printing (`ReportLayoutDefinition` + `IReportRenderer`) is already part of the data model; the layout editor and the SVF renderer are planned for a later release.

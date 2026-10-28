@@ -30,6 +30,13 @@
             <CheckBox Content="{Binding FormatHtml}" IsChecked="{Binding Html}" Margin="0,2" AutomationProperties.AutomationId="ReportFormatHtml" />
             <CheckBox Content="{Binding FormatExcel}" IsChecked="{Binding Excel}" Margin="0,2" AutomationProperties.AutomationId="ReportFormatExcel" />
             <CheckBox Content="{Binding FormatPdf}" IsChecked="{Binding Pdf}" Margin="0,2" AutomationProperties.AutomationId="ReportFormatPdf" />
+            <CheckBox Content="{Binding FormatTsv}" IsChecked="{Binding Tsv}" Margin="0,2" AutomationProperties.AutomationId="ReportFormatTsv" />
+            <CheckBox Content="{Binding FormatJson}" IsChecked="{Binding Json}" Margin="0,2" AutomationProperties.AutomationId="ReportFormatJson" />
+            <CheckBox Content="{Binding FormatJsonLines}" IsChecked="{Binding JsonLines}" Margin="0,2" AutomationProperties.AutomationId="ReportFormatJsonLines" />
+            <CheckBox Content="{Binding FormatXml}" IsChecked="{Binding Xml}" Margin="0,2" AutomationProperties.AutomationId="ReportFormatXml" />
+            <CheckBox Content="{Binding FormatYaml}" IsChecked="{Binding Yaml}" Margin="0,2" AutomationProperties.AutomationId="ReportFormatYaml" />
+            <CheckBox Content="{Binding FormatPng}" IsChecked="{Binding Png}" Margin="0,2" AutomationProperties.AutomationId="ReportFormatPng" />
+            <CheckBox Content="{Binding FormatJpeg}" IsChecked="{Binding Jpeg}" Margin="0,2" AutomationProperties.AutomationId="ReportFormatJpeg" />
         </UniformGrid>
 
         <CheckBox Content="{Binding IncludeAnalysisLabel}" IsChecked="{Binding IncludeAnalysis}" Margin="0,10,0,0"
