@@ -83,6 +83,7 @@ public static class SfUiServiceCollectionExtensions
         services.AddSingleton<IReportRenderer, DocumentReportRenderer>();
         services.AddSingleton<IReportRenderer, SvfReportRenderer>();
         services.AddSingleton<ReportLayoutStore>();
+        services.AddSingleton<FormStore>();
 
         return services;
     }

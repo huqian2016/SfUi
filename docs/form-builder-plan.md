@@ -1,6 +1,6 @@
 # 帳票ビルダー（SVF 風フォーム）設計書
 
-最終更新: 2026-10-28 / ステータス: **Phase A（Core）完了** — UI は Phase B
+最終更新: 2026-10-28 / ステータス: **Phase A（Core）+ Phase B（UI）完了**
 
 対象リポジトリ: `c:\huqian\vscode\SfUi`（.NET 9 / SfUi.Core + SfUi.Presentation + WPF + Avalonia）
 
@@ -72,10 +72,10 @@ Salesforce の SVF 帳票のように、**ローカルで帳票（見積書・�
 | `dotnet test` | **1,383 件成功**（+12: テンプレート 17 種・レイアウト・差し込み・HTML/SVG/画像・ストア） |
 | 目視確認 | 見積書（製造業）を 150dpi PNG で確認 — ヘッダー・明細・小計・フッター・ページ番号が用紙内に収まる |
 
-## 6. Phase B（次の実装）
+## 6. Phase B（UI・2026-10-28 完了）
 
-1. `FormOutputViewModel`（テンプレート選択 / 差し込み値の入力 / 形式選択 / プレビュー PNG）
-2. WPF / Avalonia の帳票出力ダイアログ（`AutomationId`: `FormTemplate`, `FormValue*`, `FormPreview`, `FormRender`, `FormPrint` 等）
-3. **印刷**: WPF は `PrintDialog` でページ画像を印刷、Avalonia は生成した PDF / HTML を既定ブラウザーで開いて印刷
-4. レポート ウィンドウのツールバーに「帳票テンプレート…」ボタン
-5. E2E（テンプレート選択 → 差し込み → 出力 → ファイル確認）、マニュアル更新
+1. `FormOutputViewModel`（テンプレート選択 / 差し込み値の入力 / 形式選択 / プレビュー PNG）— 完了
+2. WPF / Avalonia の帳票出力ダイアログ — `Views/FormOutputDialog.xaml` / `Dialogs/FormOutputDialog.axaml`（`AutomationId`: `ReportsTemplates` / `FormTemplate` / `FormValues` / `FormValueBox` / `FormPreviewImage` / `FormHtml`〜`FormJpeg` / `FormOutputName` / `FormRender` / `FormPrint` / `FormCancel` / `FormStatus`）
+3. **印刷**: WPF は `PrintDialog` + `FixedDocument` でページ画像を印刷、Avalonia は生成した PDF / HTML を既定ブラウザーで開いて印刷
+4. レポート ウィンドウのツールバーに「帳票テンプレート…」ボタン（`ReportsTemplates`）
+5. E2E: `C:\huqian\sfui-form-template-e2e.ps1` / `-avalonia.ps1` → **14/14 PASS**（見積書テンプレート → 差し込み 12 項目 → HTML 出力、`@page` / 明細行を確認）。テストは **1,394 件**、マニュアル §19.7 と README を 4 言語で更新

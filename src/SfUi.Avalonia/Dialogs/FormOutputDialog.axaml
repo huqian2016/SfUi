@@ -1,0 +1,99 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:SfUi.Avalonia"
+        xmlns:conv="clr-namespace:SfUi.Avalonia.Converters"
+        x:Class="SfUi.Avalonia.Dialogs.FormOutputDialog"
+        Title="{Binding Title}"
+        Width="1180" Height="760" MinWidth="900" MinHeight="520"
+        WindowStartupLocation="CenterOwner"
+        FontSize="13">
+    <Window.Resources>
+        <conv:PngToBitmapConverter x:Key="PngToBitmap" />
+    </Window.Resources>
+    <Window.Styles>
+        <Style Selector="TextBlock.label">
+            <Setter Property="Foreground" Value="#555555" />
+            <Setter Property="Margin" Value="0,0,0,3" />
+        </Style>
+    </Window.Styles>
+
+    <DockPanel>
+        <Border DockPanel.Dock="Bottom" Background="#F7F7F7" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="12,8">
+            <DockPanel>
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
+                    <Button Content="{Binding LabelRender}" Padding="16,4" Click="OnRender"
+                            AutomationProperties.AutomationId="FormRender" />
+                    <Button Content="{Binding LabelPrint}" Padding="16,4" Margin="8,0,0,0" Click="OnPrint"
+                            AutomationProperties.AutomationId="FormPrint" />
+                    <Button Content="{Binding LabelCancel}" Padding="12,4" Margin="8,0,0,0" Click="OnCancel"
+                            AutomationProperties.AutomationId="FormCancel" />
+                </StackPanel>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="{Binding StatusText}" Foreground="#333333"
+                               AutomationProperties.AutomationId="FormStatus" />
+                    <TextBlock Text="{Binding OutputHint}" Foreground="#777777" FontSize="11" TextWrapping="Wrap" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <Grid Margin="12" ColumnDefinitions="260,12,300,12,*">
+            <DockPanel Grid.Column="0">
+                <TextBlock DockPanel.Dock="Top" Text="{Binding LabelTemplate}" Classes="label" />
+                <ListBox ItemsSource="{Binding Forms}" SelectedItem="{Binding SelectedForm, Mode=TwoWay}"
+                         AutomationProperties.AutomationId="FormTemplate">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="0,2">
+                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{Binding Category}" Foreground="#777777" FontSize="11" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+
+            <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <TextBlock Text="{Binding LabelValues}" Classes="label" />
+                    <TextBlock Text="{Binding CategoryText}" Foreground="#1A73E8" FontSize="11" Margin="0,0,0,6" />
+                    <ItemsControl ItemsSource="{Binding Values}" AutomationProperties.AutomationId="FormValues">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="0,0,0,6">
+                                    <TextBlock Text="{Binding Label}" Foreground="#555555" FontSize="11" />
+                                    <TextBox Text="{Binding Value, Mode=TwoWay}"
+                                             AutomationProperties.AutomationId="FormValueBox" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Text="{Binding LabelOutput}" Classes="label" Margin="0,10,0,3" />
+                    <TextBox Text="{Binding OutputName, Mode=TwoWay}" AutomationProperties.AutomationId="FormOutputName" />
+
+                    <TextBlock Text="{Binding LabelFormats}" Classes="label" Margin="0,12,0,3" />
+                    <WrapPanel>
+                        <CheckBox Content="HTML" IsChecked="{Binding WriteHtml}" Margin="0,0,12,0"
+                                  AutomationProperties.AutomationId="FormHtml" />
+                        <CheckBox Content="PDF" IsChecked="{Binding WritePdf}" Margin="0,0,12,0"
+                                  AutomationProperties.AutomationId="FormPdf" />
+                        <CheckBox Content="SVG" IsChecked="{Binding WriteSvg}" Margin="0,0,12,0"
+                                  AutomationProperties.AutomationId="FormSvg" />
+                        <CheckBox Content="PNG" IsChecked="{Binding WritePng}" Margin="0,0,12,0"
+                                  AutomationProperties.AutomationId="FormPng" />
+                        <CheckBox Content="JPEG" IsChecked="{Binding WriteJpeg}"
+                                  AutomationProperties.AutomationId="FormJpeg" />
+                    </WrapPanel>
+                </StackPanel>
+            </ScrollViewer>
+
+            <Border Grid.Column="4" BorderBrush="#DDDDDD" BorderThickness="1" Background="#FAFAFA" Padding="6">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                    <Image Source="{Binding PreviewPng, Converter={StaticResource PngToBitmap}}"
+                           Stretch="Uniform" StretchDirection="DownOnly"
+                           AutomationProperties.AutomationId="FormPreviewImage" />
+                </ScrollViewer>
+            </Border>
+        </Grid>
+    </DockPanel>
+</Window>

@@ -202,8 +202,10 @@ public partial class App : Application
         services.AddSingleton<DashboardViewModel>();
         services.AddTransient<DashboardWindow>();
         services.AddSingleton<DashboardWindowFactory>();
+        services.AddTransient<FormOutputViewModel>();
         services.AddSingleton<IReportEditorDialog, WpfReportEditor>();
         services.AddSingleton<IReportFormDialog, WpfReportFormDialog>();
+        services.AddSingleton<IFormOutputDialog, WpfFormOutputDialog>();
 
         services.AddSingleton<MainWindow>();
         Services = services.BuildServiceProvider();

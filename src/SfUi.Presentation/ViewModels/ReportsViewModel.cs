@@ -42,6 +42,7 @@ public sealed partial class ReportsViewModel : ObservableObject, IDisposable
     private readonly IReportEditorDialog _editor;
     private readonly IReportExportDialog _reportDialog;
     private readonly IReportFormDialog _formDialog;
+    private readonly IFormOutputDialog _templateDialog;
     private readonly IDialogService _dialogs;
     private readonly IAppWindowService _windows;
     private readonly AppPaths _paths;
@@ -59,6 +60,7 @@ public sealed partial class ReportsViewModel : ObservableObject, IDisposable
         IReportEditorDialog editor,
         IReportExportDialog reportDialog,
         IReportFormDialog formDialog,
+        IFormOutputDialog templateDialog,
         IDialogService dialogs,
         IAppWindowService windows,
         AppPaths paths,
@@ -70,6 +72,7 @@ public sealed partial class ReportsViewModel : ObservableObject, IDisposable
         _editor = editor;
         _reportDialog = reportDialog;
         _formDialog = formDialog;
+        _templateDialog = templateDialog;
         _dialogs = dialogs;
         _windows = windows;
         _paths = paths;
@@ -173,6 +176,8 @@ public sealed partial class ReportsViewModel : ObservableObject, IDisposable
     public string LabelExportForm => UiText.T("Reports_ExportForm");
 
     public string LabelDashboard => UiText.T("Reports_Dashboard");
+
+    public string LabelTemplates => UiText.T("Form_TemplatesButton");
 
     public string LabelNoReports => UiText.T("Reports_NoReports");
 
@@ -616,6 +621,32 @@ public sealed partial class ReportsViewModel : ObservableObject, IDisposable
     /// <summary>グラフ付きレポートを並べたダッシュボードを開く。</summary>
     [RelayCommand]
     private void OpenDashboard() => _windows.OpenDashboard(_orgs, SelectedOrg);
+
+    /// <summary>帳票テンプレートから出力する（見積書・請求書など）。</summary>
+    [RelayCommand]
+    private async Task ExportTemplateAsync()
+    {
+        if (_lastResult is null)
+        {
+            StatusText = UiText.T("Reports_NoSelection");
+            return;
+        }
+
+        var document = _lastResult.ToDocument();
+        var baseName = SafeFileName(_lastResult.ReportName) + "-" + DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
+        try
+        {
+            var result = await _templateDialog.ShowAsync(document, baseName).ConfigureAwait(true);
+            StatusText = result is null
+                ? UiText.T("Common_Canceled")
+                : UiText.T("Report_DoneFmt", result.Files.Count, _paths.ExportsDirectory);
+        }
+        catch (Exception ex)
+        {
+            _log.Warn($"帳票テンプレート出力に失敗しました: {ex.Message}");
+            StatusText = UiText.T("Report_FailedFmt", ex.Message);
+        }
+    }
 
     /// <summary>仕上げ（ウィンドウを閉じるとき）。</summary>
     public void Dispose()

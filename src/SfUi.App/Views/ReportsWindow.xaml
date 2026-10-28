@@ -46,6 +46,8 @@
                         AutomationProperties.AutomationId="ReportsExportForm" />
                 <Button Content="{Binding LabelDashboard}" Command="{Binding OpenDashboardCommand}" Style="{StaticResource ToolButton}"
                         AutomationProperties.AutomationId="ReportsDashboard" />
+                <Button Content="{Binding LabelTemplates}" Command="{Binding ExportTemplateCommand}" Style="{StaticResource ToolButton}"
+                        AutomationProperties.AutomationId="ReportsTemplates" />
                 </StackPanel>
             </DockPanel>
         </Border>

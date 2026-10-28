@@ -193,12 +193,16 @@ public static class FormHtmlWriter
             .ToList();
     }
 
-    /// <summary>列の <see cref="FormTableColumn.Field"/> をレポート表のインデックスへ解決する。</summary>
+    /// <summary>
+    /// 列の <see cref="FormTableColumn.Field"/> をレポート表のインデックスへ解決する。
+    /// 名前が一致しない場合は左からの位置でフォールバックする（テンプレートをどのレポートにも使えるように）。
+    /// </summary>
     internal static List<int> ResolveColumnIndexes(IReadOnlyList<FormTableColumn> columns, ReportTable? table)
     {
         var indexes = new List<int>(columns.Count);
-        foreach (var column in columns)
+        for (var c = 0; c < columns.Count; c++)
         {
+            var column = columns[c];
             var name = string.IsNullOrWhiteSpace(column.Field) ? column.Label : column.Field;
             var index = -1;
             if (table is not null && !string.IsNullOrWhiteSpace(name))
@@ -211,6 +215,11 @@ public static class FormHtmlWriter
                         break;
                     }
                 }
+            }
+
+            if (index < 0 && table is not null && c < table.Columns.Count)
+            {
+                index = c;
             }
 
             indexes.Add(index);

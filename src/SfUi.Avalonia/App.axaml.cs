@@ -103,6 +103,8 @@ public partial class App : Application
             // ローカル レポート
             services.AddSingleton<ReportsViewModel>();
         services.AddSingleton<DashboardViewModel>();
+        services.AddTransient<FormOutputViewModel>();
+        services.AddSingleton<IFormOutputDialog, AvaloniaFormOutputDialog>();
             services.AddTransient<ReportEditorViewModel>();
         services.AddTransient<ReportFormViewModel>();
         services.AddSingleton<IReportEditorDialog, AvaloniaReportEditor>();

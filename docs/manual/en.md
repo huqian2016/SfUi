@@ -805,3 +805,10 @@ Build Salesforce-style reports on your own data and keep them fresh with live up
 - The report editor has a **Chart** section: choose **Column / Bar / Line / Pie / Donut**, the **category (axis)** field, the **value** field, **Top N** (0 = all), an optional title and whether to show the legend. Bars and circular charts sort by value, line charts keep the row order, and pie / donut use the first value field.
 - After **Run now** the chart is drawn above the result grid (rows are summed per category). The chart settings are stored with the report in `data/reports/reports.json`.
 - **Dashboard** in the reports toolbar opens a window that tiles every charted report as a card. It refreshes when it opens and offers **Refresh**, **Auto refresh** every N seconds (minimum 10) and an org picker.
+
+### 19.7 Form templates (SVF style)
+
+- **Form templates…** in the reports toolbar opens a dialog with **17 built-in forms**: estimates (manufacturing / construction / IT / retail), order & purchase orders, delivery notes, invoices (services / progress billing), receipts (standard / qualified invoice), payslips and bonus slips, a withholding-tax table (A3 landscape) and a payment statement, a sales ledger and a generic list.
+- Pick a template, fill in the **merge fields** it asks for (customer, document number, totals …), and the preview updates immediately. Columns of the detail table map by **label first, then by position**, so any report can be printed on any template.
+- **Output** writes **HTML, PDF, SVG, PNG and JPEG** to `data/exports` (multi-page files get `-p1`, `-p2`). **Print** sends the pages straight to the printer (WPF) or opens the PDF/HTML in your browser (Avalonia).
+- Templates live in code (read-only); duplicated forms are stored in `data/forms/forms.json`.
