@@ -328,7 +328,7 @@ public sealed class ReportLayoutDefinition
 
 ---
 
-## 9. Phase 4-1: 帳票（SVF 風）レンダラ（Core 完了・2026-10-28）
+## 9. Phase 4-1: 帳票（SVF 風）レンダラ + レイアウト エディタ（完了・2026-10-28）
 
 | 層 | ファイル | 役割 |
 | --- | --- | --- |
@@ -336,6 +336,18 @@ public sealed class ReportLayoutDefinition
 | Core | `Reports/ReportLayoutDefinition.cs` | `SvfReportRenderer : IReportRenderer`（`Id = "svf"`、HTML + PDF）、`ReportExportOptions.Layout`、`ReportLayoutRegion.RowHeightMm`、`ReportLayoutDocument.DefaultLayoutId` |
 | Core | `Storage/ReportLayoutStore.cs` | `data/reports/layouts.json`（`Upsert` / `Find` / `FindDefault` / `SetDefault` / `Delete`、既定レイアウトの自動作成 `CreateDefault`） |
 | UiText | `UiText.{En,Ja,Zh,Ko}.cs` | `Report_RendererSvf` / `Report_FormNoLayout` / `Report_FormNoRows` / `Report_FormSummaryFmt` |
+| Presentation | `UI/IReportFormDialog.cs` / `ViewModels/ReportFormViewModel.cs` | レイアウト選択・新規・削除・保存、用紙 / 向き / 余白 / ヘッダー / 明細行高 / 集計 / フッターの編集、HTML / PDF 出力（`data/exports`） |
+| Presentation | `ViewModels/ReportsViewModel.cs` | `ExportFormCommand`（ツールバーの「帳票出力…」）。実行結果が無いときは `Reports_NoSelection` |
+| WPF | `Views/ReportFormDialog.xaml` / `Services/WpfReportFormDialog.cs` | `AutomationId`: `ReportsExportForm` / `ReportForm{Layouts,New,Delete,Name,Paper,Orientation,Margin,Header,RowHeight,Summary,Footer,RepeatHeader,OutputName,OutputHint,Html,Pdf,Save,Render,Cancel,Status}` |
+| Avalonia | `Dialogs/ReportFormDialog.axaml` / `Services/AvaloniaReportFormDialog.cs` | 同じ AutomationId（`ShowDialog<ReportExportResult?>`） |
+| UiText | `UiText.{En,Ja,Zh,Ko}.cs` | `Reports_ExportForm` / `Report_Form*`（19 キー） / `Report_RendererSvf` / `Report_FormNoLayout` / `Report_FormNoRows` / `Report_FormSummaryFmt` |
 
-検証: `dotnet test` **1,343 件成功**（+9: ページ計算・用紙・差し込み・HTML 生成・エスケープ・ストア・レンダラ）。
-残りは帳票レイアウトの編集 UI（両シェル）と、レポート ウィンドウの「帳票出力」ボタン。
+検証:
+
+| 項目 | 結果 |
+| --- | --- |
+| `dotnet build` | 0 errors |
+| `dotnet test` | **1,348 件すべて成功**（+14: ページ計算・用紙・差し込み・HTML 生成・エスケープ・ストア・レンダラ + VM の保存 / 出力） |
+| WPF / Avalonia `--smoke` | 両方 exit 0 |
+| UI E2E (WPF) | `C:\huqian\sfui-report-form-e2e.ps1` → **18/18 PASS**（帳票出力 → レイアウト編集 → 保存 → HTML 出力 2 ページ） |
+| UI E2E (Avalonia) | `C:\huqian\sfui-report-form-e2e-avalonia.ps1` → **18/18 PASS** |

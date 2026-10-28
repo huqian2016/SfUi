@@ -790,7 +790,12 @@ Build Salesforce-style reports on your own data and keep them fresh with live up
 
 - **Export** writes **CSV, TSV, Markdown, HTML, Excel, PDF, JSON, JSONL, XML, YAML and PNG / JPEG images** to `data/exports/` (relative paths resolve there). Several formats can be combined in one export.
 
-### 19.4 Storage and future form printing
+### 19.4 Storage and form printing
 
-- Definitions are stored in `data/reports/reports.json`.
-- The layout model for the future SVF-style form printing (`ReportLayoutDefinition` + `IReportRenderer`) is already part of the data model; the layout editor and the SVF renderer are planned for a later release.
+- Definitions are stored in `data/reports/reports.json`, and the form layouts in `data/reports/layouts.json`.
+
+### 19.5 Form output (SVF style)
+
+- **Form output…** in the toolbar opens the layout dialog for the current result: pick or create a **layout**, then edit the **paper** (A4 / A3 / Letter), **orientation** (portrait / landscape), **margin**, **header**, **detail row height**, **summary** and **footer**.
+- Header / summary / footer accept placeholders — `{Title}` `{Org}` `{Date}` `{Page}` `{Pages}` `{Rows}` — and the details repeat one line per row, with **page breaks** calculated from the paper size. **Save layout** keeps the definition for reuse.
+- **Output** writes **HTML** and / or **PDF** (printed through the installed Chromium browser) to **`data/exports/`**.

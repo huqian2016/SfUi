@@ -40,6 +40,8 @@
                            AutomationProperties.AutomationId="ReportsInterval" />
                 <Button Content="{Binding LabelExport}" Command="{Binding ExportCommand}" Style="{StaticResource ToolButton}"
                         AutomationProperties.AutomationId="ReportsExport" />
+                <Button Content="{Binding LabelExportForm}" Command="{Binding ExportFormCommand}" Style="{StaticResource ToolButton}"
+                        AutomationProperties.AutomationId="ReportsExportForm" />
                 </StackPanel>
             </DockPanel>
         </Border>

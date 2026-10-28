@@ -41,6 +41,7 @@ public sealed partial class ReportsViewModel : ObservableObject, IDisposable
     private readonly LocalReportRunner _runner;
     private readonly IReportEditorDialog _editor;
     private readonly IReportExportDialog _reportDialog;
+    private readonly IReportFormDialog _formDialog;
     private readonly IDialogService _dialogs;
     private readonly AppPaths _paths;
     private readonly AppLog _log;
@@ -56,6 +57,7 @@ public sealed partial class ReportsViewModel : ObservableObject, IDisposable
         LocalReportRunner runner,
         IReportEditorDialog editor,
         IReportExportDialog reportDialog,
+        IReportFormDialog formDialog,
         IDialogService dialogs,
         AppPaths paths,
         AppLog log,
@@ -65,6 +67,7 @@ public sealed partial class ReportsViewModel : ObservableObject, IDisposable
         _runner = runner;
         _editor = editor;
         _reportDialog = reportDialog;
+        _formDialog = formDialog;
         _dialogs = dialogs;
         _paths = paths;
         _log = log;
@@ -154,6 +157,8 @@ public sealed partial class ReportsViewModel : ObservableObject, IDisposable
     public string LabelRuns => UiText.T("Reports_Runs");
 
     public string LabelExport => UiText.T("Report_Export");
+
+    public string LabelExportForm => UiText.T("Reports_ExportForm");
 
     public string LabelNoReports => UiText.T("Reports_NoReports");
 
@@ -566,12 +571,37 @@ public sealed partial class ReportsViewModel : ObservableObject, IDisposable
                 : UiText.T("Report_DoneFmt", outcome.Result?.Files.Count ?? 0, _paths.ExportsDirectory);
     }
 
+    /// <summary>レポート結果を帳票（SVF 風）として出力する。</summary>
+    [RelayCommand]
+    private async Task ExportFormAsync()
+    {
+        if (_lastResult is null)
+        {
+            StatusText = UiText.T("Reports_NoSelection");
+            return;
+        }
+
+        var document = _lastResult.ToDocument();
+        var baseName = SafeFileName(_lastResult.ReportName) + "-" + DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
+        try
+        {
+            var result = await _formDialog.ShowAsync(document, baseName).ConfigureAwait(true);
+            StatusText = result is null
+                ? UiText.T("Common_Canceled")
+                : UiText.T("Report_DoneFmt", result.Files.Count, _paths.ExportsDirectory);
+        }
+        catch (Exception ex)
+        {
+            _log.Warn($"帳票出力に失敗しました: {ex.Message}");
+            StatusText = UiText.T("Report_FailedFmt", ex.Message);
+        }
+    }
+
     /// <summary>仕上げ（ウィンドウを閉じるとき）。</summary>
     public void Dispose()
     {
         StopLive();
     }
-
     private static string SafeFileName(string name)
     {
         var invalid = new string(Path.GetInvalidFileNameChars());

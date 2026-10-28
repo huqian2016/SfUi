@@ -789,7 +789,12 @@ flowchart TD
 
 - 通过**导出**可将 **CSV / TSV / Markdown / HTML / Excel / PDF / JSON / JSONL / XML / YAML / PNG・JPEG 图片** 写入 `data/exports/`（相对路径会解析到此目录）。可以一次导出多种格式。
 
-### 19.4 保存位置与未来的票据
+### 19.4 保存位置与票据
 
-- 定义保存在 `data/reports/reports.json`。
-- 为将来 SVF 风格的票据打印预留的布局模型（`ReportLayoutDefinition` + `IReportRenderer`）已包含在数据模型中。布局编辑器和 SVF 渲染器将在后续版本提供。
+- 定义保存在 `data/reports/reports.json`，票据版面保存在 `data/reports/layouts.json`。
+
+### 19.5 票据输出（SVF 风格）
+
+- 工具栏上的**报表输出…**可针对当前结果选择或新建**版面**，并编辑**纸张**（A4 / A3 / Letter）、**方向**（纵向 / 横向）、**边距**、**页眉**、**明细行高**、**汇总**和**页脚**。
+- 页眉 / 汇总 / 页脚支持合并域（`{Title}` `{Org}` `{Date}` `{Page}` `{Pages}` `{Rows}`），明细按每行一条记录重复，分页由纸张大小和明细行高自动计算。**保存版面**可复用该定义。
+- 点击**输出**可用 **HTML** / **PDF**（通过已安装的 Chromium 内核浏览器打印）写入 **`data/exports/`**。

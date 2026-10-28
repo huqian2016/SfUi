@@ -1,0 +1,131 @@
+<Window x:Class="SfUi.App.Views.ReportFormDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:SfUi.App"
+        Title="{Binding Title}" Width="900" Height="640"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+    </Window.Resources>
+    <Grid Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="{Binding LabelPlaceholders}" Foreground="#777777" FontSize="11"
+                   TextWrapping="Wrap" Margin="0,0,0,8" />
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="240" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <!-- レイアウト一覧 -->
+            <DockPanel Grid.Column="0">
+                <TextBlock DockPanel.Dock="Top" Text="{Binding LabelLayout}" Foreground="#555555" Margin="0,0,0,4" />
+                <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,6,0,0">
+                    <Button Content="{Binding LabelNew}" Command="{Binding NewLayoutCommand}" Padding="10,2"
+                            AutomationProperties.AutomationId="ReportFormNew" />
+                    <Button Content="{Binding LabelDelete}" Command="{Binding DeleteLayoutCommand}" Padding="10,2" Margin="6,0,0,0"
+                            AutomationProperties.AutomationId="ReportFormDelete" />
+                </StackPanel>
+                <ListBox ItemsSource="{Binding LayoutOptions}"
+                         SelectedValue="{Binding SelectedLayoutId}"
+                         SelectedValuePath="Id"
+                         DisplayMemberPath="Label"
+                         AutomationProperties.AutomationId="ReportFormLayouts" />
+            </DockPanel>
+
+            <!-- レイアウト編集 -->
+            <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <TextBlock Text="{Binding LabelName}" Foreground="#555555" Margin="0,0,0,3" />
+                    <TextBox Text="{Binding LayoutName, UpdateSourceTrigger=PropertyChanged}"
+                             AutomationProperties.AutomationId="ReportFormName" />
+
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="12" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="12" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="{Binding LabelPaper}" Foreground="#555555" Margin="0,0,0,3" />
+                            <ComboBox ItemsSource="{Binding PaperOptions}" SelectedItem="{Binding PaperSize}"
+                                      AutomationProperties.AutomationId="ReportFormPaper" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="{Binding LabelOrientation}" Foreground="#555555" Margin="0,0,0,3" />
+                            <ComboBox ItemsSource="{Binding OrientationOptions}"
+                                      SelectedValue="{Binding Orientation}"
+                                      SelectedValuePath="Key"
+                                      DisplayMemberPath="Label"
+                                      AutomationProperties.AutomationId="ReportFormOrientation" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="4">
+                            <TextBlock Text="{Binding LabelMargin}" Foreground="#555555" Margin="0,0,0,3" />
+                            <TextBox Text="{Binding MarginMm, UpdateSourceTrigger=PropertyChanged}"
+                                     AutomationProperties.AutomationId="ReportFormMargin" />
+                        </StackPanel>
+                    </Grid>
+
+                    <TextBlock Text="{Binding LabelHeader}" Foreground="#555555" Margin="0,10,0,3" />
+                    <TextBox Text="{Binding HeaderText, UpdateSourceTrigger=PropertyChanged}"
+                             Height="54" AcceptsReturn="True" TextWrapping="Wrap"
+                             AutomationProperties.AutomationId="ReportFormHeader" />
+
+                    <TextBlock Text="{Binding LabelDetail}" Foreground="#555555" Margin="0,10,0,3" />
+                    <TextBox Text="{Binding DetailRowHeightMm, UpdateSourceTrigger=PropertyChanged}" Width="120"
+                             HorizontalAlignment="Left"
+                             AutomationProperties.AutomationId="ReportFormRowHeight" />
+
+                    <TextBlock Text="{Binding LabelSummary}" Foreground="#555555" Margin="0,10,0,3" />
+                    <TextBox Text="{Binding SummaryText, UpdateSourceTrigger=PropertyChanged}"
+                             Height="44" AcceptsReturn="True" TextWrapping="Wrap"
+                             AutomationProperties.AutomationId="ReportFormSummary" />
+
+                    <TextBlock Text="{Binding LabelFooter}" Foreground="#555555" Margin="0,10,0,3" />
+                    <TextBox Text="{Binding FooterText, UpdateSourceTrigger=PropertyChanged}"
+                             Height="44" AcceptsReturn="True" TextWrapping="Wrap"
+                             AutomationProperties.AutomationId="ReportFormFooter" />
+
+                    <CheckBox Content="{Binding LabelRepeatHeader}" IsChecked="{Binding RepeatHeaderOnPageBreak}"
+                              Margin="0,10,0,0" AutomationProperties.AutomationId="ReportFormRepeatHeader" />
+
+                    <TextBlock Text="{Binding LabelOutput}" Foreground="#555555" Margin="0,12,0,3" />
+                    <TextBox Text="{Binding OutputName, UpdateSourceTrigger=PropertyChanged}"
+                             AutomationProperties.AutomationId="ReportFormOutputName" />
+                    <TextBlock Text="{Binding OutputHint}" Foreground="#777777" FontSize="11" Margin="0,3,0,0"
+                               TextWrapping="Wrap" AutomationProperties.AutomationId="ReportFormOutputHint" />
+
+                    <TextBlock Text="{Binding LabelFormats}" Foreground="#555555" Margin="0,10,0,3" />
+                    <StackPanel Orientation="Horizontal">
+                        <CheckBox Content="HTML" IsChecked="{Binding WriteHtml}" Margin="0,0,16,0"
+                                  AutomationProperties.AutomationId="ReportFormHtml" />
+                        <CheckBox Content="PDF" IsChecked="{Binding WritePdf}"
+                                  AutomationProperties.AutomationId="ReportFormPdf" />
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+
+        <DockPanel Grid.Row="2" Margin="0,12,0,0">
+            <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
+                <Button Content="{Binding LabelSave}" Command="{Binding SaveLayoutCommand}" Padding="12,3"
+                        AutomationProperties.AutomationId="ReportFormSave" />
+                <Button Content="{Binding LabelRender}" Click="OnRender" Padding="16,3" Margin="8,0,0,0"
+                        AutomationProperties.AutomationId="ReportFormRender" />
+                <Button Content="{Binding LabelCancel}" Click="OnCancel" Padding="12,3" Margin="8,0,0,0"
+                        IsCancel="True" AutomationProperties.AutomationId="ReportFormCancel" />
+            </StackPanel>
+            <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center" Foreground="#555555"
+                       TextTrimming="CharacterEllipsis"
+                       AutomationProperties.AutomationId="ReportFormStatus" />
+        </DockPanel>
+    </Grid>
+</Window>

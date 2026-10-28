@@ -198,7 +198,9 @@ public partial class App : Application
         services.AddTransient<ReportsWindow>();
         services.AddSingleton<ReportsWindowFactory>();
         services.AddTransient<ReportEditorViewModel>();
+        services.AddTransient<ReportFormViewModel>();
         services.AddSingleton<IReportEditorDialog, WpfReportEditor>();
+        services.AddSingleton<IReportFormDialog, WpfReportFormDialog>();
 
         services.AddSingleton<MainWindow>();
         Services = services.BuildServiceProvider();

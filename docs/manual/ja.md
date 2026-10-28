@@ -788,7 +788,12 @@ flowchart TD
 
 - **出力** から **CSV / TSV / Markdown / HTML / Excel / PDF / JSON / JSONL / XML / YAML / PNG・JPEG 画像** を `data/exports/` へ書き出せます（相対パスはここに解決されます）。複数形式の同時出力も可能です。
 
-### 19.4 保存場所と将来の帳票
+### 19.4 保存場所と帳票
 
-- 定義は `data/reports/reports.json` に保存されます。
-- 将来の SVF 風帳票用のレイアウト モデル（`ReportLayoutDefinition` + `IReportRenderer`）はデータ モデルに含まれています。レイアウト エディタと SVF レンダラは今後のリリースで提供予定です。
+- 定義は `data/reports/reports.json`、帳票レイアウトは `data/reports/layouts.json` に保存されます。
+
+### 19.5 帳票出力（SVF 風）
+
+- ツールバーの **帳票出力…** で、現在の結果に対してレイアウトを選ぶ / 新規作成し、**用紙**（A4 / A3 / Letter）、**向き**（縦 / 横）、**余白**、**ヘッダー**、**明細行の高さ**、**集計**、**フッター** を編集できます。
+- ヘッダー / 集計 / フッターには差し込みフィールド（`{Title}` `{Org}` `{Date}` `{Page}` `{Pages}` `{Rows}`）が使え、明細は 1 行 1 レコードで繰り返します。ページ分割は用紙サイズと明細行の高さから自動計算されます。**レイアウトを保存** で定義を再利用できます。
+- **出力** で **HTML** / **PDF**（インストール済みの Chromium 系ブラウザーで印刷）を **`data/exports/`** へ書き出します。
