@@ -12,10 +12,16 @@ public sealed class ReportValidationException : Exception
     public IReadOnlyList<string> Errors { get; }
 }
 
+/// <summary>ローカル レポートの実行口（スケジューラなどから差し替えられるようにする）。</summary>
+public interface ILocalReportRunner
+{
+    Task<LocalReportResult> RunAsync(ReportDefinition definition, string? targetOrg, CancellationToken cancellationToken = default);
+}
+
 /// <summary>
 /// ローカル レポートを実行する（SOQL 生成 → 実行 → 集計）。
 /// </summary>
-public sealed class LocalReportRunner
+public sealed class LocalReportRunner : ILocalReportRunner
 {
     private readonly SoqlService _soql;
     private readonly AppLog _log;

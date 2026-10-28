@@ -244,6 +244,39 @@
                     </Border>
                 </StackPanel>
 
+                <!-- レポート実行 -->
+                <StackPanel Visibility="{Binding IsReport, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="{loc:Tr Sched_EditorReport}" Style="{StaticResource SectionHeader}" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="12" />
+                            <ColumnDefinition Width="200" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <ComboBox ItemsSource="{Binding ReportChoices}"
+                                      SelectedValue="{Binding ReportId}"
+                                      SelectedValuePath="Id"
+                                      DisplayMemberPath="Label"
+                                      AutomationProperties.AutomationId="JobEditorReport" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="{loc:Tr Sched_EditorReportFormat}" Foreground="#555555" Margin="0,0,0,3" />
+                            <ComboBox ItemsSource="{Binding ReportFormatOptions}"
+                                      SelectedValue="{Binding ReportFormat}"
+                                      SelectedValuePath="Key"
+                                      DisplayMemberPath="Label"
+                                      AutomationProperties.AutomationId="JobEditorReportFormat" />
+                        </StackPanel>
+                    </Grid>
+                    <TextBlock Text="{loc:Tr Sched_EditorReportOutput}" Foreground="#555555" Margin="0,8,0,3" />
+                    <TextBox Text="{Binding ReportOutputPath, UpdateSourceTrigger=PropertyChanged}"
+                             AutomationProperties.AutomationId="JobEditorReportOutput" />
+                    <TextBlock Text="{Binding ReportPathHint}" Foreground="#777777" FontSize="11"
+                               Margin="0,3,0,0" TextWrapping="Wrap"
+                               AutomationProperties.AutomationId="JobEditorReportOutputHint" />
+                </StackPanel>
+
                 <!-- スケジュール -->
                 <TextBlock Text="{loc:Tr Sched_EditorSchedule}" Style="{StaticResource SectionHeader}" />
                 <WrapPanel>

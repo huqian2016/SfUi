@@ -73,11 +73,13 @@ public static class SfUiServiceCollectionExtensions
         services.AddSingleton<IScheduledJobExecutor, SfCommandJobExecutor>();
         services.AddSingleton<IScheduledJobExecutor, RestApiJobExecutor>();
         services.AddSingleton<IScheduledJobExecutor, ShellCommandJobExecutor>();
+        services.AddSingleton<IScheduledJobExecutor, ReportJobExecutor>();
         services.AddSingleton<SchedulerService>();
 
         // ローカル レポート（Salesforce レポート相当）
         services.AddSingleton<ReportDefinitionStore>();
         services.AddSingleton<LocalReportRunner>();
+        services.AddSingleton<ILocalReportRunner>(sp => sp.GetRequiredService<LocalReportRunner>());
         services.AddSingleton<IReportRenderer, DocumentReportRenderer>();
 
         return services;

@@ -1,6 +1,6 @@
 # レポート（ローカル Salesforce レポート）設計書
 
-最終更新: 2026-10-28 / ステータス: **Phase 1〜3 完了（Core + WPF + Avalonia）** — Phase 4 は §7.4
+最終更新: 2026-10-28 / ステータス: **Phase 1〜3 + Phase 4 のスケジューラ連携まで完了（Core + WPF + Avalonia）** — 残りは帳票レイアウト（§7.4 / §8）
 
 対象リポジトリ: `c:\huqian\vscode\SfUi`（.NET 9 / SfUi.Core + SfUi.Presentation + WPF + Avalonia）
 
@@ -287,8 +287,9 @@ public sealed class ReportLayoutDefinition
 ### 7.4 残り（Phase 4）
 
 - 帳票レイアウトの UI と `IReportRenderer` の SVF 風レンダラ（PDF/HTML/画像）
-- スケジューラのジョブ種別「レポート実行」
 - チャート / ダッシュボード
+
+スケジューラのジョブ種別「レポート実行」は **§8 で完了**（2026-10-28）。
 
 ### 7.5 Phase 3（Avalonia 移植・2026-10-28）
 
@@ -299,3 +300,28 @@ public sealed class ReportLayoutDefinition
 | 起動 | `AvaloniaAppWindowService.OpenReports` → `ReportsWindow`、`MainWindow.axaml` に `OpenReports` ボタン追加、`IconReport` 追加 |
 | リアルタイム更新 | チェックボックスは WPF = `Command` 駆動 / Avalonia = `IsChecked` 双方向（UIA の Toggle が Command を発火しないため）。VM は `OnIsLiveChanged` で開始 / 停止するのでどちらでも動く |
 | 検証 | `C:\huqian\sfui-reports-e2e-avalonia.ps1` → **15/15 PASS**（レポート作成 → 136 行 → 出力形式 → リアルタイム更新 3→9 回）。WPF 版も 15/15 |
+
+---
+
+## 8. Phase 4-2: スケジューラのジョブ種別「レポート実行」（2026-10-28）
+
+保存済みのローカル レポートをスケジュール実行し、結果をファイルへ書き出す。
+
+| 層 | ファイル | 役割 |
+| --- | --- | --- |
+| Core | `Scheduling/SchedulerModels.cs` | `ScheduledJobTypes.Report = "report"`（`All` の データ エクスポート の次）、`ReportJobPayload { ReportId, Formats, OutputPath, MaxRows }` |
+| Core | `Reports/LocalReportRunner.cs` | `ILocalReportRunner` を抽出（`LocalReportRunner` が実装。DI で両方登録） |
+| Core | `Scheduling/Executors/ReportJobExecutor.cs` | 定義を `ReportDefinitionStore.Find` で解決 → 実行 → `ReportDocument` → `ReportExportService` で出力。相対パスは `data/exports/` 基準、空なら `レポート名-yyyyMMdd-HHmmss`。`ParseFormats("csv,excel,pdf")` を公開 |
+| Presentation | `ViewModels/SchedulerJobEditorViewModel.cs` | レポート選択（`ReportChoices`）/ 出力形式（7 種）/ 出力ファイル（`ReportPathHint` で解決後パスを表示）、`IsReport`、検証 `Sched_ErrorNoReport` |
+| WPF / Avalonia | `Views/SchedulerJobEditorDialog.xaml` / `Dialogs/SchedulerJobEditorDialog.axaml` | `JobEditorReport` / `JobEditorReportFormat` / `JobEditorReportOutput` / `JobEditorReportOutputHint` |
+| UiText | `UiText.{En,Ja,Zh,Ko}.cs` | `Sched_TypeReport` / `Sched_EditorReport` / `Sched_EditorReportFormat` / `Sched_EditorReportOutput` / `Sched_ErrorNoReport` / `Sched_ErrorReportNotFound` / `Sched_SummaryReportFmt` |
+
+検証:
+
+| 項目 | 結果 |
+| --- | --- |
+| `dotnet build` | 0 errors |
+| `dotnet test` | **1,334 件すべて成功**（+11: 形式パース / 実行 / 出力先 / 未選択・未存在エラー / エディタのペイロード往復） |
+| WPF / Avalonia `--smoke` | 両方 exit 0 |
+| UI E2E (WPF) | `C:\huqian\sfui-report-job-e2e.ps1` → **21/21 PASS**（種別に Report → レポート一覧 → 形式 7 種 → 出力ヒント → 保存された `payloadJson`） |
+| UI E2E (Avalonia) | `C:\huqian\sfui-report-job-e2e-avalonia.ps1` → **13/13 PASS** |

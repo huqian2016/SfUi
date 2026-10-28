@@ -43,10 +43,13 @@ public static class ScheduledJobTypes
     public const string RestApi = "restapi";
     public const string Shell = "shell";
 
+    /// <summary>ローカル レポートの実行。</summary>
+    public const string Report = "report";
+
     /// <summary>全種別（エディタの並び順）。</summary>
     public static IReadOnlyList<string> All { get; } = new[]
     {
-        Soql, Apex, Backup, DataImport, DataExport, SfCommand, RestApi, Shell,
+        Soql, Apex, Backup, DataImport, DataExport, Report, SfCommand, RestApi, Shell,
     };
 
     public static string ToLabel(string type) => type switch
@@ -59,6 +62,7 @@ public static class ScheduledJobTypes
         SfCommand => UiText.T("Sched_TypeSfCommand"),
         RestApi => UiText.T("Sched_TypeRestApi"),
         Shell => UiText.T("Sched_TypeShell"),
+        Report => UiText.T("Sched_TypeReport"),
         _ => type,
     };
 }
@@ -471,6 +475,22 @@ public sealed class ShellJobPayload
     public string CommandLine { get; set; } = "";
 
     public string? WorkingDirectory { get; set; }
+}
+
+/// <summary>ローカル レポート実行ジョブのパラメータ。</summary>
+public sealed class ReportJobPayload
+{
+    /// <summary>実行するレポート定義の Id（data/reports/reports.json）。</summary>
+    public string ReportId { get; set; } = "";
+
+    /// <summary>出力形式（csv / tsv / json / jsonl / xml / yaml / markdown / html / excel / pdf / png / jpeg の 1 つ，またはカンマ区切り）。</summary>
+    public string Formats { get; set; } = "csv";
+
+    /// <summary>出力先（空 = data/exports/&lt;レポート名&gt;-&lt;日時&gt;。相対 = data/exports 基準）。</summary>
+    public string? OutputPath { get; set; }
+
+    /// <summary>出力する最大行数（0 = 制限なし）。</summary>
+    public int MaxRows { get; set; }
 }
 
 /// <summary>データ投入の操作名（文字列 ↔ enum）。</summary>

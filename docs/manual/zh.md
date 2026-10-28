@@ -725,13 +725,14 @@ flowchart TD
 | 数据备份 | 对象（逗号分隔）、标签 / 说明（可选） |
 | 数据导入 | 对象 API 名称、CSV 文件、操作（插入 / 更新 / 更新插入 / 删除）、外部 Id 字段、Bulk API |
 | 数据导出 | SOQL、输出文件、格式（csv / json）、Bulk API |
+| 执行报表 | 已保存的本地报表、输出格式（CSV / Excel / PDF / HTML / Markdown / JSON / TSV）、输出文件 |
 
 > **输出文件**：相对路径会保存到 **`data/exports/`**（与应用的启动方式无关），绝对路径则按指定位置保存。可以用 **浏览...** 按钮选择位置，输入框下方会始终显示解析后的绝对路径。
 | Salesforce CLI 命令 | `sf` 之后的参数（例: `org list --json`） |
 | REST API 调用 | 方法（GET / POST / PATCH / DELETE）、路径、正文（JSON） |
 | 操作系统命令行 | 命令行、工作文件夹 |
 
-- SOQL / Apex / 备份 / 导入 / 导出 / REST 需要目标组织（CLI 命令与操作系统命令行不需要）。
+- SOQL / Apex / 备份 / 导入 / 导出 / 执行报表 / REST 需要目标组织（CLI 命令与操作系统命令行不需要）。
 - **操作系统命令行是用户自行设置的高级功能。** Windows 使用 `cmd.exe /d /c`，macOS 使用 `sh -c` 执行。**请只注册可信的命令**（界面会显示警告）。
 
 ### 18.3 计划

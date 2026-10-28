@@ -198,6 +198,42 @@
                     </Border>
                 </StackPanel>
 
+                <!-- レポート実行 -->
+                <StackPanel IsVisible="{Binding IsReport}">
+                    <TextBlock Text="{loc:Tr Sched_EditorReport}" FontWeight="SemiBold" Margin="0,14,0,4" />
+                    <Grid ColumnDefinitions="*,12,200">
+                        <ComboBox ItemsSource="{Binding ReportChoices}"
+                                  SelectedValueBinding="{Binding Id}"
+                                  SelectedValue="{Binding ReportId, Mode=TwoWay}"
+                                  AutomationProperties.AutomationId="JobEditorReport">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Label}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="{loc:Tr Sched_EditorReportFormat}" Foreground="#555555" Margin="0,0,0,3" />
+                            <ComboBox ItemsSource="{Binding ReportFormatOptions}"
+                                      SelectedValueBinding="{Binding Key}"
+                                      SelectedValue="{Binding ReportFormat, Mode=TwoWay}"
+                                      AutomationProperties.AutomationId="JobEditorReportFormat">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Label}" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </StackPanel>
+                    </Grid>
+                    <TextBlock Text="{loc:Tr Sched_EditorReportOutput}" Foreground="#555555" Margin="0,8,0,3" />
+                    <TextBox Text="{Binding ReportOutputPath, Mode=TwoWay}"
+                             AutomationProperties.AutomationId="JobEditorReportOutput" />
+                    <TextBlock Text="{Binding ReportPathHint}" Foreground="#777777" FontSize="11"
+                               Margin="0,3,0,0" TextWrapping="Wrap"
+                               AutomationProperties.AutomationId="JobEditorReportOutputHint" />
+                </StackPanel>
+
                 <!-- スケジュール -->
                 <TextBlock Text="{loc:Tr Sched_EditorSchedule}" FontWeight="SemiBold" Margin="0,14,0,4" />
                 <ComboBox ItemsSource="{Binding ScheduleKindOptions}" SelectedValueBinding="{Binding Key}"

@@ -33,19 +33,39 @@ public sealed record SchedulerOption(string Key, string Label)
 /// <summary>スケジュール種別の選択肢。</summary>
 public sealed record ScheduleKindOption(string Key, string Label);
 
+/// <summary>レポート選択肢（Id + 表示名）。</summary>
+public sealed record ReportOption(string Id, string Label)
+{
+    /// <summary>UIA / ログ用の表示名。</summary>
+    public override string ToString() => Label;
+}
+
+/// <summary>レポート出力形式の選択肢。</summary>
+public sealed record ReportFormatOption(string Key, string Label)
+{
+    /// <summary>UIA / ログ用の表示名。</summary>
+    public override string ToString() => Label;
+}
+
 /// <summary>ジョブ編集ダイアログの ViewModel（全ジョブ種別対応）。</summary>
 public sealed partial class SchedulerJobEditorViewModel : ObservableObject
 {
     private readonly AppSettingsStore _settings;
     private readonly IFilePickerService? _filePicker;
     private readonly AppPaths? _paths;
+    private readonly ReportDefinitionStore? _reports;
     private ScheduledJob? _editing;
 
-    public SchedulerJobEditorViewModel(AppSettingsStore settings, IFilePickerService? filePicker = null, AppPaths? paths = null)
+    public SchedulerJobEditorViewModel(
+        AppSettingsStore settings,
+        IFilePickerService? filePicker = null,
+        AppPaths? paths = null,
+        ReportDefinitionStore? reports = null)
     {
         _settings = settings;
         _filePicker = filePicker;
         _paths = paths;
+        _reports = reports;
         Weekdays = Enum.GetValues<DayOfWeek>()
             .OrderBy(d => d == DayOfWeek.Sunday ? 7 : (int)d)
             .Select(d => new WeekdayOption(d))
@@ -78,6 +98,21 @@ public sealed partial class SchedulerJobEditorViewModel : ObservableObject
 
     /// <summary>エクスポート形式。</summary>
     public IReadOnlyList<string> ExportFormats { get; } = new[] { "csv", "json" };
+
+    /// <summary>レポートの出力形式。</summary>
+    public IReadOnlyList<ReportFormatOption> ReportFormatOptions { get; } = new[]
+    {
+        new ReportFormatOption("csv", "CSV"),
+        new ReportFormatOption("excel", "Excel (xlsx)"),
+        new ReportFormatOption("pdf", "PDF"),
+        new ReportFormatOption("html", "HTML"),
+        new ReportFormatOption("markdown", "Markdown"),
+        new ReportFormatOption("json", "JSON"),
+        new ReportFormatOption("tsv", "TSV"),
+    };
+
+    /// <summary>選択できるローカル レポート。</summary>
+    public ObservableCollection<ReportOption> ReportChoices { get; } = new();
 
     /// <summary>曜日チェックボックス。</summary>
     public IReadOnlyList<WeekdayOption> Weekdays { get; }
@@ -137,6 +172,40 @@ public sealed partial class SchedulerJobEditorViewModel : ObservableObject
 
     [ObservableProperty]
     private string _exportFormat = "csv";
+
+    // ── レポート実行 ──
+    [ObservableProperty]
+    private string _reportId = "";
+
+    [ObservableProperty]
+    private string _reportFormat = "csv";
+
+    [ObservableProperty]
+    private string _reportOutputPath = "";
+
+    /// <summary>レポート出力パスの解決結果。</summary>
+    public string ReportPathHint
+    {
+        get
+        {
+            if (_paths is null)
+            {
+                return string.Empty;
+            }
+
+            try
+            {
+                var resolved = JobPathResolver.ResolveOutput(ReportOutputPath, _paths);
+                return UiText.T("Sched_ExportPathHintFmt", resolved.Length == 0 ? _paths.ExportsDirectory : resolved);
+            }
+            catch (Exception)
+            {
+                return string.Empty;
+            }
+        }
+    }
+
+    partial void OnReportOutputPathChanged(string value) => OnPropertyChanged(nameof(ReportPathHint));
 
     /// <summary>出力パスの解決結果（相対パスは data/exports 配下になることを画面上に示す）。</summary>
     public string ExportPathHint
@@ -289,6 +358,8 @@ public sealed partial class SchedulerJobEditorViewModel : ObservableObject
 
     public bool IsShell => JobType == ScheduledJobTypes.Shell;
 
+    public bool IsReport => JobType == ScheduledJobTypes.Report;
+
     /// <summary>対象組織が必須の種別か。</summary>
     public bool NeedsOrg => JobType is not (ScheduledJobTypes.Shell or ScheduledJobTypes.SfCommand);
 
@@ -322,9 +393,23 @@ public sealed partial class SchedulerJobEditorViewModel : ObservableObject
         OnPropertyChanged(nameof(IsSfCommand));
         OnPropertyChanged(nameof(IsRestApi));
         OnPropertyChanged(nameof(IsShell));
+        OnPropertyChanged(nameof(IsReport));
         OnPropertyChanged(nameof(NeedsOrg));
         OnPropertyChanged(nameof(UsesSoql));
         OnPropertyChanged(nameof(UsesBulk));
+
+        if (value == ScheduledJobTypes.Report)
+        {
+            if (ReportChoices.Count == 0)
+            {
+                RefreshReports();
+            }
+
+            if (string.IsNullOrWhiteSpace(ReportId) && ReportChoices.Count > 0)
+            {
+                ReportId = ReportChoices[0].Id;
+            }
+        }
     }
 
     partial void OnScheduleKindChanged(string value)
@@ -341,6 +426,7 @@ public sealed partial class SchedulerJobEditorViewModel : ObservableObject
     public void Load(ScheduledJob job, IReadOnlyList<OrgInfo> orgs)
     {
         _editing = job;
+        RefreshReports();
         Orgs.Clear();
         foreach (var org in orgs)
         {
@@ -420,6 +506,15 @@ public sealed partial class SchedulerJobEditorViewModel : ObservableObject
                 var payload = job.GetPayload<ShellJobPayload>();
                 ShellCommandLine = payload.CommandLine;
                 ShellWorkingDirectory = payload.WorkingDirectory ?? "";
+                break;
+            }
+
+            case ScheduledJobTypes.Report:
+            {
+                var payload = job.GetPayload<ReportJobPayload>();
+                ReportId = payload.ReportId;
+                ReportFormat = string.IsNullOrWhiteSpace(payload.Formats) ? "csv" : payload.Formats;
+                ReportOutputPath = payload.OutputPath ?? "";
                 break;
             }
         }
@@ -698,6 +793,21 @@ public sealed partial class SchedulerJobEditorViewModel : ObservableObject
                 });
                 return true;
 
+            case ScheduledJobTypes.Report:
+                if (string.IsNullOrWhiteSpace(ReportId))
+                {
+                    ValidationMessage = UiText.T("Sched_ErrorNoReport");
+                    return false;
+                }
+
+                job.SetPayload(new ReportJobPayload
+                {
+                    ReportId = ReportId.Trim(),
+                    Formats = string.IsNullOrWhiteSpace(ReportFormat) ? "csv" : ReportFormat.Trim(),
+                    OutputPath = NullIfEmpty(ReportOutputPath),
+                });
+                return true;
+
             default:
                 ValidationMessage = UiText.T("Sched_ErrorUnknownTypeFmt", JobType);
                 return false;
@@ -706,6 +816,29 @@ public sealed partial class SchedulerJobEditorViewModel : ObservableObject
 
     private static string? NullIfEmpty(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    /// <summary>レポート一覧を読み直す（ダイアログを開いた時点のスナップショット）。</summary>
+    public void RefreshReports()
+    {
+        var current = ReportId;
+        ReportChoices.Clear();
+        if (_reports is not null)
+        {
+            foreach (var report in _reports.Reports)
+            {
+                ReportChoices.Add(new ReportOption(report.Id, report.DisplayName));
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(current))
+        {
+            ReportId = current;
+        }
+        else if (ReportChoices.Count > 0)
+        {
+            ReportId = ReportChoices[0].Id;
+        }
+    }
 
     private static ScheduledJob Clone(ScheduledJob job) => new()
     {

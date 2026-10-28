@@ -726,13 +726,14 @@ Run recurring work (reports, integrations, housekeeping) **unattended**. Open th
 | Data backup | Objects (comma separated), optional label / description |
 | Data import | Object API name, CSV file, operation (insert / update / upsert / delete), external Id field, Bulk API |
 | Data export | SOQL, output file, format (csv / json), Bulk API |
+| Report | Saved local report, output format (CSV / Excel / PDF / HTML / Markdown / JSON / TSV), output file |
 
 > **Output file**: relative paths are saved under **`data/exports/`** (so the destination does not depend on how the app was started); an absolute path is used as-is. Use **Browse...** to pick a location, and the line under the box always shows the resolved absolute path.
 | Salesforce CLI command | Arguments after ` sf ` (e.g. ` org list --json `) |
 | REST API call | Method (GET / POST / PATCH / DELETE), path, JSON body |
 | OS command line | Command line, working folder |
 
-- A target org is required for SOQL / Apex / backup / import / export / REST (not for CLI or OS command line jobs).
+- A target org is required for SOQL / Apex / backup / import / export / report / REST (not for CLI or OS command line jobs).
 - **The OS command line job is an advanced feature that you configure yourself.** It runs through ` cmd.exe /d /c ` on Windows and ` sh -c ` on macOS. **Only schedule commands you trust** (the dialog shows a warning).
 
 ### 18.3 Schedule
