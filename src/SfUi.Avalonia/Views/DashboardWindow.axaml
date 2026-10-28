@@ -1,0 +1,92 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:SfUi.Avalonia"
+        xmlns:views="clr-namespace:SfUi.Avalonia.Views"
+        xmlns:conv="clr-namespace:SfUi.Avalonia.Converters"
+        x:Class="SfUi.Avalonia.Views.DashboardWindow"
+        Title="{Binding Title}"
+        Width="1180" Height="760" MinWidth="720" MinHeight="420"
+        WindowStartupLocation="CenterOwner"
+        FontSize="13">
+    <Window.Resources>
+        <conv:PngToBitmapConverter x:Key="PngToBitmap" />
+    </Window.Resources>
+    <Window.Styles>
+        <Style Selector="Button.tool">
+            <Setter Property="Padding" Value="10,4" />
+            <Setter Property="Margin" Value="0,0,6,0" />
+            <Setter Property="MinWidth" Value="0" />
+        </Style>
+    </Window.Styles>
+
+    <DockPanel>
+        <!-- ツールバー -->
+        <Border DockPanel.Dock="Top" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="10,6">
+            <DockPanel>
+                <views:HelpButton Topic="Reports" DockPanel.Dock="Right" Margin="12,0,0,0" VerticalAlignment="Center" />
+                <StackPanel Orientation="Horizontal">
+                    <Button Classes="tool" Content="{Binding LabelRefresh}" Command="{Binding RefreshCommand}"
+                            AutomationProperties.AutomationId="DashboardRefresh" />
+                    <CheckBox Content="{Binding LabelAuto}" IsChecked="{Binding IsAutoRefresh, Mode=TwoWay}"
+                              VerticalAlignment="Center" Margin="6,0,10,0"
+                              AutomationProperties.AutomationId="DashboardAuto" />
+                    <TextBlock Text="{Binding LabelInterval}" Foreground="#666666" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <TextBox Text="{Binding IntervalText, Mode=TwoWay}" Width="60" VerticalAlignment="Center" Margin="0,0,12,0"
+                             AutomationProperties.AutomationId="DashboardInterval" />
+                    <TextBlock Text="{Binding LabelOrg}" Foreground="#666666" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <ComboBox ItemsSource="{Binding Orgs}" SelectedItem="{Binding SelectedOrg, Mode=TwoWay}"
+                              Width="260" VerticalAlignment="Center"
+                              AutomationProperties.AutomationId="DashboardOrg">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding DisplayName}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- ステータス バー -->
+        <Border DockPanel.Dock="Bottom" Background="#F7F7F7" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="10,4">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="{Binding StatusText}" AutomationProperties.AutomationId="DashboardStatus" />
+                <TextBlock Text="   |   " Foreground="#AAAAAA" />
+                <TextBlock Text="{Binding NextRefreshText}" AutomationProperties.AutomationId="DashboardNext" />
+            </StackPanel>
+        </Border>
+
+        <Grid Margin="10">
+            <TextBlock Text="{Binding LabelNoCharts}" Foreground="#777777" VerticalAlignment="Top" HorizontalAlignment="Left"
+                       IsVisible="{Binding !HasCards}"
+                       AutomationProperties.AutomationId="DashboardEmpty" />
+
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding Cards}" AutomationProperties.AutomationId="DashboardCards">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border BorderBrush="#DDDDDD" BorderThickness="1" CornerRadius="6" Background="White"
+                                    Padding="10" Margin="0,0,12,12" Width="556">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="14"
+                                               TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{Binding RowsText}" Foreground="#777777" FontSize="11" Margin="0,2,0,6" />
+                                    <Image Source="{Binding ChartPng, Converter={StaticResource PngToBitmap}}"
+                                           Stretch="Uniform" StretchDirection="DownOnly" MaxHeight="240"
+                                           HorizontalAlignment="Left" />
+                                    <TextBlock Text="{Binding ErrorText}" Foreground="#B3261E" TextWrapping="Wrap"
+                                               Margin="0,6,0,0" IsVisible="{Binding HasError}" />
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Grid>
+    </DockPanel>
+</Window>

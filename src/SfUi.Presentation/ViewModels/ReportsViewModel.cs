@@ -43,6 +43,7 @@ public sealed partial class ReportsViewModel : ObservableObject, IDisposable
     private readonly IReportExportDialog _reportDialog;
     private readonly IReportFormDialog _formDialog;
     private readonly IDialogService _dialogs;
+    private readonly IAppWindowService _windows;
     private readonly AppPaths _paths;
     private readonly AppLog _log;
     private readonly TimeProvider _time;
@@ -59,6 +60,7 @@ public sealed partial class ReportsViewModel : ObservableObject, IDisposable
         IReportExportDialog reportDialog,
         IReportFormDialog formDialog,
         IDialogService dialogs,
+        IAppWindowService windows,
         AppPaths paths,
         AppLog log,
         TimeProvider? time = null)
@@ -69,6 +71,7 @@ public sealed partial class ReportsViewModel : ObservableObject, IDisposable
         _reportDialog = reportDialog;
         _formDialog = formDialog;
         _dialogs = dialogs;
+        _windows = windows;
         _paths = paths;
         _log = log;
         _time = time ?? TimeProvider.System;
@@ -124,6 +127,15 @@ public sealed partial class ReportsViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _hasTruncatedWarning;
 
+    /// <summary>グラフ画像（PNG。グラフ未設定なら null）。</summary>
+    [ObservableProperty]
+    private byte[]? _chartPng;
+
+    /// <summary>グラフを表示するか。</summary>
+    public bool HasChart => ChartPng is { Length: > 0 };
+
+    partial void OnChartPngChanged(byte[]? value) => OnPropertyChanged(nameof(HasChart));
+
     [ObservableProperty]
     private string _liveIntervalText = "";
 
@@ -159,6 +171,8 @@ public sealed partial class ReportsViewModel : ObservableObject, IDisposable
     public string LabelExport => UiText.T("Report_Export");
 
     public string LabelExportForm => UiText.T("Reports_ExportForm");
+
+    public string LabelDashboard => UiText.T("Reports_Dashboard");
 
     public string LabelNoReports => UiText.T("Reports_NoReports");
 
@@ -410,6 +424,8 @@ public sealed partial class ReportsViewModel : ObservableObject, IDisposable
             GridRows.Add(new ReportGridRow(row));
         }
 
+        UpdateChart(definition, result);
+
         Groups.Clear();
         foreach (var group in result.Groups)
         {
@@ -572,7 +588,7 @@ public sealed partial class ReportsViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>レポート結果を帳票（SVF 風）として出力する。</summary>
-    [RelayCommand]
+    /// [RelayCommand]
     private async Task ExportFormAsync()
     {
         if (_lastResult is null)
@@ -597,15 +613,35 @@ public sealed partial class ReportsViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>グラフ付きレポートを並べたダッシュボードを開く。</summary>
+    [RelayCommand]
+    private void OpenDashboard() => _windows.OpenDashboard(_orgs, SelectedOrg);
+
     /// <summary>仕上げ（ウィンドウを閉じるとき）。</summary>
     public void Dispose()
     {
         StopLive();
     }
+
     private static string SafeFileName(string name)
     {
         var invalid = new string(Path.GetInvalidFileNameChars());
         var cleaned = Regex.Replace(name, "[" + Regex.Escape(invalid) + "]", "_").Trim();
         return cleaned.Length == 0 ? "report" : cleaned;
+    }
+
+    /// <summary>結果からグラフ画像を作り直す（グラフ未設定なら非表示）。</summary>
+    private void UpdateChart(ReportDefinition definition, LocalReportResult result)
+    {
+        try
+        {
+            var chartData = ReportChartData.Build(result.Table, definition.Chart, result.ReportName);
+            ChartPng = chartData is null ? null : ReportChartRenderer.RenderPng(chartData, 960, 380);
+        }
+        catch (Exception ex)
+        {
+            _log.Warn($"レポート グラフの描画に失敗しました: {ex.Message}");
+            ChartPng = null;
+        }
     }
 }

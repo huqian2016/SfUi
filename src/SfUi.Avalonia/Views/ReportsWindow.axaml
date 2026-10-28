@@ -2,11 +2,15 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:loc="clr-namespace:SfUi.Avalonia"
         xmlns:views="clr-namespace:SfUi.Avalonia.Views"
+        xmlns:conv="clr-namespace:SfUi.Avalonia.Converters"
         x:Class="SfUi.Avalonia.Views.ReportsWindow"
         Title="{Binding Title}"
         Width="1280" Height="760" MinWidth="900" MinHeight="480"
         WindowStartupLocation="CenterOwner"
         FontSize="13">
+    <Window.Resources>
+        <conv:PngToBitmapConverter x:Key="PngToBitmap" />
+    </Window.Resources>
     <Window.Styles>
         <Style Selector="Button.tool">
             <Setter Property="Padding" Value="10,4" />
@@ -40,6 +44,8 @@
                             AutomationProperties.AutomationId="ReportsExport" />
                     <Button Classes="tool" Content="{Binding LabelExportForm}" Command="{Binding ExportFormCommand}"
                             AutomationProperties.AutomationId="ReportsExportForm" />
+                    <Button Classes="tool" Content="{Binding LabelDashboard}" Command="{Binding OpenDashboardCommand}"
+                            AutomationProperties.AutomationId="ReportsDashboard" />
                 </StackPanel>
             </DockPanel>
         </Border>
@@ -72,18 +78,29 @@
                 </ListBox.ItemTemplate>
             </ListBox>
 
-            <Grid Grid.Column="2" Margin="8,0,0,0" RowDefinitions="Auto,*,170">
+            <Grid Grid.Column="2" Margin="8,0,0,0" RowDefinitions="Auto,Auto,*,170">
                 <TextBlock Grid.Row="0" Text="{Binding TruncatedWarning}" Foreground="#B45309" Margin="0,0,0,6"
                            TextWrapping="Wrap"
                            IsVisible="{Binding HasTruncatedWarning}"
                            AutomationProperties.AutomationId="ReportsTruncated" />
 
-                <DataGrid Grid.Row="1" x:Name="ResultGrid" ItemsSource="{Binding GridRows}"
+                <Border Grid.Row="1" BorderBrush="#DDDDDD" BorderThickness="1" CornerRadius="4" Padding="4"
+                        Margin="0,0,0,8" Background="White"
+                        IsVisible="{Binding HasChart}">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Top" Text="{Binding LabelChartType}" FontWeight="SemiBold"
+                                   Margin="2,0,0,4" AutomationProperties.AutomationId="ReportsChart" />
+                        <Image Source="{Binding ChartPng, Converter={StaticResource PngToBitmap}}"
+                               Stretch="Uniform" StretchDirection="DownOnly" MaxHeight="240" />
+                    </DockPanel>
+                </Border>
+
+                <DataGrid Grid.Row="2" x:Name="ResultGrid" ItemsSource="{Binding GridRows}"
                           AutoGenerateColumns="False" IsReadOnly="True" CanUserReorderColumns="False"
                           GridLinesVisibility="Horizontal"
                           AutomationProperties.AutomationId="ReportsGrid" />
 
-                <Border Grid.Row="2" Margin="0,8,0,0" BorderBrush="#DDDDDD" BorderThickness="1" Padding="6"
+                <Border Grid.Row="3" Margin="0,8,0,0" BorderBrush="#DDDDDD" BorderThickness="1" Padding="6"
                         IsVisible="{Binding HasGroups}">
                     <DockPanel>
                         <TextBlock DockPanel.Dock="Top" Text="{Binding LabelGroups}" FontWeight="SemiBold" Margin="0,0,0,4" />

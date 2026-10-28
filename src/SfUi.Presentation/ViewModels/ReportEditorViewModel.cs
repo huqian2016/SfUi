@@ -318,6 +318,117 @@ public sealed partial class ReportEditorViewModel : ObservableObject
     [ObservableProperty]
     private ReportFieldOption? _fieldPicker;
 
+    // ── グラフ ──
+    public IReadOnlyList<ReportChoice> ChartTypes { get; } =
+        ReportChartTypes.All.Select(ReportChartTypes.ToChoice).ToList();
+
+    public ObservableCollection<string> ChartFields { get; } = new();
+
+    [ObservableProperty]
+    private ReportChoice? _chartType;
+
+    [ObservableProperty]
+    private string _chartCategory = "";
+
+    [ObservableProperty]
+    private string _chartValue = "";
+
+    [ObservableProperty]
+    private string _chartValue2 = "";
+
+    [ObservableProperty]
+    private string _chartTitle = "";
+
+    [ObservableProperty]
+    private string _chartTopNText = "10";
+
+    [ObservableProperty]
+    private bool _chartLegend = true;
+
+    /// <summary>グラフの詳細設定を出すか（種別が「なし」以外）。</summary>
+    public bool IsChartEnabled => ChartType is not null &&
+        !string.Equals(ChartType.Key, ReportChartTypes.None, StringComparison.OrdinalIgnoreCase);
+
+    public string LabelChartType => UiText.T("Report_ChartType");
+
+    public string LabelChartCategory => UiText.T("Report_ChartCategory");
+
+    public string LabelChartValue => UiText.T("Report_ChartValue");
+
+    public string LabelChartTitle => UiText.T("Report_ChartTitle");
+
+    public string LabelChartTopN => UiText.T("Report_ChartTopN");
+
+    public string LabelChartLegend => UiText.T("Report_ChartLegend");
+
+    partial void OnChartTypeChanged(ReportChoice? value) => OnPropertyChanged(nameof(IsChartEnabled));
+
+    /// <summary>列の一覧からグラフのカテゴリ / 値の選択肢を作り直す。</summary>
+    public void RefreshChartFields()
+    {
+        var labels = Columns
+            .Where(c => c.Field is not null)
+            .Select(c => ReportAggregator.ColumnLabel(c.ToModel("Id")))
+            .Where(l => !string.IsNullOrWhiteSpace(l))
+            .Distinct(StringComparer.CurrentCulture)
+            .ToList();
+
+        ChartFields.Clear();
+        foreach (var label in labels)
+        {
+            ChartFields.Add(label);
+        }
+
+        if (ChartFields.Count > 0)
+        {
+            if (string.IsNullOrWhiteSpace(ChartCategory) || !ChartFields.Contains(ChartCategory))
+            {
+                ChartCategory = ChartFields[0];
+            }
+
+            if (string.IsNullOrWhiteSpace(ChartValue) || !ChartFields.Contains(ChartValue))
+            {
+                ChartValue = ChartFields.Count > 1 ? ChartFields[^1] : ChartFields[0];
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(ChartValue2) && !ChartFields.Contains(ChartValue2))
+        {
+            ChartValue2 = "";
+        }
+    }
+
+    /// <summary>グラフ設定を組み立てる（無効なら null）。</summary>
+    private ReportChartDefinition? BuildChart()
+    {
+        if (!IsChartEnabled)
+        {
+            return null;
+        }
+
+        var values = new List<string>();
+        if (!string.IsNullOrWhiteSpace(ChartValue))
+        {
+            values.Add(ChartValue);
+        }
+
+        if (!string.IsNullOrWhiteSpace(ChartValue2) && ChartValue2 != ChartValue)
+        {
+            values.Add(ChartValue2);
+        }
+
+        _ = int.TryParse(ChartTopNText.Trim(), NumberStyles.Integer, CultureInfo.CurrentCulture, out var topN);
+        return new ReportChartDefinition
+        {
+            Type = ChartType?.Key ?? ReportChartTypes.None,
+            CategoryField = string.IsNullOrWhiteSpace(ChartCategory) ? null : ChartCategory,
+            ValueFields = values,
+            Title = string.IsNullOrWhiteSpace(ChartTitle) ? null : ChartTitle.Trim(),
+            ShowLegend = ChartLegend,
+            TopN = Math.Max(0, topN),
+        };
+    }
+
     // ── 表示用ラベル ──
     public string Title => UiText.T("ReportEditor_Title");
 
@@ -383,6 +494,16 @@ public sealed partial class ReportEditorViewModel : ObservableObject
         UseBulk = _editing.UseBulk;
         DisplayMode = DisplayModes.FirstOrDefault(m => m.Key == _editing.DisplayMode) ?? DisplayModes[0];
         FilterLogic = FilterLogics.FirstOrDefault(l => l.Key == _editing.FilterLogic) ?? FilterLogics[0];
+
+        var chart = _editing.Chart;
+        ChartType = ChartTypes.FirstOrDefault(t =>
+            string.Equals(t.Key, chart?.Type ?? ReportChartTypes.None, StringComparison.OrdinalIgnoreCase)) ?? ChartTypes[0];
+        ChartCategory = chart?.CategoryField ?? "";
+        ChartValue = chart?.ValueFields.FirstOrDefault() ?? "";
+        ChartValue2 = chart?.ValueFields.Skip(1).FirstOrDefault() ?? "";
+        ChartTitle = chart?.Title ?? "";
+        ChartTopNText = (chart?.TopN ?? 10).ToString(CultureInfo.InvariantCulture);
+        ChartLegend = chart?.ShowLegend ?? true;
     }
 
     /// <summary>基本情報 + オブジェクト一覧 + 項目一覧を読み込む。</summary>
@@ -497,6 +618,8 @@ public sealed partial class ReportEditorViewModel : ObservableObject
                     Sorts.Add(new ReportSortItem(fields, sort));
                 }
             }
+
+        RefreshChartFields();
     }
 
     [RelayCommand]
@@ -508,6 +631,7 @@ public sealed partial class ReportEditorViewModel : ObservableObject
         }
 
         Columns.Add(new ReportColumnItem(Fields.ToList(), Formats, new ReportColumn { Field = FieldPicker.Name }));
+        RefreshChartFields();
     }
 
     [RelayCommand]
@@ -516,6 +640,7 @@ public sealed partial class ReportEditorViewModel : ObservableObject
         if (item is not null)
         {
             Columns.Remove(item);
+            RefreshChartFields();
         }
     }
 
@@ -624,6 +749,7 @@ public sealed partial class ReportEditorViewModel : ObservableObject
             UseBulk = UseBulk,
             RefreshSeconds = refresh,
             DisplayMode = DisplayMode?.Key ?? ReportDisplayModes.Tabular,
+            Chart = BuildChart(),
             CreatedAt = _editing.CreatedAt,
             UpdatedAt = DateTimeOffset.Now,
         };

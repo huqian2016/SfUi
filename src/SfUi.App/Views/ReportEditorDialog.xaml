@@ -6,6 +6,7 @@
         WindowStartupLocation="CenterOwner"
         FontSize="13">
     <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
         <Style x:Key="SectionHeader" TargetType="TextBlock">
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="Margin" Value="0,16,0,4" />
@@ -80,6 +81,54 @@
                     <CheckBox Grid.Column="3" Content="{Binding LabelBulk}" IsChecked="{Binding UseBulk}"
                               VerticalAlignment="Bottom" Margin="12,0,0,2"
                               AutomationProperties.AutomationId="ReportEditorBulk" />
+                </Grid>
+
+                <!-- グラフ -->
+                <TextBlock Text="{Binding LabelChartType}" Style="{StaticResource SectionHeader}" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="160" />
+                        <ColumnDefinition Width="12" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="12" />
+                        <ColumnDefinition Width="160" />
+                        <ColumnDefinition Width="12" />
+                        <ColumnDefinition Width="160" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <ComboBox ItemsSource="{Binding ChartTypes}" SelectedItem="{Binding ChartType}"
+                                  DisplayMemberPath="Label" AutomationProperties.AutomationId="ReportEditorChartType" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Visibility="{Binding IsChartEnabled, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Text="{Binding LabelChartCategory}" Style="{StaticResource FieldLabel}" />
+                        <ComboBox ItemsSource="{Binding ChartFields}" SelectedItem="{Binding ChartCategory}"
+                                  AutomationProperties.AutomationId="ReportEditorChartCategory" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="4" Visibility="{Binding IsChartEnabled, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Text="{Binding LabelChartValue}" Style="{StaticResource FieldLabel}" />
+                        <ComboBox ItemsSource="{Binding ChartFields}" SelectedItem="{Binding ChartValue}"
+                                  AutomationProperties.AutomationId="ReportEditorChartValue" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="6" Visibility="{Binding IsChartEnabled, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Text="{Binding LabelChartTopN}" Style="{StaticResource FieldLabel}" />
+                        <TextBox Text="{Binding ChartTopNText, UpdateSourceTrigger=PropertyChanged}"
+                                 AutomationProperties.AutomationId="ReportEditorChartTopN" />
+                    </StackPanel>
+                </Grid>
+                <Grid Margin="0,8,0,0" Visibility="{Binding IsChartEnabled, Converter={StaticResource BoolToVis}}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="12" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="{Binding LabelChartTitle}" Style="{StaticResource FieldLabel}" />
+                        <TextBox Text="{Binding ChartTitle, UpdateSourceTrigger=PropertyChanged}"
+                                 AutomationProperties.AutomationId="ReportEditorChartTitle" />
+                    </StackPanel>
+                    <CheckBox Grid.Column="2" Content="{Binding LabelChartLegend}" IsChecked="{Binding ChartLegend}"
+                              VerticalAlignment="Bottom" Margin="0,0,0,2"
+                              AutomationProperties.AutomationId="ReportEditorChartLegend" />
                 </Grid>
 
                 <!-- 列 -->

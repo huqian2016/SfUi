@@ -55,4 +55,7 @@ public interface IAppWindowService
 
     /// <summary>ローカル レポート ウィンドウを開く。</summary>
     void OpenReports(IReadOnlyList<OrgInfo> orgs, OrgInfo? currentOrg);
+
+    /// <summary>レポートのダッシュボード（グラフを並べて定期更新）ウィンドウを開く。</summary>
+    void OpenDashboard(IReadOnlyList<OrgInfo> orgs, OrgInfo? currentOrg);
 }

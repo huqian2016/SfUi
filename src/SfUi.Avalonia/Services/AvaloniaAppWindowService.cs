@@ -184,6 +184,14 @@ public sealed class AvaloniaAppWindowService : IAppWindowService
         ShowOwned(new ReportsWindow(viewModel));
     }
 
+    /// <summary>レポートのダッシュボード ウィンドウを開く。</summary>
+    public void OpenDashboard(IReadOnlyList<OrgInfo> orgs, OrgInfo? currentOrg)
+    {
+        var viewModel = _services.GetRequiredService<DashboardViewModel>();
+        viewModel.Initialize(orgs, currentOrg);
+        ShowOwned(new DashboardWindow(viewModel));
+    }
+
     private void NotPortedYet(string feature)
     {
         _log.Info($"Avalonia 版: {feature} ウィンドウは未移植（Phase C–E で実装）");

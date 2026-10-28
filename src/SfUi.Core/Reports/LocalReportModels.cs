@@ -248,6 +248,9 @@ public sealed class ReportDefinition
     /// <summary><see cref="ReportDisplayModes"/> のいずれか。</summary>
     public string DisplayMode { get; set; } = ReportDisplayModes.Tabular;
 
+    /// <summary>グラフ設定（未設定ならグラフなし）。</summary>
+    public ReportChartDefinition? Chart { get; set; }
+
     public DateTimeOffset CreatedAt { get; set; }
 
     public DateTimeOffset UpdatedAt { get; set; }

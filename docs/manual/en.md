@@ -799,3 +799,9 @@ Build Salesforce-style reports on your own data and keep them fresh with live up
 - **Form output…** in the toolbar opens the layout dialog for the current result: pick or create a **layout**, then edit the **paper** (A4 / A3 / Letter), **orientation** (portrait / landscape), **margin**, **header**, **detail row height**, **summary** and **footer**.
 - Header / summary / footer accept placeholders — `{Title}` `{Org}` `{Date}` `{Page}` `{Pages}` `{Rows}` — and the details repeat one line per row, with **page breaks** calculated from the paper size. **Save layout** keeps the definition for reuse.
 - **Output** writes **HTML** and / or **PDF** (printed through the installed Chromium browser) to **`data/exports/`**.
+
+### 19.6 Charts and dashboard
+
+- The report editor has a **Chart** section: choose **Column / Bar / Line / Pie / Donut**, the **category (axis)** field, the **value** field, **Top N** (0 = all), an optional title and whether to show the legend. Bars and circular charts sort by value, line charts keep the row order, and pie / donut use the first value field.
+- After **Run now** the chart is drawn above the result grid (rows are summed per category). The chart settings are stored with the report in `data/reports/reports.json`.
+- **Dashboard** in the reports toolbar opens a window that tiles every charted report as a card. It refreshes when it opens and offers **Refresh**, **Auto refresh** every N seconds (minimum 10) and an org picker.

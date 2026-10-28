@@ -72,6 +72,47 @@
                               AutomationProperties.AutomationId="ReportEditorBulk" />
                 </Grid>
 
+                <!-- グラフ -->
+                <TextBlock Text="{Binding LabelChartType}" Classes="section" />
+                <Grid ColumnDefinitions="160,12,*,12,160,12,160">
+                    <ComboBox Grid.Column="0" ItemsSource="{Binding ChartTypes}" SelectedItem="{Binding ChartType, Mode=TwoWay}"
+                              HorizontalAlignment="Stretch"
+                              AutomationProperties.AutomationId="ReportEditorChartType">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Label}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <StackPanel Grid.Column="2" IsVisible="{Binding IsChartEnabled}">
+                        <TextBlock Text="{Binding LabelChartCategory}" Classes="label" Margin="0,0,0,3" />
+                        <ComboBox ItemsSource="{Binding ChartFields}" SelectedItem="{Binding ChartCategory, Mode=TwoWay}"
+                                  HorizontalAlignment="Stretch"
+                                  AutomationProperties.AutomationId="ReportEditorChartCategory" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="4" IsVisible="{Binding IsChartEnabled}">
+                        <TextBlock Text="{Binding LabelChartValue}" Classes="label" Margin="0,0,0,3" />
+                        <ComboBox ItemsSource="{Binding ChartFields}" SelectedItem="{Binding ChartValue, Mode=TwoWay}"
+                                  HorizontalAlignment="Stretch"
+                                  AutomationProperties.AutomationId="ReportEditorChartValue" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="6" IsVisible="{Binding IsChartEnabled}">
+                        <TextBlock Text="{Binding LabelChartTopN}" Classes="label" Margin="0,0,0,3" />
+                        <TextBox Text="{Binding ChartTopNText, Mode=TwoWay}"
+                                 AutomationProperties.AutomationId="ReportEditorChartTopN" />
+                    </StackPanel>
+                </Grid>
+                <Grid Margin="0,8,0,0" ColumnDefinitions="*,12,*" IsVisible="{Binding IsChartEnabled}">
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="{Binding LabelChartTitle}" Classes="label" Margin="0,0,0,3" />
+                        <TextBox Text="{Binding ChartTitle, Mode=TwoWay}"
+                                 AutomationProperties.AutomationId="ReportEditorChartTitle" />
+                    </StackPanel>
+                    <CheckBox Grid.Column="2" Content="{Binding LabelChartLegend}" IsChecked="{Binding ChartLegend}"
+                              VerticalAlignment="Bottom" Margin="0,0,0,2"
+                              AutomationProperties.AutomationId="ReportEditorChartLegend" />
+                </Grid>
+
                 <!-- 列 -->
                 <TextBlock Text="{Binding LabelColumns}" Classes="section" />
                 <DockPanel>

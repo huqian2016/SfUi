@@ -351,3 +351,31 @@ public sealed class ReportLayoutDefinition
 | WPF / Avalonia `--smoke` | 両方 exit 0 |
 | UI E2E (WPF) | `C:\huqian\sfui-report-form-e2e.ps1` → **18/18 PASS**（帳票出力 → レイアウト編集 → 保存 → HTML 出力 2 ページ） |
 | UI E2E (Avalonia) | `C:\huqian\sfui-report-form-e2e-avalonia.ps1` → **18/18 PASS** |
+
+---
+
+## 10. Phase 4-3: グラフとダッシュボード（完了・2026-10-28）
+
+| 層 | ファイル | 役割 |
+| --- | --- | --- |
+| Core | `Reports/ReportChart.cs` | `ReportChartTypes`（none / column / bar / line / pie / donut）、`ReportChartDefinition`（カテゴリ・値系列・タイトル・上位 N・凡例）、`ReportChartData.Build`（同じカテゴリは合計、棒・円系は値の大きい順、折れ線は行順） |
+| Core | `Reports/ReportChartRenderer.cs` | SkiaSharp で PNG 描画（軸・目盛り・凡例・カテゴリ名の間引き、`NiceMax` / `FormatValue`）。`WritePng` で保存も可 |
+| Core | `Reports/LocalReportModels.cs` | `ReportDefinition.Chart` としてグラフ設定を保存（`data/reports/reports.json`） |
+| Presentation | `ViewModels/ReportEditorViewModel.cs` | グラフ種別・カテゴリ・値・上位 N・タイトル・凡例の編集（`IsChartEnabled` で詳細を表示） |
+| Presentation | `ViewModels/ReportsViewModel.cs` | 実行後に `ChartPng`（PNG バイト列）を作り直す |
+| Presentation | `ViewModels/DashboardViewModel.cs` | グラフ付きレポートをカード化（`DashboardCard`）、`RefreshAsync`、自動更新ループ（最小 10 秒）、組織切替 |
+| WPF | `Views/DashboardWindow.xaml` / `Services/DashboardWindowFactory.cs` / `Services/{PngToImageConverter,InverseBooleanToVisibilityConverter}.cs` | `AutomationId`: `ReportsDashboard` / `Dashboard{Refresh,Auto,Interval,Org,Cards,Status,Next,Empty}` |
+| Avalonia | `Views/DashboardWindow.axaml` / `Converters/PngToBitmapConverter.cs` | 同じ AutomationId、`ReportsChart`（キャプション）/ グラフは `Image` |
+| UiText | `UiText.{En,Ja,Zh,Ko}.cs` | `Report_Chart*`（12 キー）/ `Reports_Dashboard` / `Dashboard_*`（10 キー） |
+
+検証:
+
+| 項目 | 結果 |
+| --- | --- |
+| `dotnet build` | 0 errors |
+| `dotnet test` | **1,371 件すべて成功**（+23: グラフ生成 / PNG 描画 / ストア往復 + ダッシュボード） |
+| WPF / Avalonia `--smoke` | 両方 exit 0 |
+| UI E2E グラフ (WPF) | `C:\huqian\sfui-report-chart-e2e.ps1` → **13/13 PASS** |
+| UI E2E グラフ (Avalonia) | `C:\huqian\sfui-report-chart-e2e-avalonia.ps1` → **13/13 PASS** |
+| UI E2E ダッシュボード (WPF) | `C:\huqian\sfui-dashboard-e2e.ps1` → **8/8 PASS** |
+| UI E2E ダッシュボード (Avalonia) | `C:\huqian\sfui-dashboard-e2e-avalonia.ps1` → **8/8 PASS** |

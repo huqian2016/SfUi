@@ -3,12 +3,14 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:loc="clr-namespace:SfUi.App"
         xmlns:views="clr-namespace:SfUi.App.Views"
+        xmlns:services="clr-namespace:SfUi.App.Services"
         Title="{Binding Title}"
         Height="760" Width="1280" MinHeight="480" MinWidth="900"
         WindowStartupLocation="CenterOwner"
         FontSize="13">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
+        <services:PngToImageConverter x:Key="PngToImage" />
         <Style x:Key="ToolButton" TargetType="Button">
             <Setter Property="Padding" Value="10,4" />
             <Setter Property="Margin" Value="0,0,6,0" />
@@ -42,6 +44,8 @@
                         AutomationProperties.AutomationId="ReportsExport" />
                 <Button Content="{Binding LabelExportForm}" Command="{Binding ExportFormCommand}" Style="{StaticResource ToolButton}"
                         AutomationProperties.AutomationId="ReportsExportForm" />
+                <Button Content="{Binding LabelDashboard}" Command="{Binding OpenDashboardCommand}" Style="{StaticResource ToolButton}"
+                        AutomationProperties.AutomationId="ReportsDashboard" />
                 </StackPanel>
             </DockPanel>
         </Border>
@@ -84,6 +88,7 @@
             <Grid Grid.Column="2" Margin="8,0,0,0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                     <RowDefinition Height="170" />
                 </Grid.RowDefinitions>
@@ -92,12 +97,23 @@
                            Visibility="{Binding HasTruncatedWarning, Converter={StaticResource BoolToVis}}"
                            AutomationProperties.AutomationId="ReportsTruncated" />
 
-                <DataGrid Grid.Row="1" ItemsSource="{Binding ResultView}" AutoGenerateColumns="True" IsReadOnly="True"
+                <Border Grid.Row="1" BorderBrush="#DDDDDD" BorderThickness="1" CornerRadius="4" Padding="4"
+                        Margin="0,0,0,8" Background="White"
+                        Visibility="{Binding HasChart, Converter={StaticResource BoolToVis}}">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Top" Text="{Binding LabelChartType}" FontWeight="SemiBold"
+                                   Margin="2,0,0,4" AutomationProperties.AutomationId="ReportsChart" />
+                        <Image Source="{Binding ChartPng, Converter={StaticResource PngToImage}}"
+                               Stretch="Uniform" StretchDirection="DownOnly" MaxHeight="240" />
+                    </DockPanel>
+                </Border>
+
+                <DataGrid Grid.Row="2" ItemsSource="{Binding ResultView}" AutoGenerateColumns="True" IsReadOnly="True"
                           HeadersVisibility="All" GridLinesVisibility="Horizontal" CanUserAddRows="False"
                           RowHeight="22" AlternatingRowBackground="#FAFAFA"
                           AutomationProperties.AutomationId="ReportsGrid" />
 
-                <GroupBox Grid.Row="2" Header="{Binding LabelGroups}" Margin="0,8,0,0"
+                <GroupBox Grid.Row="3" Header="{Binding LabelGroups}" Margin="0,8,0,0"
                           Visibility="{Binding HasGroups, Converter={StaticResource BoolToVis}}">
                     <ListBox ItemsSource="{Binding Groups}" AutomationProperties.AutomationId="ReportsGroups">
                         <ListBox.ItemTemplate>
