@@ -48,6 +48,12 @@ public sealed class AppPaths
     /// <summary>帳票レイアウト定義ファイル（data/reports/layouts.json・将来の SVF 風帳票用）。</summary>
     public string ReportLayoutsFile { get; }
 
+    /// <summary>帳票（SVF 風フォーム）のルート（data/forms）。</summary>
+    public string FormsRoot { get; }
+
+    /// <summary>ユーザーが作成した帳票定義（data/forms/forms.json）。</summary>
+    public string FormsFile { get; }
+
     private AppPaths(string dataRoot)
     {
         DataRoot = dataRoot;
@@ -66,6 +72,8 @@ public sealed class AppPaths
         ReportsRoot = Path.Combine(dataRoot, "reports");
         ReportsFile = Path.Combine(ReportsRoot, "reports.json");
         ReportLayoutsFile = Path.Combine(ReportsRoot, "layouts.json");
+        FormsRoot = Path.Combine(dataRoot, "forms");
+        FormsFile = Path.Combine(FormsRoot, "forms.json");
 
         foreach (var directory in new[] { DataRoot, LogsDirectory, HistoryDirectory, ResultsDirectory, TempDirectory })
         {

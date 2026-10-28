@@ -44,6 +44,9 @@ public enum ReportFormats
     /// <summary>JPEG 画像。</summary>
     Jpeg = 2048,
 
+    /// <summary>SVG（帳票のベクター出力。1 ページ 1 ファイル。レポート出力では使わない）。</summary>
+    Svg = 4096,
+
     All = Csv | Markdown | Html | Excel | Pdf | Tsv | Json | JsonLines | Xml | Yaml | Png | Jpeg,
 }
 
