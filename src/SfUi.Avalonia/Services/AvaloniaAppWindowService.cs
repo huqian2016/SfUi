@@ -176,8 +176,13 @@ public sealed class AvaloniaAppWindowService : IAppWindowService
         ShowOwned(new SchedulerWindow(viewModel));
     }
 
-    /// <summary>ローカル レポート ウィンドウ（Avalonia 版は Phase 3 で実装）。</summary>
-    public void OpenReports(IReadOnlyList<OrgInfo> orgs, OrgInfo? currentOrg) => NotPortedYet("Reports");
+    /// <summary>ローカル レポート ウィンドウを開く。</summary>
+    public void OpenReports(IReadOnlyList<OrgInfo> orgs, OrgInfo? currentOrg)
+    {
+        var viewModel = _services.GetRequiredService<ReportsViewModel>();
+        viewModel.Initialize(orgs, currentOrg);
+        ShowOwned(new ReportsWindow(viewModel));
+    }
 
     private void NotPortedYet(string feature)
     {

@@ -1,6 +1,6 @@
 # レポート（ローカル Salesforce レポート）設計書
 
-最終更新: 2026-10-28 / ステータス: **Phase 1〜2 完了（Core + WPF UI）** — Phase 3 以降は §7.4
+最終更新: 2026-10-28 / ステータス: **Phase 1〜3 完了（Core + WPF + Avalonia）** — Phase 4 は §7.4
 
 対象リポジトリ: `c:\huqian\vscode\SfUi`（.NET 9 / SfUi.Core + SfUi.Presentation + WPF + Avalonia）
 
@@ -284,9 +284,18 @@ public sealed class ReportLayoutDefinition
 | WPF / Avalonia `--smoke` | 両方 exit 0 |
 | UI E2E | `C:\huqian\sfui-reports-e2e.ps1` → **16/16 PASS**（レポート作成 → 実行 136 行 → グループ表示 → 出力ダイアログの新形式 → リアルタイム更新 7 回） |
 
-### 7.4 残り（Phase 3〜4）
+### 7.4 残り（Phase 4）
 
-- Avalonia のレポート ウィンドウ / エディタ（`OpenReports` は未移植メッセージ）
 - 帳票レイアウトの UI と `IReportRenderer` の SVF 風レンダラ（PDF/HTML/画像）
 - スケジューラのジョブ種別「レポート実行」
-- チャート / ダッシュボード、マニュアル第 19 章
+- チャート / ダッシュボード
+
+### 7.5 Phase 3（Avalonia 移植・2026-10-28）
+
+| 項目 | 内容 |
+| --- | --- |
+| ウィンドウ | `src/SfUi.Avalonia/Views/ReportsWindow.axaml`（結果グリッドの列は `GridColumns` に合わせてコードビハインドで動的生成。行は `ReportGridRow` のインデクサーにバインド） |
+| エディタ | `src/SfUi.Avalonia/Dialogs/ReportEditorDialog.axaml`(+`.cs`) / `Services/AvaloniaReportEditor.cs`（`ShowDialog<ReportDefinition?>`） |
+| 起動 | `AvaloniaAppWindowService.OpenReports` → `ReportsWindow`、`MainWindow.axaml` に `OpenReports` ボタン追加、`IconReport` 追加 |
+| リアルタイム更新 | チェックボックスは WPF = `Command` 駆動 / Avalonia = `IsChecked` 双方向（UIA の Toggle が Command を発火しないため）。VM は `OnIsLiveChanged` で開始 / 停止するのでどちらでも動く |
+| 検証 | `C:\huqian\sfui-reports-e2e-avalonia.ps1` → **15/15 PASS**（レポート作成 → 136 行 → 出力形式 → リアルタイム更新 3→9 回）。WPF 版も 15/15 |

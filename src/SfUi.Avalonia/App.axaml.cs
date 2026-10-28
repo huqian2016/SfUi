@@ -100,6 +100,11 @@ public partial class App : Application
             services.AddSingleton<ISchedulerJobEditor, AvaloniaSchedulerJobEditor>();
             services.AddSingleton<AvaloniaToastPresenter>();
 
+            // ローカル レポート
+            services.AddSingleton<ReportsViewModel>();
+            services.AddTransient<ReportEditorViewModel>();
+            services.AddSingleton<IReportEditorDialog, AvaloniaReportEditor>();
+
             services.AddSingleton<MainWindow>();
             Services = services.BuildServiceProvider();
 

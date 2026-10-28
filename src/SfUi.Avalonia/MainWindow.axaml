@@ -132,6 +132,14 @@
                 </Button>
 
                 <Button Classes="icon" Margin="0,0,10,0"
+                        Command="{Binding OpenReportsCommand}"
+                        AutomationProperties.AutomationId="OpenReports"
+                        ToolTip.Tip="{loc:Tr Main_ReportsTip}"
+                        AutomationProperties.Name="{loc:Tr Main_Reports}">
+                    <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconReport}" />
+                </Button>
+
+                <Button Classes="icon" Margin="0,0,10,0"
                         Command="{Binding OpenSchedulerCommand}"
                         AutomationProperties.AutomationId="OpenScheduler"
                         ToolTip.Tip="{loc:Tr Main_SchedulerTip}"

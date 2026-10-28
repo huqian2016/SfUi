@@ -21,6 +21,16 @@ public sealed class ReportGroupRow
     public override string ToString() => $"{Label} ({CountText})";
 }
 
+/// <summary>結果グリッド 1 行（列インデクサーで Avalonia の動的列から参照する）。</summary>
+public sealed class ReportGridRow
+{
+    public ReportGridRow(IReadOnlyList<string?> cells) => Cells = cells;
+
+    public IReadOnlyList<string?> Cells { get; }
+
+    public string this[int index] => index >= 0 && index < Cells.Count ? Cells[index] ?? string.Empty : string.Empty;
+}
+
 /// <summary>
 /// ローカル レポート ウィンドウの ViewModel。
 /// 保存済みレポートの一覧 / 実行 / リアルタイム更新 / 出力を担当する。
@@ -71,6 +81,14 @@ public sealed partial class ReportsViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private DataView? _resultView;
 
+    /// <summary>結果グリッド用の行（Avalonia は動的列をコードビハインドで作るためこちらを使う）。</summary>
+    public ObservableCollection<ReportGridRow> GridRows { get; } = new();
+
+    /// <summary>結果グリッドの列名。</summary>
+    [ObservableProperty]
+    private IReadOnlyList<string> _gridColumns = Array.Empty<string>();
+
+    /// <summary>グループ集計（グループ化未指定なら空）。</summary>
     public ObservableCollection<ReportGroupRow> Groups { get; } = new();
 
     [ObservableProperty]
@@ -183,6 +201,8 @@ public sealed partial class ReportsViewModel : ObservableObject, IDisposable
         StopLive();
         _lastResult = null;
         ResultView = null;
+        GridRows.Clear();
+        GridColumns = Array.Empty<string>();
         Groups.Clear();
         HasGroups = false;
         TruncatedWarning = string.Empty;
@@ -254,24 +274,31 @@ public sealed partial class ReportsViewModel : ObservableObject, IDisposable
         return result;
     }
 
-    /// <summary>リアルタイム更新の開始 / 停止。</summary>
+    /// <summary>リアルタイム更新の開始 / 停止（チェックボックスの双方向バインド用）。</summary>
     [RelayCommand]
-    private void ToggleLive()
-    {
-        if (IsLive)
-        {
-            StopLive();
-            UpdateNextUpdateText();
-            return;
-        }
+    private void ToggleLive() => IsLive = !IsLive;
 
-        StartLive();
+    partial void OnIsLiveChanged(bool value)
+    {
+        if (value)
+        {
+            StartLiveCore();
+        }
+        else
+        {
+            StopLiveCore();
+        }
     }
 
     /// <summary>リアルタイム更新を開始する。</summary>
-    public void StartLive()
+    public void StartLive() => IsLive = true;
+
+    /// <summary>リアルタイム更新を停止する。</summary>
+    public void StopLive() => IsLive = false;
+
+    private void StartLiveCore()
     {
-        if (SelectedReport is null || IsLive)
+        if (SelectedReport is null || _liveCts is not null)
         {
             return;
         }
@@ -283,17 +310,15 @@ public sealed partial class ReportsViewModel : ObservableObject, IDisposable
         }
 
         _liveCts = new CancellationTokenSource();
-        IsLive = true;
         _ = LiveLoopAsync(seconds, _liveCts.Token);
         UpdateNextUpdateText();
     }
 
-    /// <summary>リアルタイム更新を停止する。</summary>
-    public void StopLive()
+    private void StopLiveCore()
     {
         var cts = _liveCts;
         _liveCts = null;
-        IsLive = false;
+        NextUpdateText = string.Empty;
         try
         {
             cts?.Cancel();
@@ -372,6 +397,13 @@ public sealed partial class ReportsViewModel : ObservableObject, IDisposable
         }
 
         ResultView = table.DefaultView;
+
+        GridColumns = result.Table.Columns.ToList();
+        GridRows.Clear();
+        foreach (var row in result.Table.Rows)
+        {
+            GridRows.Add(new ReportGridRow(row));
+        }
 
         Groups.Clear();
         foreach (var group in result.Groups)

@@ -31,6 +31,7 @@
                 <TextBlock Text="   |   " Foreground="#AAAAAA" VerticalAlignment="Center" />
                 <Button Content="{Binding LabelRun}" Command="{Binding RunCommand}" Style="{StaticResource ToolButton}"
                         AutomationProperties.AutomationId="ReportsRun" />
+                <!-- WPF は Command 駆動（UIA の Toggle が Command を発火する） -->
                 <CheckBox Content="{Binding LabelLive}" IsChecked="{Binding IsLive, Mode=OneWay}"
                           Command="{Binding ToggleLiveCommand}" VerticalAlignment="Center" Margin="6,0,10,0"
                           AutomationProperties.AutomationId="ReportsLive" />

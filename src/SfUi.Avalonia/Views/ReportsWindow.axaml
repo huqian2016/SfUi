@@ -1,0 +1,105 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:SfUi.Avalonia"
+        xmlns:views="clr-namespace:SfUi.Avalonia.Views"
+        x:Class="SfUi.Avalonia.Views.ReportsWindow"
+        Title="{Binding Title}"
+        Width="1280" Height="760" MinWidth="900" MinHeight="480"
+        WindowStartupLocation="CenterOwner"
+        FontSize="13">
+    <Window.Styles>
+        <Style Selector="Button.tool">
+            <Setter Property="Padding" Value="10,4" />
+            <Setter Property="Margin" Value="0,0,6,0" />
+            <Setter Property="MinWidth" Value="0" />
+        </Style>
+    </Window.Styles>
+
+    <DockPanel>
+        <!-- ツールバー -->
+        <Border DockPanel.Dock="Top" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="10,6">
+            <DockPanel>
+                <views:HelpButton Topic="Reports" DockPanel.Dock="Right" Margin="12,0,0,0" VerticalAlignment="Center" />
+                <StackPanel Orientation="Horizontal">
+                    <Button Classes="tool" Content="{Binding LabelNew}" Command="{Binding NewReportCommand}"
+                            AutomationProperties.AutomationId="ReportsNew" />
+                    <Button Classes="tool" Content="{Binding LabelEdit}" Command="{Binding EditReportCommand}"
+                            AutomationProperties.AutomationId="ReportsEdit" />
+                    <Button Classes="tool" Content="{Binding LabelDuplicate}" Command="{Binding DuplicateReportCommand}" />
+                    <Button Classes="tool" Content="{Binding LabelDelete}" Command="{Binding DeleteReportCommand}" />
+                    <TextBlock Text="   |   " Foreground="#AAAAAA" VerticalAlignment="Center" />
+                    <Button Classes="tool" Content="{Binding LabelRun}" Command="{Binding RunCommand}"
+                            AutomationProperties.AutomationId="ReportsRun" />
+                    <CheckBox Content="{Binding LabelLive}" IsChecked="{Binding IsLive, Mode=TwoWay}"
+                              VerticalAlignment="Center" Margin="6,0,10,0"
+                              AutomationProperties.AutomationId="ReportsLive" />
+                    <TextBlock Text="{Binding LabelInterval}" Foreground="#666666" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <TextBlock Text="{Binding LiveIntervalText}" VerticalAlignment="Center" Margin="0,0,12,0"
+                               AutomationProperties.AutomationId="ReportsInterval" />
+                    <Button Classes="tool" Content="{Binding LabelExport}" Command="{Binding ExportCommand}"
+                            AutomationProperties.AutomationId="ReportsExport" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- ステータス バー -->
+        <Border DockPanel.Dock="Bottom" Background="#F7F7F7" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="10,4">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="{Binding StatusText}" AutomationProperties.AutomationId="ReportsStatus" />
+                <TextBlock Text="   |   " Foreground="#AAAAAA" />
+                <TextBlock Text="{Binding RowCountText}" AutomationProperties.AutomationId="ReportsRowCount" />
+                <TextBlock Text="   |   " Foreground="#AAAAAA" />
+                <TextBlock Text="{Binding LastRunText}" />
+                <TextBlock Text="   |   " Foreground="#AAAAAA" />
+                <TextBlock Text="{Binding NextUpdateText}" AutomationProperties.AutomationId="ReportsNextRun" />
+                <TextBlock Text="   |   " Foreground="#AAAAAA" />
+                <TextBlock Text="{Binding SelectedOrgName}" Foreground="#555555" />
+            </StackPanel>
+        </Border>
+
+        <Grid Margin="8" ColumnDefinitions="290,8,*">
+            <ListBox Grid.Column="0" ItemsSource="{Binding Reports}" SelectedItem="{Binding SelectedReport, Mode=TwoWay}"
+                     AutomationProperties.AutomationId="ReportsList">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Margin="0,3">
+                            <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{Binding ObjectName}" Foreground="#777777" FontSize="11" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <Grid Grid.Column="2" Margin="8,0,0,0" RowDefinitions="Auto,*,170">
+                <TextBlock Grid.Row="0" Text="{Binding TruncatedWarning}" Foreground="#B45309" Margin="0,0,0,6"
+                           TextWrapping="Wrap"
+                           IsVisible="{Binding HasTruncatedWarning}"
+                           AutomationProperties.AutomationId="ReportsTruncated" />
+
+                <DataGrid Grid.Row="1" x:Name="ResultGrid" ItemsSource="{Binding GridRows}"
+                          AutoGenerateColumns="False" IsReadOnly="True" CanUserReorderColumns="False"
+                          GridLinesVisibility="Horizontal"
+                          AutomationProperties.AutomationId="ReportsGrid" />
+
+                <Border Grid.Row="2" Margin="0,8,0,0" BorderBrush="#DDDDDD" BorderThickness="1" Padding="6"
+                        IsVisible="{Binding HasGroups}">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Top" Text="{Binding LabelGroups}" FontWeight="SemiBold" Margin="0,0,0,4" />
+                        <ListBox ItemsSource="{Binding Groups}" AutomationProperties.AutomationId="ReportsGroups">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,2" ColumnDefinitions="*,Auto,Auto">
+                                        <TextBlock Grid.Column="0" Text="{Binding Label}" FontWeight="SemiBold"
+                                                   TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Grid.Column="1" Text="{Binding CountText}" Foreground="#1A73E8" Margin="12,0" />
+                                        <TextBlock Grid.Column="2" Text="{Binding MetricsText}" Foreground="#555555" FontSize="11" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </DockPanel>
+                </Border>
+            </Grid>
+        </Grid>
+    </DockPanel>
+</Window>

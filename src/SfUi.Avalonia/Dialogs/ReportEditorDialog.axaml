@@ -1,0 +1,198 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:SfUi.Avalonia"
+        x:Class="SfUi.Avalonia.Dialogs.ReportEditorDialog"
+        Title="{Binding Title}"
+        Width="1000" Height="800" MinWidth="780" MinHeight="520"
+        WindowStartupLocation="CenterOwner"
+        FontSize="13">
+    <Window.Styles>
+        <Style Selector="TextBlock.label">
+            <Setter Property="Foreground" Value="#555555" />
+            <Setter Property="Margin" Value="0,8,0,3" />
+        </Style>
+        <Style Selector="TextBlock.section">
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0,16,0,4" />
+        </Style>
+        <Style Selector="Button.small">
+            <Setter Property="Padding" Value="8,1" />
+            <Setter Property="Margin" Value="4,0,0,0" />
+            <Setter Property="MinWidth" Value="0" />
+        </Style>
+    </Window.Styles>
+
+    <DockPanel>
+        <Border DockPanel.Dock="Bottom" Background="#F7F7F7" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="12,8">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="{Binding LabelSave}" MinWidth="110" Padding="12,4" Click="OnSave"
+                        AutomationProperties.AutomationId="ReportEditorSave" />
+                <Button Content="{Binding LabelCancel}" MinWidth="90" Padding="12,4" Margin="8,0,0,0" Click="OnCancel"
+                        AutomationProperties.AutomationId="ReportEditorCancel" />
+            </StackPanel>
+        </Border>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16,10,16,10">
+            <StackPanel>
+                <!-- 基本 -->
+                <TextBlock Text="{Binding LabelName}" Classes="label" Margin="0,0,0,3" />
+                <TextBox Text="{Binding Name, Mode=TwoWay}" AutomationProperties.AutomationId="ReportEditorName" />
+
+                <TextBlock Text="{Binding LabelDescription}" Classes="label" />
+                <TextBox Text="{Binding Description, Mode=TwoWay}" AutomationProperties.AutomationId="ReportEditorDescription" />
+
+                <Grid Margin="0,8,0,0" ColumnDefinitions="*,12,200">
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="{Binding LabelObject}" Classes="label" Margin="0,0,0,3" />
+                        <ComboBox ItemsSource="{Binding Objects}" SelectedItem="{Binding SelectedObject, Mode=TwoWay}"
+                                  HorizontalAlignment="Stretch"
+                                  AutomationProperties.AutomationId="ReportEditorObject" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="{Binding LabelDisplayMode}" Classes="label" Margin="0,0,0,3" />
+                        <ComboBox ItemsSource="{Binding DisplayModes}" SelectedItem="{Binding DisplayMode, Mode=TwoWay}"
+                                  HorizontalAlignment="Stretch"
+                                  AutomationProperties.AutomationId="ReportEditorDisplayMode" />
+                    </StackPanel>
+                </Grid>
+
+                <Grid Margin="0,8,0,0" ColumnDefinitions="160,12,160,*">
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="{Binding LabelRowLimit}" Classes="label" Margin="0,0,0,3" />
+                        <TextBox Text="{Binding RowLimitText, Mode=TwoWay}"
+                                 AutomationProperties.AutomationId="ReportEditorRowLimit" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="{Binding LabelRefresh}" Classes="label" Margin="0,0,0,3" />
+                        <TextBox Text="{Binding RefreshText, Mode=TwoWay}"
+                                 AutomationProperties.AutomationId="ReportEditorRefresh" />
+                    </StackPanel>
+                    <CheckBox Grid.Column="3" Content="{Binding LabelBulk}" IsChecked="{Binding UseBulk, Mode=TwoWay}"
+                              VerticalAlignment="Bottom" Margin="12,0,0,2"
+                              AutomationProperties.AutomationId="ReportEditorBulk" />
+                </Grid>
+
+                <!-- 列 -->
+                <TextBlock Text="{Binding LabelColumns}" Classes="section" />
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Content="{Binding LabelAdd}" Command="{Binding AddColumnCommand}"
+                            Classes="small" Padding="12,3" AutomationProperties.AutomationId="ReportEditorAddColumn" />
+                    <ComboBox ItemsSource="{Binding Fields}" SelectedItem="{Binding FieldPicker, Mode=TwoWay}"
+                              HorizontalAlignment="Stretch" AutomationProperties.AutomationId="ReportEditorFieldPicker" />
+                </DockPanel>
+                <ItemsControl ItemsSource="{Binding Columns}" Margin="0,6,0,0" AutomationProperties.AutomationId="ReportEditorColumns">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="0,2" ColumnDefinitions="*,170,140,Auto">
+                                <ComboBox Grid.Column="0" ItemsSource="{Binding Fields}" SelectedItem="{Binding Field, Mode=TwoWay}"
+                                          HorizontalAlignment="Stretch" />
+                                <TextBox Grid.Column="1" Text="{Binding Label, Mode=TwoWay}" Margin="6,0,0,0" />
+                                <ComboBox Grid.Column="2" ItemsSource="{Binding Formats}" SelectedItem="{Binding Format, Mode=TwoWay}"
+                                          HorizontalAlignment="Stretch" Margin="6,0,0,0" />
+                                <StackPanel Grid.Column="3" Orientation="Horizontal">
+                                    <Button Content="▲" Classes="small"
+                                            Command="{Binding $parent[Window].DataContext.MoveColumnUpCommand}"
+                                            CommandParameter="{Binding}" />
+                                    <Button Content="▼" Classes="small"
+                                            Command="{Binding $parent[Window].DataContext.MoveColumnDownCommand}"
+                                            CommandParameter="{Binding}" />
+                                    <Button Content="✕" Classes="small"
+                                            Command="{Binding $parent[Window].DataContext.RemoveColumnCommand}"
+                                            CommandParameter="{Binding}" />
+                                </StackPanel>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- 条件 -->
+                <TextBlock Text="{Binding LabelFilters}" Classes="section" />
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="{Binding LabelAdd}" Command="{Binding AddFilterCommand}" Classes="small"
+                            AutomationProperties.AutomationId="ReportEditorAddFilter" />
+                    <ComboBox ItemsSource="{Binding FilterLogics}" SelectedItem="{Binding FilterLogic, Mode=TwoWay}"
+                              Width="220" Margin="12,0,0,0"
+                              AutomationProperties.AutomationId="ReportEditorFilterLogic" />
+                </StackPanel>
+                <ItemsControl ItemsSource="{Binding Filters}" Margin="0,6,0,0" AutomationProperties.AutomationId="ReportEditorFilters">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="0,2" ColumnDefinitions="*,190,*,Auto">
+                                <ComboBox Grid.Column="0" ItemsSource="{Binding Fields}" SelectedItem="{Binding Field, Mode=TwoWay}"
+                                          HorizontalAlignment="Stretch" />
+                                <ComboBox Grid.Column="1" ItemsSource="{Binding Operators}" SelectedItem="{Binding Operator, Mode=TwoWay}"
+                                          HorizontalAlignment="Stretch" Margin="6,0,0,0" />
+                                <TextBox Grid.Column="2" Text="{Binding Value, Mode=TwoWay}" Margin="6,0,0,0" />
+                                <Button Grid.Column="3" Content="✕" Classes="small"
+                                        Command="{Binding $parent[Window].DataContext.RemoveFilterCommand}"
+                                        CommandParameter="{Binding}" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- グループ -->
+                <TextBlock Text="{Binding LabelGroups}" Classes="section" />
+                <ItemsControl ItemsSource="{Binding Groups}" AutomationProperties.AutomationId="ReportEditorGroups">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="0,2" ColumnDefinitions="*,190,Auto">
+                                <ComboBox Grid.Column="0" ItemsSource="{Binding Fields}" SelectedItem="{Binding Field, Mode=TwoWay}"
+                                          HorizontalAlignment="Stretch" />
+                                <ComboBox Grid.Column="1" ItemsSource="{Binding Granularities}" SelectedItem="{Binding Granularity, Mode=TwoWay}"
+                                          HorizontalAlignment="Stretch" Margin="6,0,0,0" />
+                                <CheckBox Grid.Column="2" Content="DESC" IsChecked="{Binding IsDescending, Mode=TwoWay}"
+                                          Margin="6,0,0,0" VerticalAlignment="Center" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- 集計 -->
+                <TextBlock Text="{Binding LabelAggregates}" Classes="section" />
+                <Button Content="{Binding LabelAdd}" Command="{Binding AddAggregateCommand}" Classes="small"
+                        HorizontalAlignment="Left" AutomationProperties.AutomationId="ReportEditorAddAggregate" />
+                <ItemsControl ItemsSource="{Binding Aggregates}" Margin="0,6,0,0" AutomationProperties.AutomationId="ReportEditorAggregates">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="0,2" ColumnDefinitions="*,190,170,Auto">
+                                <ComboBox Grid.Column="0" ItemsSource="{Binding Fields}" SelectedItem="{Binding Field, Mode=TwoWay}"
+                                          HorizontalAlignment="Stretch" />
+                                <ComboBox Grid.Column="1" ItemsSource="{Binding Functions}" SelectedItem="{Binding Function, Mode=TwoWay}"
+                                          HorizontalAlignment="Stretch" Margin="6,0,0,0" />
+                                <TextBox Grid.Column="2" Text="{Binding Label, Mode=TwoWay}" Margin="6,0,0,0" />
+                                <Button Grid.Column="3" Content="✕" Classes="small"
+                                        Command="{Binding $parent[Window].DataContext.RemoveAggregateCommand}"
+                                        CommandParameter="{Binding}" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- 並べ替え -->
+                <TextBlock Text="{Binding LabelSorts}" Classes="section" />
+                <Button Content="{Binding LabelAdd}" Command="{Binding AddSortCommand}" Classes="small"
+                        HorizontalAlignment="Left" AutomationProperties.AutomationId="ReportEditorAddSort" />
+                <ItemsControl ItemsSource="{Binding Sorts}" Margin="0,6,0,0" AutomationProperties.AutomationId="ReportEditorSorts">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="0,2" ColumnDefinitions="*,Auto,Auto">
+                                <ComboBox Grid.Column="0" ItemsSource="{Binding Fields}" SelectedItem="{Binding Field, Mode=TwoWay}"
+                                          HorizontalAlignment="Stretch" />
+                                <CheckBox Grid.Column="1" Content="DESC" IsChecked="{Binding IsDescending, Mode=TwoWay}"
+                                          Margin="6,0,0,0" VerticalAlignment="Center" />
+                                <Button Grid.Column="2" Content="✕" Classes="small"
+                                        Command="{Binding $parent[Window].DataContext.RemoveSortCommand}"
+                                        CommandParameter="{Binding}" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <TextBlock Text="{Binding Hint}" Foreground="#777777" TextWrapping="Wrap" Margin="0,16,0,0" />
+                <TextBlock Text="{Binding ErrorText}" Foreground="#C62828" TextWrapping="Wrap" Margin="0,8,0,0"
+                           AutomationProperties.AutomationId="ReportEditorError" />
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>
