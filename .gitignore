@@ -32,3 +32,6 @@ docs/Certificates/
 *.p12
 *.pfx
 *.key
+
+# Root-level CSV exports (scheduler / reports write to data/exports)
+/*.csv
