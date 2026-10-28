@@ -81,6 +81,8 @@ public static class SfUiServiceCollectionExtensions
         services.AddSingleton<LocalReportRunner>();
         services.AddSingleton<ILocalReportRunner>(sp => sp.GetRequiredService<LocalReportRunner>());
         services.AddSingleton<IReportRenderer, DocumentReportRenderer>();
+        services.AddSingleton<IReportRenderer, SvfReportRenderer>();
+        services.AddSingleton<ReportLayoutStore>();
 
         return services;
     }

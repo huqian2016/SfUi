@@ -174,6 +174,9 @@ public sealed class ReportExportOptions
 {
     public ReportFormats Formats { get; init; } = ReportFormats.All;
 
+    /// <summary>帳票（SVF 風）レンダラが使うレイアウト（null = 通常のレポート出力）。</summary>
+    public ReportLayoutDefinition? Layout { get; init; }
+
     /// <summary>数値の集計・上位値などの「分析」セクションを付けるか。</summary>
     public bool IncludeAnalysis { get; init; } = true;
 

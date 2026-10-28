@@ -54,6 +54,9 @@ public sealed class ReportLayoutRegion
 
     public double HeightMm { get; set; } = 20;
 
+    /// <summary>明細 1 行の高さ（mm。明細領域のみ。0 = 既定 7mm）。</summary>
+    public double RowHeightMm { get; set; } = 7;
+
     /// <summary>left / center / right。</summary>
     public string Align { get; set; } = "left";
 }
@@ -62,6 +65,9 @@ public sealed class ReportLayoutRegion
 public sealed class ReportLayoutDocument
 {
     public int Version { get; set; } = 1;
+
+    /// <summary>帳票出力で最初に選ばれるレイアウトの Id。</summary>
+    public string? DefaultLayoutId { get; set; }
 
     public List<ReportLayoutDefinition> Layouts { get; set; } = new();
 }
@@ -97,4 +103,57 @@ public sealed class DocumentReportRenderer : IReportRenderer
         ReportExportOptions options,
         CancellationToken cancellationToken = default) =>
         ReportExportService.ExportAsync(document, options, cancellationToken);
+}
+
+/// <summary>
+/// 帳票（SVF 風）レンダラ。レイアウト定義（ヘッダー / 明細 / 集計 / フッター）に
+/// レポート結果を差し込み、ページ分割した HTML と、その PDF を書き出す。
+/// </summary>
+public sealed class SvfReportRenderer : IReportRenderer
+{
+    public string Id => "svf";
+
+    public string DisplayName => UiText.T("Report_RendererSvf");
+
+    public async Task<ReportExportResult> RenderAsync(
+        ReportDocument document,
+        ReportExportOptions options,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(options);
+
+        var layout = options.Layout
+            ?? throw new ReportExportException(UiText.T("Report_FormNoLayout"));
+
+        var directory = string.IsNullOrWhiteSpace(options.OutputDirectory)
+            ? Environment.CurrentDirectory
+            : options.OutputDirectory;
+        Directory.CreateDirectory(directory);
+
+        var baseName = string.IsNullOrWhiteSpace(options.BaseName)
+            ? "form-" + document.GeneratedAt.ToString("yyyyMMdd-HHmmss")
+            : options.BaseName;
+
+        var limited = options.MaxRows > 0 ? document.WithRowLimit(options.MaxRows) : document;
+        var html = ReportFormWriter.Write(limited, layout);
+        var files = new List<string>();
+
+        if (options.Formats == ReportFormats.None || options.Formats.HasFlag(ReportFormats.Html))
+        {
+            var path = Path.Combine(directory, baseName + ".html");
+            await File.WriteAllTextAsync(path, html, new System.Text.UTF8Encoding(false), cancellationToken)
+                .ConfigureAwait(false);
+            files.Add(path);
+        }
+
+        if (options.Formats.HasFlag(ReportFormats.Pdf))
+        {
+            var path = Path.Combine(directory, baseName + ".pdf");
+            await ReportPdfWriter.WriteAsync(html, path, cancellationToken).ConfigureAwait(false);
+            files.Add(path);
+        }
+
+        return new ReportExportResult { Files = files };
+    }
 }
