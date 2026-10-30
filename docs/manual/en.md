@@ -808,7 +808,9 @@ Build Salesforce-style reports on your own data and keep them fresh with live up
 
 ### 19.7 Form templates (SVF style)
 
-- **Form templates…** in the reports toolbar opens a dialog with **17 built-in forms**: estimates (manufacturing / construction / IT / retail), order & purchase orders, delivery notes, invoices (services / progress billing), receipts (standard / qualified invoice), payslips and bonus slips, a withholding-tax table (A3 landscape) and a payment statement, a sales ledger and a generic list.
+- **Form templates…** in the reports toolbar opens a dialog with **34 built-in forms**. The **Region** picker filters them (Japan / United States / United Kingdom / Europe (EU) / Australia / New Zealand / Canada, or all regions).
+- **Japan (17)**: estimates (manufacturing / construction / IT / retail), order & purchase orders, delivery notes, invoices (services / progress billing), receipts (standard / qualified invoice), payslips and bonus slips, a withholding-tax table (A3 landscape) and a payment statement, a sales ledger and a generic list.
+- **English markets (17)**: US invoice / purchase order / quote / packing slip / pay stub / statement of account; UK VAT invoice and credit note; EU VAT invoice, proforma invoice and credit note; Australian tax invoice, quote and payslip; New Zealand tax invoice and payslip; Canadian invoice. Each carries the statutory fields of its market (Sales Tax, VAT registration, reverse charge, ABN and GST, NZ GST 15%, PAYE / ACC / KiwiSaver, superannuation, CA GST/HST).
 - Pick a template, fill in the **merge fields** it asks for (customer, document number, totals …), and the preview updates immediately. Columns of the detail table map by **label first, then by position**, so any report can be printed on any template.
 - **Output** writes **HTML, PDF, SVG, PNG and JPEG** to `data/exports` (multi-page files get `-p1`, `-p2`). **Print** sends the pages straight to the printer (WPF) or opens the PDF/HTML in your browser (Avalonia).
 - Templates live in code (read-only); duplicated forms are stored in `data/forms/forms.json`.

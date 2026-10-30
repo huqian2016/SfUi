@@ -1,6 +1,6 @@
 # 帳票ビルダー（SVF 風フォーム）設計書
 
-最終更新: 2026-10-28 / ステータス: **Phase A（Core）+ Phase B（UI）完了**
+最終更新: 2026-10-29 / ステータス: **Phase A（Core）+ Phase B（UI）+ 英語圏テンプレート完了**
 
 対象リポジトリ: `c:\huqian\vscode\SfUi`（.NET 9 / SfUi.Core + SfUi.Presentation + WPF + Avalonia）
 
@@ -47,7 +47,9 @@ Salesforce の SVF 帳票のように、**ローカルで帳票（見積書・�
 | SVG | `FormSvgWriter` | ベクター。1 ページ 1 ファイル（2 ページ以上は `-p1.svg`） |
 | PNG / JPEG | `FormImageWriter`（SkiaSharp） | 150dpi 既定。印刷・貼り付け用 |
 
-## 4. テンプレート（17 種）
+## 4. テンプレート（34 種）
+
+### 4.1 日本（17 種）
 
 | カテゴリ | テンプレート |
 | --- | --- |
@@ -61,7 +63,20 @@ Salesforce の SVF 帳票のように、**ローカルで帳票（見積書・�
 | 集計表・台帳 | 売掛金台帳（A4 横） |
 | 汎用 | 汎用帳票（一覧） |
 
-- テンプレートは `FormTemplateLibrary.All`（組み込み・読み取り専用）。
+### 4.2 英語圏（17 種・`FormTemplateLibrary.Intl.cs`）
+
+| 地域 | テンプレート（法定記載項目） |
+| --- | --- |
+| アメリカ | Invoice（Sales Tax・送金先）/ Purchase Order / Quote / Packing Slip / Pay Stub（FIT・FICA）/ Statement of Account |
+| イギリス | VAT Invoice（VAT 登録番号・20/5/0% 内訳・リバース チャージ）/ Credit Note |
+| EU | VAT Invoice（supplier/customer VAT ID・供給日・リバース チャージ・免税）/ Proforma Invoice（HS コード・Incoterms）/ Credit Note |
+| オーストラリア | Tax Invoice（ABN・GST 10%・「Total price includes GST」・顧客 ABN）/ Quote / Payslip（Superannuation） |
+| ニュージーランド | Tax Invoice（GST No・NZBN・GST 15%）/ Payslip（PAYE・ACC・KiwiSaver） |
+| カナダ | Invoice（GST/HST・事業者番号） |
+
+- 地域は `FormDefinition.Region`（`FormRegions.All`）で保持し、帳票テンプレート ダイアログの **地域** で絞り込む。
+
+- テンプレートは `FormTemplateLibrary.All`（組み込み・読み取り専用）。`FormTemplateLibrary.ByRegion(region)` / `International` で地域別に取得できる。
 - ユーザーは `FormStore.CopyFromTemplate(id)` で複製して保存（`data/forms/forms.json`）。
 
 ## 5. Phase A の検証（2026-10-28）

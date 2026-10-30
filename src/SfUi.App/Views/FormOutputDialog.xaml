@@ -45,6 +45,10 @@
 
             <!-- テンプレート -->
             <DockPanel Grid.Column="0">
+                <TextBlock DockPanel.Dock="Top" Text="{Binding LabelRegion}" Style="{StaticResource FieldLabel}" />
+                <ComboBox DockPanel.Dock="Top" ItemsSource="{Binding Regions}" SelectedItem="{Binding SelectedRegion}"
+                          DisplayMemberPath="Label" Margin="0,0,0,8"
+                          AutomationProperties.AutomationId="FormRegion" />
                 <TextBlock DockPanel.Dock="Top" Text="{Binding LabelTemplate}" Style="{StaticResource FieldLabel}" />
                 <ListBox ItemsSource="{Binding Forms}" SelectedItem="{Binding SelectedForm}"
                          AutomationProperties.AutomationId="FormTemplate">

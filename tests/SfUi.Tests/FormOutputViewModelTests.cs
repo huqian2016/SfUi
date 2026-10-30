@@ -52,6 +52,37 @@ public class FormOutputViewModelTests : IDisposable
     }
 
     [Fact]
+    public void RegionFilterLimitsTheTemplateList()
+    {
+        var vm = new FormOutputViewModel(_store, _paths, _log);
+        vm.Load(Document(3), "form-1");
+
+        Assert.Equal("", vm.SelectedRegion?.Key);
+
+        var usRegion = vm.Regions.First(r => r.Key == FormRegions.UnitedStates);
+        vm.SelectedRegion = usRegion;
+
+        Assert.NotEmpty(vm.Forms);
+        Assert.All(vm.Forms, f => Assert.Equal(FormRegions.UnitedStates, f.Region));
+        Assert.Equal(FormTemplateLibrary.ByRegion(FormRegions.UnitedStates).Count, vm.Forms.Count);
+        Assert.Equal(vm.Forms[0].Id, vm.SelectedForm?.Id);
+        Assert.True(vm.HasPreview);
+
+        vm.SelectedRegion = vm.Regions[0];
+        Assert.Equal(FormTemplateLibrary.All.Count, vm.Forms.Count);
+    }
+
+    [Fact]
+    public void RegionChoicesCoverEveryKnownRegion()
+    {
+        var vm = new FormOutputViewModel(_store, _paths, _log);
+
+        Assert.Equal(FormRegions.All.Count + 1, vm.Regions.Count);
+        Assert.All(FormRegions.All, region => Assert.Contains(vm.Regions, r => r.Key == region));
+        Assert.False(string.IsNullOrWhiteSpace(vm.LabelRegion));
+    }
+
+    [Fact]
     public void SelectingAnEstimateTemplateCreatesMergeFields()
     {
         var vm = new FormOutputViewModel(_store, _paths, _log);

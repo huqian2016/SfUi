@@ -56,11 +56,22 @@ public sealed partial class FormOutputViewModel : ObservableObject
     /// <summary>選択できる帳票（組み込み + ユーザー定義）。</summary>
     public ObservableCollection<FormDefinition> Forms { get; } = new();
 
+    /// <summary>地域の選択肢（先頭は「すべて」）。</summary>
+    public IReadOnlyList<ReportChoice> Regions { get; } = new[]
+        {
+            new ReportChoice("", UiText.T("Form_RegionAll")),
+        }
+        .Concat(FormRegions.All.Select(FormRegions.ToChoice))
+        .ToList();
+
     /// <summary>差し込み値。</summary>
     public ObservableCollection<FormValueItem> Values { get; } = new();
 
     [ObservableProperty]
     private FormDefinition? _selectedForm;
+
+    [ObservableProperty]
+    private ReportChoice? _selectedRegion;
 
     [ObservableProperty]
     private byte[]? _previewPng;
@@ -103,6 +114,8 @@ public sealed partial class FormOutputViewModel : ObservableObject
 
     public string LabelTemplate => UiText.T("Form_LabelTemplate");
 
+    public string LabelRegion => UiText.T("Form_LabelRegion");
+
     public string LabelValues => UiText.T("Form_LabelValues");
 
     public string LabelFormats => UiText.T("Form_LabelFormats");
@@ -134,6 +147,37 @@ public sealed partial class FormOutputViewModel : ObservableObject
         RefreshPreview();
     }
 
+    partial void OnSelectedRegionChanged(ReportChoice? value)
+    {
+        if (_loading)
+        {
+            return;
+        }
+
+        ApplyRegionFilter();
+        SelectedForm = Forms.FirstOrDefault();
+    }
+
+    /// <summary>選択中の地域で帳票一覧を作り直す。</summary>
+    private void ApplyRegionFilter(string? selectId = null)
+    {
+        var region = SelectedRegion?.Key ?? "";
+        var forms = string.IsNullOrWhiteSpace(region)
+            ? _store.AllForms
+            : _store.AllForms.Where(f => string.Equals(f.Region, region, StringComparison.OrdinalIgnoreCase)).ToList();
+
+        Forms.Clear();
+        foreach (var form in forms)
+        {
+            Forms.Add(form);
+        }
+
+        if (!string.IsNullOrWhiteSpace(selectId))
+        {
+            SelectedForm = Forms.FirstOrDefault(f => f.Id == selectId) ?? Forms.FirstOrDefault();
+        }
+    }
+
     /// <summary>レポート結果を読み込む。</summary>
     public void Load(ReportDocument document, string suggestedBaseName)
     {
@@ -143,12 +187,8 @@ public sealed partial class FormOutputViewModel : ObservableObject
             _document = document;
             OutputName = suggestedBaseName;
 
-            Forms.Clear();
-            foreach (var form in _store.AllForms)
-            {
-                Forms.Add(form);
-            }
-
+            SelectedRegion = Regions[0];
+            ApplyRegionFilter();
             SelectedForm = Forms.FirstOrDefault();
         }
         finally

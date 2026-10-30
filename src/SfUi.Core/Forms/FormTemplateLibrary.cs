@@ -11,13 +11,14 @@ public sealed class FormTemplateBuilder
 {
     private readonly FormDefinition _form;
 
-    public FormTemplateBuilder(string id, string name, string category, string paper = ReportPapers.A4, string orientation = "portrait", double margin = 10)
+    public FormTemplateBuilder(string id, string name, string category, string paper = ReportPapers.A4, string orientation = "portrait", double margin = 10, string region = FormRegions.Japan)
     {
         _form = new FormDefinition
         {
             Id = id,
             Name = name,
             Category = category,
+            Region = region,
             PaperSize = paper,
             Orientation = orientation,
             MarginMm = margin,
@@ -118,10 +119,14 @@ public sealed class FormTemplateBuilder
 /// 組み込み帳票テンプレート（業界別の見積書・注文書・納品書・請求書・領収書、経理書類）。
 /// テンプレートの文言は「文書の内容（データ）」で、ユーザーが複製して編集する前提。
 /// </summary>
-public static class FormTemplateLibrary
+public static partial class FormTemplateLibrary
 {
     /// <summary>組み込みテンプレートの一覧。</summary>
     public static IReadOnlyList<FormDefinition> All { get; } = BuildAll();
+
+    /// <summary>英語圏（米国 / 英国 / EU / 豪州 / NZ / カナダ）のテンプレート。</summary>
+    public static IReadOnlyList<FormDefinition> International { get; } =
+        All.Where(f => !string.Equals(f.Region, FormRegions.Japan, StringComparison.OrdinalIgnoreCase)).ToList();
 
     /// <summary>カテゴリで絞り込む。</summary>
     public static IReadOnlyList<FormDefinition> ByCategory(string? category) =>
@@ -129,30 +134,42 @@ public static class FormTemplateLibrary
             ? All
             : All.Where(f => string.Equals(f.Category, category, StringComparison.OrdinalIgnoreCase)).ToList();
 
+    /// <summary>地域で絞り込む（空 = すべて）。</summary>
+    public static IReadOnlyList<FormDefinition> ByRegion(string? region) =>
+        string.IsNullOrWhiteSpace(region)
+            ? All
+            : All.Where(f => string.Equals(f.Region, region, StringComparison.OrdinalIgnoreCase)).ToList();
+
     /// <summary>Id で 1 件取得する。</summary>
     public static FormDefinition? Find(string? id) =>
         string.IsNullOrWhiteSpace(id) ? null : All.FirstOrDefault(f => string.Equals(f.Id, id, StringComparison.Ordinal));
 
-    private static List<FormDefinition> BuildAll() => new()
+    private static List<FormDefinition> BuildAll()
     {
-        EstimateManufacturing(),
-        EstimateConstruction(),
-        EstimateIt(),
-        EstimateRetail(),
-        OrderManufacturing(),
-        PurchaseOrder(),
-        DeliveryNote(),
-        InvoiceService(),
-        InvoiceConstruction(),
-        Receipt(),
-        ReceiptQualifiedInvoice(),
-        Payslip(),
-        BonusSlip(),
-        WithholdingTaxTable(),
-        PaymentStatement(),
-        SalesLedger(),
-        GeneralList(),
-    };
+        var forms = new List<FormDefinition>
+        {
+            EstimateManufacturing(),
+            EstimateConstruction(),
+            EstimateIt(),
+            EstimateRetail(),
+            OrderManufacturing(),
+            PurchaseOrder(),
+            DeliveryNote(),
+            InvoiceService(),
+            InvoiceConstruction(),
+            Receipt(),
+            ReceiptQualifiedInvoice(),
+            Payslip(),
+            BonusSlip(),
+            WithholdingTaxTable(),
+            PaymentStatement(),
+            SalesLedger(),
+            GeneralList(),
+        };
+
+        forms.AddRange(BuildInternational());
+        return forms;
+    }
 
     // ── 見積書 ──
 

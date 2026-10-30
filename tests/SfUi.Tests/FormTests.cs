@@ -40,15 +40,51 @@ public class FormTests : IDisposable
         var ids = FormTemplateLibrary.All.Select(f => f.Id).ToList();
         var names = FormTemplateLibrary.All.Select(f => f.Name).ToList();
 
-        Assert.True(FormTemplateLibrary.All.Count >= 15, $"expected many templates, got {FormTemplateLibrary.All.Count}");
+        Assert.True(FormTemplateLibrary.All.Count >= 30, $"expected many templates, got {FormTemplateLibrary.All.Count}");
         Assert.Equal(ids.Count, ids.Distinct(StringComparer.Ordinal).Count());
         Assert.Equal(names.Count, names.Distinct(StringComparer.CurrentCulture).Count());
         Assert.All(FormTemplateLibrary.All, f =>
         {
             Assert.False(string.IsNullOrWhiteSpace(f.Name));
             Assert.Contains(f.Category, FormCategories.All);
+            Assert.Contains(f.Region, FormRegions.All);
             Assert.True(f.IsBuiltIn);
         });
+    }
+
+    [Fact]
+    public void InternationalTemplatesCoverTheEnglishMarkets()
+    {
+        foreach (var region in new[]
+        {
+            FormRegions.UnitedStates, FormRegions.UnitedKingdom, FormRegions.Europe,
+            FormRegions.Australia, FormRegions.NewZealand, FormRegions.Canada,
+        })
+        {
+            Assert.NotEmpty(FormTemplateLibrary.ByRegion(region));
+        }
+
+        Assert.All(FormTemplateLibrary.International, f => Assert.NotEqual(FormRegions.Japan, f.Region));
+        Assert.True(FormTemplateLibrary.ByRegion(null).Count >= FormTemplateLibrary.All.Count);
+    }
+
+    [Fact]
+    public void InternationalTemplatesCarryStatutoryFields()
+    {
+        static string Text(FormDefinition form) =>
+            string.Join("\n", form.Header.Select(e => e.Text).Concat(form.Footer.Select(e => e.Text))
+                .Concat(form.Table?.Columns.Select(c => c.Label) ?? Array.Empty<string>()));
+
+        var byId = FormTemplateLibrary.All.ToDictionary(f => f.Id, StringComparer.Ordinal);
+
+        Assert.Contains("SALES TAX", Text(byId["t_us_invoice"]), StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("VAT", Text(byId["t_uk_vat_invoice"]), StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("VAT", Text(byId["t_eu_vat_invoice"]), StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("ABN", Text(byId["t_au_tax_invoice"]), StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("GST", Text(byId["t_nz_tax_invoice"]), StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("GST", Text(byId["t_ca_invoice"]), StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Superannuation", Text(byId["t_au_payslip"]), StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("PAYE", Text(byId["t_nz_payslip"]), StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

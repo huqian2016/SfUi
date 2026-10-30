@@ -40,10 +40,11 @@ public static class FormCategories
     public const string Tax = "tax";
     public const string Statement = "statement";
     public const string General = "general";
+    public const string Credit = "credit";
 
     public static IReadOnlyList<string> All { get; } = new[]
     {
-        Estimate, Order, Delivery, Invoice, Receipt, Payroll, Tax, Statement, General,
+        Estimate, Order, Delivery, Invoice, Credit, Receipt, Payroll, Tax, Statement, General,
     };
 
     public static string ToLabel(string? category) => (category ?? General) switch
@@ -52,12 +53,43 @@ public static class FormCategories
         Order => UiText.T("Form_CategoryOrder"),
         Delivery => UiText.T("Form_CategoryDelivery"),
         Invoice => UiText.T("Form_CategoryInvoice"),
+        Credit => UiText.T("Form_CategoryCredit"),
         Receipt => UiText.T("Form_CategoryReceipt"),
         Payroll => UiText.T("Form_CategoryPayroll"),
         Tax => UiText.T("Form_CategoryTax"),
         Statement => UiText.T("Form_CategoryStatement"),
         _ => UiText.T("Form_CategoryGeneral"),
     };
+}
+
+/// <summary>帳票の地域（テンプレートの絞り込みに使う）。</summary>
+public static class FormRegions
+{
+    public const string Japan = "jp";
+    public const string UnitedStates = "us";
+    public const string UnitedKingdom = "uk";
+    public const string Europe = "eu";
+    public const string Australia = "au";
+    public const string NewZealand = "nz";
+    public const string Canada = "ca";
+
+    public static IReadOnlyList<string> All { get; } = new[]
+    {
+        Japan, UnitedStates, UnitedKingdom, Europe, Australia, NewZealand, Canada,
+    };
+
+    public static string ToLabel(string? region) => (region ?? Japan) switch
+    {
+        UnitedStates => UiText.T("Form_RegionUs"),
+        UnitedKingdom => UiText.T("Form_RegionUk"),
+        Europe => UiText.T("Form_RegionEu"),
+        Australia => UiText.T("Form_RegionAu"),
+        NewZealand => UiText.T("Form_RegionNz"),
+        Canada => UiText.T("Form_RegionCa"),
+        _ => UiText.T("Form_RegionJp"),
+    };
+
+    public static ReportChoice ToChoice(string region) => new(region, ToLabel(region));
 }
 
 /// <summary>帳票に置く 1 要素（位置は mm・用紙の左上原点）。</summary>
@@ -155,6 +187,9 @@ public sealed class FormDefinition
     /// <summary><see cref="FormCategories"/> のいずれか。</summary>
     public string Category { get; set; } = FormCategories.General;
 
+    /// <summary><see cref="FormRegions"/> のいずれか（既定 = 日本）。</summary>
+    public string Region { get; set; } = FormRegions.Japan;
+
     public string PaperSize { get; set; } = ReportPapers.A4;
 
     /// <summary>portrait / landscape。</summary>
@@ -188,6 +223,7 @@ public sealed class FormDefinition
         Id = "",
         Name = Name,
         Category = Category,
+        Region = Region,
         PaperSize = PaperSize,
         Orientation = Orientation,
         MarginMm = MarginMm,

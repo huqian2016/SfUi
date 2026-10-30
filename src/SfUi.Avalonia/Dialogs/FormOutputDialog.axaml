@@ -38,6 +38,16 @@
 
         <Grid Margin="12" ColumnDefinitions="260,12,300,12,*">
             <DockPanel Grid.Column="0">
+                <TextBlock DockPanel.Dock="Top" Text="{Binding LabelRegion}" Classes="label" />
+                <ComboBox DockPanel.Dock="Top" ItemsSource="{Binding Regions}" SelectedItem="{Binding SelectedRegion, Mode=TwoWay}"
+                          HorizontalAlignment="Stretch" Margin="0,0,0,8"
+                          AutomationProperties.AutomationId="FormRegion">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Label}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
                 <TextBlock DockPanel.Dock="Top" Text="{Binding LabelTemplate}" Classes="label" />
                 <ListBox ItemsSource="{Binding Forms}" SelectedItem="{Binding SelectedForm, Mode=TwoWay}"
                          AutomationProperties.AutomationId="FormTemplate">
