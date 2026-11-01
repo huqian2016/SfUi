@@ -1,0 +1,130 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:SfUi.Avalonia"
+        x:Class="SfUi.Avalonia.Dialogs.ConnectedAppEditorDialog"
+        Title="{Binding Title}"
+        Width="760" Height="720" MinWidth="620" MinHeight="520"
+        WindowStartupLocation="CenterOwner"
+        FontSize="13">
+    <Window.Styles>
+        <Style Selector="TextBlock.label">
+            <Setter Property="Foreground" Value="#666666" />
+            <Setter Property="Margin" Value="0,0,0,2" />
+        </Style>
+    </Window.Styles>
+
+    <DockPanel>
+        <Border DockPanel.Dock="Bottom" Background="#F7F7F7" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="12,8">
+            <DockPanel>
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
+                    <Button Content="{Binding CancelText}" Width="110" Height="30" Margin="0,0,8,0" Click="OnCancel"
+                            AutomationProperties.AutomationId="ConnEditorCancel" />
+                    <Button Content="{Binding SaveText}" Width="120" Height="30" Click="OnSave"
+                            AutomationProperties.AutomationId="ConnEditorSave" />
+                </StackPanel>
+                <CheckBox Content="{Binding DryRunText}" IsChecked="{Binding DryRun, Mode=TwoWay}"
+                          VerticalAlignment="Center" Margin="0,0,16,0"
+                          AutomationProperties.AutomationId="ConnEditorDryRun" />
+                <TextBlock Text="{Binding ErrorMessage}" Foreground="#C62828" TextWrapping="Wrap" VerticalAlignment="Center"
+                           AutomationProperties.AutomationId="ConnEditorError" />
+            </DockPanel>
+        </Border>
+
+        <TextBlock DockPanel.Dock="Top" Text="{Binding OrgDisplayName}" Foreground="#666666" Margin="12,10,12,0" />
+
+        <TabControl SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}" Margin="12,4,12,8"
+                    AutomationProperties.AutomationId="ConnEditorTabs">
+            <TabItem Header="{Binding TabForm}" AutomationProperties.AutomationId="ConnEditorTabForm">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <Grid Margin="4,8,4,4" ColumnDefinitions="180,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding LabelName}" Classes="label" Margin="0,0,10,12" />
+                        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Name, Mode=TwoWay}" IsEnabled="{Binding IsNew}"
+                                 Margin="0,0,0,12" AutomationProperties.AutomationId="ConnEditorName" />
+
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="{Binding LabelDisplayName}" Classes="label" Margin="0,0,10,12" />
+                        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Label, Mode=TwoWay}" Margin="0,0,0,12"
+                                 AutomationProperties.AutomationId="ConnEditorLabel" />
+
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="{Binding LabelContactEmail}" Classes="label" Margin="0,0,10,12" />
+                        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding ContactEmail, Mode=TwoWay}" Margin="0,0,0,12"
+                                 AutomationProperties.AutomationId="ConnEditorEmail" />
+
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="{Binding LabelDescription}" Classes="label" Margin="0,0,10,12" />
+                        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Description, Mode=TwoWay}"
+                                 Height="56" AcceptsReturn="True" TextWrapping="Wrap" Margin="0,0,0,12"
+                                 AutomationProperties.AutomationId="ConnEditorDescription" />
+
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="{Binding LabelCallbackUrl}" Classes="label" Margin="0,0,10,12" />
+                        <StackPanel Grid.Row="4" Grid.Column="1" Margin="0,0,0,12">
+                            <TextBox Text="{Binding CallbackUrl, Mode=TwoWay}"
+                                     Height="64" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Consolas"
+                                     AutomationProperties.AutomationId="ConnEditorCallback" />
+                            <TextBlock Text="{Binding HintCallbackUrl}" Foreground="#888888" FontSize="11" Margin="0,2,0,0" />
+                        </StackPanel>
+
+                        <TextBlock Grid.Row="5" Grid.Column="0" Text="{Binding LabelScopes}" Classes="label" Margin="0,0,10,12" />
+                        <ItemsControl Grid.Row="5" Grid.Column="1" ItemsSource="{Binding Scopes}" Margin="0,0,0,12"
+                                      AutomationProperties.AutomationId="ConnEditorScopes">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <CheckBox Content="{Binding Label}" IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                              Margin="0,0,14,6" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <TextBlock Grid.Row="6" Grid.Column="0" Text="{Binding LabelIpRelaxation}" Classes="label" Margin="0,0,10,12" />
+                        <ComboBox Grid.Row="6" Grid.Column="1" ItemsSource="{Binding IpRelaxations}"
+                                  SelectedValue="{Binding IpRelaxation, Mode=TwoWay}" SelectedValueBinding="{Binding Key}"
+                                  Margin="0,0,0,12" AutomationProperties.AutomationId="ConnEditorIpRelaxation">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Label}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+
+                        <TextBlock Grid.Row="7" Grid.Column="0" Text="{Binding LabelRefreshTokenPolicy}" Classes="label" Margin="0,0,10,12" />
+                        <ComboBox Grid.Row="7" Grid.Column="1" ItemsSource="{Binding RefreshTokenPolicies}"
+                                  SelectedValue="{Binding RefreshTokenPolicy, Mode=TwoWay}" SelectedValueBinding="{Binding Key}"
+                                  Margin="0,0,0,12" AutomationProperties.AutomationId="ConnEditorRefreshPolicy">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Label}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+
+                        <TextBlock Grid.Row="8" Grid.Column="0" Text="{Binding LabelAdminApproved}" Classes="label" Margin="0,0,10,12" />
+                        <CheckBox Grid.Row="8" Grid.Column="1" IsChecked="{Binding IsAdminApproved, Mode=TwoWay}"
+                                  Content="{Binding LabelAdminApproved}" Margin="0,0,0,12"
+                                  AutomationProperties.AutomationId="ConnEditorAdminApproved" />
+
+                        <TextBlock Grid.Row="9" Grid.Column="0" Text="{Binding LabelConsumerKey}" Classes="label" />
+                        <StackPanel Grid.Row="9" Grid.Column="1">
+                            <TextBox Text="{Binding ConsumerKey, Mode=TwoWay}" IsEnabled="{Binding IsNew}" FontFamily="Consolas"
+                                     AutomationProperties.AutomationId="ConnEditorConsumerKey" />
+                            <TextBlock Text="{Binding HintConsumerKey}" Foreground="#888888" FontSize="11" Margin="0,2,0,0"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Grid>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="{Binding TabXml}" AutomationProperties.AutomationId="ConnEditorTabXml">
+                <DockPanel Margin="4,8,4,4">
+                    <TextBlock DockPanel.Dock="Top" Text="{Binding HintXml}" Foreground="#666666" TextWrapping="Wrap" Margin="0,0,0,6" />
+                    <TextBox Text="{Binding Xml, Mode=TwoWay}"
+                             AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
+                             FontFamily="Consolas" FontSize="12"
+                             AutomationProperties.AutomationId="ConnEditorXml" />
+                </DockPanel>
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</Window>

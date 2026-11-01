@@ -24,6 +24,7 @@ public sealed class WpfAppWindowService : IAppWindowService
     private readonly SchedulerWindowFactory _scheduler;
     private readonly ReportsWindowFactory _reports;
     private readonly DashboardWindowFactory _dashboard;
+    private readonly ConnectedAppsWindowFactory _connectedApps;
 
     public WpfAppWindowService(
         OrgInfoWindowFactory orgInfo,
@@ -42,7 +43,8 @@ public sealed class WpfAppWindowService : IAppWindowService
         WelcomeWindowFactory welcome,
         SchedulerWindowFactory scheduler,
         ReportsWindowFactory reports,
-        DashboardWindowFactory dashboard)
+        DashboardWindowFactory dashboard,
+        ConnectedAppsWindowFactory connectedApps)
     {
         _orgInfo = orgInfo;
         _compareOrgs = compareOrgs;
@@ -61,6 +63,7 @@ public sealed class WpfAppWindowService : IAppWindowService
         _scheduler = scheduler;
         _reports = reports;
         _dashboard = dashboard;
+        _connectedApps = connectedApps;
     }
 
     public void OpenOrgInfo(OrgInfo org) => _orgInfo.Open(org, ActiveOwner());
@@ -102,6 +105,8 @@ public sealed class WpfAppWindowService : IAppWindowService
     public void OpenReports(IReadOnlyList<OrgInfo> orgs, OrgInfo? currentOrg) => _reports.Open(orgs, currentOrg, ActiveOwner());
 
     public void OpenDashboard(IReadOnlyList<OrgInfo> orgs, OrgInfo? currentOrg) => _dashboard.Open(orgs, currentOrg, ActiveOwner());
+
+    public void OpenConnectedApps(IReadOnlyList<OrgInfo> orgs, OrgInfo? currentOrg) => _connectedApps.Open(orgs, currentOrg, ActiveOwner());
 
     /// <summary>アクティブ ウィンドウ（無ければメイン ウィンドウ）を親として返す。</summary>
     private static Window? ActiveOwner() =>

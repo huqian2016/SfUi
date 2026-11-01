@@ -994,6 +994,22 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
+    /// <summary>接続アプリ ウィンドウを新しいウィンドウで開く。</summary>
+    [RelayCommand]
+    private void OpenConnectedApps()
+    {
+        try
+        {
+            _windows.OpenConnectedApps(Orgs.ToList(), SelectedOrg);
+            StatusMessage = UiText.T("Msg_ConnectedAppsOpened");
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = UiText.T("Common_FailedFmt", ex.Message);
+            _log.Error("接続アプリ ウィンドウを開けませんでした", ex);
+        }
+    }
+
     /// <summary>ソース エディタ ウィンドウを新しいウィンドウで開く（組織を選択している場合のみ）。</summary></summary>
     [RelayCommand]
     private void OpenSourceEditor()

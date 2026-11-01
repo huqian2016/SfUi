@@ -58,4 +58,7 @@ public interface IAppWindowService
 
     /// <summary>レポートのダッシュボード（グラフを並べて定期更新）ウィンドウを開く。</summary>
     void OpenDashboard(IReadOnlyList<OrgInfo> orgs, OrgInfo? currentOrg);
+
+    /// <summary>接続アプリ（ConnectedApp / 外部クライアント アプリ）ウィンドウを開く。</summary>
+    void OpenConnectedApps(IReadOnlyList<OrgInfo> orgs, OrgInfo? currentOrg);
 }

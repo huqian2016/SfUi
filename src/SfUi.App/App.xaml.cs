@@ -207,6 +207,12 @@ public partial class App : Application
         services.AddSingleton<IReportFormDialog, WpfReportFormDialog>();
         services.AddSingleton<IFormOutputDialog, WpfFormOutputDialog>();
 
+        // 接続アプリ（ConnectedApp / ExternalClientApplication）
+        services.AddTransient<ConnectedAppsViewModel>();
+        services.AddSingleton<IConnectedAppEditorDialog, WpfConnectedAppEditor>();
+        services.AddSingleton<ConnectedAppsWindowFactory>();
+        services.AddTransient<ConnectedAppsWindow>();
+
         services.AddSingleton<MainWindow>();
         Services = services.BuildServiceProvider();
 

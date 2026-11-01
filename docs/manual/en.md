@@ -814,3 +814,11 @@ Build Salesforce-style reports on your own data and keep them fresh with live up
 - Pick a template, fill in the **merge fields** it asks for (customer, document number, totals …), and the preview updates immediately. Columns of the detail table map by **label first, then by position**, so any report can be printed on any template.
 - **Output** writes **HTML, PDF, SVG, PNG and JPEG** to `data/exports` (multi-page files get `-p1`, `-p2`). **Print** sends the pages straight to the printer (WPF) or opens the PDF/HTML in your browser (Avalonia).
 - Templates live in code (read-only); duplicated forms are stored in `data/forms/forms.json`.
+
+## 20. Connected Apps (Connected App / External Client App)
+
+- **Connected Apps** in the top bar lets you **view, create, edit and delete** the org's connected apps. Switch between **Connected App** and **External Client App**.
+- Selecting an app shows its **OAuth scopes, callback URLs, consumer key, IP relaxation and refresh token policy**. **Edit** exposes the common settings as a form; anything else can be edited on the **XML** tab.
+- Tick **Validate only (dry run)** to check the metadata without changing the org. Create / update / delete are executed through the Metadata API (`sf project deploy start` / `sf project retrieve start`).
+- **Note:** Salesforce restricts **creating** connected apps from Spring '26 onward (the deploy fails with "contact Salesforce Customer Support"). Use **External Client App** for new integrations; existing connected apps can still be viewed and updated.
+- The consumer secret is not part of the metadata, so it is never displayed here — check Setup instead.

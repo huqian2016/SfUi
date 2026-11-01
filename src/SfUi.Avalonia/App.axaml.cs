@@ -6,6 +6,7 @@ using Avalonia.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using SfUi.App.ViewModels;
 using SfUi.Avalonia.Services;
+using SfUi.Avalonia.Views;
 using SfUi.Core;
 using SfUi.Presentation;
 
@@ -94,8 +95,7 @@ public partial class App : Application
 
             // スケジューラ（ジョブ予約実行）
             services.AddSingleton<IKeepAwakeService, DesktopKeepAwakeService>();
-            services.AddSingleton<NotificationCenterViewModel>();
-            services.AddSingleton<SchedulerViewModel>();
+            services.AddSingleton<NotificationCenterViewModel>();            services.AddSingleton<SchedulerViewModel>();
             services.AddSingleton<SchedulerJobEditorViewModel>();
             services.AddSingleton<ISchedulerJobEditor, AvaloniaSchedulerJobEditor>();
             services.AddSingleton<AvaloniaToastPresenter>();
@@ -109,6 +109,11 @@ public partial class App : Application
         services.AddTransient<ReportFormViewModel>();
         services.AddSingleton<IReportEditorDialog, AvaloniaReportEditor>();
         services.AddSingleton<IReportFormDialog, AvaloniaReportFormDialog>();
+
+        // 接続アプリ（ConnectedApp / ExternalClientApplication）
+        services.AddTransient<ConnectedAppsViewModel>();
+        services.AddSingleton<IConnectedAppEditorDialog, AvaloniaConnectedAppEditor>();
+        services.AddTransient<ConnectedAppsWindow>();
             services.AddSingleton<MainWindow>();
             Services = services.BuildServiceProvider();
 

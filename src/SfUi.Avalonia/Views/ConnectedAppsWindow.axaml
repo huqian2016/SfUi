@@ -1,0 +1,136 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:SfUi.Avalonia"
+        x:Class="SfUi.Avalonia.Views.ConnectedAppsWindow"
+        Title="{Binding Title}"
+        Width="1120" Height="720" MinWidth="860" MinHeight="480"
+        WindowStartupLocation="CenterOwner"
+        FontSize="13">
+    <Window.Styles>
+        <Style Selector="TextBlock.label">
+            <Setter Property="Foreground" Value="#666666" />
+            <Setter Property="Margin" Value="0,0,0,2" />
+        </Style>
+    </Window.Styles>
+
+    <DockPanel>
+        <Border DockPanel.Dock="Top" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="10,6">
+            <WrapPanel Orientation="Horizontal">
+                <TextBlock Text="{Binding LabelOrg}" Foreground="#666666" VerticalAlignment="Center" Margin="0,0,6,0" />
+                <ComboBox ItemsSource="{Binding Orgs}" SelectedItem="{Binding SelectedOrg, Mode=TwoWay}"
+                          Width="240" VerticalAlignment="Center" Margin="0,0,12,0"
+                          AutomationProperties.AutomationId="ConnOrg">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding DisplayName}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                <TextBlock Text="{Binding LabelKind}" Foreground="#666666" VerticalAlignment="Center" Margin="0,0,6,0" />
+                <ComboBox ItemsSource="{Binding Kinds}" SelectedItem="{Binding SelectedKind, Mode=TwoWay}"
+                          Width="190" VerticalAlignment="Center" Margin="0,0,12,0"
+                          AutomationProperties.AutomationId="ConnKind">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Label}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                <TextBlock Text="{Binding LabelSearch}" Foreground="#666666" VerticalAlignment="Center" Margin="0,0,6,0" />
+                <TextBox Text="{Binding Filter, Mode=TwoWay}" Width="160" VerticalAlignment="Center" Margin="0,0,12,0"
+                         AutomationProperties.AutomationId="ConnSearch" />
+                <Button Content="{Binding RefreshText}" Command="{Binding RefreshCommand}" Padding="10,4" Margin="0,0,6,0"
+                        AutomationProperties.AutomationId="ConnRefresh" />
+                <Button Content="{Binding NewText}" Command="{Binding NewCommand}" Padding="10,4" Margin="0,0,6,0"
+                        AutomationProperties.AutomationId="ConnNew" />
+                <Button Content="{Binding EditText}" Command="{Binding EditCommand}" Padding="10,4" Margin="0,0,6,0"
+                        IsEnabled="{Binding HasDocument}" AutomationProperties.AutomationId="ConnEdit" />
+                <Button Content="{Binding DeleteText}" Command="{Binding DeleteCommand}" Padding="10,4" Margin="0,0,6,0"
+                        IsEnabled="{Binding HasSelection}" AutomationProperties.AutomationId="ConnDelete" />
+                <Button Content="{Binding OpenSetupText}" Command="{Binding OpenSetupCommand}" Padding="10,4"
+                        AutomationProperties.AutomationId="ConnOpenSetup" />
+            </WrapPanel>
+        </Border>
+
+        <Border DockPanel.Dock="Bottom" Background="#F7F7F7" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="10,4">
+            <StackPanel>
+                <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap"
+                           AutomationProperties.AutomationId="ConnStatus" />
+                <TextBlock Text="{Binding CreationRestrictedHint}" Foreground="#B35C00" TextWrapping="Wrap" Margin="0,4,0,0"
+                           IsVisible="{Binding IsCreationRestricted}"
+                           AutomationProperties.AutomationId="ConnRestrictedHint" />
+                <TextBlock Text="{Binding EcaRecommendHint}" Foreground="#666666" TextWrapping="Wrap" Margin="0,4,0,0"
+                           IsVisible="{Binding IsConnectedAppKind}"
+                           AutomationProperties.AutomationId="ConnEcaHint" />
+            </StackPanel>
+        </Border>
+
+        <Grid Margin="10" ColumnDefinitions="330,8,*">
+            <DockPanel Grid.Column="0">
+                <TextBlock DockPanel.Dock="Top" Text="{Binding EmptyHint}" Foreground="#777777" TextWrapping="Wrap"
+                           Margin="0,0,0,6" IsVisible="{Binding !HasSelection}"
+                           AutomationProperties.AutomationId="ConnEmpty" />
+                <ListBox ItemsSource="{Binding Apps}" SelectedItem="{Binding SelectedApp, Mode=TwoWay}"
+                         AutomationProperties.AutomationId="ConnApps">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="0,2">
+                                <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{Binding ScopesText}" Foreground="#777777" FontSize="11"
+                                           TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+
+            <GridSplitter Grid.Column="1" Background="Transparent" ResizeDirection="Columns" />
+
+            <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="8,0">
+                    <TextBlock Text="{Binding DetailEmpty}" Foreground="#777777"
+                               IsVisible="{Binding !HasDocument}"
+                               AutomationProperties.AutomationId="ConnDetailEmpty" />
+
+                    <StackPanel IsVisible="{Binding HasDocument}">
+                        <TextBlock Text="{Binding DetailTitle}" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,10" />
+
+                        <TextBlock Text="{Binding LabelName}" Classes="label" />
+                        <TextBlock Text="{Binding Document.Name}" Margin="0,0,0,10"
+                                   AutomationProperties.AutomationId="ConnDetailName" />
+
+                        <TextBlock Text="{Binding LabelDisplayName}" Classes="label" />
+                        <TextBlock Text="{Binding Document.Label}" Margin="0,0,0,10"
+                                   AutomationProperties.AutomationId="ConnDetailLabel" />
+
+                        <TextBlock Text="{Binding LabelContactEmail}" Classes="label" />
+                        <TextBlock Text="{Binding Document.ContactEmail}" Margin="0,0,0,10" />
+
+                        <TextBlock Text="{Binding LabelDescription}" Classes="label" />
+                        <TextBlock Text="{Binding Document.Description}" TextWrapping="Wrap" Margin="0,0,0,10" />
+
+                        <TextBlock Text="{Binding LabelCallbackUrlText}" Classes="label" />
+                        <TextBlock Text="{Binding Document.CallbackUrlText}" TextWrapping="Wrap" FontFamily="Consolas"
+                                   Margin="0,0,0,10" AutomationProperties.AutomationId="ConnDetailCallback" />
+
+                        <TextBlock Text="{Binding LabelScopesText}" Classes="label" />
+                        <TextBlock Text="{Binding Document.ScopesText}" TextWrapping="Wrap" Margin="0,0,0,10"
+                                   AutomationProperties.AutomationId="ConnDetailScopes" />
+
+                        <TextBlock Text="{Binding LabelConsumerKeyText}" Classes="label" />
+                        <TextBlock Text="{Binding Document.ConsumerKey}" TextWrapping="Wrap" FontFamily="Consolas"
+                                   Margin="0,0,0,10" />
+                        <TextBlock Text="{Binding HintConsumerKey}" Foreground="#888888" TextWrapping="Wrap" Margin="0,0,0,10"
+                                   IsVisible="{Binding !Document.HasConsumerKey}" />
+
+                        <TextBlock Text="{Binding LabelIpRelaxationText}" Classes="label" />
+                        <TextBlock Text="{Binding Document.IpRelaxation}" Margin="0,0,0,10" />
+
+                        <TextBlock Text="{Binding LabelRefreshTokenPolicyText}" Classes="label" />
+                        <TextBlock Text="{Binding Document.RefreshTokenPolicy}" Margin="0,0,0,10" />
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </DockPanel>
+</Window>

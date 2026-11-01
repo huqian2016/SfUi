@@ -132,6 +132,14 @@
                 </Button>
 
                 <Button Classes="icon" Margin="0,0,10,0"
+                        Command="{Binding OpenConnectedAppsCommand}"
+                        AutomationProperties.AutomationId="OpenConnectedApps"
+                        ToolTip.Tip="{loc:Tr Main_ConnectedAppsTip}"
+                        AutomationProperties.Name="{loc:Tr Main_ConnectedApps}">
+                    <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconConnectedApp}" />
+                </Button>
+
+                <Button Classes="icon" Margin="0,0,10,0"
                         Command="{Binding OpenReportsCommand}"
                         AutomationProperties.AutomationId="OpenReports"
                         ToolTip.Tip="{loc:Tr Main_ReportsTip}"

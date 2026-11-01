@@ -60,6 +60,10 @@ public static class SfUiServiceCollectionExtensions
         services.AddSingleton<ScratchResourceService>();
         services.AddSingleton<ScratchSignupService>();
 
+        // 接続アプリ（ConnectedApp / ExternalClientApplication）。
+        services.AddSingleton<ConnectedAppService>();
+        services.AddSingleton<IConnectedAppService>(sp => sp.GetRequiredService<ConnectedAppService>());
+
         // スケジューラ（ジョブ予約実行）。IKeepAwakeService は UI 側で上書き登録できる。
         services.AddSingleton<IKeepAwakeService, NoopKeepAwakeService>();
         services.AddSingleton<ScheduledJobStore>();

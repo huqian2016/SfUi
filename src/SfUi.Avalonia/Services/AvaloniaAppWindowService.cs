@@ -192,6 +192,14 @@ public sealed class AvaloniaAppWindowService : IAppWindowService
         ShowOwned(new DashboardWindow(viewModel));
     }
 
+    /// <summary>接続アプリ ウィンドウを開く。</summary>
+    public void OpenConnectedApps(IReadOnlyList<OrgInfo> orgs, OrgInfo? currentOrg)
+    {
+        var viewModel = _services.GetRequiredService<ConnectedAppsViewModel>();
+        viewModel.Initialize(orgs, currentOrg);
+        ShowOwned(new ConnectedAppsWindow(viewModel));
+    }
+
     private void NotPortedYet(string feature)
     {
         _log.Info($"Avalonia 版: {feature} ウィンドウは未移植（Phase C–E で実装）");
