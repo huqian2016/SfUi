@@ -372,6 +372,55 @@ public class ConnectedAppTests
         Assert.Equal(0, service.DeleteCalls);
     }
 
+    /// <summary>
+    /// 詳細ペインの見出しは XAML から名前でバインドされる。1 つでも欠けると
+    /// 画面に空のラベルが出るため、ここで存在と非空をまとめて保証する。
+    /// </summary>
+    [Fact]
+    public void ViewModel_ExposesDetailLabels()
+    {
+        var viewModel = new ConnectedAppsViewModel(new FakeService(), new FakeEditor(null), new FakeDialogs(), CreateLog());
+
+        var labels = new[]
+        {
+            viewModel.LabelName,
+            viewModel.LabelDisplayName,
+            viewModel.LabelContactEmail,
+            viewModel.LabelDescription,
+            viewModel.LabelCallbackUrlText,
+            viewModel.LabelScopesText,
+            viewModel.LabelConsumerKeyText,
+            viewModel.LabelIpRelaxationText,
+            viewModel.LabelRefreshTokenPolicyText,
+        };
+
+        Assert.All(labels, label =>
+        {
+            Assert.False(string.IsNullOrWhiteSpace(label));
+            Assert.DoesNotContain("Conn_", label, StringComparison.Ordinal);
+        });
+        Assert.Equal(labels.Length, labels.Distinct(StringComparer.Ordinal).Count());
+    }
+
+    [Fact]
+    public async Task ViewModel_HasAppsTracksTheFilteredList()
+    {
+        var service = new FakeService();
+        var viewModel = new ConnectedAppsViewModel(service, new FakeEditor(null), new FakeDialogs(), CreateLog());
+
+        viewModel.Initialize(new[] { new OrgInfo("user@example.com", null, null, "https://x.my.salesforce.com", "Connected", false, false) }, null);
+        await WaitAsync(() => service.ListCalls > 0 && viewModel.HasApps);
+
+        Assert.True(viewModel.HasApps);
+
+        viewModel.Filter = "does-not-exist";
+        Assert.False(viewModel.HasApps);
+
+        viewModel.Filter = "";
+        await WaitAsync(() => viewModel.HasApps);
+        Assert.True(viewModel.HasApps);
+    }
+
     private static async Task WaitAsync(Func<bool> condition)
     {
         for (var i = 0; i < 100 && !condition(); i++)

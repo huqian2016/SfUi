@@ -68,7 +68,7 @@
         <Grid Margin="10" ColumnDefinitions="330,8,*">
             <DockPanel Grid.Column="0">
                 <TextBlock DockPanel.Dock="Top" Text="{Binding EmptyHint}" Foreground="#777777" TextWrapping="Wrap"
-                           Margin="0,0,0,6" IsVisible="{Binding !HasSelection}"
+                           Margin="0,0,0,6" IsVisible="{Binding !HasApps}"
                            AutomationProperties.AutomationId="ConnEmpty" />
                 <ListBox ItemsSource="{Binding Apps}" SelectedItem="{Binding SelectedApp, Mode=TwoWay}"
                          AutomationProperties.AutomationId="ConnApps">

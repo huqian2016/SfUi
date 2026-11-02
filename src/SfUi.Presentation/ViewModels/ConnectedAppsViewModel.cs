@@ -71,6 +71,14 @@ public sealed partial class ConnectedAppsViewModel : ObservableObject
 
     public string DetailTitle => UiText.T("Conn_DetailTitle");
 
+    public string LabelName => UiText.T("Conn_LabelName");
+
+    public string LabelDisplayName => UiText.T("Conn_LabelLabel");
+
+    public string LabelContactEmail => UiText.T("Conn_LabelContactEmail");
+
+    public string LabelDescription => UiText.T("Conn_LabelDescription");
+
     public string LabelCallbackUrlText => UiText.T("Conn_LabelCallbackUrl");
 
     public string LabelScopesText => UiText.T("Conn_LabelScopes");
@@ -113,6 +121,9 @@ public sealed partial class ConnectedAppsViewModel : ObservableObject
     public bool HasSelection => SelectedApp is not null;
 
     public bool HasDocument => Document is not null;
+
+    /// <summary>一覧に 1 件以上表示されているか（空ヒントの表示判定）。</summary>
+    public bool HasApps => Apps.Count > 0;
 
     public bool IsEca => string.Equals(SelectedKind?.Key, ConnectedAppKinds.ExternalClientApp, StringComparison.OrdinalIgnoreCase);
 
@@ -404,5 +415,7 @@ public sealed partial class ConnectedAppsViewModel : ObservableObject
         {
             SelectedApp = null;
         }
+
+        OnPropertyChanged(nameof(HasApps));
     }
 }
