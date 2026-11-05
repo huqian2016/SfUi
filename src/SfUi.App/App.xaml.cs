@@ -213,6 +213,9 @@ public partial class App : Application
         services.AddSingleton<ConnectedAppsWindowFactory>();
         services.AddTransient<ConnectedAppsWindow>();
 
+        // 匿名 Apex の DML 文生成
+        services.AddSingleton<IApexDmlDialog, WpfApexDmlDialog>();
+
         services.AddSingleton<MainWindow>();
         Services = services.BuildServiceProvider();
 

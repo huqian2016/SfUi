@@ -114,6 +114,9 @@ public partial class App : Application
         services.AddTransient<ConnectedAppsViewModel>();
         services.AddSingleton<IConnectedAppEditorDialog, AvaloniaConnectedAppEditor>();
         services.AddTransient<ConnectedAppsWindow>();
+
+        // 匿名 Apex の DML 文生成
+        services.AddSingleton<IApexDmlDialog, AvaloniaApexDmlDialog>();
             services.AddSingleton<MainWindow>();
             Services = services.BuildServiceProvider();
 

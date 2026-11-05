@@ -41,8 +41,9 @@ public static class SfUiServiceCollectionExtensions
         services.AddSingleton<OrgRecordCompareService>();
         services.AddSingleton<FieldUsageService>();
         services.AddSingleton<SObjectDescribeService>();
-        services.AddSingleton<OrgMetadataService>();
-        services.AddSingleton<DataExportService>();
+        services.AddSingleton<ApexDmlRecordService>();
+        services.AddSingleton<IApexDmlRecordService>(sp => sp.GetRequiredService<ApexDmlRecordService>());
+        services.AddSingleton<OrgMetadataService>();        services.AddSingleton<DataExportService>();
         services.AddSingleton<DataImportService>();
         services.AddSingleton<PermissionAccessService>();
         services.AddSingleton<RecordAccessService>();

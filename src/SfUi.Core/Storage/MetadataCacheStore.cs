@@ -328,7 +328,31 @@ public static class MetadataCacheComparison
         && left.Custom == right.Custom
         && string.Equals(left.RelationshipName, right.RelationshipName, StringComparison.Ordinal)
         && string.Equals(left.CalculatedFormula, right.CalculatedFormula, StringComparison.Ordinal)
-        && SequenceEqual(left.ReferenceTo, right.ReferenceTo);
+        && SequenceEqual(left.ReferenceTo, right.ReferenceTo)
+        && PicklistValuesEqual(left.PicklistValues, right.PicklistValues);
+
+    private static bool PicklistValuesEqual(IReadOnlyList<DataIoPicklistValue>? left, IReadOnlyList<DataIoPicklistValue>? right)
+    {
+        if (ReferenceEquals(left, right))
+        {
+            return true;
+        }
+
+        if (left is null || right is null || left.Count != right.Count)
+        {
+            return false;
+        }
+
+        for (var i = 0; i < left.Count; i++)
+        {
+            if (left[i] != right[i])
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
 
     public static bool SequenceEqual(IReadOnlyList<string> left, IReadOnlyList<string> right)
     {

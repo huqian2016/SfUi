@@ -1,0 +1,166 @@
+<Window x:Class="SfUi.App.Views.ApexDmlDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:services="clr-namespace:SfUi.App.Services"
+        Title="{Binding Title}"
+        Width="1000" Height="780" MinWidth="820" MinHeight="600"
+        WindowStartupLocation="CenterOwner"
+        FontSize="13">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+        <services:InverseBooleanToVisibilityConverter x:Key="InverseBoolToVis" />
+        <Style x:Key="FieldLabel" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#666666" />
+            <Setter Property="Margin" Value="0,0,0,2" />
+        </Style>
+    </Window.Resources>
+
+    <DockPanel>
+        <!-- フッター -->
+        <Border DockPanel.Dock="Bottom" Background="#F7F7F7" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="12,8">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button Content="{Binding CancelText}" Width="110" Height="30" IsCancel="True" Margin="0,0,8,0"
+                            AutomationProperties.AutomationId="DmlCancel" />
+                    <Button Content="{Binding InsertText}" Width="150" Height="30" IsDefault="True" Click="Insert_Click"
+                            AutomationProperties.AutomationId="DmlInsert" />
+                </StackPanel>
+                <TextBlock Text="{Binding StatusText}" Foreground="#C62828" TextWrapping="Wrap" VerticalAlignment="Center"
+                           AutomationProperties.AutomationId="DmlStatus" />
+            </DockPanel>
+        </Border>
+
+        <!-- 上部: オブジェクト / DML / レコード Id -->
+        <StackPanel DockPanel.Dock="Top" Margin="12,10,12,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="170" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="150" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{Binding LabelFilter}" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="#666666" />
+                <ComboBox Grid.Column="1" ItemsSource="{Binding ObjectFilters}" SelectedItem="{Binding SelectedFilter, Mode=TwoWay}"
+                          DisplayMemberPath="Label" Margin="0,0,12,0" AutomationProperties.AutomationId="DmlFilter" />
+                <TextBlock Grid.Column="2" Text="{Binding LabelSearch}" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="#666666" />
+                <TextBox Grid.Column="3" Text="{Binding ObjectSearch, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,12,0"
+                         AutomationProperties.AutomationId="DmlObjectSearch" />
+                <TextBlock Grid.Column="4" Text="{Binding LabelObject}" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="#666666" />
+                <ComboBox Grid.Column="5" ItemsSource="{Binding Objects}" SelectedItem="{Binding SelectedObject, Mode=TwoWay}"
+                          DisplayMemberPath="Display" AutomationProperties.AutomationId="DmlObject" />
+                <Button Grid.Column="6" Content="⟳" Padding="8,2" Margin="6,0,0,0" Command="{Binding LoadObjectsCommand}"
+                        ToolTip="{Binding LabelObject}" />
+            </Grid>
+
+            <Grid Margin="0,8,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="170" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{Binding LabelKind}" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="#666666" />
+                <ComboBox Grid.Column="1" ItemsSource="{Binding Kinds}" SelectedItem="{Binding SelectedKind, Mode=TwoWay}"
+                          DisplayMemberPath="Label" AutomationProperties.AutomationId="DmlKind" />
+            </Grid>
+
+            <!-- レコード Id（Update / Delete） -->
+            <Grid Margin="0,8,0,0" Visibility="{Binding NeedsRecordId, Converter={StaticResource BoolToVis}}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="330" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="180" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{Binding LabelRecordId}" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="#666666" />
+                <TextBox Grid.Column="1" Text="{Binding RecordId, UpdateSourceTrigger=PropertyChanged}"
+                         AutomationProperties.AutomationId="DmlRecordId" />
+                <TextBlock Grid.Column="2" Text="{Binding LabelRecordSearch}" VerticalAlignment="Center" Margin="12,0,6,0" Foreground="#666666" />
+                <TextBox Grid.Column="3" Text="{Binding RecordSearch, UpdateSourceTrigger=PropertyChanged}"
+                         AutomationProperties.AutomationId="DmlRecordSearch" />
+                <Button Grid.Column="4" Content="{Binding LoadRecordsText}" Padding="10,2" Margin="6,0,12,0"
+                        Command="{Binding LoadRecordCandidatesCommand}" AutomationProperties.AutomationId="DmlLoadRecords" />
+                <ComboBox Grid.Column="5" ItemsSource="{Binding RecordCandidates}" SelectedItem="{Binding PickedRecord, Mode=TwoWay}"
+                          DisplayMemberPath="Display" AutomationProperties.AutomationId="DmlRecordCandidates" />
+            </Grid>
+
+            <TextBlock Text="{Binding HintValue}" Foreground="#888888" TextWrapping="Wrap" Margin="0,8,0,0" />
+        </StackPanel>
+
+        <!-- 中央: 項目一覧 + プレビュー -->
+        <Grid Margin="12,8,12,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MinWidth="420" />
+                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="420" MinWidth="280" />
+            </Grid.ColumnDefinitions>
+
+            <DockPanel Grid.Column="0">
+                <TextBlock DockPanel.Dock="Top" Text="{Binding LabelFields}" Foreground="#666666" Margin="0,0,0,4" />
+                <TextBlock DockPanel.Dock="Top" Text="{Binding NoFieldsText}" Foreground="#777777" Margin="0,0,0,4"
+                           Visibility="{Binding HasFields, Converter={StaticResource InverseBoolToVis}}" />
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding Fields}" AutomationProperties.AutomationId="DmlFields">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="220" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                              IsEnabled="{Binding IsEditable}"
+                                              AutomationProperties.AutomationId="{Binding CheckAutomationId}"
+                                              VerticalAlignment="Center" Margin="0,0,8,0" />
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Text="{Binding TypeText}" Foreground="#888888" FontSize="11" />
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="2" Text="{Binding RequiredText}"
+                                               Foreground="#C62828" FontSize="11" Margin="0,0,8,0" VerticalAlignment="Center" />
+
+                                    <Grid Grid.Column="3">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox Grid.Column="0" Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}"
+                                                 IsEnabled="{Binding IsSelected, Mode=OneWay}"
+                                                 AutomationProperties.AutomationId="{Binding ValueAutomationId}"
+                                                 Visibility="{Binding IsPicklist, Converter={StaticResource InverseBoolToVis}}" />
+                                        <ComboBox Grid.Column="0" ItemsSource="{Binding PicklistOptions}" SelectedItem="{Binding Value, Mode=TwoWay}"
+                                                  IsEnabled="{Binding IsSelected, Mode=OneWay}"
+                                                  Visibility="{Binding IsPicklist, Converter={StaticResource BoolToVis}}" />
+                                        <Button Grid.Column="1" Content="⟳" Padding="6,1" Margin="4,0,0,0"
+                                                Visibility="{Binding IsLookup, Converter={StaticResource BoolToVis}}"
+                                                Command="{Binding DataContext.LoadLookupCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding}" />
+                                        <ComboBox Grid.Column="2" Width="110" Margin="4,0,0,0"
+                                                  Visibility="{Binding IsLookup, Converter={StaticResource BoolToVis}}"
+                                                  ItemsSource="{Binding LookupOptions}" SelectedItem="{Binding LookupSelected, Mode=TwoWay}"
+                                                  DisplayMemberPath="Display" />
+                                    </Grid>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </DockPanel>
+
+            <DockPanel Grid.Column="2">
+                <TextBlock DockPanel.Dock="Top" Text="{Binding LabelPreview}" Foreground="#666666" Margin="0,0,0,4" />
+                <TextBox Text="{Binding Preview, Mode=OneWay}" IsReadOnly="True" AcceptsReturn="True" FontFamily="Consolas"
+                         VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" TextWrapping="NoWrap"
+                         AutomationProperties.AutomationId="DmlPreview" />
+            </DockPanel>
+        </Grid>
+    </DockPanel>
+</Window>

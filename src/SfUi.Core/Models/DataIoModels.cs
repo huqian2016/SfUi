@@ -22,13 +22,23 @@ public enum DataImportOperation
 }
 
 /// <summary>DescribeGlobal の 1 オブジェクト。</summary>
-public sealed record DataIoObject(string Name, string Label, bool Queryable, bool Createable, bool Updateable, bool Deletable)
+public sealed record DataIoObject(string Name, string Label, bool Queryable, bool Createable, bool Updateable, bool Deletable, bool Custom = false, string? NamespacePrefix = null)
 {
+    /// <summary>管理パッケージ（名前空間付き）のオブジェクトか。</summary>
+    [JsonIgnore]
+    public bool Managed => !string.IsNullOrEmpty(NamespacePrefix);
+
     /// <summary>コンボ表示用（ラベルと API 名）。</summary>
     [JsonIgnore]
     public string Display => string.Equals(Name, Label, StringComparison.Ordinal) ? Name : $"{Label} ({Name})";
 
     public override string ToString() => Display;
+}
+
+/// <summary>選択リストの 1 値。</summary>
+public sealed record DataIoPicklistValue(string Value, string Label, bool Active = true)
+{
+    public override string ToString() => string.Equals(Value, Label, StringComparison.Ordinal) ? Value : $"{Label} ({Value})";
 }
 
 /// <summary>describe の 1 項目。</summary>
@@ -44,7 +54,8 @@ public sealed record DataIoField(
     bool Custom,
     IReadOnlyList<string> ReferenceTo,
     string? RelationshipName = null,
-    string? CalculatedFormula = null)
+    string? CalculatedFormula = null,
+    IReadOnlyList<DataIoPicklistValue>? PicklistValues = null)
 {
     /// <summary>Insert 時の必須項目（作成可・非 null 許容・既定値なし）。</summary>
     [JsonIgnore]

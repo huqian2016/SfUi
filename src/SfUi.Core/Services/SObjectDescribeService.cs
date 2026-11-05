@@ -203,7 +203,9 @@ public sealed class SObjectDescribeService
                 GetBool(item, "queryable"),
                 GetBool(item, "createable"),
                 GetBool(item, "updateable"),
-                GetBool(item, "deletable")));
+                GetBool(item, "deletable"),
+                GetBool(item, "custom"),
+                GetString(item, "namespacePrefix")));
         }
 
         return list.OrderBy(o => o.Name, StringComparer.Ordinal).ToList();
@@ -230,6 +232,8 @@ public sealed class SObjectDescribeService
                     ? refs.EnumerateArray().Where(x => x.ValueKind == JsonValueKind.String).Select(x => x.GetString()!).ToList()
                     : (IReadOnlyList<string>)Array.Empty<string>();
 
+                var picklistValues = ParsePicklistValues(field);
+
                 fields.Add(new DataIoField(
                     fieldName,
                     GetString(field, "label") ?? fieldName,
@@ -242,11 +246,35 @@ public sealed class SObjectDescribeService
                     GetBool(field, "custom"),
                     referenceTo,
                     GetString(field, "relationshipName"),
-                    GetString(field, "calculatedFormula")));
+                    GetString(field, "calculatedFormula"),
+                    picklistValues));
             }
         }
 
         return new DataIoObjectDescribe(name, label, fields);
+    }
+
+    /// <summary>describe の選択リスト値を読む（非選択リストは null）。</summary>
+    private static IReadOnlyList<DataIoPicklistValue>? ParsePicklistValues(JsonElement field)
+    {
+        if (!field.TryGetProperty("picklistValues", out var values) || values.ValueKind != JsonValueKind.Array)
+        {
+            return null;
+        }
+
+        var list = new List<DataIoPicklistValue>();
+        foreach (var item in values.EnumerateArray())
+        {
+            var value = GetString(item, "value");
+            if (string.IsNullOrEmpty(value))
+            {
+                continue;
+            }
+
+            list.Add(new DataIoPicklistValue(value, GetString(item, "label") ?? value, GetBool(item, "active")));
+        }
+
+        return list.Count == 0 ? null : list;
     }
 
     private static string? GetString(JsonElement element, string name) =>

@@ -12,6 +12,8 @@
         <Border DockPanel.Dock="Top" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,4">
             <WrapPanel Orientation="Horizontal">
                 <Button Content="{loc:Tr Apex_Run}" Padding="10,2" Margin="0,2,12,2" Command="{Binding ExecuteCommand}" />
+                <Button Content="{loc:Tr Apex_Dml}" Padding="10,2" Margin="0,2,12,2" Command="{Binding GenerateDmlCommand}"
+                        ToolTip="{loc:Tr Apex_DmlTip}" AutomationProperties.AutomationId="ApexDml" />
                 <CheckBox Content="{loc:Tr Apex_AiAssist}" IsChecked="{Binding AiAssistEnabled, Mode=TwoWay}" VerticalAlignment="Center" Margin="0,2,12,2"
                           ToolTip="{loc:Tr Apex_AiAssistTip}" />
                 <CheckBox Content="{loc:Tr Apex_DebugOnly}" IsChecked="{Binding ShowDebugOnly, Mode=TwoWay}" VerticalAlignment="Center" Margin="0,2,12,2"

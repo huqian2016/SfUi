@@ -20,6 +20,7 @@ public partial class ApexViewModel : ObservableObject
     private readonly ApexSuggestionProvider _suggestions;
     private readonly AppLog _log;
     private readonly IReportExportDialog _reportDialog;
+    private readonly IApexDmlDialog _dmlDialog;
 
     [ObservableProperty]
     private string _apexCode = "System.debug('Hello SfUi');";
@@ -62,7 +63,7 @@ public partial class ApexViewModel : ObservableObject
 
     public ObservableCollection<HistoryEntry> HistoryItems { get; } = new();
 
-    public ApexViewModel(ApexService service, HistoryStore history, FavoritesStore favorites, IFilePickerService filePicker, AppSettingsStore settings, SObjectDescribeService describes, OrgMetadataService metadata, AppLog log, IReportExportDialog reportDialog)
+    public ApexViewModel(ApexService service, HistoryStore history, FavoritesStore favorites, IFilePickerService filePicker, AppSettingsStore settings, SObjectDescribeService describes, OrgMetadataService metadata, AppLog log, IReportExportDialog reportDialog, IApexDmlDialog dmlDialog)
     {
         _service = service;
         _history = history;
@@ -72,6 +73,7 @@ public partial class ApexViewModel : ObservableObject
         _suggestions = new ApexSuggestionProvider(describes, metadata);
         _log = log;
         _reportDialog = reportDialog;
+        _dmlDialog = dmlDialog;
         _aiAssistEnabled = settings.Current.ApexAiAssist;
         RefreshHistory();
     }
@@ -105,6 +107,37 @@ public partial class ApexViewModel : ObservableObject
         StatusText = outcome.Error is null
             ? ReportExportRunner.DescribeSuccess(outcome, string.Empty)
             : UiText.T("Report_FailedFmt", outcome.Error);
+    }
+
+    /// <summary>Insert / Update / Delete の Apex 文を生成してエディタへ挿入する。</summary>
+    [RelayCommand]
+    private async Task GenerateDmlAsync()
+    {
+        if (string.IsNullOrWhiteSpace(CurrentOrg))
+        {
+            StatusText = UiText.T("Msg_SelectOrg");
+            return;
+        }
+
+        var code = await _dmlDialog.GenerateAsync(new ApexDmlDialogRequest(CurrentOrg!, CurrentOrg!));
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            return;
+        }
+
+        ApexCode = InsertSnippet(ApexCode, code);
+        StatusText = UiText.T("Apex_DmlInserted");
+    }
+
+    /// <summary>現在のコードの末尾にスニペットを追記する（空なら置き換え）。</summary>
+    internal static string InsertSnippet(string? current, string snippet)
+    {
+        if (string.IsNullOrWhiteSpace(current))
+        {
+            return snippet;
+        }
+
+        return current.TrimEnd() + Environment.NewLine + Environment.NewLine + snippet;
     }
 
     [RelayCommand]
