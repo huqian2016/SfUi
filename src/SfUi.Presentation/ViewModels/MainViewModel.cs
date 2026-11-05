@@ -231,7 +231,11 @@ public partial class MainViewModel : ObservableObject
             (vm, title) => vm.TabTitle = title,
             "Tab_Apex",
             vm => vm.ApexCode,
-            (vm, text) => vm.ApexCode = text);
+            (vm, text) => vm.ApexCode = text,
+            vm => vm.TabTitle)
+        {
+            TitlePrompt = tab => _dialogs.Prompt(UiText.T("Main_RenameTabTitle"), UiText.T("Main_RenameTabPrompt"), tab.TabTitle),
+        };
         CommandTabs = new EditorTabHost<CommandViewModel>(
             () => CreateCommandTab(commandFactory),
             (vm, title) => vm.TabTitle = title,
