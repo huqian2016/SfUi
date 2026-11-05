@@ -66,14 +66,33 @@ public static class OrgSignInUrl
 
         var isSalesforceHost = host.EndsWith(".salesforce.com", StringComparison.OrdinalIgnoreCase)
                                || host.EndsWith(".force.com", StringComparison.OrdinalIgnoreCase)
-                               || host.EndsWith(".cloudforce.com", StringComparison.OrdinalIgnoreCase);
+                               || host.EndsWith(".cloudforce.com", StringComparison.OrdinalIgnoreCase)
+                               || host.EndsWith(".visualforce.com", StringComparison.OrdinalIgnoreCase);
         if (!isSalesforceHost)
         {
             return false;
         }
 
-        instanceUrl = uri.GetLeftPart(UriPartial.Authority);
+        instanceUrl = $"{uri.Scheme}://{ToApiHost(host)}";
         return true;
+    }
+
+    /// <summary>
+    /// Lightning / Visualforce ドメインを API 用の my.salesforce.com ホストへ変換する
+    /// （例: <c>hks3.lightning.force.com</c> → <c>hks3.my.salesforce.com</c>）。
+    /// </summary>
+    public static string ToApiHost(string? host)
+    {
+        var value = host?.Trim() ?? string.Empty;
+        foreach (var suffix in new[] { ".my.lightning.force.com", ".lightning.force.com", ".visualforce.com" })
+        {
+            if (value.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+            {
+                return value[..^suffix.Length] + ".my.salesforce.com";
+            }
+        }
+
+        return value;
     }
 
     /// <summary>セッション Cookie（sid）の値を取り出す（空文字は無視）。</summary>

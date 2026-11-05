@@ -84,13 +84,14 @@ public partial class OrgSignInView : UserControl
 
         try
         {
-            if (!OrgSignInUrl.TryGetInstanceUrl(core.Source, out var instanceUrl))
+            var pageUrl = core.Source;
+            if (!OrgSignInUrl.TryGetInstanceUrl(pageUrl, out var instanceUrl))
             {
                 return;
             }
 
-            var cookies = await core.CookieManager.GetCookiesAsync(instanceUrl);
-            var sid = OrgSignInUrl.FindSessionCookie(cookies.Select(c => (c.Name, c.Value)));
+            // API ホストの Cookie を優先し、無ければ実際のページのオリジンを見る
+            var sid = await ReadSessionAsync(instanceUrl) ?? await ReadSessionAsync(pageUrl);
             if (sid is not null)
             {
                 viewModel.ApplySession(instanceUrl, sid);
@@ -100,6 +101,18 @@ public partial class OrgSignInView : UserControl
         {
             // 検出の失敗はサインイン操作を妨げない
         }
+    }
+
+    private async Task<string?> ReadSessionAsync(string url)
+    {
+        if (Browser.CoreWebView2 is not { } core || !Uri.TryCreate(url, UriKind.Absolute, out var uri))
+        {
+            return null;
+        }
+
+        var origin = uri.GetLeftPart(UriPartial.Authority);
+        var cookies = await core.CookieManager.GetCookiesAsync(origin);
+        return OrgSignInUrl.FindSessionCookie(cookies.Select(c => (c.Name, c.Value)));
     }
 
     private void OnOpenClick(object sender, RoutedEventArgs e) => Navigate();

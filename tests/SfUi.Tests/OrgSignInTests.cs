@@ -28,6 +28,8 @@ public class OrgSignInTests
     [Theory]
     [InlineData("https://hks3.my.salesforce.com/lightning/page/home", true, "https://hks3.my.salesforce.com")]
     [InlineData("https://hks3--uat.sandbox.my.salesforce.com/", true, "https://hks3--uat.sandbox.my.salesforce.com")]
+    [InlineData("https://hks3.lightning.force.com/lightning/page/home", true, "https://hks3.my.salesforce.com")]
+    [InlineData("https://hks3--uat.sandbox.lightning.force.com/", true, "https://hks3--uat.sandbox.my.salesforce.com")]
     [InlineData("https://login.salesforce.com/", false, "")]
     [InlineData("https://test.salesforce.com/", false, "")]
     [InlineData("https://example.com/", false, "")]
@@ -49,6 +51,13 @@ public class OrgSignInTests
         Assert.Null(OrgSignInUrl.FindSessionCookie(new[] { ("sid", "") }));
         Assert.Null(OrgSignInUrl.FindSessionCookie(null));
     }
+
+    [Theory]
+    [InlineData("hks3.lightning.force.com", "hks3.my.salesforce.com")]
+    [InlineData("hks3--uat.sandbox.lightning.force.com", "hks3--uat.sandbox.my.salesforce.com")]
+    [InlineData("hks3.my.salesforce.com", "hks3.my.salesforce.com")]
+    public void ToApiHost_ConvertsLightningDomains(string host, string expected) =>
+        Assert.Equal(expected, OrgSignInUrl.ToApiHost(host));
 
     // ---- 登録フロー ----
 

@@ -275,7 +275,7 @@ public sealed class OrgManageService
                 arguments, timeout: timeout, cancellationToken: cancellationToken, environment: environment);
             var message = result.Success
                 ? result.StdOut.Trim()
-                : (string.IsNullOrWhiteSpace(result.StdErr) ? result.StdOut.Trim() : result.StdErr.Trim());
+                : TrimNoise(string.IsNullOrWhiteSpace(result.StdErr) ? result.StdOut : result.StdErr);
             if (result.Success)
             {
                 _log.Info($"組織管理: {result.CommandLine}");
@@ -296,4 +296,21 @@ public sealed class OrgManageService
 
     private static string Truncate(string text, int max = 400) =>
         text.Length <= max ? text : text[..max] + "…";
+
+    /// <summary>
+    /// npm の更新通知など、エラーではない行を取り除きます。
+    /// </summary>
+    private static string TrimNoise(string text)
+    {
+        var lines = text
+            .Replace("\r\n", "\n")
+            .Split('\n')
+            .Where(line =>
+            {
+                var trimmed = line.Trim();
+                return !(trimmed.StartsWith('»') && trimmed.Contains("Warning", StringComparison.OrdinalIgnoreCase));
+            });
+
+        return string.Join("\n", lines).Trim();
+    }
 }
