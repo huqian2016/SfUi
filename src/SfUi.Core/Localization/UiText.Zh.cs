@@ -2620,6 +2620,21 @@ public static partial class UiText
         ["Dml_ErrorNoObject"] = "请选择对象。",
         ["Dml_ErrorNoRecordId"] = "请输入记录 Id 或从候选中选择。",
         ["Dml_ErrorNoFields"] = "请至少选择一个字段。",
-        ["Dml_ErrorValueRequiredFmt"] = "请输入 {0} 的值。"
+        ["Dml_ErrorValueRequiredFmt"] = "请输入 {0} 的值。",
+        ["Tab_OrgSignIn"] = "组织登录",
+        ["OrgSignIn_Title"] = "登录组织",
+        ["OrgSignIn_InstanceUrl"] = "登录 URL / 组织 URL",
+        ["OrgSignIn_Open"] = "打开",
+        ["OrgSignIn_Reload"] = "重新加载",
+        ["OrgSignIn_Register"] = "注册此组织",
+        ["OrgSignIn_Reset"] = "清除",
+        ["OrgSignIn_Alias"] = "别名",
+        ["OrgSignIn_Hint"] = "请在下方登录 Salesforce。登录后会自动检测组织。",
+        ["OrgSignIn_DetectedFmt"] = "已登录 {0}。请点击“注册此组织”。",
+        ["OrgSignIn_NoSession"] = "请先登录 Salesforce。",
+        ["OrgSignIn_Registering"] = "正在注册…",
+        ["OrgSignIn_RegisteredFmt"] = "已注册 {0}。",
+        ["OrgSignIn_RegisterFailedFmt"] = "注册失败：{0}",
+        ["OrgSignIn_WebViewFailedFmt"] = "无法启动内置浏览器：{0}"
     };
 }

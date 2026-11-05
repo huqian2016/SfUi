@@ -117,6 +117,9 @@ public partial class App : Application
 
         // 匿名 Apex の DML 文生成
         services.AddSingleton<IApexDmlDialog, AvaloniaApexDmlDialog>();
+
+        // 組織登録（WPF のみ内部ブラウザーを提供）
+        services.AddSingleton<OrgSignInViewModel>();
             services.AddSingleton<MainWindow>();
             Services = services.BuildServiceProvider();
 

@@ -2620,6 +2620,21 @@ public static partial class UiText
         ["Dml_ErrorNoObject"] = "오브젝트를 선택하세요.",
         ["Dml_ErrorNoRecordId"] = "레코드 Id를 입력하거나 후보에서 선택하세요.",
         ["Dml_ErrorNoFields"] = "필드를 하나 이상 선택하세요.",
-        ["Dml_ErrorValueRequiredFmt"] = "{0} 값을 입력하세요."
+        ["Dml_ErrorValueRequiredFmt"] = "{0} 값을 입력하세요.",
+        ["Tab_OrgSignIn"] = "조직 로그인",
+        ["OrgSignIn_Title"] = "조직 로그인",
+        ["OrgSignIn_InstanceUrl"] = "로그인 URL / 조직 URL",
+        ["OrgSignIn_Open"] = "열기",
+        ["OrgSignIn_Reload"] = "새로 고침",
+        ["OrgSignIn_Register"] = "이 조직 등록",
+        ["OrgSignIn_Reset"] = "지우기",
+        ["OrgSignIn_Alias"] = "별칭",
+        ["OrgSignIn_Hint"] = "아래에서 Salesforce에 로그인하세요. 로그인하면 조직이 자동으로 감지됩니다.",
+        ["OrgSignIn_DetectedFmt"] = "{0}에 로그인했습니다. '이 조직 등록'을 누르세요.",
+        ["OrgSignIn_NoSession"] = "먼저 Salesforce에 로그인하세요.",
+        ["OrgSignIn_Registering"] = "등록 중…",
+        ["OrgSignIn_RegisteredFmt"] = "{0}을(를) 등록했습니다.",
+        ["OrgSignIn_RegisterFailedFmt"] = "등록하지 못했습니다: {0}",
+        ["OrgSignIn_WebViewFailedFmt"] = "내장 브라우저를 시작할 수 없습니다: {0}"
     };
 }

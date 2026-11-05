@@ -542,6 +542,9 @@
             <TabItem Header="{loc:Tr Tab_Api}">
                 <views:ApiConsoleView DataContext="{Binding Api}" />
             </TabItem>
+            <TabItem Header="{loc:Tr Tab_OrgSignIn}">
+                <views:OrgSignInView DataContext="{Binding OrgSignIn}" />
+            </TabItem>
             <TabItem Header="{loc:Tr Tab_Settings}">
                 <views:SettingsView DataContext="{Binding Settings}" />
             </TabItem>

@@ -2619,6 +2619,21 @@ public static partial class UiText
         ["Dml_ErrorNoObject"] = "オブジェクトを選択してください。",
         ["Dml_ErrorNoRecordId"] = "レコード Id を入力するか候補から選択してください。",
         ["Dml_ErrorNoFields"] = "項目を 1 つ以上選択してください。",
-        ["Dml_ErrorValueRequiredFmt"] = "{0} の値を入力してください。"
+        ["Dml_ErrorValueRequiredFmt"] = "{0} の値を入力してください。",
+        ["Tab_OrgSignIn"] = "組織登録",
+        ["OrgSignIn_Title"] = "組織にサインイン",
+        ["OrgSignIn_InstanceUrl"] = "ログイン URL / 組織 URL",
+        ["OrgSignIn_Open"] = "開く",
+        ["OrgSignIn_Reload"] = "再読み込み",
+        ["OrgSignIn_Register"] = "この組織を登録",
+        ["OrgSignIn_Reset"] = "クリア",
+        ["OrgSignIn_Alias"] = "エイリアス",
+        ["OrgSignIn_Hint"] = "下の画面で Salesforce にサインインしてください。ログイン後、組織が自動的に検出されます。",
+        ["OrgSignIn_DetectedFmt"] = "{0} にサインインしました。「この組織を登録」を押してください。",
+        ["OrgSignIn_NoSession"] = "先に Salesforce にサインインしてください。",
+        ["OrgSignIn_Registering"] = "登録中…",
+        ["OrgSignIn_RegisteredFmt"] = "{0} を登録しました。",
+        ["OrgSignIn_RegisterFailedFmt"] = "登録に失敗しました: {0}",
+        ["OrgSignIn_WebViewFailedFmt"] = "内部ブラウザーを起動できませんでした: {0}"
     };
 }

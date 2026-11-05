@@ -149,6 +149,14 @@ public partial class MainViewModel : ObservableObject
 
     /// <summary>クイックパネル（お気に入り）の ViewModel。</summary>
     public QuickPanelViewModel QuickPanel { get; }
+    /// <summary>組織登録（内部ブラウザー）タブの ViewModel。</summary>
+    public OrgSignInViewModel OrgSignIn { get; }
+
+    /// <summary>内部ブラウザーで組織を登録したら一覧を再読み込みする。</summary>
+    private async void OnOrgSignedIn(object? sender, EventArgs e)
+    {
+        await RefreshOrgsAsync();
+    }
 
     public MainViewModel(
         OrgService orgService,
@@ -176,6 +184,7 @@ public partial class MainViewModel : ObservableObject
         OrgCacheStore orgCacheStore,
         SObjectDescribeService describes,
         OrgMetadataService metadata,
+        OrgSignInViewModel orgSignIn,
         IUiDispatcher ui)
     {
         _orgService = orgService;
@@ -194,6 +203,8 @@ public partial class MainViewModel : ObservableObject
         _describes = describes;
         _metadata = metadata;
         _ui = ui;
+        OrgSignIn = orgSignIn;
+        OrgSignIn.OrgRegistered += OnOrgSignedIn;
         _tabsSaveDebouncer = new UiDebouncer(1200, ui);
         Orgs.CollectionChanged += (_, _) =>
         {

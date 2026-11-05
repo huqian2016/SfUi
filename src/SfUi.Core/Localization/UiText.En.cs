@@ -2619,6 +2619,21 @@ public static partial class UiText
         ["Dml_ErrorNoObject"] = "Select an object.",
         ["Dml_ErrorNoRecordId"] = "Enter or pick a record Id.",
         ["Dml_ErrorNoFields"] = "Select at least one field.",
-        ["Dml_ErrorValueRequiredFmt"] = "{0} needs a value."
+        ["Dml_ErrorValueRequiredFmt"] = "{0} needs a value.",
+        ["Tab_OrgSignIn"] = "Sign in to org",
+        ["OrgSignIn_Title"] = "Sign in to an org",
+        ["OrgSignIn_InstanceUrl"] = "Login URL / org URL",
+        ["OrgSignIn_Open"] = "Open",
+        ["OrgSignIn_Reload"] = "Reload",
+        ["OrgSignIn_Register"] = "Register this org",
+        ["OrgSignIn_Reset"] = "Clear",
+        ["OrgSignIn_Alias"] = "Alias",
+        ["OrgSignIn_Hint"] = "Sign in to Salesforce below. After logging in, the org is detected automatically.",
+        ["OrgSignIn_DetectedFmt"] = "Signed in to {0}. Press Register to add it to SfUi.",
+        ["OrgSignIn_NoSession"] = "Sign in to Salesforce first.",
+        ["OrgSignIn_Registering"] = "Registering…",
+        ["OrgSignIn_RegisteredFmt"] = "Registered {0}.",
+        ["OrgSignIn_RegisterFailedFmt"] = "Registration failed: {0}",
+        ["OrgSignIn_WebViewFailedFmt"] = "Could not start the embedded browser: {0}"
     };
 }
