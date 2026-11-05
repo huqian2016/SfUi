@@ -92,6 +92,9 @@ Built with C# / .NET 9, CommunityToolkit.Mvvm and AvalonEdit (WPF) / AvaloniaEdi
 ![SfUi main window](docs/screenshots/main-en.png)
 *SOQL workspace — Quick Panel on the left, AI chat panel on the right, icon tool bar with org & folder switching on top*
 
+![UI themes](docs/screenshots/themes-en.png)
+*Four switchable themes — Classic (top left), Modern light (top right), Dark (bottom left) and Salesforce (bottom right), picked from the Theme box in the top bar*
+
 ![Org Info window](docs/screenshots/orginfo-en.png)
 *Org Info — a separate window per org with 20+ tabs, cross-tab search, Setup links and its own AI panel*
 
@@ -341,6 +344,9 @@ bash packaging/make-mac-app.sh osx-arm64   # Intel は osx-x64
 
 ![SfUi メイン画面](docs/screenshots/main-ja.png)
 *SOQL ワークスペース — 左: クイックパネル / 右: AI チャット / 上部: アイコン ツールバーと組織・フォルダ切替*
+
+![UI テーマ](docs/screenshots/themes-en.png)
+*切り替えできる 4 つのテーマ — クラシック（左上）/ モダン ライト（右上）/ ダーク（左下）/ Salesforce（右下）。上部バーの「テーマ」から選択*
 
 ![組織情報ウィンドウ](docs/screenshots/orginfo-ja.png)
 *組織情報 — 組織ごとの別ウィンドウ。20 以上のタブ・全タブ横断検索・Setup リンク・専用 AI パネル*
