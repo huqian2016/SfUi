@@ -14,12 +14,12 @@
     <DockPanel>
 
         <!-- ヘッダー -->
-        <Border DockPanel.Dock="Top" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="10,6">
+        <Border DockPanel.Dock="Top" Background="{DynamicResource AppChromeBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="10,6">
             <DockPanel>
                 <views:HelpButton Topic="LogAnalyzer" DockPanel.Dock="Right" Margin="8,0,0,0" VerticalAlignment="Center" />
                 <StackPanel>
                     <TextBlock Text="{Binding HeaderText}" FontWeight="SemiBold" TextWrapping="Wrap" />
-                    <TextBlock Text="{Binding StatusText}" Foreground="#666666" Margin="0,2,0,0" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding StatusText}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,2,0,0" TextWrapping="Wrap" />
                 </StackPanel>
             </DockPanel>
         </Border>
@@ -41,10 +41,10 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Background="#F7F9FB" BorderBrush="#DDDDDD" BorderThickness="1" CornerRadius="4"
+                                <Border Background="{DynamicResource AppSubtleBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" CornerRadius="4"
                                         Padding="12,8" Margin="0,0,8,8" MinWidth="150">
                                     <StackPanel>
-                                        <TextBlock Text="{Binding Label}" Foreground="#666666" />
+                                        <TextBlock Text="{Binding Label}" Foreground="{DynamicResource AppMutedTextBrush}" />
                                         <TextBlock Text="{Binding Value}" FontSize="17" FontWeight="SemiBold" Margin="0,2,0,0" />
                                     </StackPanel>
                                 </Border>
@@ -62,7 +62,7 @@
                         <!-- ガバナ制限 -->
                         <DockPanel Grid.Column="0">
                             <TextBlock DockPanel.Dock="Top" Text="{loc:Tr LogAnalyzer_LimitsHeader}" FontWeight="SemiBold" Margin="0,0,0,4" />
-                            <TextBlock DockPanel.Dock="Top" Text="{loc:Tr LogAnalyzer_NoLimits}" Foreground="#888888"
+                            <TextBlock DockPanel.Dock="Top" Text="{loc:Tr LogAnalyzer_NoLimits}" Foreground="{DynamicResource AppMutedTextBrush}"
                                        Visibility="{Binding HasNoLimits, Converter={StaticResource BoolToVis}}" />
                             <DataGrid x:Name="LimitsGrid" ItemsSource="{Binding Limits}"
                                       AutoGenerateColumns="False" IsReadOnly="True"
@@ -112,7 +112,7 @@
 
                             <DockPanel Grid.Row="2">
                                 <TextBlock DockPanel.Dock="Top" Text="{Binding ErrorsHeaderText}" FontWeight="SemiBold" Margin="0,0,0,4" />
-                                <TextBlock DockPanel.Dock="Top" Text="{loc:Tr LogAnalyzer_NoErrors}" Foreground="#888888"
+                                <TextBlock DockPanel.Dock="Top" Text="{loc:Tr LogAnalyzer_NoErrors}" Foreground="{DynamicResource AppMutedTextBrush}"
                                            Visibility="{Binding HasNoErrors, Converter={StaticResource BoolToVis}}" />
                                 <ListBox x:Name="ErrorsList" ItemsSource="{Binding Errors}" />
                             </DockPanel>
@@ -130,7 +130,7 @@
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="{Binding Label}" />
                                 <TextBlock Text="{Binding DurationMs, StringFormat={}{0:F0} ms}" Foreground="#1B5E20" Margin="6,0,0,0" />
-                                <TextBlock Text="{Binding EventType}" Foreground="#999999" Margin="6,0,0,0" />
+                                <TextBlock Text="{Binding EventType}" Foreground="{DynamicResource AppSubtleTextBrush}" Margin="6,0,0,0" />
                                 <TextBlock Text="{Binding Rows, StringFormat=rows: {0}}" Foreground="#555599" Margin="6,0,0,0" />
                             </StackPanel>
                         </HierarchicalDataTemplate>
@@ -156,9 +156,9 @@
                         </StackPanel>
                     </Border>
 
-                    <Border DockPanel.Dock="Bottom" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Height="110" Padding="6,4">
+                    <Border DockPanel.Dock="Bottom" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0" Height="110" Padding="6,4">
                         <DockPanel>
-                            <TextBlock DockPanel.Dock="Top" Text="{loc:Tr LogAnalyzer_DetailsLabel}" Foreground="#666666" Margin="0,0,0,2" />
+                            <TextBlock DockPanel.Dock="Top" Text="{loc:Tr LogAnalyzer_DetailsLabel}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,0,0,2" />
                             <TextBox x:Name="DetailsBox" Text="{Binding SelectedDetails}" IsReadOnly="True"
                                      FontFamily="Consolas" FontSize="12"
                                      VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" TextWrapping="NoWrap" />

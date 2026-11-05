@@ -1,4 +1,4 @@
-﻿<Window xmlns="https://github.com/avaloniaui"
+<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:loc="clr-namespace:SfUi.Avalonia"
         xmlns:vm="clr-namespace:SfUi.App.ViewModels;assembly=SfUi.Presentation"
@@ -13,15 +13,15 @@
     <DockPanel>
 
         <!-- ヘッダー -->
-        <Border DockPanel.Dock="Top" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="10,6">
+        <Border DockPanel.Dock="Top" Background="{DynamicResource AppChromeBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="10,6">
             <StackPanel>
                 <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
-                <TextBlock x:Name="SourceEditorStatusText" Text="{Binding StatusMessage}" Foreground="#666666" Margin="0,2,0,0" TextWrapping="Wrap" />
+                <TextBlock x:Name="SourceEditorStatusText" Text="{Binding StatusMessage}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,2,0,0" TextWrapping="Wrap" />
             </StackPanel>
         </Border>
 
         <!-- ツールバー -->
-        <Border DockPanel.Dock="Top" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="10,6">
+        <Border DockPanel.Dock="Top" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="10,6">
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="{Binding OrgLabel}" FontWeight="SemiBold" VerticalAlignment="Center"
                            AutomationProperties.Name="Org" />
@@ -62,13 +62,13 @@
                          ToolTip.Tip="{loc:Tr SourceEditor_FilterTip}"
                          Text="{Binding FilterText, Mode=TwoWay}"
                          AutomationProperties.Name="{loc:Tr SourceEditor_FilterTip}" />
-                <TextBlock x:Name="SourceEditorFileStatusText" Text="{Binding FileStatusText}" Margin="16,0,0,0" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#0D47A1" />
-                <TextBlock Text="{Binding CaretText}" Margin="12,0,0,0" VerticalAlignment="Center" Foreground="#666666" />
+                <TextBlock x:Name="SourceEditorFileStatusText" Text="{Binding FileStatusText}" Margin="16,0,0,0" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{DynamicResource AppAccentBrush}" />
+                <TextBlock Text="{Binding CaretText}" Margin="12,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource AppMutedTextBrush}" />
             </StackPanel>
         </Border>
 
         <!-- 反映エラー パネル -->
-        <Border DockPanel.Dock="Bottom" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="10,6"
+        <Border DockPanel.Dock="Bottom" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0" Padding="10,6"
                 IsVisible="{Binding HasDeployErrors}">
             <StackPanel>
                 <TextBlock x:Name="SourceEditorErrorsHeader" Text="{Binding ErrorsHeaderText}" FontWeight="SemiBold" />
@@ -87,7 +87,7 @@
 
         <!-- メタデータ エクスプローラー + エディタ -->
         <!-- 横断検索パネル（Phase 7: 開いているファイル内） -->
-        <Border DockPanel.Dock="Bottom" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="10,6"
+        <Border DockPanel.Dock="Bottom" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0" Padding="10,6"
                 IsVisible="{Binding IsSearchPanelOpen}">
             <StackPanel>
                 <DockPanel>
@@ -104,7 +104,7 @@
                     <Button x:Name="SourceEditorSearchCancelButton" Content="{loc:Tr Common_Cancel}" Padding="12,2" Margin="0,0,12,0"
                             Command="{Binding CancelSearchCommand}"
                             IsVisible="{Binding IsSearching}" />
-                    <TextBlock x:Name="SourceEditorSearchStatusText" Text="{Binding SearchStatusText}" VerticalAlignment="Center" Foreground="#666666" />
+                    <TextBlock x:Name="SourceEditorSearchStatusText" Text="{Binding SearchStatusText}" VerticalAlignment="Center" Foreground="{DynamicResource AppMutedTextBrush}" />
                 </DockPanel>
                 <ListBox x:Name="SourceEditorSearchResults" MaxHeight="140" Margin="0,4,0,0"
                          ItemsSource="{Binding SearchResults}"
@@ -119,14 +119,14 @@
         </Border>
 
         <!-- ローカル履歴パネル（Phase 7: 反映ごとのスナップショット → 読込 / 再反映） -->
-        <Border DockPanel.Dock="Bottom" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="10,6"
+        <Border DockPanel.Dock="Bottom" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0" Padding="10,6"
                 IsVisible="{Binding IsHistoryPanelOpen}">
             <DockPanel>
                 <DockPanel DockPanel.Dock="Top">
                     <Button DockPanel.Dock="Right" Content="✕" Padding="6,0"
                             Command="{Binding ToggleHistoryPanelCommand}" />
                     <TextBlock x:Name="SourceEditorHistoryHeader" Text="{Binding HistoryTitle}" FontWeight="SemiBold" VerticalAlignment="Center" />
-                    <TextBlock x:Name="SourceEditorHistoryCountText" Text="{Binding HistoryStatusText}" Margin="10,0,0,0" VerticalAlignment="Center" Foreground="#666666" />
+                    <TextBlock x:Name="SourceEditorHistoryCountText" Text="{Binding HistoryStatusText}" Margin="10,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource AppMutedTextBrush}" />
                 </DockPanel>
                 <DockPanel DockPanel.Dock="Bottom" Margin="0,6,0,0">
                     <Button x:Name="SourceEditorHistoryLoadButton" Content="{loc:Tr SourceEditor_HistoryLoad}" Padding="12,2"
@@ -135,7 +135,7 @@
                             Command="{Binding RedeployHistoryCommand}" />
                     <Button x:Name="SourceEditorHistoryClearButton" Content="{loc:Tr SourceEditor_HistoryClear}" Padding="12,2" Margin="6,0,0,0"
                             Command="{Binding ClearHistoryCommand}" />
-                    <TextBlock x:Name="SourceEditorHistoryDiffText" Text="{Binding HistoryDiffText}" Margin="12,0,0,0" VerticalAlignment="Center" Foreground="#666666" />
+                    <TextBlock x:Name="SourceEditorHistoryDiffText" Text="{Binding HistoryDiffText}" Margin="12,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource AppMutedTextBrush}" />
                 </DockPanel>
                 <ListBox x:Name="SourceEditorHistoryList" MaxHeight="150" Margin="0,4,0,0"
                          ItemsSource="{Binding HistoryRows}"
@@ -176,7 +176,7 @@
                 </TreeView.DataTemplates>
             </TreeView>
 
-            <GridSplitter Grid.Column="1" Background="#EEEEEE" ResizeDirection="Columns" />
+            <GridSplitter Grid.Column="1" Background="{DynamicResource AppBorderBrush}" ResizeDirection="Columns" />
 
             <Grid Grid.Column="2" Margin="6,0,0,0">
             <Grid.RowDefinitions>
@@ -218,13 +218,13 @@
             </Panel>
 
             <!-- 自動補完（Phase 5: 候補チップ。選択でカーソル位置の語を置き換え） -->
-            <Border Grid.Row="1" x:Name="SourceEditorSuggestions" Background="#F7F9FC" BorderBrush="#E1E6EE" BorderThickness="0,1,0,0" Padding="8,6"
+            <Border Grid.Row="1" x:Name="SourceEditorSuggestions" Background="{DynamicResource AppSubtleBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0" Padding="8,6"
                     IsVisible="{Binding IsSuggestionsVisible}">
                 <DockPanel>
                     <DockPanel DockPanel.Dock="Top" Margin="0,0,0,4">
-                        <TextBlock DockPanel.Dock="Right" Text="{loc:Tr Soql_SuggestFetching}" Foreground="#888888" FontStyle="Italic"
+                        <TextBlock DockPanel.Dock="Right" Text="{loc:Tr Soql_SuggestFetching}" Foreground="{DynamicResource AppMutedTextBrush}" FontStyle="Italic"
                                    IsVisible="{Binding IsFetchingSuggestions}" />
-                        <TextBlock x:Name="SourceEditorSuggestionHeader" Text="{Binding SuggestionsHeader}" FontWeight="SemiBold" Foreground="#445577" />
+                        <TextBlock x:Name="SourceEditorSuggestionHeader" Text="{Binding SuggestionsHeader}" FontWeight="SemiBold" Foreground="{DynamicResource AppMutedTextBrush}" />
                     </DockPanel>
                     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" MaxHeight="120">
                         <ItemsControl ItemsSource="{Binding Suggestions}">
@@ -249,10 +249,10 @@
 
             <!-- AI パネル（Phase 6: 質問 / 説明 / 改善提案 / エラー修正） -->
             <Border Grid.Column="3" x:Name="SourceEditorAiPanel" Width="420" Margin="8,0,0,0"
-                    BorderBrush="#DDDDDD" BorderThickness="1"
+                    BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1"
                     IsVisible="{Binding IsAiPanelOpen}">
                 <DockPanel>
-                    <Border DockPanel.Dock="Top" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,4">
+                    <Border DockPanel.Dock="Top" Background="{DynamicResource AppChromeBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="8,4">
                         <DockPanel>
                             <Button DockPanel.Dock="Right" Content="✕" Padding="6,0"
                                     Command="{Binding ToggleAiPanelCommand}"

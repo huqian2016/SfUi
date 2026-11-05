@@ -6,7 +6,7 @@
         WindowStartupLocation="CenterOwner"
         FontSize="13">
     <DockPanel>
-        <Border DockPanel.Dock="Bottom" Background="#F7F7F7" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="12,8">
+        <Border DockPanel.Dock="Bottom" Background="{DynamicResource AppSubtleBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0" Padding="12,8">
             <DockPanel>
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
                     <Button Content="{Binding CancelText}" Width="110" Height="30" Margin="0,0,8,0" Click="OnCancel"
@@ -21,7 +21,7 @@
 
         <StackPanel DockPanel.Dock="Top" Margin="12,10,12,0">
             <Grid ColumnDefinitions="Auto,170,Auto,150,Auto,*,Auto">
-                <TextBlock Grid.Column="0" Text="{Binding LabelFilter}" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="#666666" />
+                <TextBlock Grid.Column="0" Text="{Binding LabelFilter}" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="{DynamicResource AppMutedTextBrush}" />
                 <ComboBox Grid.Column="1" ItemsSource="{Binding ObjectFilters}" SelectedItem="{Binding SelectedFilter, Mode=TwoWay}"
                           Margin="0,0,12,0" AutomationProperties.AutomationId="DmlFilter">
                     <ComboBox.ItemTemplate>
@@ -30,10 +30,10 @@
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
                 </ComboBox>
-                <TextBlock Grid.Column="2" Text="{Binding LabelSearch}" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="#666666" />
+                <TextBlock Grid.Column="2" Text="{Binding LabelSearch}" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="{DynamicResource AppMutedTextBrush}" />
                 <TextBox Grid.Column="3" Text="{Binding ObjectSearch, Mode=TwoWay}" Margin="0,0,12,0"
                          AutomationProperties.AutomationId="DmlObjectSearch" />
-                <TextBlock Grid.Column="4" Text="{Binding LabelObject}" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="#666666" />
+                <TextBlock Grid.Column="4" Text="{Binding LabelObject}" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="{DynamicResource AppMutedTextBrush}" />
                 <ComboBox Grid.Column="5" ItemsSource="{Binding Objects}" SelectedItem="{Binding SelectedObject, Mode=TwoWay}"
                           AutomationProperties.AutomationId="DmlObject">
                     <ComboBox.ItemTemplate>
@@ -46,7 +46,7 @@
             </Grid>
 
             <Grid Margin="0,8,0,0" ColumnDefinitions="Auto,170,Auto">
-                <TextBlock Grid.Column="0" Text="{Binding LabelKind}" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="#666666" />
+                <TextBlock Grid.Column="0" Text="{Binding LabelKind}" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="{DynamicResource AppMutedTextBrush}" />
                 <ComboBox Grid.Column="1" ItemsSource="{Binding Kinds}" SelectedItem="{Binding SelectedKind, Mode=TwoWay}"
                           AutomationProperties.AutomationId="DmlKind">
                     <ComboBox.ItemTemplate>
@@ -58,9 +58,9 @@
             </Grid>
 
             <Grid Margin="0,8,0,0" ColumnDefinitions="Auto,330,Auto,180,Auto,*" IsVisible="{Binding NeedsRecordId}">
-                <TextBlock Grid.Column="0" Text="{Binding LabelRecordId}" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="#666666" />
+                <TextBlock Grid.Column="0" Text="{Binding LabelRecordId}" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="{DynamicResource AppMutedTextBrush}" />
                 <TextBox Grid.Column="1" Text="{Binding RecordId, Mode=TwoWay}" AutomationProperties.AutomationId="DmlRecordId" />
-                <TextBlock Grid.Column="2" Text="{Binding LabelRecordSearch}" VerticalAlignment="Center" Margin="12,0,6,0" Foreground="#666666" />
+                <TextBlock Grid.Column="2" Text="{Binding LabelRecordSearch}" VerticalAlignment="Center" Margin="12,0,6,0" Foreground="{DynamicResource AppMutedTextBrush}" />
                 <TextBox Grid.Column="3" Text="{Binding RecordSearch, Mode=TwoWay}" AutomationProperties.AutomationId="DmlRecordSearch" />
                 <Button Grid.Column="4" Content="{Binding LoadRecordsText}" Padding="10,2" Margin="6,0,12,0"
                         Command="{Binding LoadRecordCandidatesCommand}" AutomationProperties.AutomationId="DmlLoadRecords" />
@@ -74,13 +74,13 @@
                 </ComboBox>
             </Grid>
 
-            <TextBlock Text="{Binding HintValue}" Foreground="#888888" TextWrapping="Wrap" Margin="0,8,0,0" />
+            <TextBlock Text="{Binding HintValue}" Foreground="{DynamicResource AppMutedTextBrush}" TextWrapping="Wrap" Margin="0,8,0,0" />
         </StackPanel>
 
         <Grid Margin="12,8,12,8" ColumnDefinitions="*,8,420">
             <DockPanel Grid.Column="0">
-                <TextBlock DockPanel.Dock="Top" Text="{Binding LabelFields}" Foreground="#666666" Margin="0,0,0,4" />
-                <TextBlock DockPanel.Dock="Top" Text="{Binding NoFieldsText}" Foreground="#777777" Margin="0,0,0,4"
+                <TextBlock DockPanel.Dock="Top" Text="{Binding LabelFields}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,0,0,4" />
+                <TextBlock DockPanel.Dock="Top" Text="{Binding NoFieldsText}" Foreground="{DynamicResource AppSubtleTextBrush}" Margin="0,0,0,4"
                            IsVisible="{Binding !HasFields}" />
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <ItemsControl ItemsSource="{Binding Fields}" AutomationProperties.AutomationId="DmlFields">
@@ -92,7 +92,7 @@
                                               AutomationProperties.AutomationId="{Binding CheckAutomationId}" />
                                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                         <TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis" />
-                                        <TextBlock Text="{Binding TypeText}" Foreground="#888888" FontSize="11" />
+                                        <TextBlock Text="{Binding TypeText}" Foreground="{DynamicResource AppMutedTextBrush}" FontSize="11" />
                                     </StackPanel>
                                     <TextBlock Grid.Column="2" Text="{Binding RequiredText}" Foreground="#C62828" FontSize="11"
                                                Margin="0,0,8,0" VerticalAlignment="Center" />
@@ -124,7 +124,7 @@
             </DockPanel>
 
             <DockPanel Grid.Column="2">
-                <TextBlock DockPanel.Dock="Top" Text="{Binding LabelPreview}" Foreground="#666666" Margin="0,0,0,4" />
+                <TextBlock DockPanel.Dock="Top" Text="{Binding LabelPreview}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,0,0,4" />
                 <TextBox Text="{Binding Preview}" IsReadOnly="True" AcceptsReturn="True" FontFamily="Consolas"
                          TextWrapping="NoWrap" AutomationProperties.AutomationId="DmlPreview" />
             </DockPanel>

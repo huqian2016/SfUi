@@ -1,4 +1,4 @@
-﻿<Window xmlns="https://github.com/avaloniaui"
+<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:loc="clr-namespace:SfUi.Avalonia"
         x:Class="SfUi.Avalonia.Views.EtlWindow"
@@ -9,10 +9,10 @@
     <DockPanel>
 
         <!-- ヘッダー -->
-        <Border DockPanel.Dock="Top" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="10,6">
+        <Border DockPanel.Dock="Top" Background="{DynamicResource AppChromeBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="10,6">
             <StackPanel>
                 <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
-                <TextBlock Text="{Binding StatusMessage}" Foreground="#666666" Margin="0,2,0,0" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,2,0,0" TextWrapping="Wrap" />
             </StackPanel>
         </Border>
 
@@ -90,23 +90,23 @@
                                         <Setter Property="Background" Value="Transparent" />
                                     </Style>
                                     <Style Selector="ListBoxItem:selected Border.node">
-                                        <Setter Property="BorderBrush" Value="#0078D4" />
+                                        <Setter Property="BorderBrush" Value="{DynamicResource AppAccentBrush}" />
                                     </Style>
                                 </ListBox.Styles>
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal" Margin="2,6">
-                                            <Border Classes="node" Width="234" Padding="8" CornerRadius="6" Background="White"
-                                                    BorderThickness="2" BorderBrush="#DDDDDD">
+                                            <Border Classes="node" Width="234" Padding="8" CornerRadius="6" Background="{DynamicResource AppSurfaceBrush}"
+                                                    BorderThickness="2" BorderBrush="{DynamicResource AppBorderBrush}">
                                                 <StackPanel>
                                                     <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" />
                                                     <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
                                                         <TextBlock Text="{Binding SelectedSourceType}" Foreground="#1B5E20" />
-                                                        <TextBlock Text=" · " Foreground="#AAAAAA" IsVisible="{Binding HasFlowSourceDetail}" />
-                                                        <TextBlock Text="{Binding FlowSourceDetail}" Foreground="#666666" MaxWidth="150"
+                                                        <TextBlock Text=" · " Foreground="{DynamicResource AppSubtleTextBrush}" IsVisible="{Binding HasFlowSourceDetail}" />
+                                                        <TextBlock Text="{Binding FlowSourceDetail}" Foreground="{DynamicResource AppMutedTextBrush}" MaxWidth="150"
                                                                    TextTrimming="CharacterEllipsis" />
                                                     </StackPanel>
-                                                    <TextBlock Text="{Binding FlowTargetText}" Foreground="#0D47A1" Margin="0,2,0,0"
+                                                    <TextBlock Text="{Binding FlowTargetText}" Foreground="{DynamicResource AppAccentBrush}" Margin="0,2,0,0"
                                                                MaxWidth="214" TextTrimming="CharacterEllipsis" />
                                                     <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
                                                         <Button Content="←" Padding="8,0" MinWidth="30"
@@ -127,7 +127,7 @@
                                                     </StackPanel>
                                                 </StackPanel>
                                             </Border>
-                                            <TextBlock Text="→" FontSize="20" Foreground="#999999" VerticalAlignment="Center" Margin="4,0,4,0" />
+                                            <TextBlock Text="→" FontSize="20" Foreground="{DynamicResource AppSubtleTextBrush}" VerticalAlignment="Center" Margin="4,0,4,0" />
                                         </StackPanel>
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
@@ -411,7 +411,7 @@
                                 Command="{Binding DeleteConnectionCommand}"
                                 AutomationProperties.Name="{loc:Tr Etl_Delete}" />
                     </StackPanel>
-                    <TextBlock DockPanel.Dock="Bottom" Text="{loc:Tr Etl_ConnectionsNote}" Foreground="#888888" Margin="0,8,0,0" TextWrapping="Wrap" />
+                    <TextBlock DockPanel.Dock="Bottom" Text="{loc:Tr Etl_ConnectionsNote}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,8,0,0" TextWrapping="Wrap" />
                     <ListBox x:Name="EtlConnectionsList" Margin="0,8,0,0" ItemsSource="{Binding Connections}"
                              SelectedItem="{Binding SelectedConnection, Mode=TwoWay}"
                              DisplayMemberBinding="{Binding Name}"

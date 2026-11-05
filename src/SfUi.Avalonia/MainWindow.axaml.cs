@@ -24,6 +24,9 @@ public partial class MainWindow : Window
         this.FindControl<TextBlock>("DataPathText")!.Text = UiText.T("Main_DataPathFmt", paths.DataRoot);
         this.FindControl<TextBlock>("VersionText")!.Text = $"v{typeof(MainWindow).Assembly.GetName().Version?.ToString(3) ?? "0.0.0"}";
 
+        AppTheme.Apply(viewModel.ThemeKey);
+        viewModel.ThemeChanged += AppTheme.Apply;
+
         // 画面の作業領域に合わせて高さを決める（既定 900 DIP が入りきらない環境でも切れない）
         Opened += (_, _) =>
         {

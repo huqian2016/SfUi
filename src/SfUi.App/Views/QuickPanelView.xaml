@@ -8,7 +8,7 @@
                    ToolTip="{loc:Tr Quick_TitleTip}" />
 
         <TextBlock DockPanel.Dock="Bottom" Text="{loc:Tr Quick_Hint}" FontSize="10"
-                   Foreground="Gray" Margin="8,4,8,8" TextWrapping="Wrap" />
+                   Foreground="{DynamicResource AppMutedTextBrush}" Margin="8,4,8,8" TextWrapping="Wrap" />
 
         <ListBox x:Name="FavoritesList"
                  ItemsSource="{Binding Items}"

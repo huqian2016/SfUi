@@ -6,7 +6,7 @@ namespace SfUi.App;
 
 /// <summary>
 /// テーマ（配色トークン + モダンなコントロール スタイル）の適用。
-/// 配色はアプリ全体、コントロールの外観はメイン ウィンドウだけに適用します
+/// どちらもアプリ全土のリソースなので、メイン画面も各子ウィンドウも同じ見た目になります
 /// （クラシック テーマではコントロール スタイルを外すので従来の見た目に戻ります）。
 /// </summary>
 public static class AppTheme
@@ -17,31 +17,30 @@ public static class AppTheme
     /// <summary>現在適用中のテーマ識別子。</summary>
     public static string Current { get; private set; } = AppThemes.Classic;
 
-    /// <summary>テーマを適用する。<paramref name="window"/> を渡すとコントロール スタイルも切り替える。</summary>
+    /// <summary>テーマを適用する。<paramref name="window"/> は互換のために残している（現在は未使用）。</summary>
     public static void Apply(string? theme, Window? window = null)
     {
         var key = AppThemes.Normalize(theme);
         Current = key;
 
-        if (Application.Current is { } app)
+        if (Application.Current is not { } app)
         {
-            RemoveMerged(app.Resources, TokenMarker);
-            app.Resources.MergedDictionaries.Add(new ResourceDictionary
-            {
-                Source = new Uri($"Themes/Tokens.{FileName(key)}.xaml", UriKind.Relative),
-            });
+            return;
         }
 
-        if (window is not null)
+        RemoveMerged(app.Resources, TokenMarker);
+        app.Resources.MergedDictionaries.Add(new ResourceDictionary
         {
-            RemoveMerged(window.Resources, ModernControlsMarker);
-            if (AppThemes.HasModernChrome(key))
+            Source = new Uri($"Themes/Tokens.{FileName(key)}.xaml", UriKind.Relative),
+        });
+
+        RemoveMerged(app.Resources, ModernControlsMarker);
+        if (AppThemes.HasModernChrome(key))
+        {
+            app.Resources.MergedDictionaries.Add(new ResourceDictionary
             {
-                window.Resources.MergedDictionaries.Add(new ResourceDictionary
-                {
-                    Source = new Uri("Themes/Controls.Modern.xaml", UriKind.Relative),
-                });
-            }
+                Source = new Uri("Themes/Controls.Modern.xaml", UriKind.Relative),
+            });
         }
     }
 

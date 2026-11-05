@@ -6,14 +6,14 @@
         <!-- 利用可能リストのグループ見出し行 -->
         <Style Selector="TextBlock.groupHeader">
             <Setter Property="FontWeight" Value="Bold" />
-            <Setter Property="Foreground" Value="#555555" />
+            <Setter Property="Foreground" Value="{DynamicResource AppMutedTextBrush}" />
             <Setter Property="Margin" Value="0,6,0,2" />
         </Style>
     </UserControl.Styles>
     <DockPanel>
 
         <!-- 上部: カスタムタブの選択・作成・名前変更・保存 -->
-        <Border DockPanel.Dock="Top" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
+        <Border DockPanel.Dock="Top" Background="{DynamicResource AppToolbarBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="8,6">
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="{loc:Tr OrgInfo_Custom_TabLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
                 <ComboBox x:Name="TabCombo" Width="200" ItemsSource="{Binding Tabs}"
@@ -28,7 +28,7 @@
                         Command="{Binding CreateCommand}" />
                 <Button Content="{loc:Tr OrgInfo_Custom_Delete}" Margin="6,0,0,0" Padding="10,2"
                         Command="{Binding DeleteCommand}" IsEnabled="{Binding HasSelection}" />
-                <Border Width="1" Background="#CCCCCC" Margin="10,2,10,2" />
+                <Border Width="1" Background="{DynamicResource AppDividerBrush}" Margin="10,2,10,2" />
                 <TextBlock Text="{loc:Tr OrgInfo_Custom_NameLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
                 <TextBox x:Name="NameBox" Width="180" VerticalContentAlignment="Center"
                          Text="{Binding EditName, Mode=TwoWay}"
@@ -40,8 +40,8 @@
         </Border>
 
         <!-- 下部: ヒント -->
-        <Border DockPanel.Dock="Bottom" Background="#F7F7F7" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="8,4">
-            <TextBlock Text="{Binding HintText}" Foreground="#666666" TextWrapping="Wrap" />
+        <Border DockPanel.Dock="Bottom" Background="{DynamicResource AppSubtleBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0" Padding="8,4">
+            <TextBlock Text="{Binding HintText}" Foreground="{DynamicResource AppMutedTextBrush}" TextWrapping="Wrap" />
         </Border>
 
         <!-- ピッカー: 左 = 利用可能（検索付き・グループ化） / 右 = 選択済み（並べ替え可） -->

@@ -14,7 +14,7 @@
     <DockPanel>
 
         <!-- 上部: 検索とページング -->
-        <Border DockPanel.Dock="Top" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
+        <Border DockPanel.Dock="Top" Background="{DynamicResource AppChromeBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="8,6">
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="{loc:Tr BackupRecords_Search}" VerticalAlignment="Center" Margin="0,0,4,0" />
                 <TextBox Width="280" VerticalAlignment="Center"
@@ -28,7 +28,7 @@
                 <Button Content="{loc:Tr BackupRecords_Next}" Margin="8,0,0,0" Padding="8,2"
                         Command="{Binding NextPageCommand}"
                         AutomationProperties.Name="{loc:Tr BackupRecords_Next}" />
-                <TextBlock Text="{Binding StatusMessage}" Foreground="#666666" Margin="16,0,0,0" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="16,0,0,0" VerticalAlignment="Center" />
                 <views:HelpButton Topic="RestoreRecords" Margin="16,0,0,0" />
             </StackPanel>
         </Border>

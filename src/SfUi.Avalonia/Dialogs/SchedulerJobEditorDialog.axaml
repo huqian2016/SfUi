@@ -8,7 +8,7 @@
         ShowInTaskbar="False"
         FontSize="13">
     <DockPanel Margin="14">
-        <Border DockPanel.Dock="Bottom" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="0,10,0,0" Margin="0,10,0,0">
+        <Border DockPanel.Dock="Bottom" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0" Padding="0,10,0,0" Margin="0,10,0,0">
             <DockPanel>
                 <TextBlock Text="{Binding ValidationMessage}" Foreground="#B3261E" VerticalAlignment="Center"
                            TextWrapping="Wrap" AutomationProperties.AutomationId="JobEditorValidation" />
@@ -28,12 +28,12 @@
                 <!-- 基本情報 -->
                 <Grid ColumnDefinitions="*,12,220">
                     <StackPanel Grid.Column="0">
-                        <TextBlock Text="{loc:Tr Sched_EditorName}" Foreground="#555555" Margin="0,8,0,3" />
+                        <TextBlock Text="{loc:Tr Sched_EditorName}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,8,0,3" />
                         <TextBox Text="{Binding Name, Mode=TwoWay}"
                                  AutomationProperties.AutomationId="JobEditorName" />
                     </StackPanel>
                     <StackPanel Grid.Column="2">
-                        <TextBlock Text="{loc:Tr Sched_EditorType}" Foreground="#555555" Margin="0,8,0,3" />
+                        <TextBlock Text="{loc:Tr Sched_EditorType}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,8,0,3" />
                         <ComboBox ItemsSource="{Binding JobTypes}" SelectedValueBinding="{Binding Key}"
                                   SelectedValue="{Binding JobType, Mode=TwoWay}"
                                   AutomationProperties.AutomationId="JobEditorType">
@@ -48,7 +48,7 @@
 
                 <Grid ColumnDefinitions="*,12,220">
                     <StackPanel Grid.Column="0">
-                        <TextBlock Text="{loc:Tr Sched_EditorOrg}" Foreground="#555555" Margin="0,8,0,3" />
+                        <TextBlock Text="{loc:Tr Sched_EditorOrg}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,8,0,3" />
                         <ComboBox ItemsSource="{Binding Orgs}" SelectedItem="{Binding SelectedOrg, Mode=TwoWay}"
                                   AutomationProperties.AutomationId="JobEditorOrg">
                             <ComboBox.ItemTemplate>
@@ -73,7 +73,7 @@
 
                 <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding IsSoql}">
                     <TextBlock Grid.Column="0" Text="{loc:Tr Sched_EditorCsvPath}" VerticalAlignment="Center"
-                               Margin="0,8,8,0" Foreground="#555555" />
+                               Margin="0,8,8,0" Foreground="{DynamicResource AppMutedTextBrush}" />
                     <TextBox Grid.Column="1" Text="{Binding CsvPath, Mode=TwoWay}" Margin="0,8,0,0" />
                 </Grid>
 
@@ -93,11 +93,11 @@
                              AutomationProperties.AutomationId="JobEditorBackupObjects" />
                     <Grid Margin="0,6,0,0" ColumnDefinitions="*,12,*">
                         <StackPanel Grid.Column="0">
-                            <TextBlock Text="{loc:Tr Sched_EditorBackupLabel}" Foreground="#555555" Margin="0,0,0,3" />
+                            <TextBlock Text="{loc:Tr Sched_EditorBackupLabel}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,0,0,3" />
                             <TextBox Text="{Binding BackupLabel, Mode=TwoWay}" />
                         </StackPanel>
                         <StackPanel Grid.Column="2">
-                            <TextBlock Text="{loc:Tr Sched_EditorBackupDescription}" Foreground="#555555" Margin="0,0,0,3" />
+                            <TextBlock Text="{loc:Tr Sched_EditorBackupDescription}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,0,0,3" />
                             <TextBox Text="{Binding BackupDescription, Mode=TwoWay}" />
                         </StackPanel>
                     </Grid>
@@ -107,12 +107,12 @@
                 <StackPanel IsVisible="{Binding IsDataImport}">
                     <Grid Margin="0,8,0,0" ColumnDefinitions="*,12,200">
                         <StackPanel Grid.Column="0">
-                            <TextBlock Text="{loc:Tr Sched_EditorImportObject}" Foreground="#555555" Margin="0,0,0,3" />
+                            <TextBlock Text="{loc:Tr Sched_EditorImportObject}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,0,0,3" />
                             <TextBox Text="{Binding ImportObject, Mode=TwoWay}"
                                      AutomationProperties.AutomationId="JobEditorImportObject" />
                         </StackPanel>
                         <StackPanel Grid.Column="2">
-                            <TextBlock Text="{loc:Tr Sched_EditorImportOperation}" Foreground="#555555" Margin="0,0,0,3" />
+                            <TextBlock Text="{loc:Tr Sched_EditorImportOperation}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,0,0,3" />
                             <ComboBox ItemsSource="{Binding ImportOperations}" SelectedValueBinding="{Binding Key}"
                                       SelectedValue="{Binding ImportOperation, Mode=TwoWay}"
                                       AutomationProperties.AutomationId="JobEditorImportOperation">
@@ -124,17 +124,17 @@
                             </ComboBox>
                         </StackPanel>
                     </Grid>
-                    <TextBlock Text="{loc:Tr Sched_EditorImportCsv}" Foreground="#555555" Margin="0,8,0,3" />
+                    <TextBlock Text="{loc:Tr Sched_EditorImportCsv}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,8,0,3" />
                     <TextBox Text="{Binding ImportCsvPath, Mode=TwoWay}"
                              AutomationProperties.AutomationId="JobEditorImportCsv" />
-                    <TextBlock Text="{loc:Tr Sched_EditorImportExternalId}" Foreground="#555555" Margin="0,8,0,3" />
+                    <TextBlock Text="{loc:Tr Sched_EditorImportExternalId}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,8,0,3" />
                     <TextBox Text="{Binding ImportExternalId, Mode=TwoWay}" />
                 </StackPanel>
 
                 <!-- データ エクスポート -->
                 <Grid IsVisible="{Binding IsDataExport}" Margin="0,8,0,0" ColumnDefinitions="*,12,200">
                     <StackPanel Grid.Column="0">
-                        <TextBlock Text="{loc:Tr Sched_EditorOutputPath}" Foreground="#555555" Margin="0,0,0,3" />
+                        <TextBlock Text="{loc:Tr Sched_EditorOutputPath}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,0,0,3" />
                         <Grid ColumnDefinitions="*,Auto">
                             <TextBox Text="{Binding OutputPath, Mode=TwoWay}"
                                      AutomationProperties.AutomationId="JobEditorOutputPath" />
@@ -143,12 +143,12 @@
                                     IsEnabled="{Binding CanBrowseExportPath}"
                                     AutomationProperties.AutomationId="JobEditorOutputBrowse" />
                         </Grid>
-                        <TextBlock Text="{Binding ExportPathHint}" Foreground="#777777" FontSize="11"
+                        <TextBlock Text="{Binding ExportPathHint}" Foreground="{DynamicResource AppSubtleTextBrush}" FontSize="11"
                                    Margin="0,3,0,0" TextWrapping="Wrap"
                                    AutomationProperties.AutomationId="JobEditorOutputPathHint" />
                     </StackPanel>
                     <StackPanel Grid.Column="2">
-                        <TextBlock Text="{loc:Tr Sched_EditorRestMethod}" Foreground="#555555" Margin="0,0,0,3" />
+                        <TextBlock Text="{loc:Tr Sched_EditorRestMethod}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,0,0,3" />
                         <ComboBox ItemsSource="{Binding ExportFormats}" SelectedItem="{Binding ExportFormat, Mode=TwoWay}" />
                     </StackPanel>
                 </Grid>
@@ -172,11 +172,11 @@
                         <ComboBox ItemsSource="{Binding RestMethods}" SelectedItem="{Binding RestMethod, Mode=TwoWay}"
                                   Width="120" />
                         <TextBlock Text="{loc:Tr Sched_EditorRestPath}" VerticalAlignment="Center" Margin="16,0,8,0"
-                                   Foreground="#555555" />
+                                   Foreground="{DynamicResource AppMutedTextBrush}" />
                         <TextBox Text="{Binding RestPath, Mode=TwoWay}" Width="420"
                                  AutomationProperties.AutomationId="JobEditorRestPath" />
                     </StackPanel>
-                    <TextBlock Text="{loc:Tr Sched_EditorRestBody}" Foreground="#555555" Margin="0,0,0,3" />
+                    <TextBlock Text="{loc:Tr Sched_EditorRestBody}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,0,0,3" />
                     <TextBox Text="{Binding RestBody, Mode=TwoWay}" Height="80" AcceptsReturn="True" TextWrapping="Wrap"
                              ScrollViewer.VerticalScrollBarVisibility="Auto" FontFamily="Consolas"
                              AutomationProperties.AutomationId="JobEditorRestBody" />
@@ -189,7 +189,7 @@
                              TextWrapping="Wrap" FontFamily="Consolas"
                              ToolTip.Tip="{loc:Tr Sched_EditorShellTip}"
                              AutomationProperties.AutomationId="JobEditorShellCommand" />
-                    <TextBlock Text="{loc:Tr Sched_EditorWorkingDirectory}" Foreground="#555555" Margin="0,8,0,3" />
+                    <TextBlock Text="{loc:Tr Sched_EditorWorkingDirectory}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,8,0,3" />
                     <TextBox Text="{Binding ShellWorkingDirectory, Mode=TwoWay}"
                              AutomationProperties.AutomationId="JobEditorShellWorkingDirectory" />
                     <Border Background="#FDECEA" BorderBrush="#F3B6B0" BorderThickness="1" CornerRadius="4"
@@ -213,7 +213,7 @@
                             </ComboBox.ItemTemplate>
                         </ComboBox>
                         <StackPanel Grid.Column="2">
-                            <TextBlock Text="{loc:Tr Sched_EditorReportFormat}" Foreground="#555555" Margin="0,0,0,3" />
+                            <TextBlock Text="{loc:Tr Sched_EditorReportFormat}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,0,0,3" />
                             <ComboBox ItemsSource="{Binding ReportFormatOptions}"
                                       SelectedValueBinding="{Binding Key}"
                                       SelectedValue="{Binding ReportFormat, Mode=TwoWay}"
@@ -226,10 +226,10 @@
                             </ComboBox>
                         </StackPanel>
                     </Grid>
-                    <TextBlock Text="{loc:Tr Sched_EditorReportOutput}" Foreground="#555555" Margin="0,8,0,3" />
+                    <TextBlock Text="{loc:Tr Sched_EditorReportOutput}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,8,0,3" />
                     <TextBox Text="{Binding ReportOutputPath, Mode=TwoWay}"
                              AutomationProperties.AutomationId="JobEditorReportOutput" />
-                    <TextBlock Text="{Binding ReportPathHint}" Foreground="#777777" FontSize="11"
+                    <TextBlock Text="{Binding ReportPathHint}" Foreground="{DynamicResource AppSubtleTextBrush}" FontSize="11"
                                Margin="0,3,0,0" TextWrapping="Wrap"
                                AutomationProperties.AutomationId="JobEditorReportOutputHint" />
                 </StackPanel>
@@ -248,26 +248,26 @@
 
                 <StackPanel Orientation="Horizontal" Margin="0,10,0,0" IsVisible="{Binding IsOnce}">
                     <TextBlock Text="{loc:Tr Sched_OnceAt}" VerticalAlignment="Center" Margin="0,0,8,0"
-                               Foreground="#555555" />
+                               Foreground="{DynamicResource AppMutedTextBrush}" />
                     <DatePicker SelectedDate="{Binding OnceDate, Mode=TwoWay}" Width="140" Margin="0,0,12,0" />
                     <TextBlock Text="{loc:Tr Sched_TimeOfDay}" VerticalAlignment="Center" Margin="0,0,8,0"
-                               Foreground="#555555" />
+                               Foreground="{DynamicResource AppMutedTextBrush}" />
                     <TextBox Text="{Binding OnceTime, Mode=TwoWay}" Width="80" />
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal" Margin="0,10,0,0" IsVisible="{Binding IsRecurring}">
                     <TextBlock Text="{loc:Tr Sched_TimeOfDay}" VerticalAlignment="Center" Margin="0,0,8,0"
-                               Foreground="#555555" />
+                               Foreground="{DynamicResource AppMutedTextBrush}" />
                     <TextBox Text="{Binding TimeOfDay, Mode=TwoWay}" Width="80" Margin="0,0,16,0" />
                     <StackPanel Orientation="Horizontal" IsVisible="{Binding IsMonthly}">
                         <TextBlock Text="{loc:Tr Sched_MonthlyDays}" VerticalAlignment="Center" Margin="0,0,8,0"
-                                   Foreground="#555555" />
+                                   Foreground="{DynamicResource AppMutedTextBrush}" />
                         <TextBox Text="{Binding MonthlyDaysText, Mode=TwoWay}" Width="140"
                                  ToolTip.Tip="{loc:Tr Sched_MonthlyDaysTip}" />
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" IsVisible="{Binding IsInterval}">
                         <TextBlock Text="{loc:Tr Sched_IntervalMinutes}" VerticalAlignment="Center" Margin="0,0,8,0"
-                                   Foreground="#555555" />
+                                   Foreground="{DynamicResource AppMutedTextBrush}" />
                         <TextBox Text="{Binding IntervalMinutes, Mode=TwoWay}" Width="80" />
                     </StackPanel>
                 </StackPanel>
@@ -298,7 +298,7 @@
                           AutomationProperties.AutomationId="JobEditorNotifyEnabled" />
                 <StackPanel Orientation="Horizontal" Margin="0,6,0,0" IsVisible="{Binding NotifyEnabled}">
                     <TextBlock Text="{loc:Tr Sched_EditorPreNotice}" VerticalAlignment="Center" Margin="0,0,8,0"
-                               Foreground="#555555" />
+                               Foreground="{DynamicResource AppMutedTextBrush}" />
                     <TextBox Text="{Binding PreNoticeMinutes, Mode=TwoWay}" Width="60" />
                     <TextBlock Text="{loc:Tr Sched_MinutesUnit}" VerticalAlignment="Center" Margin="4,0,12,0" />
                     <TextBox Text="{Binding PreNoticeSeconds, Mode=TwoWay}" Width="60" />
@@ -313,11 +313,11 @@
                 <TextBlock Text="{loc:Tr Sched_DetailTitle}" FontWeight="SemiBold" Margin="0,14,0,4" />
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="{loc:Tr Sched_EditorTimeout}" VerticalAlignment="Center" Margin="0,0,8,0"
-                               Foreground="#555555" />
+                               Foreground="{DynamicResource AppMutedTextBrush}" />
                     <TextBox Text="{Binding TimeoutMinutes, Mode=TwoWay}" Width="60" />
                     <TextBlock Text="{loc:Tr Sched_MinutesUnit}" VerticalAlignment="Center" Margin="4,0,20,0" />
                     <TextBlock Text="{loc:Tr Sched_EditorMissedGrace}" VerticalAlignment="Center" Margin="0,0,8,0"
-                               Foreground="#555555" />
+                               Foreground="{DynamicResource AppMutedTextBrush}" />
                     <TextBox Text="{Binding MissedGraceSeconds, Mode=TwoWay}" Width="60" />
                     <TextBlock Text="{loc:Tr Sched_SecondsUnit}" VerticalAlignment="Center" Margin="4,0,0,0" />
                 </StackPanel>

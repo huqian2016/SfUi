@@ -4,7 +4,7 @@
              x:Class="SfUi.Avalonia.Views.UserAccessView"
              FontSize="13">
     <DockPanel Margin="6">
-        <Border DockPanel.Dock="Top" Padding="4,4,4,6" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1">
+        <Border DockPanel.Dock="Top" Padding="4,4,4,6" Background="{DynamicResource AppToolbarBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1">
             <StackPanel>
                 <StackPanel Orientation="Horizontal">
                     <Button Content="{loc:Tr UserAccess_Show}" Command="{Binding ShowCommand}" Padding="12,3"
@@ -21,10 +21,10 @@
                     <Button Content="{loc:Tr UserAccess_ExportFields}" Command="{Binding ExportFieldCsvCommand}"
                             Padding="10,3" Margin="4,0,0,0" AutomationProperties.AutomationId="UserAccessExportFields" />
                     <TextBlock Text="{Binding SummaryText}" Margin="14,0,0,0" VerticalAlignment="Center" FontWeight="SemiBold" />
-                    <TextBlock Text="{Binding StatusMessage}" Margin="14,0,0,0" VerticalAlignment="Center" Foreground="#555555"
+                    <TextBlock Text="{Binding StatusMessage}" Margin="14,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource AppMutedTextBrush}"
                                TextTrimming="CharacterEllipsis" />
                 </StackPanel>
-                <TextBlock Text="{loc:Tr UserAccess_Legend}" Foreground="#777777" Margin="0,4,0,0" TextWrapping="Wrap" FontSize="12" />
+                <TextBlock Text="{loc:Tr UserAccess_Legend}" Foreground="{DynamicResource AppSubtleTextBrush}" Margin="0,4,0,0" TextWrapping="Wrap" FontSize="12" />
             </StackPanel>
         </Border>
 
@@ -75,7 +75,7 @@
                     </DataGrid>
                 </DockPanel>
 
-                <GridSplitter Grid.Row="1" Height="4" HorizontalAlignment="Stretch" Background="#DDDDDD" ResizeDirection="Rows" />
+                <GridSplitter Grid.Row="1" Height="4" HorizontalAlignment="Stretch" Background="{DynamicResource AppBorderBrush}" ResizeDirection="Rows" />
 
                 <DockPanel Grid.Row="2">
                     <TextBlock DockPanel.Dock="Top" Text="{loc:Tr UserAccess_FieldHeader}" FontWeight="SemiBold" Margin="0,3,0,3" />

@@ -25,7 +25,7 @@
                             AutomationProperties.Name="{loc:Tr Restore_Delete}" />
                 </StackPanel>
             </StackPanel>
-            <ListBox x:Name="BackupsList" ItemsSource="{Binding BackupsView}" BorderBrush="#DDDDDD"
+            <ListBox x:Name="BackupsList" ItemsSource="{Binding BackupsView}" BorderBrush="{DynamicResource AppBorderBrush}"
                      SelectedItem="{Binding SelectedBackup, Mode=TwoWay}"
                      SelectionMode="Extended"
                      SelectionChanged="BackupsList_SelectionChanged">
@@ -33,8 +33,8 @@
                     <DataTemplate>
                         <StackPanel Margin="2,3">
                             <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
-                            <TextBlock Text="{Binding Subtitle}" Foreground="#666666" FontSize="11" />
-                            <TextBlock Text="{Binding Summary}" Foreground="#666666" FontSize="11" />
+                            <TextBlock Text="{Binding Subtitle}" Foreground="{DynamicResource AppMutedTextBrush}" FontSize="11" />
+                            <TextBlock Text="{Binding Summary}" Foreground="{DynamicResource AppMutedTextBrush}" FontSize="11" />
                         </StackPanel>
                     </DataTemplate>
                 </ListBox.ItemTemplate>
@@ -51,7 +51,7 @@
             </Grid.RowDefinitions>
 
             <StackPanel Grid.Row="0">
-                <TextBlock Text="{Binding OrgHint}" Foreground="#555555" TextWrapping="Wrap" Margin="0,0,0,6" />
+                <TextBlock Text="{Binding OrgHint}" Foreground="{DynamicResource AppMutedTextBrush}" TextWrapping="Wrap" Margin="0,0,0,6" />
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="{loc:Tr Restore_MatchLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
                     <ComboBox ItemsSource="{Binding MatchModeOptions}" Width="280"
@@ -61,7 +61,7 @@
                     <ComboBox ItemsSource="{Binding ExistingOptions}" Width="130"
                               SelectedIndex="{Binding ExistingIndex, Mode=TwoWay}"
                               AutomationProperties.Name="{loc:Tr Restore_ExistingLabel}" />
-                    <TextBlock Text="{Binding SummaryText}" VerticalAlignment="Center" Margin="16,0,0,0" Foreground="#555555" />
+                    <TextBlock Text="{Binding SummaryText}" VerticalAlignment="Center" Margin="16,0,0,0" Foreground="{DynamicResource AppMutedTextBrush}" />
                 </StackPanel>
             </StackPanel>
 
@@ -111,7 +111,7 @@
                         Command="{Binding CancelRestoreCommand}"
                         AutomationProperties.Name="{loc:Tr Restore_Cancel}" />
                 <TextBlock Text="{Binding StatusMessage}" VerticalAlignment="Center" Margin="12,0,0,0"
-                           Foreground="#555555" TextTrimming="CharacterEllipsis" MaxWidth="620" />
+                           Foreground="{DynamicResource AppMutedTextBrush}" TextTrimming="CharacterEllipsis" MaxWidth="620" />
             </StackPanel>
 
             <DataGrid x:Name="ResultsGrid" Grid.Row="3"

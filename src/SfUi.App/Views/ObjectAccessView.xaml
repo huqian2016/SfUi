@@ -4,7 +4,7 @@
              xmlns:loc="clr-namespace:SfUi.App"
              FontSize="13">
     <DockPanel Margin="6">
-        <Border DockPanel.Dock="Top" Padding="4,4,4,6" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1">
+        <Border DockPanel.Dock="Top" Padding="4,4,4,6" Background="{DynamicResource AppToolbarBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1">
             <StackPanel Orientation="Horizontal">
                 <Button Content="{loc:Tr Access_Reload}" Command="{Binding ReloadCommand}" Padding="12,3"
                         AutomationProperties.AutomationId="ObjectAccessReload" />
@@ -12,7 +12,7 @@
                 <TextBox Width="180" Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          ToolTip="{loc:Tr Access_SearchTip}" AutomationProperties.AutomationId="ObjectAccessSearchBox" />
                 <TextBlock Text="{Binding SummaryText}" Margin="12,0,0,0" VerticalAlignment="Center" FontWeight="SemiBold" />
-                <TextBlock Text="{Binding StatusMessage}" Margin="16,0,0,0" VerticalAlignment="Center" Foreground="#555555"
+                <TextBlock Text="{Binding StatusMessage}" Margin="16,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource AppMutedTextBrush}"
                            TextTrimming="CharacterEllipsis" />
             </StackPanel>
         </Border>

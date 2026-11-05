@@ -8,7 +8,7 @@
         WindowStartupLocation="CenterScreen"
         FontSize="13">
     <Window.Resources>
-        <SolidColorBrush x:Key="IconFill" Color="#3A3A3A" />
+        <SolidColorBrush x:Key="IconFill" Color="{DynamicResource AppIconColor}" />
     </Window.Resources>
     <Window.Styles>
         <!-- アイコンのみのボタン（ツールチップでラベルと説明を表示） -->
@@ -29,15 +29,15 @@
         <!-- メイン タブの暫定プレースホルダ（Phase C–E で各ビューを移植） -->
         <Style Selector="TextBlock.placeholder">
             <Setter Property="Margin" Value="16" />
-            <Setter Property="Foreground" Value="Gray" />
+            <Setter Property="Foreground" Value="{DynamicResource AppMutedTextBrush}" />
         </Style>
     </Window.Styles>
     <DockPanel>
 
         <!-- 上部バー: 組織/フォルダ切替とツール起動 -->
-        <Border DockPanel.Dock="Top" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
+        <Border DockPanel.Dock="Top" Background="{DynamicResource AppChromeBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="8,6">
             <StackPanel>
-                <StackPanel Orientation="Horizontal">
+                <WrapPanel Orientation="Horizontal">
                     <TextBlock Text="{loc:Tr Main_OrgLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
                 <Grid Margin="0,0,6,0">
                     <ComboBox x:Name="OrgComboBox" Width="215"
@@ -53,13 +53,13 @@
                     </ComboBox>
                     <!-- 取得中はコンボの上に「取得中…」を重ねて状態を明示する -->
                     <TextBlock Text="{loc:Tr Main_OrgLoading}" Margin="8,0,0,0" VerticalAlignment="Center"
-                               Foreground="#777777" IsHitTestVisible="False"
+                               Foreground="{DynamicResource AppSubtleTextBrush}" IsHitTestVisible="False"
                                IsVisible="{Binding IsLoadingOrgs}" />
                 </Grid>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0"
                             IsVisible="{Binding IsLoadingOrgs}">
                     <ProgressBar Width="70" Height="6" IsIndeterminate="True" VerticalAlignment="Center" />
-                    <TextBlock Text="{loc:Tr Msg_LoadingOrgs}" Margin="6,0,0,0" VerticalAlignment="Center" Foreground="#555555" />
+                    <TextBlock Text="{loc:Tr Msg_LoadingOrgs}" Margin="6,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource AppMutedTextBrush}" />
                 </StackPanel>
                 <Button Classes="icon" Margin="0,0,12,0"
                         Command="{Binding RefreshOrgsCommand}"
@@ -171,7 +171,7 @@
                     <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconFolderSearch}" />
                 </Button>
 
-                <Border Width="1" Background="#CCCCCC" Margin="0,2,8,2" />
+                <Border Width="1" Background="{DynamicResource AppDividerBrush}" Margin="0,2,8,2" />
 
                 <Button Classes="icon" Margin="0,0,6,0"
                         Command="{Binding OpenTerminalCommand}"
@@ -230,7 +230,7 @@
                     </Button.ContextMenu>
                 </Button>
 
-                <Border Width="1" Background="#CCCCCC" Margin="12,2,12,2" />
+                <Border Width="1" Background="{DynamicResource AppDividerBrush}" Margin="12,2,12,2" />
 
                 <ToggleButton Classes="icontoggle"
                               IsChecked="{Binding IsQuickPanelVisible, Mode=TwoWay}"
@@ -249,7 +249,16 @@
                 <ComboBox Width="96" Margin="6,0,0,0" VerticalContentAlignment="Center"
                           ItemsSource="{Binding LanguageLabels}"
                           SelectedItem="{Binding LanguageLabel, Mode=TwoWay}"
-                          ToolTip.Tip="{loc:Tr Main_LanguageTip}" />
+                          ToolTip.Tip="{loc:Tr Main_LanguageTip}"
+                          AutomationProperties.AutomationId="LanguageCombo"
+                          AutomationProperties.Name="{loc:Tr Main_LanguageTip}" />
+
+                <ComboBox Width="132" Margin="6,0,0,0" VerticalContentAlignment="Center"
+                          ItemsSource="{Binding ThemeLabels}"
+                          SelectedItem="{Binding ThemeLabel, Mode=TwoWay}"
+                          ToolTip.Tip="{loc:Tr Settings_ThemeTip}"
+                          AutomationProperties.AutomationId="ThemeCombo"
+                          AutomationProperties.Name="{loc:Tr Settings_Theme}" />
 
                 <views:HelpButton Topic="MainWindow" Margin="8,0,0,0" />
 
@@ -258,16 +267,16 @@
                         AutomationProperties.Name="{loc:Tr Main_About}">
                     <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconQuestion}" />
                 </Button>
-                </StackPanel>
+                </WrapPanel>
 
                 <!-- 組織関連の操作ができない理由（取得中 / 組織なし / 未選択） -->
-                <TextBlock Text="{Binding OrgHintText}" Foreground="#B35C00" Margin="0,4,0,0" TextWrapping="Wrap"
+                <TextBlock Text="{Binding OrgHintText}" Foreground="{DynamicResource AppWarningTextBrush}" Margin="0,4,0,0" TextWrapping="Wrap"
                            IsVisible="{Binding HasOrgHint}" />
             </StackPanel>
         </Border>
 
         <!-- ステータスバー -->
-        <Border DockPanel.Dock="Bottom" Background="#007ACC" Padding="8,4">
+        <Border DockPanel.Dock="Bottom" Background="{DynamicResource AppStatusBarBrush}" Padding="8,4">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -275,23 +284,23 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock x:Name="StatusText" Text="{Binding StatusMessage}" Foreground="White" />
-                    <TextBlock Text="{Binding StatusDetail}" Foreground="#CFE8FF" Margin="16,0,0,0" />
+                    <TextBlock x:Name="StatusText" Text="{Binding StatusMessage}" Foreground="{DynamicResource AppStatusBarTextBrush}" />
+                    <TextBlock Text="{Binding StatusDetail}" Foreground="{DynamicResource AppStatusBarMutedTextBrush}" Margin="16,0,0,0" />
                 </StackPanel>
-                <TextBlock Grid.Column="1" x:Name="DataPathText" Text="" Foreground="#CFE8FF"
+                <TextBlock Grid.Column="1" x:Name="DataPathText" Text="" Foreground="{DynamicResource AppStatusBarMutedTextBrush}"
                            HorizontalAlignment="Right" Margin="0,0,12,0" TextTrimming="CharacterEllipsis" />
-                <TextBlock Grid.Column="2" x:Name="VersionText" Text="" Foreground="White" />
+                <TextBlock Grid.Column="2" x:Name="VersionText" Text="" Foreground="{DynamicResource AppStatusBarTextBrush}" />
             </Grid>
         </Border>
 
         <!-- クイックパネル（お気に入り）: 左サイド -->
-        <Border DockPanel.Dock="Left" Width="240" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="0,0,1,0"
+        <Border DockPanel.Dock="Left" Width="240" Background="{DynamicResource AppPanelBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,1,0"
                 IsVisible="{Binding IsQuickPanelVisible}">
             <views:QuickPanelView DataContext="{Binding QuickPanel}" />
         </Border>
 
         <!-- AI パネル: 右サイド -->
-        <Border DockPanel.Dock="Right" Width="400" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="1,0,0,0"
+        <Border DockPanel.Dock="Right" Width="400" Background="{DynamicResource AppPanelBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1,0,0,0"
                 IsVisible="{Binding IsAiPanelVisible}">
             <views:AiChatView DataContext="{Binding Ai}" />
         </Border>

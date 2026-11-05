@@ -4,7 +4,7 @@
              x:Class="SfUi.Avalonia.Views.FieldAccessView"
              FontSize="13">
     <DockPanel Margin="6">
-        <Border DockPanel.Dock="Top" Padding="4,4,4,6" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1">
+        <Border DockPanel.Dock="Top" Padding="4,4,4,6" Background="{DynamicResource AppToolbarBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1">
             <StackPanel>
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="{loc:Tr FieldAccess_KindsLabel}" VerticalAlignment="Center" />
@@ -23,10 +23,10 @@
                     <Button Content="{loc:Tr Access_Reload}" Command="{Binding ReloadCommand}" Padding="12,3" Margin="10,0,0,0"
                             AutomationProperties.AutomationId="FieldAccessReload" />
                     <TextBlock Text="{Binding SummaryText}" Margin="12,0,0,0" VerticalAlignment="Center" FontWeight="SemiBold" />
-                    <TextBlock Text="{Binding StatusMessage}" Margin="16,0,0,0" VerticalAlignment="Center" Foreground="#555555"
+                    <TextBlock Text="{Binding StatusMessage}" Margin="16,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource AppMutedTextBrush}"
                                TextTrimming="CharacterEllipsis" />
                 </StackPanel>
-                <TextBlock Text="{loc:Tr FieldAccess_Legend}" Foreground="#777777" Margin="0,4,0,0" TextWrapping="Wrap" FontSize="12" />
+                <TextBlock Text="{loc:Tr FieldAccess_Legend}" Foreground="{DynamicResource AppSubtleTextBrush}" Margin="0,4,0,0" TextWrapping="Wrap" FontSize="12" />
             </StackPanel>
         </Border>
         <DataGrid x:Name="MatrixGrid" ItemsSource="{Binding Rows}" IsReadOnly="True"

@@ -13,7 +13,7 @@
             <StackPanel Margin="12" MaxWidth="860" HorizontalAlignment="Left">
 
                 <TextBlock Text="{loc:Tr Settings_Title}" FontSize="16" FontWeight="Bold" />
-                <TextBlock Text="{Binding DataRootText}" Foreground="Gray" Margin="0,2,0,4" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding DataRootText}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,2,0,4" TextWrapping="Wrap" />
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
                     <Button Content="{loc:Tr Settings_OpenDataFolder}" Padding="10,2" Margin="0,0,6,0" Command="{Binding OpenDataFolderCommand}" />
                     <Button Content="{loc:Tr Settings_Reload}" Padding="10,2" Margin="0,0,6,0" Command="{Binding ReloadCommand}" ToolTip="{loc:Tr Settings_ReloadTip}" />
@@ -37,7 +37,7 @@
                             <Button Grid.Column="3" Content="{loc:Tr Settings_Clear}" Padding="10,2" Margin="6,0,0,0" Command="{Binding ClearSfPathCommand}"
                                     ToolTip="{loc:Tr Settings_ClearTip}" />
                         </Grid>
-                        <TextBlock Text="{Binding DetectedSummary}" Foreground="Gray" FontSize="11" Margin="0,6,0,0" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding DetectedSummary}" Foreground="{DynamicResource AppMutedTextBrush}" FontSize="11" Margin="0,6,0,0" TextWrapping="Wrap" />
                     </StackPanel>
                 </GroupBox>
 
@@ -138,7 +138,7 @@
                             <Button Grid.Column="2" Content="{loc:Tr Settings_Test}" Padding="10,2" Margin="6,0,0,0"
                                     Command="{Binding TestConnectionCommand}" />
                         </Grid>
-                        <TextBlock Text="{loc:Tr Settings_ApiKeyTip}" Foreground="Gray" FontSize="11" Margin="0,6,0,0" TextWrapping="Wrap" />
+                        <TextBlock Text="{loc:Tr Settings_ApiKeyTip}" Foreground="{DynamicResource AppMutedTextBrush}" FontSize="11" Margin="0,6,0,0" TextWrapping="Wrap" />
                     </StackPanel>
                 </GroupBox>
 

@@ -3,7 +3,7 @@
         xmlns:loc="clr-namespace:SfUi.Avalonia"
         x:Class="SfUi.Avalonia.Dialogs.ErdExportDialog"
         Title="{Binding Title}" Width="820" Height="680" MinWidth="720" MinHeight="520"
-        WindowStartupLocation="CenterOwner" ShowInTaskbar="False" Background="#F7F7F7">
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False" Background="{DynamicResource AppSubtleBrush}">
     <DockPanel Margin="16">
 
         <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
@@ -15,7 +15,7 @@
 
         <StackPanel DockPanel.Dock="Top">
             <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold" />
-            <TextBlock Text="{Binding Org}" Foreground="#666666" FontSize="11" Margin="0,2,0,0" />
+            <TextBlock Text="{Binding Org}" Foreground="{DynamicResource AppMutedTextBrush}" FontSize="11" Margin="0,2,0,0" />
 
             <Grid Margin="0,10,0,0" ColumnDefinitions="Auto,*,Auto,Auto">
                 <TextBlock Text="{Binding FilterLabel}" VerticalAlignment="Center" Margin="0,0,6,0" />
@@ -40,7 +40,7 @@
                           Margin="18,0,0,0" VerticalAlignment="Center" AutomationProperties.AutomationId="ErdIncludeParents" />
             </WrapPanel>
 
-            <TextBlock Text="{Binding FormatsLabel}" Foreground="#666666" Margin="0,12,0,4" />
+            <TextBlock Text="{Binding FormatsLabel}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,12,0,4" />
             <WrapPanel>
                 <CheckBox Content="Mermaid (.md/.mmd)" IsChecked="{Binding Mermaid}" Margin="0,2,16,2" AutomationProperties.AutomationId="ErdFormatMermaid" />
                 <CheckBox Content="DBML (.dbml)" IsChecked="{Binding Dbml}" Margin="0,2,16,2" AutomationProperties.AutomationId="ErdFormatDbml" />
@@ -70,7 +70,7 @@
                        AutomationProperties.AutomationId="ErdErrorText" />
         </StackPanel>
 
-        <Border BorderBrush="#DDDDDD" BorderThickness="1" Background="#FFFFFF" Margin="0,10,0,0">
+        <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Background="{DynamicResource AppSurfaceBrush}" Margin="0,10,0,0">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <ItemsControl ItemsSource="{Binding FilteredObjects}" AutomationProperties.AutomationId="ErdObjects">
                     <ItemsControl.ItemTemplate>

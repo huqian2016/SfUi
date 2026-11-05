@@ -6,7 +6,7 @@
     <DockPanel>
 
         <!-- ツールバー（幅が狭いときは折り返して全ボタンを表示） -->
-        <Border DockPanel.Dock="Top" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,4">
+        <Border DockPanel.Dock="Top" Background="{DynamicResource AppToolbarBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="8,4">
             <WrapPanel Orientation="Horizontal">
                 <Button Content="{loc:Tr Apex_Run}" Padding="10,2" Margin="0,2,12,2" Command="{Binding ExecuteCommand}" />
                 <Button Content="{loc:Tr Apex_Dml}" Padding="10,2" Margin="0,2,12,2" Command="{Binding GenerateDmlCommand}"
@@ -19,7 +19,7 @@
                 <Button Content="{loc:Tr Apex_LoadFile}" Padding="10,2" Margin="0,2,6,2" Command="{Binding LoadFileCommand}" />
                 <Button Content="{loc:Tr Apex_SaveFile}" Padding="10,2" Margin="0,2,12,2" Command="{Binding SaveFileCommand}" />
                 <Button Content="{loc:Tr Report_Export}" Padding="10,2" Margin="0,2,12,2" Command="{Binding ExportReportCommand}" AutomationProperties.AutomationId="ApexExportReport" />
-                <Border Width="1" Height="20" VerticalAlignment="Center" Background="#CCCCCC" Margin="0,2,12,2" />
+                <Border Width="1" Height="20" VerticalAlignment="Center" Background="{DynamicResource AppDividerBrush}" Margin="0,2,12,2" />
                 <TextBlock Text="{loc:Tr Common_HistoryLabel}" VerticalAlignment="Center" Margin="0,2,4,2" />
                 <ComboBox Width="240" VerticalAlignment="Center" ItemsSource="{Binding HistoryItems}" SelectedItem="{Binding SelectedHistoryItem, Mode=TwoWay}"
                           ToolTip.Tip="{loc:Tr Apex_HistoryTip}">
@@ -31,7 +31,7 @@
                 </ComboBox>
                 <Button Content="⟳" Padding="8,2" Margin="0,2,12,2" Command="{Binding RefreshHistoryCommand}"
                         ToolTip.Tip="{loc:Tr Common_RefreshTip}" />
-                <Border Width="1" Height="20" VerticalAlignment="Center" Background="#CCCCCC" Margin="0,2,12,2" />
+                <Border Width="1" Height="20" VerticalAlignment="Center" Background="{DynamicResource AppDividerBrush}" Margin="0,2,12,2" />
                 <Button Content="{loc:Tr Common_AddFavorite}" Padding="10,2" Margin="0,2,6,2" Command="{Binding AddFavoriteCommand}" />
                 <Button Content="{loc:Tr Apex_FetchLatestLog}" Padding="10,2" Margin="0,2,6,2" Command="{Binding FetchLatestLogCommand}"
                         ToolTip.Tip="{loc:Tr Apex_FetchLatestLogTip}" />
@@ -41,7 +41,7 @@
         </Border>
 
         <!-- ステータス -->
-        <Border DockPanel.Dock="Bottom" Background="#F7F7F7" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="8,4">
+        <Border DockPanel.Dock="Bottom" Background="{DynamicResource AppSubtleBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0" Padding="8,4">
             <TextBlock Text="{Binding StatusText}" />
         </Border>
 
@@ -61,13 +61,13 @@
                            VerticalScrollBarVisibility="Auto" />
 
             <!-- 候補エリア（あふれた場合はスクロールバー表示） -->
-            <Border Grid.Row="1" Background="#F7F9FC" BorderBrush="#E1E6EE" BorderThickness="0,0,0,1" Padding="8,6"
+            <Border Grid.Row="1" Background="{DynamicResource AppSubtleBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="8,6"
                     IsVisible="{Binding IsSuggestionsVisible}">
                 <DockPanel>
                     <DockPanel DockPanel.Dock="Top" Margin="0,0,0,4">
-                        <TextBlock DockPanel.Dock="Right" Text="{loc:Tr Soql_SuggestFetching}" Foreground="#888888" FontStyle="Italic"
+                        <TextBlock DockPanel.Dock="Right" Text="{loc:Tr Soql_SuggestFetching}" Foreground="{DynamicResource AppMutedTextBrush}" FontStyle="Italic"
                                    IsVisible="{Binding IsFetchingSuggestions}" />
-                        <TextBlock Text="{Binding SuggestionsHeader}" FontWeight="SemiBold" Foreground="#445577" />
+                        <TextBlock Text="{Binding SuggestionsHeader}" FontWeight="SemiBold" Foreground="{DynamicResource AppMutedTextBrush}" />
                     </DockPanel>
                     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" MaxHeight="132">
                         <ItemsControl ItemsSource="{Binding Suggestions}">
@@ -89,7 +89,7 @@
                 </DockPanel>
             </Border>
 
-            <GridSplitter Grid.Row="2" Height="4" HorizontalAlignment="Stretch" Background="#DDDDDD" />
+            <GridSplitter Grid.Row="2" Height="4" HorizontalAlignment="Stretch" Background="{DynamicResource AppBorderBrush}" />
 
             <TextBlock Grid.Row="3" Text="{Binding ResultSummary}" TextWrapping="Wrap" Margin="8,6" />
 

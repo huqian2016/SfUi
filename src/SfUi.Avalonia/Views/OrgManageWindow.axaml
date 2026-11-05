@@ -1,4 +1,4 @@
-﻿<Window xmlns="https://github.com/avaloniaui"
+<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="clr-namespace:SfUi.Avalonia.Views"
         xmlns:loc="clr-namespace:SfUi.Avalonia"
@@ -10,7 +10,7 @@
     <DockPanel>
 
         <!-- 上部: 対象組織（全タブで共有） -->
-        <Border DockPanel.Dock="Top" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
+        <Border DockPanel.Dock="Top" Background="{DynamicResource AppChromeBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="8,6">
             <StackPanel>
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="{loc:Tr Main_OrgLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
@@ -32,7 +32,7 @@
                             AutomationProperties.Name="{loc:Tr OrgManage_RefreshOrgs}" />
                     <ProgressBar Width="70" Height="6" IsIndeterminate="True" VerticalAlignment="Center" Margin="8,0,0,0"
                                  IsVisible="{Binding IsLoadingOrgs}" />
-                    <TextBlock Text="{loc:Tr Main_OrgLoading}" VerticalAlignment="Center" Margin="6,0,0,0" Foreground="#555555"
+                    <TextBlock Text="{loc:Tr Main_OrgLoading}" VerticalAlignment="Center" Margin="6,0,0,0" Foreground="{DynamicResource AppMutedTextBrush}"
                                IsVisible="{Binding IsLoadingOrgs}" />
                     <Button Content="{loc:Tr Common_Cancel}" Margin="8,0,0,0" Padding="10,2"
                             Command="{Binding CancelCommand}"
@@ -40,9 +40,9 @@
                             AutomationProperties.Name="{loc:Tr Common_Cancel}" />
                     <views:HelpButton Topic="OrgManage" Margin="8,0,0,0" />
                 </StackPanel>
-                <TextBlock Text="{Binding StatusMessage}" Foreground="#555555" Margin="0,4,0,0"
+                <TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,4,0,0"
                            TextWrapping="Wrap" />
-                <TextBlock Text="{Binding OrgListHintText}" Foreground="#B35C00" Margin="0,2,0,0" TextWrapping="Wrap"
+                <TextBlock Text="{Binding OrgListHintText}" Foreground="{DynamicResource AppWarningTextBrush}" Margin="0,2,0,0" TextWrapping="Wrap"
                            IsVisible="{Binding HasOrgListHint}" />
             </StackPanel>
         </Border>
@@ -76,7 +76,7 @@
                                     IsEnabled="{Binding CanInteract}"
                                     ToolTip.Tip="{loc:Tr OrgManage_LogoutTip}"
                                     AutomationProperties.Name="{loc:Tr OrgManage_Logout}" />
-                            <Border Width="1" Background="#CCCCCC" Margin="10,2" />
+                            <Border Width="1" Background="{DynamicResource AppDividerBrush}" Margin="10,2" />
                             <Button Content="{loc:Tr OrgManage_TestSelected}" Padding="10,2"
                                     Command="{Binding TestSelectedConnectionCommand}"
                                     IsEnabled="{Binding CanTestConnections}"
@@ -87,7 +87,7 @@
                                     IsEnabled="{Binding CanTestConnections}"
                                     ToolTip.Tip="{loc:Tr OrgManage_TestTip}"
                                     AutomationProperties.Name="{loc:Tr OrgManage_TestAll}" />
-                            <TextBlock Text="{Binding TestProgress}" Foreground="#555555" Margin="10,0,0,0" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding TestProgress}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="10,0,0,0" VerticalAlignment="Center" />
                         </StackPanel>
                         <!-- 新規組織の登録パネル -->
                         <Border Margin="0,6,0,0" Padding="8" Background="#F2F6FA" BorderBrush="#B9CCE0" BorderThickness="1"
@@ -121,7 +121,7 @@
                                     <TextBox Width="340" VerticalAlignment="Center"
                                              Text="{Binding RegisterInstanceUrl, Mode=TwoWay}"
                                              AutomationProperties.Name="{loc:Tr OrgManage_RegisterInstanceUrl}" />
-                                    <TextBlock Text="{Binding RegisterInstanceUrlHint}" Foreground="#666666" Margin="8,0,0,0" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding RegisterInstanceUrlHint}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="8,0,0,0" VerticalAlignment="Center" />
                                 </StackPanel>
                                 <StackPanel Margin="0,6,0,0"
                                             IsVisible="{Binding ShowRegisterSfdxUrl}">
@@ -130,7 +130,7 @@
                                              ScrollViewer.VerticalScrollBarVisibility="Auto"
                                              Text="{Binding RegisterSfdxUrl, Mode=TwoWay}"
                                              AutomationProperties.Name="{loc:Tr OrgManage_RegisterSfdxUrl}" />
-                                    <TextBlock Text="{loc:Tr OrgManage_RegisterSfdxUrlHint}" Foreground="#666666" Margin="0,2,0,0" TextWrapping="Wrap" />
+                                    <TextBlock Text="{loc:Tr OrgManage_RegisterSfdxUrlHint}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,2,0,0" TextWrapping="Wrap" />
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,6,0,0"
                                             IsVisible="{Binding ShowRegisterAccessToken}">
@@ -138,7 +138,7 @@
                                     <TextBox Width="320" VerticalAlignment="Center" PasswordChar="●"
                                              Text="{Binding RegisterAccessToken, Mode=TwoWay}"
                                              AutomationProperties.Name="{loc:Tr OrgManage_RegisterToken}" />
-                                    <TextBlock Text="{loc:Tr OrgManage_RegisterTokenHint}" Foreground="#666666" Margin="8,0,0,0" VerticalAlignment="Center" />
+                                    <TextBlock Text="{loc:Tr OrgManage_RegisterTokenHint}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="8,0,0,0" VerticalAlignment="Center" />
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                                     <Button Content="{loc:Tr OrgManage_RegisterRun}" Padding="10,2"
@@ -161,7 +161,7 @@
                                     Command="{Binding SetAliasCommand}"
                                     IsEnabled="{Binding CanInteract}"
                                     AutomationProperties.Name="{loc:Tr OrgManage_SetAlias}" />
-                            <Border Width="1" Background="#CCCCCC" Margin="10,2" />
+                            <Border Width="1" Background="{DynamicResource AppDividerBrush}" Margin="10,2" />
                             <TextBlock Text="{loc:Tr OrgManage_TagLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
                             <TextBox Width="120" VerticalAlignment="Center"
                                      Text="{Binding TagInput, Mode=TwoWay}"
@@ -206,7 +206,7 @@
                                  Text="{Binding Health.FilterText, Mode=TwoWay}"
                                  ToolTip.Tip="{loc:Tr OrgManage_HealthFilter}"
                                  AutomationProperties.Name="{loc:Tr OrgManage_HealthFilter}" />
-                        <TextBlock Text="{Binding Health.StatusMessage}" Foreground="#555555" VerticalAlignment="Center"
+                        <TextBlock Text="{Binding Health.StatusMessage}" Foreground="{DynamicResource AppMutedTextBrush}" VerticalAlignment="Center"
                                    Margin="12,0,0,0" TextTrimming="CharacterEllipsis" MaxWidth="480" />
                     </StackPanel>
                     <DataGrid x:Name="HealthGrid" ItemsSource="{Binding Health.RowsView}"
@@ -230,7 +230,7 @@
                             <Button Content="{loc:Tr OrgManage_InvExportCsv}" Margin="8,0,0,0" Padding="10,2"
                                     Command="{Binding Inventory.ExportCsvCommand}"
                                     AutomationProperties.Name="{loc:Tr OrgManage_InvExportCsv}" />
-                            <Border Width="1" Background="#CCCCCC" Margin="10,2" />
+                            <Border Width="1" Background="{DynamicResource AppDividerBrush}" Margin="10,2" />
                             <TextBlock Text="{loc:Tr OrgManage_InvKindLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
                             <ComboBox Width="180" VerticalAlignment="Center"
                                       ItemsSource="{Binding Inventory.KindOptions}"
@@ -249,7 +249,7 @@
                             <TextBlock Text="{Binding Inventory.WarningText}" Foreground="#B26500" Margin="12,0,0,0"
                                        VerticalAlignment="Center" TextWrapping="Wrap"
                                        IsVisible="{Binding Inventory.HasWarning}" />
-                            <TextBlock Text="{Binding Inventory.StatusMessage}" Foreground="#555555" Margin="12,0,0,0"
+                            <TextBlock Text="{Binding Inventory.StatusMessage}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="12,0,0,0"
                                        VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="420" />
                         </StackPanel>
                     </StackPanel>

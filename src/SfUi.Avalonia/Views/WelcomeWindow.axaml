@@ -11,7 +11,7 @@
     <DockPanel>
 
         <!-- 下部: 「今後表示しない」とアクション -->
-        <Border DockPanel.Dock="Bottom" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="16,10">
+        <Border DockPanel.Dock="Bottom" Background="{DynamicResource AppChromeBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0" Padding="16,10">
             <DockPanel>
                 <Button DockPanel.Dock="Right" Content="{loc:Tr Welcome_Start}" Padding="20,4" IsDefault="True"
                         Command="{Binding StartCommand}"
@@ -37,11 +37,11 @@
                         <views:HelpButton Topic="Welcome" Margin="8,0,0,0" VerticalAlignment="Center" />
                     </StackPanel>
                     <StackPanel Orientation="Horizontal">
-                        <Path Width="36" Height="36" Stretch="Uniform" VerticalAlignment="Center" Fill="#2B6CB0"
+                        <Path Width="36" Height="36" Stretch="Uniform" VerticalAlignment="Center" Fill="{DynamicResource AppAccentBrush}"
                               Data="{StaticResource IconSparkleFilled}" />
                         <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
                             <TextBlock Text="{loc:Tr Welcome_Title}" FontSize="22" FontWeight="Bold" />
-                            <TextBlock Text="{loc:Tr Welcome_Tagline}" Foreground="#555555" TextWrapping="Wrap" Margin="0,3,0,0" />
+                            <TextBlock Text="{loc:Tr Welcome_Tagline}" Foreground="{DynamicResource AppMutedTextBrush}" TextWrapping="Wrap" Margin="0,3,0,0" />
                         </StackPanel>
                     </StackPanel>
                 </DockPanel>
@@ -49,53 +49,53 @@
                 <!-- 機能一覧 -->
                 <TextBlock Text="{loc:Tr Welcome_FeaturesHeader}" FontSize="14" FontWeight="SemiBold" Margin="0,20,0,8" />
 
-                <Border BorderBrush="#E2E2E2" BorderThickness="1" CornerRadius="4" Padding="12,9">
+                <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="12,9">
                     <DockPanel>
-                        <Path DockPanel.Dock="Left" Width="20" Height="20" Stretch="Uniform" Fill="#3A6EA5" Margin="0,2,12,0" VerticalAlignment="Top"
+                        <Path DockPanel.Dock="Left" Width="20" Height="20" Stretch="Uniform" Fill="{DynamicResource AppAccentBrush}" Margin="0,2,12,0" VerticalAlignment="Top"
                               Data="{StaticResource IconCode}" />
                         <StackPanel>
                             <TextBlock Text="{loc:Tr Welcome_Group_Query}" FontWeight="SemiBold" />
                             <TextBlock Margin="0,3,0,0">
                                 <Run Text="{loc:Tr Tab_Soql}" /><Run Text=" · " /><Run Text="{loc:Tr Tab_Apex}" /><Run Text=" · " /><Run Text="{loc:Tr Tab_Log}" /><Run Text=" · " /><Run Text="{loc:Tr Tab_History}" />
                             </TextBlock>
-                            <TextBlock Text="{loc:Tr Welcome_Group_QueryDesc}" Foreground="#666666" TextWrapping="Wrap" Margin="0,3,0,0" />
+                            <TextBlock Text="{loc:Tr Welcome_Group_QueryDesc}" Foreground="{DynamicResource AppMutedTextBrush}" TextWrapping="Wrap" Margin="0,3,0,0" />
                         </StackPanel>
                     </DockPanel>
                 </Border>
 
-                <Border BorderBrush="#E2E2E2" BorderThickness="1" CornerRadius="4" Padding="12,9" Margin="0,8,0,0">
+                <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="12,9" Margin="0,8,0,0">
                     <DockPanel>
-                        <Path DockPanel.Dock="Left" Width="20" Height="20" Stretch="Uniform" Fill="#3A6EA5" Margin="0,2,12,0" VerticalAlignment="Top"
+                        <Path DockPanel.Dock="Left" Width="20" Height="20" Stretch="Uniform" Fill="{DynamicResource AppAccentBrush}" Margin="0,2,12,0" VerticalAlignment="Top"
                               Data="{StaticResource IconBuilding}" />
                         <StackPanel>
                             <TextBlock Text="{loc:Tr Welcome_Group_Org}" FontWeight="SemiBold" />
                             <TextBlock Margin="0,3,0,0">
                                 <Run Text="{loc:Tr Main_OrgInfo}" /><Run Text=" · " /><Run Text="{loc:Tr Main_Compare}" /><Run Text=" · " /><Run Text="{loc:Tr Main_DataIo}" /><Run Text=" · " /><Run Text="{loc:Tr Main_Backup}" /><Run Text=" · " /><Run Text="{loc:Tr Main_OrgManage}" />
                             </TextBlock>
-                            <TextBlock Text="{loc:Tr Welcome_Group_OrgDesc}" Foreground="#666666" TextWrapping="Wrap" Margin="0,3,0,0" />
+                            <TextBlock Text="{loc:Tr Welcome_Group_OrgDesc}" Foreground="{DynamicResource AppMutedTextBrush}" TextWrapping="Wrap" Margin="0,3,0,0" />
                         </StackPanel>
                     </DockPanel>
                 </Border>
 
-                <Border BorderBrush="#E2E2E2" BorderThickness="1" CornerRadius="4" Padding="12,9" Margin="0,8,0,0">
+                <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="12,9" Margin="0,8,0,0">
                     <DockPanel>
-                        <Path DockPanel.Dock="Left" Width="20" Height="20" Stretch="Uniform" Fill="#3A6EA5" Margin="0,2,12,0" VerticalAlignment="Top"
+                        <Path DockPanel.Dock="Left" Width="20" Height="20" Stretch="Uniform" Fill="{DynamicResource AppAccentBrush}" Margin="0,2,12,0" VerticalAlignment="Top"
                               Data="{StaticResource IconSparkle}" />
                         <StackPanel>
                             <TextBlock Text="{loc:Tr Welcome_Group_Workflow}" FontWeight="SemiBold" />
                             <TextBlock Margin="0,3,0,0">
                                 <Run Text="{loc:Tr Tab_Ai}" /><Run Text=" · " /><Run Text="{loc:Tr Quick_Title}" /><Run Text=" · " /><Run Text="{loc:Tr Main_Terminal}" /><Run Text=" · " /><Run Text="{loc:Tr Main_VsCode}" /><Run Text=" · " /><Run Text="{loc:Tr Main_Browser}" />
                             </TextBlock>
-                            <TextBlock Text="{loc:Tr Welcome_Group_WorkflowDesc}" Foreground="#666666" TextWrapping="Wrap" Margin="0,3,0,0" />
+                            <TextBlock Text="{loc:Tr Welcome_Group_WorkflowDesc}" Foreground="{DynamicResource AppMutedTextBrush}" TextWrapping="Wrap" Margin="0,3,0,0" />
                         </StackPanel>
                     </DockPanel>
                 </Border>
 
                 <!-- 言語案内 -->
                 <DockPanel Margin="0,12,0,0">
-                    <Path DockPanel.Dock="Left" Width="18" Height="18" Stretch="Uniform" Fill="#3A6EA5" Margin="0,1,12,0" VerticalAlignment="Top"
+                    <Path DockPanel.Dock="Left" Width="18" Height="18" Stretch="Uniform" Fill="{DynamicResource AppAccentBrush}" Margin="0,1,12,0" VerticalAlignment="Top"
                           Data="{StaticResource IconGlobe}" />
-                    <TextBlock Text="{loc:Tr Welcome_LanguagesLine}" Foreground="#555555" TextWrapping="Wrap" />
+                    <TextBlock Text="{loc:Tr Welcome_LanguagesLine}" Foreground="{DynamicResource AppMutedTextBrush}" TextWrapping="Wrap" />
                 </DockPanel>
 
                 <!-- Salesforce CLI -->
@@ -121,12 +121,12 @@
                             <Button Content="{loc:Tr Welcome_SfRecheck}" Padding="14,3" Margin="8,0,0,0" Command="{Binding RecheckCommand}"
                                     AutomationProperties.Name="{loc:Tr Welcome_SfRecheck}" />
                         </StackPanel>
-                        <TextBlock Text="{loc:Tr Welcome_SfInstallNpm}" FontFamily="Consolas, Menlo, monospace" FontSize="12" Foreground="#666666" Margin="0,8,0,0" />
+                        <TextBlock Text="{loc:Tr Welcome_SfInstallNpm}" FontFamily="Consolas, Menlo, monospace" FontSize="12" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,8,0,0" />
                     </StackPanel>
                 </Border>
 
                 <!-- 再チェック結果など -->
-                <TextBlock Text="{Binding StatusText}" Foreground="#666666" Margin="0,8,0,0" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding StatusText}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,8,0,0" TextWrapping="Wrap" />
             </StackPanel>
         </ScrollViewer>
     </DockPanel>

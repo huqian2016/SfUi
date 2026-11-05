@@ -30,7 +30,7 @@
                         AutomationProperties.Name="{loc:Tr OrgInfoExport_SelectAll}" />
                 <Button Content="{loc:Tr OrgInfoExport_SelectNone}" Padding="8,2" Margin="6,0,0,0" Command="{Binding SelectNoneCommand}"
                         AutomationProperties.Name="{loc:Tr OrgInfoExport_SelectNone}" />
-                <TextBlock Text="{Binding SelectionSummary}" Margin="10,0,0,0" VerticalAlignment="Center" Foreground="#555555" />
+                <TextBlock Text="{Binding SelectionSummary}" Margin="10,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource AppMutedTextBrush}" />
             </DockPanel>
 
             <ListBox ItemsSource="{Binding Items}">
@@ -87,7 +87,7 @@
                 </StackPanel>
 
                 <ProgressBar Height="6" Minimum="0" Maximum="1" Value="{Binding ProgressPercent}" Margin="0,14,0,4" />
-                <TextBlock Text="{Binding ProgressText}" Foreground="#555555" TextWrapping="Wrap" Margin="0,0,0,6"
+                <TextBlock Text="{Binding ProgressText}" Foreground="{DynamicResource AppMutedTextBrush}" TextWrapping="Wrap" Margin="0,0,0,6"
                            AutomationProperties.AutomationId="ExportProgressText" />
                 <TextBlock Text="{Binding ResultText}" FontWeight="SemiBold" TextWrapping="Wrap"
                            AutomationProperties.AutomationId="ExportResultText" />

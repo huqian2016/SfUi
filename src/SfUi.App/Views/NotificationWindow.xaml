@@ -18,7 +18,7 @@
         <ItemsControl.ItemTemplate>
             <DataTemplate DataType="{x:Type vm:NotificationItemViewModel}">
                 <Border CornerRadius="8" BorderThickness="1" Padding="12,10" Margin="0,4"
-                        Background="#FFFFFF" BorderBrush="#D0D7E2">
+                        Background="{DynamicResource AppSurfaceBrush}" BorderBrush="#D0D7E2">
                     <Border.Effect>
                         <DropShadowEffect BlurRadius="12" ShadowDepth="2" Opacity="0.22" Color="#000000" />
                     </Border.Effect>
@@ -64,7 +64,7 @@
                                     </Style>
                                 </TextBlock.Style>
                             </TextBlock>
-                            <TextBlock Text="{Binding Message}" TextWrapping="Wrap" Margin="0,3,0,0" Foreground="#444444"
+                            <TextBlock Text="{Binding Message}" TextWrapping="Wrap" Margin="0,3,0,0" Foreground="{DynamicResource AppMutedTextBrush}"
                                        AutomationProperties.AutomationId="ToastMessage" />
                         </StackPanel>
                         <Button Grid.Column="1" Content="✕" Width="24" Height="24" Margin="8,0,0,0"

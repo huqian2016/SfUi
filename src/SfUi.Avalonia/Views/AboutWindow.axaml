@@ -24,19 +24,19 @@
 
         <!-- ヘッダー: ツール名とバージョン -->
         <StackPanel Orientation="Horizontal">
-            <Path Width="36" Height="36" Stretch="Uniform" Fill="#0078D4" VerticalAlignment="Top"
+            <Path Width="36" Height="36" Stretch="Uniform" Fill="{DynamicResource AppAccentBrush}" VerticalAlignment="Top"
                   Data="{StaticResource IconQuestion}" />
             <StackPanel Margin="12,0,0,0">
                 <TextBlock Text="{loc:Tr App_Title}" FontSize="16" FontWeight="SemiBold" />
                 <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                    <TextBlock Text="{loc:Tr About_VersionLabel}" Foreground="#555555" />
-                    <TextBlock x:Name="VersionText" Margin="6,0,0,0" Foreground="#555555" FontWeight="SemiBold" Text="v0.0.0" />
+                    <TextBlock Text="{loc:Tr About_VersionLabel}" Foreground="{DynamicResource AppMutedTextBrush}" />
+                    <TextBlock x:Name="VersionText" Margin="6,0,0,0" Foreground="{DynamicResource AppMutedTextBrush}" FontWeight="SemiBold" Text="v0.0.0" />
                 </StackPanel>
             </StackPanel>
         </StackPanel>
 
         <!-- 概要 -->
-        <TextBlock Text="{loc:Tr About_Overview}" TextWrapping="Wrap" Foreground="#444444" Margin="0,14,0,0" />
+        <TextBlock Text="{loc:Tr About_Overview}" TextWrapping="Wrap" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,14,0,0" />
 
         <Separator Margin="0,16,0,12" />
 
@@ -70,7 +70,7 @@
         </StackPanel>
 
         <!-- 非公式・商標の免責事項 -->
-        <TextBlock Text="{loc:Tr About_Disclaimer}" TextWrapping="Wrap" Foreground="#777777" FontSize="11" Margin="0,16,0,0" />
+        <TextBlock Text="{loc:Tr About_Disclaimer}" TextWrapping="Wrap" Foreground="{DynamicResource AppSubtleTextBrush}" FontSize="11" Margin="0,16,0,0" />
 
         <!-- 閉じる -->
         <Button Content="{loc:Tr About_Close}" Click="OnCloseClick"

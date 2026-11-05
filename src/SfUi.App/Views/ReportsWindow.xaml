@@ -20,7 +20,7 @@
 
     <DockPanel>
         <!-- ツールバー -->
-        <Border DockPanel.Dock="Top" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="10,6">
+        <Border DockPanel.Dock="Top" Background="{DynamicResource AppChromeBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="10,6">
             <DockPanel>
                 <views:HelpButton Topic="Reports" DockPanel.Dock="Right" Margin="12,0,0,0" VerticalAlignment="Center" />
                 <StackPanel Orientation="Horizontal">
@@ -30,14 +30,14 @@
                         AutomationProperties.AutomationId="ReportsEdit" />
                 <Button Content="{Binding LabelDuplicate}" Command="{Binding DuplicateReportCommand}" Style="{StaticResource ToolButton}" />
                 <Button Content="{Binding LabelDelete}" Command="{Binding DeleteReportCommand}" Style="{StaticResource ToolButton}" />
-                <TextBlock Text="   |   " Foreground="#AAAAAA" VerticalAlignment="Center" />
+                <TextBlock Text="   |   " Foreground="{DynamicResource AppSubtleTextBrush}" VerticalAlignment="Center" />
                 <Button Content="{Binding LabelRun}" Command="{Binding RunCommand}" Style="{StaticResource ToolButton}"
                         AutomationProperties.AutomationId="ReportsRun" />
                 <!-- WPF は Command 駆動（UIA の Toggle が Command を発火する） -->
                 <CheckBox Content="{Binding LabelLive}" IsChecked="{Binding IsLive, Mode=OneWay}"
                           Command="{Binding ToggleLiveCommand}" VerticalAlignment="Center" Margin="6,0,10,0"
                           AutomationProperties.AutomationId="ReportsLive" />
-                <TextBlock Text="{Binding LabelInterval}" Foreground="#666666" VerticalAlignment="Center" Margin="0,0,6,0" />
+                <TextBlock Text="{Binding LabelInterval}" Foreground="{DynamicResource AppMutedTextBrush}" VerticalAlignment="Center" Margin="0,0,6,0" />
                 <TextBlock Text="{Binding LiveIntervalText}" VerticalAlignment="Center" Margin="0,0,12,0"
                            AutomationProperties.AutomationId="ReportsInterval" />
                 <Button Content="{Binding LabelExport}" Command="{Binding ExportCommand}" Style="{StaticResource ToolButton}"
@@ -53,17 +53,17 @@
         </Border>
 
         <!-- ステータス バー -->
-        <Border DockPanel.Dock="Bottom" Background="#F7F7F7" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="10,4">
+        <Border DockPanel.Dock="Bottom" Background="{DynamicResource AppSubtleBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0" Padding="10,4">
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="{Binding StatusText}" AutomationProperties.AutomationId="ReportsStatus" />
-                <TextBlock Text="   |   " Foreground="#AAAAAA" />
+                <TextBlock Text="   |   " Foreground="{DynamicResource AppSubtleTextBrush}" />
                 <TextBlock Text="{Binding RowCountText}" AutomationProperties.AutomationId="ReportsRowCount" />
-                <TextBlock Text="   |   " Foreground="#AAAAAA" />
+                <TextBlock Text="   |   " Foreground="{DynamicResource AppSubtleTextBrush}" />
                 <TextBlock Text="{Binding LastRunText}" />
-                <TextBlock Text="   |   " Foreground="#AAAAAA" />
+                <TextBlock Text="   |   " Foreground="{DynamicResource AppSubtleTextBrush}" />
                 <TextBlock Text="{Binding NextUpdateText}" AutomationProperties.AutomationId="ReportsNextRun" />
-                <TextBlock Text="   |   " Foreground="#AAAAAA" />
-                <TextBlock Text="{Binding SelectedOrgName}" Foreground="#555555" />
+                <TextBlock Text="   |   " Foreground="{DynamicResource AppSubtleTextBrush}" />
+                <TextBlock Text="{Binding SelectedOrgName}" Foreground="{DynamicResource AppMutedTextBrush}" />
             </StackPanel>
         </Border>
 
@@ -81,7 +81,7 @@
                     <DataTemplate>
                         <StackPanel Margin="0,3">
                             <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                            <TextBlock Text="{Binding ObjectName}" Foreground="#777777" FontSize="11" />
+                            <TextBlock Text="{Binding ObjectName}" Foreground="{DynamicResource AppSubtleTextBrush}" FontSize="11" />
                         </StackPanel>
                     </DataTemplate>
                 </ListBox.ItemTemplate>
@@ -99,8 +99,8 @@
                            Visibility="{Binding HasTruncatedWarning, Converter={StaticResource BoolToVis}}"
                            AutomationProperties.AutomationId="ReportsTruncated" />
 
-                <Border Grid.Row="1" BorderBrush="#DDDDDD" BorderThickness="1" CornerRadius="4" Padding="4"
-                        Margin="0,0,0,8" Background="White"
+                <Border Grid.Row="1" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="4"
+                        Margin="0,0,0,8" Background="{DynamicResource AppSurfaceBrush}"
                         Visibility="{Binding HasChart, Converter={StaticResource BoolToVis}}">
                     <DockPanel>
                         <TextBlock DockPanel.Dock="Top" Text="{Binding LabelChartType}" FontWeight="SemiBold"
@@ -112,7 +112,7 @@
 
                 <DataGrid Grid.Row="2" ItemsSource="{Binding ResultView}" AutoGenerateColumns="True" IsReadOnly="True"
                           HeadersVisibility="All" GridLinesVisibility="Horizontal" CanUserAddRows="False"
-                          RowHeight="22" AlternatingRowBackground="#FAFAFA"
+                          RowHeight="22" AlternatingRowBackground="{DynamicResource AppToolbarBrush}"
                           AutomationProperties.AutomationId="ReportsGrid" />
 
                 <GroupBox Grid.Row="3" Header="{Binding LabelGroups}" Margin="0,8,0,0"
@@ -127,8 +127,8 @@
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Grid.Column="0" Text="{Binding Label}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                    <TextBlock Grid.Column="1" Text="{Binding CountText}" Foreground="#1A73E8" Margin="12,0" />
-                                    <TextBlock Grid.Column="2" Text="{Binding MetricsText}" Foreground="#555555" FontSize="11" />
+                                    <TextBlock Grid.Column="1" Text="{Binding CountText}" Foreground="{DynamicResource AppAccentBrush}" Margin="12,0" />
+                                    <TextBlock Grid.Column="2" Text="{Binding MetricsText}" Foreground="{DynamicResource AppMutedTextBrush}" FontSize="11" />
                                 </Grid>
                             </DataTemplate>
                         </ListBox.ItemTemplate>

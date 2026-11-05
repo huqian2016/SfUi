@@ -17,24 +17,24 @@
             <Setter Property="MinWidth" Value="0" />
         </Style>
         <Style x:Key="FieldLabel" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="#666666" />
+            <Setter Property="Foreground" Value="{DynamicResource AppMutedTextBrush}" />
             <Setter Property="Margin" Value="0,0,0,2" />
         </Style>
     </Window.Resources>
 
     <DockPanel>
         <!-- ツールバー -->
-        <Border DockPanel.Dock="Top" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="10,6">
+        <Border DockPanel.Dock="Top" Background="{DynamicResource AppChromeBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="10,6">
             <WrapPanel Orientation="Horizontal">
-                <TextBlock Text="{Binding LabelOrg}" Foreground="#666666" VerticalAlignment="Center" Margin="0,0,6,0" />
+                <TextBlock Text="{Binding LabelOrg}" Foreground="{DynamicResource AppMutedTextBrush}" VerticalAlignment="Center" Margin="0,0,6,0" />
                 <ComboBox ItemsSource="{Binding Orgs}" SelectedItem="{Binding SelectedOrg}" DisplayMemberPath="DisplayName"
                           Width="240" VerticalAlignment="Center" Margin="0,0,12,0"
                           AutomationProperties.AutomationId="ConnOrg" />
-                <TextBlock Text="{Binding LabelKind}" Foreground="#666666" VerticalAlignment="Center" Margin="0,0,6,0" />
+                <TextBlock Text="{Binding LabelKind}" Foreground="{DynamicResource AppMutedTextBrush}" VerticalAlignment="Center" Margin="0,0,6,0" />
                 <ComboBox ItemsSource="{Binding Kinds}" SelectedItem="{Binding SelectedKind}" DisplayMemberPath="Label"
                           Width="190" VerticalAlignment="Center" Margin="0,0,12,0"
                           AutomationProperties.AutomationId="ConnKind" />
-                <TextBlock Text="{Binding LabelSearch}" Foreground="#666666" VerticalAlignment="Center" Margin="0,0,6,0" />
+                <TextBlock Text="{Binding LabelSearch}" Foreground="{DynamicResource AppMutedTextBrush}" VerticalAlignment="Center" Margin="0,0,6,0" />
                 <TextBox Text="{Binding Filter, UpdateSourceTrigger=PropertyChanged}" Width="160" VerticalAlignment="Center"
                          Margin="0,0,12,0" AutomationProperties.AutomationId="ConnSearch" />
                 <Button Content="{Binding RefreshText}" Command="{Binding RefreshCommand}" Style="{StaticResource ToolButton}"
@@ -51,14 +51,14 @@
         </Border>
 
         <!-- ステータス バー -->
-        <Border DockPanel.Dock="Bottom" Background="#F7F7F7" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="10,4">
+        <Border DockPanel.Dock="Bottom" Background="{DynamicResource AppSubtleBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0" Padding="10,4">
             <StackPanel>
                 <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap"
                            AutomationProperties.AutomationId="ConnStatus" />
-                <TextBlock Text="{Binding CreationRestrictedHint}" Foreground="#B35C00" TextWrapping="Wrap" Margin="0,4,0,0"
+                <TextBlock Text="{Binding CreationRestrictedHint}" Foreground="{DynamicResource AppWarningTextBrush}" TextWrapping="Wrap" Margin="0,4,0,0"
                            Visibility="{Binding IsCreationRestricted, Converter={StaticResource BoolToVis}}"
                            AutomationProperties.AutomationId="ConnRestrictedHint" />
-                <TextBlock Text="{Binding EcaRecommendHint}" Foreground="#666666" TextWrapping="Wrap" Margin="0,4,0,0"
+                <TextBlock Text="{Binding EcaRecommendHint}" Foreground="{DynamicResource AppMutedTextBrush}" TextWrapping="Wrap" Margin="0,4,0,0"
                            Visibility="{Binding IsConnectedAppKind, Converter={StaticResource BoolToVis}}"
                            AutomationProperties.AutomationId="ConnEcaHint" />
             </StackPanel>
@@ -72,7 +72,7 @@
             </Grid.ColumnDefinitions>
 
             <DockPanel Grid.Column="0">
-                <TextBlock DockPanel.Dock="Top" Text="{Binding EmptyHint}" Foreground="#777777" TextWrapping="Wrap"
+                <TextBlock DockPanel.Dock="Top" Text="{Binding EmptyHint}" Foreground="{DynamicResource AppSubtleTextBrush}" TextWrapping="Wrap"
                            Margin="0,0,0,6" AutomationProperties.AutomationId="ConnEmpty"
                            Visibility="{Binding HasApps, Converter={StaticResource InverseBoolToVis}}" />
                 <ListBox ItemsSource="{Binding Apps}" SelectedItem="{Binding SelectedApp}"
@@ -81,7 +81,7 @@
                         <DataTemplate>
                             <StackPanel Margin="0,2">
                                 <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                <TextBlock Text="{Binding ScopesText}" Foreground="#777777" FontSize="11"
+                                <TextBlock Text="{Binding ScopesText}" Foreground="{DynamicResource AppSubtleTextBrush}" FontSize="11"
                                            TextTrimming="CharacterEllipsis" />
                             </StackPanel>
                         </DataTemplate>
@@ -93,7 +93,7 @@
 
             <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
                 <StackPanel>
-                    <TextBlock Text="{Binding DetailEmpty}" Foreground="#777777" Margin="8,4"
+                    <TextBlock Text="{Binding DetailEmpty}" Foreground="{DynamicResource AppSubtleTextBrush}" Margin="8,4"
                                Visibility="{Binding HasDocument, Converter={StaticResource InverseBoolToVis}}"
                                AutomationProperties.AutomationId="ConnDetailEmpty" />
 
@@ -127,7 +127,7 @@
 
                         <StackPanel Visibility="{Binding HasConsumerKey, Converter={StaticResource InverseBoolToVis}}">
                             <TextBlock Text="{Binding DataContext.HintConsumerKey, RelativeSource={RelativeSource AncestorType=Window}}"
-                                       Foreground="#888888" TextWrapping="Wrap" Margin="0,0,0,10" />
+                                       Foreground="{DynamicResource AppMutedTextBrush}" TextWrapping="Wrap" Margin="0,0,0,10" />
                         </StackPanel>
 
                         <TextBlock Text="{Binding DataContext.LabelIpRelaxationText, RelativeSource={RelativeSource AncestorType=Window}}" Style="{StaticResource FieldLabel}" />

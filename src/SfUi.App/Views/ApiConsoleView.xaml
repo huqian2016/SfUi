@@ -12,7 +12,7 @@
             <Setter Property="Margin" Value="0,2,4,2" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="Foreground" Value="{DynamicResource AppMutedTextBrush}" />
-            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="Background" Value="{DynamicResource AppSurfaceBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource AppControlBorderBrush}" />
             <Setter Property="Template">
                 <Setter.Value>

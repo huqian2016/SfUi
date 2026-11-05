@@ -25,9 +25,9 @@
                 <Button Content="{loc:Tr Backup_ClearSelection}" Margin="8,0,0,0" Padding="10,2"
                         Command="{Binding ClearSelectionCommand}"
                         AutomationProperties.Name="{loc:Tr Backup_ClearSelection}" />
-                <TextBlock Text="{Binding CountsProgress}" Foreground="#666666" Margin="10,0,0,0" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding CountsProgress}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="10,0,0,0" VerticalAlignment="Center" />
             </StackPanel>
-            <ListView ItemsSource="{Binding ObjectsView}" BorderBrush="#DDDDDD">
+            <ListView ItemsSource="{Binding ObjectsView}" BorderBrush="{DynamicResource AppBorderBrush}">
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem">
                         <Setter Property="AutomationProperties.Name" Value="{Binding Display}" />
@@ -45,11 +45,11 @@
                                       VerticalAlignment="Center" Margin="0,0,6,0" />
                             <StackPanel Grid.Column="1" Orientation="Horizontal">
                                 <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
-                                <TextBlock Text="{Binding Name}" Foreground="#888888" Margin="6,0,0,0"
+                                <TextBlock Text="{Binding Name}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="6,0,0,0"
                                            VerticalAlignment="Center"
                                            Visibility="{Binding ShowName, Converter={StaticResource BoolToVis}}" />
                             </StackPanel>
-                            <TextBlock Grid.Column="2" Text="{Binding CountText}" Foreground="#555555"
+                            <TextBlock Grid.Column="2" Text="{Binding CountText}" Foreground="{DynamicResource AppMutedTextBrush}"
                                        MinWidth="64" TextAlignment="Right" VerticalAlignment="Center" Margin="8,0,4,0" />
                         </Grid>
                     </DataTemplate>
@@ -65,14 +65,14 @@
             <TextBox Text="{Binding Label, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                      ToolTip="{loc:Tr Backup_LabelHint}"
                      AutomationProperties.Name="{loc:Tr Backup_LabelLabel}" />
-            <TextBlock Text="{loc:Tr Backup_LabelHint}" Foreground="#888888" FontSize="11" Margin="0,2,0,10" TextWrapping="Wrap" />
+            <TextBlock Text="{loc:Tr Backup_LabelHint}" Foreground="{DynamicResource AppMutedTextBrush}" FontSize="11" Margin="0,2,0,10" TextWrapping="Wrap" />
 
             <TextBlock Text="{loc:Tr Backup_DescLabel}" Margin="0,0,0,2" />
             <TextBox Text="{Binding Description, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                      Height="72" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"
                      ToolTip="{loc:Tr Backup_DescHint}"
                      AutomationProperties.Name="{loc:Tr Backup_DescLabel}" />
-            <TextBlock Text="{loc:Tr Backup_DescHint}" Foreground="#888888" FontSize="11" Margin="0,2,0,12" TextWrapping="Wrap" />
+            <TextBlock Text="{loc:Tr Backup_DescHint}" Foreground="{DynamicResource AppMutedTextBrush}" FontSize="11" Margin="0,2,0,12" TextWrapping="Wrap" />
 
             <StackPanel Orientation="Horizontal">
                 <Button Content="{loc:Tr Backup_Run}" Padding="14,4" Command="{Binding RunBackupCommand}"
@@ -82,7 +82,7 @@
                         AutomationProperties.Name="{loc:Tr Backup_Cancel}" />
             </StackPanel>
 
-            <TextBlock Text="{Binding StatusMessage}" Foreground="#555555" Margin="0,10,0,0" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,10,0,0" TextWrapping="Wrap" />
         </StackPanel>
     </Grid>
 </UserControl>

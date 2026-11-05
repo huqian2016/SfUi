@@ -3,14 +3,14 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:loc="clr-namespace:SfUi.App"
         Title="{Binding Title}" Width="620" SizeToContent="Height" ResizeMode="NoResize"
-        WindowStartupLocation="CenterOwner" ShowInTaskbar="False" Background="#F7F7F7">
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False" Background="{DynamicResource AppSubtleBrush}">
     <StackPanel Margin="16">
 
         <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8" />
 
         <!-- 内容 -->
-        <TextBlock Text="{Binding ContentsLabel}" Foreground="#666666" Margin="0,0,0,4" />
-        <Border Background="#FFFFFF" BorderBrush="#DDDDDD" BorderThickness="1" Padding="8" MaxHeight="120">
+        <TextBlock Text="{Binding ContentsLabel}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,0,0,4" />
+        <Border Background="{DynamicResource AppSurfaceBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="8" MaxHeight="120">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <ItemsControl ItemsSource="{Binding Sections}" AutomationProperties.AutomationId="ReportSections">
                     <ItemsControl.ItemTemplate>
@@ -23,7 +23,7 @@
         </Border>
 
         <!-- 出力形式 -->
-        <TextBlock Text="{Binding FormatsLabel}" Foreground="#666666" Margin="0,14,0,4" />
+        <TextBlock Text="{Binding FormatsLabel}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,14,0,4" />
         <UniformGrid Columns="2">
             <CheckBox Content="{Binding FormatCsv}" IsChecked="{Binding Csv}" Margin="0,2" AutomationProperties.AutomationId="ReportFormatCsv" />
             <CheckBox Content="{Binding FormatMarkdown}" IsChecked="{Binding Markdown}" Margin="0,2" AutomationProperties.AutomationId="ReportFormatMarkdown" />
@@ -65,7 +65,7 @@
         </Grid>
 
         <!-- 出力先 -->
-        <TextBlock Text="{Binding OutputFolderLabel}" Foreground="#666666" Margin="0,14,0,4" />
+        <TextBlock Text="{Binding OutputFolderLabel}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,14,0,4" />
         <DockPanel>
             <Button DockPanel.Dock="Right" Content="{Binding BrowseLabel}" Padding="12,3" Margin="6,0,0,0"
                     Command="{Binding BrowseCommand}" AutomationProperties.AutomationId="ReportBrowse" />

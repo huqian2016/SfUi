@@ -7,13 +7,13 @@
         FontSize="13">
     <Window.Resources>
         <Style x:Key="FieldLabel" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="#666666" />
+            <Setter Property="Foreground" Value="{DynamicResource AppMutedTextBrush}" />
             <Setter Property="Margin" Value="0,0,0,2" />
         </Style>
     </Window.Resources>
 
     <DockPanel>
-        <Border DockPanel.Dock="Bottom" Background="#F7F7F7" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="12,8">
+        <Border DockPanel.Dock="Bottom" Background="{DynamicResource AppSubtleBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0" Padding="12,8">
             <DockPanel>
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                     <Button Content="{Binding CancelText}" Width="110" Height="30" IsCancel="True" Margin="0,0,8,0"
@@ -29,7 +29,7 @@
         </Border>
 
         <StackPanel DockPanel.Dock="Top" Margin="12,10,12,0">
-            <TextBlock Text="{Binding OrgDisplayName}" Foreground="#666666" Margin="0,0,0,8" />
+            <TextBlock Text="{Binding OrgDisplayName}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,0,0,8" />
         </StackPanel>
 
         <TabControl SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}" Margin="12,4,12,8"
@@ -77,7 +77,7 @@
                             <TextBox Text="{Binding CallbackUrl, UpdateSourceTrigger=PropertyChanged}"
                                      Height="64" AcceptsReturn="True" TextWrapping="NoWrap" VerticalScrollBarVisibility="Auto"
                                      FontFamily="Consolas" AutomationProperties.AutomationId="ConnEditorCallback" />
-                            <TextBlock Text="{Binding HintCallbackUrl}" Foreground="#888888" FontSize="11" Margin="0,2,0,0" />
+                            <TextBlock Text="{Binding HintCallbackUrl}" Foreground="{DynamicResource AppMutedTextBrush}" FontSize="11" Margin="0,2,0,0" />
                         </StackPanel>
 
                         <TextBlock Grid.Row="5" Grid.Column="0" Text="{Binding LabelScopes}" Style="{StaticResource FieldLabel}" Margin="0,0,10,12" />
@@ -115,7 +115,7 @@
                         <StackPanel Grid.Row="9" Grid.Column="1">
                             <TextBox Text="{Binding ConsumerKey, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsNew}"
                                      FontFamily="Consolas" AutomationProperties.AutomationId="ConnEditorConsumerKey" />
-                            <TextBlock Text="{Binding HintConsumerKey}" Foreground="#888888" FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding HintConsumerKey}" Foreground="{DynamicResource AppMutedTextBrush}" FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap" />
                         </StackPanel>
                     </Grid>
                 </ScrollViewer>
@@ -123,7 +123,7 @@
 
             <TabItem Header="{Binding TabXml}" AutomationProperties.AutomationId="ConnEditorTabXml">
                 <DockPanel Margin="4,8,4,4">
-                    <TextBlock DockPanel.Dock="Top" Text="{Binding HintXml}" Foreground="#666666" TextWrapping="Wrap" Margin="0,0,0,6" />
+                    <TextBlock DockPanel.Dock="Top" Text="{Binding HintXml}" Foreground="{DynamicResource AppMutedTextBrush}" TextWrapping="Wrap" Margin="0,0,0,6" />
                     <TextBox Text="{Binding Xml, UpdateSourceTrigger=PropertyChanged}"
                              AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
                              FontFamily="Consolas" FontSize="12"

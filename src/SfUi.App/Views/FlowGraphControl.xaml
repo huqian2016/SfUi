@@ -10,14 +10,14 @@
     <DockPanel>
 
         <!-- ヘッダー（タイトル / ズーム / 閉じる） -->
-        <Border DockPanel.Dock="Top" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
+        <Border DockPanel.Dock="Top" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="8,6">
             <DockPanel>
                 <Button x:Name="FlowCloseButton" DockPanel.Dock="Right" Content="{loc:Tr SourceEditor_FlowClose}"
                         Padding="10,3" Margin="8,0,0,0" Click="Close_Click"
                         AutomationProperties.Name="{loc:Tr SourceEditor_FlowClose}" />
                 <TextBlock x:Name="FlowGraphStatusText" DockPanel.Dock="Right" Text="{Binding CountText}"
-                           Margin="12,0,0,0" VerticalAlignment="Center" Foreground="#666666" />
-                <TextBlock DockPanel.Dock="Right" Text="Zoom" Margin="16,0,6,0" VerticalAlignment="Center" Foreground="#666666" />
+                           Margin="12,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource AppMutedTextBrush}" />
+                <TextBlock DockPanel.Dock="Right" Text="Zoom" Margin="16,0,6,0" VerticalAlignment="Center" Foreground="{DynamicResource AppMutedTextBrush}" />
                 <Slider x:Name="FlowZoomSlider" DockPanel.Dock="Right" Width="130" Minimum="0.5" Maximum="1.5"
                         VerticalAlignment="Center" Value="{Binding Zoom}" />
                 <TextBlock Text="{Binding HeaderText}" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
@@ -25,14 +25,14 @@
         </Border>
 
         <!-- ノード詳細 -->
-        <Border DockPanel.Dock="Bottom" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="10,6">
+        <Border DockPanel.Dock="Bottom" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0" Padding="10,6">
             <StackPanel>
                 <TextBlock x:Name="FlowDetailsHeader" Text="{Binding SelectedNodeTitle}" FontWeight="SemiBold" TextWrapping="Wrap" />
                 <ItemsControl x:Name="FlowDetailsList" ItemsSource="{Binding SelectedNodeDetails}" Margin="0,4,0,0">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal" Margin="0,1">
-                                <TextBlock Text="{Binding Label}" Width="150" Foreground="#666666" />
+                                <TextBlock Text="{Binding Label}" Width="150" Foreground="{DynamicResource AppMutedTextBrush}" />
                                 <TextBlock Text="{Binding Value}" TextWrapping="Wrap" />
                             </StackPanel>
                         </DataTemplate>
@@ -42,7 +42,7 @@
         </Border>
 
         <!-- グラフ キャンバス -->
-        <ScrollViewer x:Name="FlowGraphScroller" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Background="#FAFAFA">
+        <ScrollViewer x:Name="FlowGraphScroller" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Background="{DynamicResource AppToolbarBrush}">
             <Grid Width="{Binding CanvasWidth}" Height="{Binding CanvasHeight}" Margin="10"
                   HorizontalAlignment="Left" VerticalAlignment="Top">
                 <Grid.LayoutTransform>
@@ -67,10 +67,10 @@
                             <Canvas>
                                 <Line X1="{Binding X1}" Y1="{Binding Y1}" X2="{Binding X2}" Y2="{Binding Y2}"
                                       Stroke="{Binding StrokeHex, Converter={StaticResource HexBrush}}" StrokeThickness="1.6" />
-                                <Border Canvas.Left="{Binding LabelX}" Canvas.Top="{Binding LabelY}" Background="#F0F0F0"
+                                <Border Canvas.Left="{Binding LabelX}" Canvas.Top="{Binding LabelY}" Background="{DynamicResource AppToolbarBrush}"
                                         CornerRadius="3" Padding="3,1"
                                         Visibility="{Binding HasLabel, Converter={StaticResource BoolToVis}}">
-                                    <TextBlock Text="{Binding Label}" FontSize="10" Foreground="#555555" />
+                                    <TextBlock Text="{Binding Label}" FontSize="10" Foreground="{DynamicResource AppMutedTextBrush}" />
                                 </Border>
                             </Canvas>
                         </DataTemplate>

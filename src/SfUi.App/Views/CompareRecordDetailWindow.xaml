@@ -10,10 +10,10 @@
     <DockPanel>
 
         <!-- 上部: 対象オブジェクト / 項目数 / 差分件数 -->
-        <Border DockPanel.Dock="Top" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
+        <Border DockPanel.Dock="Top" Background="{DynamicResource AppChromeBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="8,6">
             <DockPanel>
                 <views:HelpButton Topic="RecordDetail" DockPanel.Dock="Right" Margin="8,0,0,0" VerticalAlignment="Center" />
-                <TextBlock Text="{Binding HeaderText}" Foreground="#555555" TextTrimming="CharacterEllipsis" />
+                <TextBlock Text="{Binding HeaderText}" Foreground="{DynamicResource AppMutedTextBrush}" TextTrimming="CharacterEllipsis" />
             </DockPanel>
         </Border>
 

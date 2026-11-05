@@ -8,7 +8,7 @@
         FontSize="13">
     <Window.Styles>
         <Style Selector="TextBlock.label">
-            <Setter Property="Foreground" Value="#555555" />
+            <Setter Property="Foreground" Value="{DynamicResource AppMutedTextBrush}" />
             <Setter Property="Margin" Value="0,8,0,3" />
         </Style>
         <Style Selector="TextBlock.section">
@@ -23,7 +23,7 @@
     </Window.Styles>
 
     <DockPanel>
-        <Border DockPanel.Dock="Bottom" Background="#F7F7F7" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="12,8">
+        <Border DockPanel.Dock="Bottom" Background="{DynamicResource AppSubtleBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0" Padding="12,8">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <Button Content="{Binding LabelSave}" MinWidth="110" Padding="12,4" Click="OnSave"
                         AutomationProperties.AutomationId="ReportEditorSave" />
@@ -230,7 +230,7 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
 
-                <TextBlock Text="{Binding Hint}" Foreground="#777777" TextWrapping="Wrap" Margin="0,16,0,0" />
+                <TextBlock Text="{Binding Hint}" Foreground="{DynamicResource AppSubtleTextBrush}" TextWrapping="Wrap" Margin="0,16,0,0" />
                 <TextBlock Text="{Binding ErrorText}" Foreground="#C62828" TextWrapping="Wrap" Margin="0,8,0,0"
                            AutomationProperties.AutomationId="ReportEditorError" />
             </StackPanel>

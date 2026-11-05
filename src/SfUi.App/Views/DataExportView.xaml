@@ -8,7 +8,7 @@
     <DockPanel>
 
         <!-- 条件と実行 -->
-        <Border DockPanel.Dock="Top" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
+        <Border DockPanel.Dock="Top" Background="{DynamicResource AppToolbarBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="8,6">
             <StackPanel>
                 <StackPanel Orientation="Horizontal">
                     <RadioButton Content="{loc:Tr DataExport_ModeBuilder}" Margin="0,0,16,0"
@@ -80,12 +80,12 @@
                             Command="{Binding RunCommand}" IsEnabled="{Binding CanRun}" />
                     <Button Content="{loc:Tr Common_Cancel}" Padding="10,2" Margin="6,0,0,0"
                             Command="{Binding CancelCommand}" IsEnabled="{Binding IsRunning}" />
-                    <TextBlock Text="{Binding ProgressText}" Margin="12,0,0,0" VerticalAlignment="Center" Foreground="#555555" />
+                    <TextBlock Text="{Binding ProgressText}" Margin="12,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource AppMutedTextBrush}" />
                     <TextBlock Text="{Binding StatusMessage}" Margin="12,0,0,0" VerticalAlignment="Center"
-                               Foreground="#555555" TextTrimming="CharacterEllipsis" />
+                               Foreground="{DynamicResource AppMutedTextBrush}" TextTrimming="CharacterEllipsis" />
                 </StackPanel>
 
-                <TextBlock Text="{loc:Tr DataExport_BulkNote}" Foreground="#777777" Margin="0,4,0,0"
+                <TextBlock Text="{loc:Tr DataExport_BulkNote}" Foreground="{DynamicResource AppSubtleTextBrush}" Margin="0,4,0,0"
                            Visibility="{Binding UseBulk, Converter={StaticResource BoolToVis}}" />
             </StackPanel>
         </Border>
@@ -105,7 +105,7 @@
                       AutoGenerateColumns="True" IsReadOnly="True" CanUserAddRows="False"
                       EnableRowVirtualization="True" EnableColumnVirtualization="True"
                       ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                      AlternatingRowBackground="#F7F7F7" />
+                      AlternatingRowBackground="{DynamicResource AppSubtleBrush}" />
         </DockPanel>
     </DockPanel>
 </UserControl>

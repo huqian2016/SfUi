@@ -20,14 +20,14 @@
                          Text="{Binding SearchTextA, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          ToolTip="{loc:Tr Restore_BackupSearch}"
                          AutomationProperties.Name="{loc:Tr Restore_BackupSearch}" />
-                <ListBox ItemsSource="{Binding BackupsViewA}" BorderBrush="#DDDDDD"
+                <ListBox ItemsSource="{Binding BackupsViewA}" BorderBrush="{DynamicResource AppBorderBrush}"
                          SelectedItem="{Binding SelectedBackupA, Mode=TwoWay}">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
                             <StackPanel Margin="2,3">
                                 <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
-                                <TextBlock Text="{Binding Subtitle}" Foreground="#666666" FontSize="11" />
-                                <TextBlock Text="{Binding Summary}" Foreground="#666666" FontSize="11" />
+                                <TextBlock Text="{Binding Subtitle}" Foreground="{DynamicResource AppMutedTextBrush}" FontSize="11" />
+                                <TextBlock Text="{Binding Summary}" Foreground="{DynamicResource AppMutedTextBrush}" FontSize="11" />
                             </StackPanel>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
@@ -39,14 +39,14 @@
                          Text="{Binding SearchTextB, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          ToolTip="{loc:Tr Restore_BackupSearch}"
                          AutomationProperties.Name="{loc:Tr Restore_BackupSearch}" />
-                <ListBox ItemsSource="{Binding BackupsViewB}" BorderBrush="#DDDDDD"
+                <ListBox ItemsSource="{Binding BackupsViewB}" BorderBrush="{DynamicResource AppBorderBrush}"
                          SelectedItem="{Binding SelectedBackupB, Mode=TwoWay}">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
                             <StackPanel Margin="2,3">
                                 <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
-                                <TextBlock Text="{Binding Subtitle}" Foreground="#666666" FontSize="11" />
-                                <TextBlock Text="{Binding Summary}" Foreground="#666666" FontSize="11" />
+                                <TextBlock Text="{Binding Subtitle}" Foreground="{DynamicResource AppMutedTextBrush}" FontSize="11" />
+                                <TextBlock Text="{Binding Summary}" Foreground="{DynamicResource AppMutedTextBrush}" FontSize="11" />
                             </StackPanel>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
@@ -71,7 +71,7 @@
                 <CheckBox Content="{loc:Tr BackupCompare_DiffOnly}" Margin="14,0,0,0" VerticalAlignment="Center"
                           IsChecked="{Binding DiffOnly, Mode=TwoWay}" />
                 <TextBlock Text="{Binding StatusMessage}" VerticalAlignment="Center" Margin="12,0,0,0"
-                           Foreground="#555555" TextTrimming="CharacterEllipsis" MaxWidth="380" />
+                           Foreground="{DynamicResource AppMutedTextBrush}" TextTrimming="CharacterEllipsis" MaxWidth="380" />
             </StackPanel>
             <TextBlock Grid.Row="1" Text="{Binding SummaryText}" FontWeight="SemiBold" Margin="0,8,0,6" TextWrapping="Wrap" />
             <DataGrid x:Name="CompareGrid" Grid.Row="2" ItemsSource="{Binding ResultsView}"

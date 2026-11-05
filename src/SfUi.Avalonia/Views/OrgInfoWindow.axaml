@@ -11,7 +11,7 @@
     <DockPanel>
 
         <!-- 上部: すべて再取得 / キャンセル / 最終取得時刻 -->
-        <Border DockPanel.Dock="Top" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
+        <Border DockPanel.Dock="Top" Background="{DynamicResource AppChromeBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="8,6">
             <DockPanel>
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
                     <Button Content="{loc:Tr OrgInfo_RefreshAll}" Padding="10,2"
@@ -21,7 +21,7 @@
                     <Button Content="{loc:Tr Erd_ExportButton}" Padding="10,2" Margin="8,0,0,0" Command="{Binding ExportErdCommand}" AutomationProperties.AutomationId="OrgInfoExportErd" />
                     <Button Content="{loc:Tr Common_Cancel}" Padding="10,2" Margin="6,0,0,0"
                             Command="{Binding CancelCommand}" IsEnabled="{Binding IsBusy}" />
-                    <Border Width="1" Background="#CCCCCC" Margin="12,2,12,2" />
+                    <Border Width="1" Background="{DynamicResource AppDividerBrush}" Margin="12,2,12,2" />
                     <TextBlock Text="{loc:Tr OrgInfo_Search_Global}" VerticalAlignment="Center" Margin="0,0,4,0" />
                     <TextBox x:Name="GlobalSearchBox" Width="240" VerticalContentAlignment="Center"
                              Text="{Binding GlobalSearchText, Mode=TwoWay}"
@@ -29,20 +29,20 @@
                              KeyDown="GlobalSearchBox_KeyDown" />
                     <Button Content="✕" Padding="6,2" Margin="4,0,0,0" Command="{Binding ClearSearchCommand}"
                             ToolTip.Tip="{loc:Tr OrgInfo_Search_ClearTip}" />
-                    <TextBlock Text="{Binding SearchStatusText}" Margin="10,0,0,0" VerticalAlignment="Center" Foreground="#555555" />
-                    <TextBlock Text="{Binding LastFetchedText}" Margin="14,0,0,0" VerticalAlignment="Center" Foreground="#555555" />
+                    <TextBlock Text="{Binding SearchStatusText}" Margin="10,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource AppMutedTextBrush}" />
+                    <TextBlock Text="{Binding LastFetchedText}" Margin="14,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource AppMutedTextBrush}" />
                     <ToggleButton Content="AI" Margin="14,0,0,0" Padding="10,2"
                                   IsChecked="{Binding IsAiPanelOpen, Mode=TwoWay}"
                                   ToolTip.Tip="{loc:Tr OrgInfo_Ai_ToggleTip}" />
                 </StackPanel>
                 <views:HelpButton Topic="OrgInfo" DockPanel.Dock="Right" Margin="8,0,0,0" VerticalAlignment="Center" />
                 <TextBlock Text="{Binding StatusMessage}" HorizontalAlignment="Right" VerticalAlignment="Center"
-                           Foreground="#333333" TextTrimming="CharacterEllipsis" />
+                           Foreground="{DynamicResource AppTextBrush}" TextTrimming="CharacterEllipsis" />
             </DockPanel>
         </Border>
 
         <!-- 検索結果（全タブ横断。ダブルクリック / Enter で該当タブへ移動） -->
-        <Border DockPanel.Dock="Top" Background="#FFFFFF" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,4"
+        <Border DockPanel.Dock="Top" Background="{DynamicResource AppSurfaceBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="8,4"
                 IsVisible="{Binding IsSearchPanelOpen}">
             <DataGrid x:Name="GlobalSearchResultsGrid" ItemsSource="{Binding SearchResults}" MaxHeight="180"
                       AutoGenerateColumns="False" IsReadOnly="True"
@@ -52,7 +52,7 @@
         </Border>
 
         <!-- 下部: ステータスバー -->
-        <Border DockPanel.Dock="Bottom" Background="#007ACC" Padding="8,4">
+        <Border DockPanel.Dock="Bottom" Background="{DynamicResource AppAccentBrush}" Padding="8,4">
             <DockPanel>
                 <TextBlock x:Name="VersionText" DockPanel.Dock="Right" Foreground="White" />
                 <TextBlock Text="{Binding OrgDetail}" Foreground="White" TextTrimming="CharacterEllipsis" />
@@ -92,10 +92,10 @@
             </TabControl>
 
             <Border Grid.Column="1" Width="420" Margin="8,0,0,0"
-                    BorderBrush="#DDDDDD" BorderThickness="1"
+                    BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1"
                     IsVisible="{Binding IsAiPanelOpen}">
                 <DockPanel>
-                    <Border DockPanel.Dock="Top" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,4">
+                    <Border DockPanel.Dock="Top" Background="{DynamicResource AppChromeBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="8,4">
                         <DockPanel>
                             <Button DockPanel.Dock="Right" Content="✕" Padding="6,0"
                                     Command="{Binding ToggleAiPanelCommand}"

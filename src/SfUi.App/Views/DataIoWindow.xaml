@@ -11,7 +11,7 @@
     <DockPanel>
 
         <!-- 上部: 対象オブジェクト（2 タブで共有） -->
-        <Border DockPanel.Dock="Top" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
+        <Border DockPanel.Dock="Top" Background="{DynamicResource AppChromeBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="8,6">
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="{loc:Tr DataIo_ObjectLabel}" VerticalAlignment="Center" Margin="0,0,4,0" />
                 <ComboBox x:Name="ObjectComboBox" Width="340" IsEditable="True" IsTextSearchEnabled="True"
@@ -19,9 +19,9 @@
                           SelectedItem="{Binding SelectedObject, Mode=TwoWay}"
                           Text="{Binding ObjectText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                           ToolTip="{loc:Tr DataIo_ObjectTip}" />
-                <TextBlock Text="{Binding DescribeSummary}" Margin="10,0,0,0" VerticalAlignment="Center" Foreground="#555555" />
+                <TextBlock Text="{Binding DescribeSummary}" Margin="10,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource AppMutedTextBrush}" />
                 <TextBlock Text="{Binding StatusMessage}" Margin="16,0,0,0" VerticalAlignment="Center"
-                           Foreground="#555555" TextTrimming="CharacterEllipsis" />
+                           Foreground="{DynamicResource AppMutedTextBrush}" TextTrimming="CharacterEllipsis" />
                 <Button Content="{loc:Tr Report_Export}" Padding="10,2" Margin="16,0,0,0" Command="{Binding ExportReportCommand}" AutomationProperties.AutomationId="DataIoExportReport" />
                 <Button Content="{loc:Tr Erd_ExportButton}" Padding="10,2" Margin="8,0,0,0" Command="{Binding ExportErdCommand}" AutomationProperties.AutomationId="DataIoExportErd" />
                 <views:HelpButton Topic="DataIo" Margin="16,0,0,0" />

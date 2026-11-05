@@ -14,7 +14,7 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="{Binding LabelPlaceholders}" Foreground="#777777" FontSize="11"
+        <TextBlock Grid.Row="0" Text="{Binding LabelPlaceholders}" Foreground="{DynamicResource AppSubtleTextBrush}" FontSize="11"
                    TextWrapping="Wrap" Margin="0,0,0,8" />
 
         <Grid Grid.Row="1">
@@ -25,7 +25,7 @@
             </Grid.ColumnDefinitions>
             <!-- レイアウト一覧 -->
             <DockPanel Grid.Column="0">
-                <TextBlock DockPanel.Dock="Top" Text="{Binding LabelLayout}" Foreground="#555555" Margin="0,0,0,4" />
+                <TextBlock DockPanel.Dock="Top" Text="{Binding LabelLayout}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,0,0,4" />
                 <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,6,0,0">
                     <Button Content="{Binding LabelNew}" Command="{Binding NewLayoutCommand}" Padding="10,2"
                             AutomationProperties.AutomationId="ReportFormNew" />
@@ -42,7 +42,7 @@
             <!-- レイアウト編集 -->
             <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
                 <StackPanel>
-                    <TextBlock Text="{Binding LabelName}" Foreground="#555555" Margin="0,0,0,3" />
+                    <TextBlock Text="{Binding LabelName}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,0,0,3" />
                     <TextBox Text="{Binding LayoutName, UpdateSourceTrigger=PropertyChanged}"
                              AutomationProperties.AutomationId="ReportFormName" />
 
@@ -55,12 +55,12 @@
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0">
-                            <TextBlock Text="{Binding LabelPaper}" Foreground="#555555" Margin="0,0,0,3" />
+                            <TextBlock Text="{Binding LabelPaper}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,0,0,3" />
                             <ComboBox ItemsSource="{Binding PaperOptions}" SelectedItem="{Binding PaperSize}"
                                       AutomationProperties.AutomationId="ReportFormPaper" />
                         </StackPanel>
                         <StackPanel Grid.Column="2">
-                            <TextBlock Text="{Binding LabelOrientation}" Foreground="#555555" Margin="0,0,0,3" />
+                            <TextBlock Text="{Binding LabelOrientation}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,0,0,3" />
                             <ComboBox ItemsSource="{Binding OrientationOptions}"
                                       SelectedValue="{Binding Orientation}"
                                       SelectedValuePath="Key"
@@ -68,28 +68,28 @@
                                       AutomationProperties.AutomationId="ReportFormOrientation" />
                         </StackPanel>
                         <StackPanel Grid.Column="4">
-                            <TextBlock Text="{Binding LabelMargin}" Foreground="#555555" Margin="0,0,0,3" />
+                            <TextBlock Text="{Binding LabelMargin}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,0,0,3" />
                             <TextBox Text="{Binding MarginMm, UpdateSourceTrigger=PropertyChanged}"
                                      AutomationProperties.AutomationId="ReportFormMargin" />
                         </StackPanel>
                     </Grid>
 
-                    <TextBlock Text="{Binding LabelHeader}" Foreground="#555555" Margin="0,10,0,3" />
+                    <TextBlock Text="{Binding LabelHeader}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,10,0,3" />
                     <TextBox Text="{Binding HeaderText, UpdateSourceTrigger=PropertyChanged}"
                              Height="54" AcceptsReturn="True" TextWrapping="Wrap"
                              AutomationProperties.AutomationId="ReportFormHeader" />
 
-                    <TextBlock Text="{Binding LabelDetail}" Foreground="#555555" Margin="0,10,0,3" />
+                    <TextBlock Text="{Binding LabelDetail}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,10,0,3" />
                     <TextBox Text="{Binding DetailRowHeightMm, UpdateSourceTrigger=PropertyChanged}" Width="120"
                              HorizontalAlignment="Left"
                              AutomationProperties.AutomationId="ReportFormRowHeight" />
 
-                    <TextBlock Text="{Binding LabelSummary}" Foreground="#555555" Margin="0,10,0,3" />
+                    <TextBlock Text="{Binding LabelSummary}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,10,0,3" />
                     <TextBox Text="{Binding SummaryText, UpdateSourceTrigger=PropertyChanged}"
                              Height="44" AcceptsReturn="True" TextWrapping="Wrap"
                              AutomationProperties.AutomationId="ReportFormSummary" />
 
-                    <TextBlock Text="{Binding LabelFooter}" Foreground="#555555" Margin="0,10,0,3" />
+                    <TextBlock Text="{Binding LabelFooter}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,10,0,3" />
                     <TextBox Text="{Binding FooterText, UpdateSourceTrigger=PropertyChanged}"
                              Height="44" AcceptsReturn="True" TextWrapping="Wrap"
                              AutomationProperties.AutomationId="ReportFormFooter" />
@@ -97,13 +97,13 @@
                     <CheckBox Content="{Binding LabelRepeatHeader}" IsChecked="{Binding RepeatHeaderOnPageBreak}"
                               Margin="0,10,0,0" AutomationProperties.AutomationId="ReportFormRepeatHeader" />
 
-                    <TextBlock Text="{Binding LabelOutput}" Foreground="#555555" Margin="0,12,0,3" />
+                    <TextBlock Text="{Binding LabelOutput}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,12,0,3" />
                     <TextBox Text="{Binding OutputName, UpdateSourceTrigger=PropertyChanged}"
                              AutomationProperties.AutomationId="ReportFormOutputName" />
-                    <TextBlock Text="{Binding OutputHint}" Foreground="#777777" FontSize="11" Margin="0,3,0,0"
+                    <TextBlock Text="{Binding OutputHint}" Foreground="{DynamicResource AppSubtleTextBrush}" FontSize="11" Margin="0,3,0,0"
                                TextWrapping="Wrap" AutomationProperties.AutomationId="ReportFormOutputHint" />
 
-                    <TextBlock Text="{Binding LabelFormats}" Foreground="#555555" Margin="0,10,0,3" />
+                    <TextBlock Text="{Binding LabelFormats}" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,10,0,3" />
                     <StackPanel Orientation="Horizontal">
                         <CheckBox Content="HTML" IsChecked="{Binding WriteHtml}" Margin="0,0,16,0"
                                   AutomationProperties.AutomationId="ReportFormHtml" />
@@ -123,7 +123,7 @@
                 <Button Content="{Binding LabelCancel}" Click="OnCancel" Padding="12,3" Margin="8,0,0,0"
                         IsCancel="True" AutomationProperties.AutomationId="ReportFormCancel" />
             </StackPanel>
-            <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center" Foreground="#555555"
+            <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center" Foreground="{DynamicResource AppMutedTextBrush}"
                        TextTrimming="CharacterEllipsis"
                        AutomationProperties.AutomationId="ReportFormStatus" />
         </DockPanel>

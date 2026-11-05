@@ -56,7 +56,7 @@
                             AutomationProperties.AutomationId="PageLast" />
                     <TextBlock Text="{Binding PageText}" Margin="10,0,0,0" VerticalAlignment="Center" />
                     <TextBlock Text="{Binding SummaryText}" Margin="14,0,0,0" VerticalAlignment="Center" FontWeight="SemiBold" />
-                    <TextBlock Text="{Binding StatusMessage}" Margin="14,0,0,0" VerticalAlignment="Center" Foreground="#555555"
+                    <TextBlock Text="{Binding StatusMessage}" Margin="14,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource AppMutedTextBrush}"
                                TextTrimming="CharacterEllipsis" />
                 </StackPanel>
             </StackPanel>

@@ -16,7 +16,7 @@
     <DockPanel>
 
         <!-- ツールバー: オブジェクト選択（選択時に遅延取得） -->
-        <Border DockPanel.Dock="Top" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
+        <Border DockPanel.Dock="Top" Background="{DynamicResource AppToolbarBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="8,6">
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="{loc:Tr OrgInfo_Fields_SelectObject}" VerticalAlignment="Center" Margin="0,0,4,0" />
                 <AutoCompleteBox x:Name="FieldObjectComboBox" Width="340" MinimumPrefixLength="0"
@@ -27,14 +27,14 @@
                         Command="{Binding FindUsageCommand}"
                         ToolTip.Tip="{loc:Tr OrgInfo_Fields_FindUsageTip}"
                         AutomationProperties.Name="{loc:Tr OrgInfo_Fields_FindUsage}" />
-                <TextBlock Text="{Binding Hint}" VerticalAlignment="Center" Margin="12,0,0,0" Foreground="#666666"
+                <TextBlock Text="{Binding Hint}" VerticalAlignment="Center" Margin="12,0,0,0" Foreground="{DynamicResource AppMutedTextBrush}"
                            TextTrimming="CharacterEllipsis" />
             </StackPanel>
         </Border>
 
         <Grid>
             <ContentControl Content="{Binding Section}" />
-            <TextBlock Text="{loc:Tr OrgInfo_Fields_NoSelection}" Foreground="#888888"
+            <TextBlock Text="{loc:Tr OrgInfo_Fields_NoSelection}" Foreground="{DynamicResource AppMutedTextBrush}"
                        IsVisible="{Binding Section, Converter={StaticResource IsNull}}"
                        HorizontalAlignment="Center" VerticalAlignment="Center" />
         </Grid>
