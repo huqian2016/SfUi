@@ -4,7 +4,7 @@
         xmlns:loc="clr-namespace:SfUi.Avalonia"
         x:Class="SfUi.Avalonia.MainWindow"
         Title="{loc:Tr App_Title}"
-        Width="1520" Height="720" MinWidth="1000" MinHeight="540"
+        Width="1520" Height="900" MinWidth="1000" MinHeight="540"
         WindowStartupLocation="CenterScreen"
         FontSize="13">
     <Window.Resources>

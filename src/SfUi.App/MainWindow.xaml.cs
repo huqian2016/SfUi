@@ -22,9 +22,27 @@ public partial class MainWindow : Window
         DataPathText.Text = UiText.T("Main_DataPathFmt", paths.DataRoot);
         VersionText.Text = $"v{typeof(MainWindow).Assembly.GetName().Version?.ToString(3) ?? "0.0.0"}";
 
+        ApplyAdaptiveWindowSize();
+
         Loaded += OnWindowLoaded;
         PreviewKeyDown += OnPreviewKeyDown;
         Closing += (_, _) => _viewModel.SaveEditorTabs();
+    }
+
+    /// <summary>
+    /// 既定のウィンドウ サイズを画面の作業領域に合わせて調整します
+    /// （既定の 1520 x 900 が入りきらない環境でも画面外にはみ出さないようにする）。
+    /// </summary>
+    private void ApplyAdaptiveWindowSize()
+    {
+        var area = SystemParameters.WorkArea;
+        if (area.Width <= 0 || area.Height <= 0)
+        {
+            return;
+        }
+
+        Width = Math.Max(MinWidth, Math.Min(Width, area.Width - 32));
+        Height = Math.Max(MinHeight, Math.Min(Height, area.Height - 32));
     }
 
     /// <summary>グローバルショートカット: Ctrl+1..9（クイックパネル実行）/ F5（直前の操作を再実行）。</summary>

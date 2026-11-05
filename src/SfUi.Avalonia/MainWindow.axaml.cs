@@ -24,6 +24,21 @@ public partial class MainWindow : Window
         this.FindControl<TextBlock>("DataPathText")!.Text = UiText.T("Main_DataPathFmt", paths.DataRoot);
         this.FindControl<TextBlock>("VersionText")!.Text = $"v{typeof(MainWindow).Assembly.GetName().Version?.ToString(3) ?? "0.0.0"}";
 
+        // 画面の作業領域に合わせて高さを決める（既定 900 DIP が入りきらない環境でも切れない）
+        Opened += (_, _) =>
+        {
+            if (Screens.Primary is not { } screen)
+            {
+                return;
+            }
+
+            var scaling = screen.Scaling <= 0 ? 1 : screen.Scaling;
+            var workWidth = screen.WorkingArea.Width / scaling;
+            var workHeight = screen.WorkingArea.Height / scaling;
+            Width = Math.Max(MinWidth, Math.Min(Width, workWidth - 32));
+            Height = Math.Max(MinHeight, Math.Min(Height, workHeight - 32));
+        };
+
         Opened += OnWindowOpened;
         AddHandler(KeyDownEvent, OnPreviewKeyDown, RoutingStrategies.Tunnel);
         Closing += (_, _) => _viewModel.SaveEditorTabs();
