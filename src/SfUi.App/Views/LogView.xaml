@@ -5,7 +5,7 @@
     <DockPanel>
 
         <!-- ツールバー -->
-        <Border DockPanel.Dock="Top" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
+        <Border DockPanel.Dock="Top" Background="{DynamicResource AppToolbarBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="8,6">
             <StackPanel Orientation="Horizontal">
                 <Button Content="{loc:Tr Log_Refresh}" Padding="10,2" Margin="0,0,6,0" Command="{Binding RefreshCommand}" />
                 <Button Content="{loc:Tr Log_Fetch}" Padding="10,2" Margin="0,0,6,0" Command="{Binding FetchCommand}"
@@ -19,7 +19,7 @@
         </Border>
 
         <!-- ステータス -->
-        <Border DockPanel.Dock="Bottom" Background="#F7F7F7" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="8,4">
+        <Border DockPanel.Dock="Bottom" Background="{DynamicResource AppSubtleBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0" Padding="8,4">
             <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" />
         </Border>
 
@@ -36,7 +36,7 @@
                       SelectionMode="Single" SelectionUnit="FullRow"
                       HeadersVisibility="Column" RowHeaderWidth="0"
                       GridLinesVisibility="Horizontal"
-                      AlternatingRowBackground="#F7F9FB">
+                      AlternatingRowBackground="{DynamicResource AppSubtleBrush}">
                 <DataGrid.RowStyle>
                     <Style TargetType="DataGridRow">
                         <EventSetter Event="MouseDoubleClick" Handler="Row_MouseDoubleClick" />
@@ -51,7 +51,7 @@
                 </DataGrid.Columns>
             </DataGrid>
 
-            <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch" Background="#DDDDDD" />
+            <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch" Background="{DynamicResource AppBorderBrush}" />
 
             <TextBox Grid.Column="2" Text="{Binding LogContent}" IsReadOnly="True"
                      FontFamily="Consolas" FontSize="12"

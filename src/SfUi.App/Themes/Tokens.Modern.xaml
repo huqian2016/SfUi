@@ -1,0 +1,58 @@
+<!--
+    モダン ライト テーマ（Fluent / Windows 11 風）。
+    キーは他のテーマ ファイルと完全に一致させてください。
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- 面 -->
+    <SolidColorBrush x:Key="AppWindowBackgroundBrush" Color="#F7F8FA" />
+    <SolidColorBrush x:Key="AppChromeBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="AppPanelBrush" Color="#FBFCFD" />
+    <SolidColorBrush x:Key="AppSurfaceBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="AppToolbarBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="AppSubtleBrush" Color="#F3F5F8" />
+
+    <!-- 線 -->
+    <SolidColorBrush x:Key="AppBorderBrush" Color="#E4E7EC" />
+    <SolidColorBrush x:Key="AppDividerBrush" Color="#EAECF0" />
+    <SolidColorBrush x:Key="AppControlBorderBrush" Color="#D0D5DD" />
+
+    <!-- 文字 -->
+    <SolidColorBrush x:Key="AppTextBrush" Color="#1F2328" />
+    <SolidColorBrush x:Key="AppMutedTextBrush" Color="#5A6472" />
+    <SolidColorBrush x:Key="AppSubtleTextBrush" Color="#7C8698" />
+    <SolidColorBrush x:Key="AppIconBrush" Color="#344054" />
+    <Color x:Key="AppIconColor">#344054</Color>
+
+    <!-- アクセントとステータス -->
+    <SolidColorBrush x:Key="AppAccentBrush" Color="#0B6BCB" />
+    <SolidColorBrush x:Key="AppAccentTextBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="AppStatusBarBrush" Color="#1F2937" />
+    <SolidColorBrush x:Key="AppStatusBarTextBrush" Color="#F9FAFB" />
+    <SolidColorBrush x:Key="AppStatusBarMutedTextBrush" Color="#9CA3AF" />
+
+    <!-- 意味を持つ色 -->
+    <SolidColorBrush x:Key="AppWarningTextBrush" Color="#B54708" />
+    <SolidColorBrush x:Key="AppDangerBrush" Color="#B42318" />
+    <SolidColorBrush x:Key="AppSuccessBrush" Color="#12805C" />
+
+    <!-- エディタ -->
+    <SolidColorBrush x:Key="AppEditorBackgroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="AppEditorForegroundBrush" Color="#1F2328" />
+    <SolidColorBrush x:Key="AppEditorLineNumberBrush" Color="#98A2B3" />
+
+    <!-- グリッド -->
+    <SolidColorBrush x:Key="AppGridHeaderBrush" Color="#F9FAFB" />
+    <SolidColorBrush x:Key="AppGridRowHoverBrush" Color="#F3F6FB" />
+    <SolidColorBrush x:Key="AppGridSelectionBrush" Color="#E8F1FD" />
+
+    <!-- コントロール -->
+    <SolidColorBrush x:Key="AppButtonHoverBrush" Color="#F2F4F7" />
+    <SolidColorBrush x:Key="AppButtonPressedBrush" Color="#E4E7EC" />
+    <SolidColorBrush x:Key="AppTabHoverBrush" Color="#F2F4F7" />
+    <SolidColorBrush x:Key="AppTabSelectedBrush" Color="Transparent" />
+
+    <CornerRadius x:Key="AppCornerRadius">6</CornerRadius>
+    <CornerRadius x:Key="AppPanelCornerRadius">8</CornerRadius>
+</ResourceDictionary>

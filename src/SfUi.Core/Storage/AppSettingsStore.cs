@@ -29,6 +29,9 @@ public sealed class AppSettings
     /// <summary>UI 言語（"en" = 英語／既定、"ja" = 日本語）。</summary>
     public string Language { get; set; } = UiText.English;
 
+    /// <summary>UI テーマ（AppThemes の値。既定 "classic" = 従来の配色）。</summary>
+    public string Theme { get; set; } = AppThemes.Classic;
+
     /// <summary>AI パネル（右サイド）の表示状態。</summary>
     public bool AiPanelVisible { get; set; } = true;
 

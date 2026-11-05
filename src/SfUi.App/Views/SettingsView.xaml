@@ -5,7 +5,7 @@
     <DockPanel>
 
         <!-- ステータス -->
-        <Border DockPanel.Dock="Bottom" Background="#F7F7F7" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="8,4">
+        <Border DockPanel.Dock="Bottom" Background="{DynamicResource AppSubtleBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0" Padding="8,4">
             <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" />
         </Border>
 

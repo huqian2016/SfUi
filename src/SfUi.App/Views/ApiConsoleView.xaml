@@ -11,9 +11,9 @@
             <Setter Property="Padding" Value="0,3" />
             <Setter Property="Margin" Value="0,2,4,2" />
             <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Foreground" Value="#555555" />
+            <Setter Property="Foreground" Value="{DynamicResource AppMutedTextBrush}" />
             <Setter Property="Background" Value="#FFFFFF" />
-            <Setter Property="BorderBrush" Value="#BDBDBD" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AppControlBorderBrush}" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -40,7 +40,7 @@
     <DockPanel>
 
         <!-- リクエスト バー（Workbench の REST Explorer 風） -->
-        <Border DockPanel.Dock="Top" Background="#F5F5F5" BorderBrush="#D8D8D8" BorderThickness="0,0,0,1" Padding="8,6">
+        <Border DockPanel.Dock="Top" Background="{DynamicResource AppSubtleBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="8,6">
             <StackPanel>
                 <WrapPanel Orientation="Horizontal">
                     <Button Content="☰" Padding="8,2" Margin="0,2,8,2" Command="{Binding ToggleTreeCommand}"
@@ -128,14 +128,14 @@
                 </DockPanel>
 
                 <!-- 絶対 URL（Workbench の Absolute URL） -->
-                <TextBlock Text="{Binding AbsoluteUrl}" Margin="0,3,0,0" FontSize="11" Foreground="#777777"
+                <TextBlock Text="{Binding AbsoluteUrl}" Margin="0,3,0,0" FontSize="11" Foreground="{DynamicResource AppMutedTextBrush}"
                            TextTrimming="CharacterEllipsis" ToolTip="{loc:Tr Api_UrlTip}"
                            AutomationProperties.AutomationId="ApiAbsoluteUrl" />
             </StackPanel>
         </Border>
 
         <!-- ステータス -->
-        <Border DockPanel.Dock="Bottom" Background="#F7F7F7" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="8,4">
+        <Border DockPanel.Dock="Bottom" Background="{DynamicResource AppSubtleBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0" Padding="8,4">
             <TextBlock Text="{Binding StatusText}" AutomationProperties.AutomationId="ApiStatus" />
         </Border>
 
@@ -149,7 +149,7 @@
             <!-- エンドポイント ツリー -->
             <DockPanel Grid.Column="0" Width="310"
                        Visibility="{Binding IsTreeVisible, Converter={StaticResource BoolToVis}}">
-                <Border DockPanel.Dock="Top" Background="#F7F7F7" Padding="6,4" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1">
+                <Border DockPanel.Dock="Top" Background="{DynamicResource AppSubtleBrush}" Padding="6,4" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1">
                     <DockPanel>
                         <TextBlock DockPanel.Dock="Left" Text="🔍" VerticalAlignment="Center" Margin="0,0,4,0" />
                         <TextBox Text="{Binding TreeFilter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
@@ -174,7 +174,7 @@
                                                VerticalAlignment="Center">
                                         <TextBlock.Style>
                                             <Style TargetType="TextBlock">
-                                                <Setter Property="Foreground" Value="#666666" />
+                                                <Setter Property="Foreground" Value="{DynamicResource AppMutedTextBrush}" />
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{Binding Method}" Value="GET">
                                                         <Setter Property="Foreground" Value="#2E7D32" />
@@ -203,7 +203,7 @@
                 </Grid>
             </DockPanel>
 
-            <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch" Background="#DDDDDD"
+            <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch" Background="{DynamicResource AppBorderBrush}"
                           Visibility="{Binding IsTreeVisible, Converter={StaticResource BoolToVis}}" />
 
             <Grid Grid.Column="2">
@@ -238,7 +238,7 @@
                 <!-- リクエスト本文（GET / DELETE では隠す） -->
                 <DockPanel Grid.Row="1" Margin="8,6,8,0"
                            Visibility="{Binding IsBodyVisible, Converter={StaticResource BoolToVis}}">
-                    <TextBlock DockPanel.Dock="Top" Text="{loc:Tr Api_BodyLabel}" Margin="0,0,0,4" Foreground="#666666" />
+                    <TextBlock DockPanel.Dock="Top" Text="{loc:Tr Api_BodyLabel}" Margin="0,0,0,4" Foreground="{DynamicResource AppMutedTextBrush}" />
                     <TextBox Height="110" FontFamily="Consolas" FontSize="12" AcceptsReturn="True"
                              VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" TextWrapping="NoWrap"
                              Text="{Binding RequestBody, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
@@ -250,7 +250,7 @@
                     <CheckBox DockPanel.Dock="Right" Content="{loc:Tr Api_RawResponse}" VerticalAlignment="Center"
                               IsChecked="{Binding IsRawResponse, Mode=TwoWay}"
                               AutomationProperties.AutomationId="ApiRawResponse" />
-                    <TextBlock Text="{loc:Tr Api_ResponseLabel}" Foreground="#666666" VerticalAlignment="Center" />
+                    <TextBlock Text="{loc:Tr Api_ResponseLabel}" Foreground="{DynamicResource AppMutedTextBrush}" VerticalAlignment="Center" />
                 </DockPanel>
 
                 <TextBox Grid.Row="3" Margin="8,4,8,8" Text="{Binding DisplayResponse, Mode=OneWay}" IsReadOnly="True"

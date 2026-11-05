@@ -8,7 +8,7 @@
     <DockPanel>
 
         <!-- ツールバー（コンテキスト選択と操作） -->
-        <Border DockPanel.Dock="Top" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8,6">
+        <Border DockPanel.Dock="Top" Background="{DynamicResource AppToolbarBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="8,6">
             <StackPanel>
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6"
                             Visibility="{Binding ShowTabDataButton, Converter={StaticResource BoolToVis}}">
@@ -49,7 +49,7 @@
         </Border>
 
         <!-- ステータス -->
-        <Border DockPanel.Dock="Bottom" Background="#F7F7F7" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="8,4">
+        <Border DockPanel.Dock="Bottom" Background="{DynamicResource AppSubtleBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0" Padding="8,4">
             <TextBlock x:Name="AiStatusText" Text="{Binding StatusText}" TextWrapping="Wrap" />
         </Border>
 
@@ -76,7 +76,7 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <Border Margin="8,4" Padding="10,6" CornerRadius="6" MaxWidth="900" HorizontalAlignment="Left"
-                                BorderBrush="#DDDDDD" BorderThickness="1">
+                                BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1">
                             <Border.Style>
                                 <Style TargetType="Border">
                                     <Setter Property="Background" Value="#FFFFFF" />
@@ -88,7 +88,7 @@
                                 </Style>
                             </Border.Style>
                             <StackPanel>
-                                <TextBlock Text="{Binding HeaderText}" FontWeight="Bold" FontSize="11" Foreground="#007ACC" />
+                                <TextBlock Text="{Binding HeaderText}" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource AppAccentBrush}" />
                                 <TextBox Text="{Binding Content, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap"
                                          BorderThickness="0" Background="Transparent" MaxWidth="860"
                                          VerticalScrollBarVisibility="Disabled" />

@@ -5,7 +5,7 @@
     <DockPanel>
 
         <!-- ステータス -->
-        <Border DockPanel.Dock="Bottom" Background="#F7F7F7" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="8,4">
+        <Border DockPanel.Dock="Bottom" Background="{DynamicResource AppSubtleBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0" Padding="8,4">
             <TextBlock Text="{Binding StatusText}" />
         </Border>
 
@@ -82,12 +82,12 @@
             </Grid>
 
             <!-- 実行コマンド プレビュー -->
-            <TextBox Grid.Row="1" Margin="8,0,8,4" IsReadOnly="True" Background="#F5F5F5" FontFamily="Consolas" FontSize="12"
+            <TextBox Grid.Row="1" Margin="8,0,8,4" IsReadOnly="True" Background="{DynamicResource AppSubtleBrush}" FontFamily="Consolas" FontSize="12"
                      Text="{Binding CommandPreview, Mode=OneWay}" TextWrapping="NoWrap"
                      HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
                      ToolTip="{loc:Tr Deploy_PreviewTip}" />
 
-            <GridSplitter Grid.Row="2" Height="4" HorizontalAlignment="Stretch" Background="#DDDDDD" />
+            <GridSplitter Grid.Row="2" Height="4" HorizontalAlignment="Stretch" Background="{DynamicResource AppBorderBrush}" />
 
             <TextBox Grid.Row="3" Margin="8,4,8,8" Text="{Binding OutputText}" IsReadOnly="True"
                      FontFamily="Consolas" FontSize="12"

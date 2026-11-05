@@ -74,6 +74,19 @@ public partial class MainViewModel : ObservableObject
     /// <summary>言語コンボの選択肢。</summary>
     public IReadOnlyList<string> LanguageLabels { get; } = new[] { "English", "日本語", "简体中文", "한국어" };
 
+    /// <summary>テーマ コンボの選択値（現在の UI 言語の表示名）。</summary>
+    [ObservableProperty]
+    private string _themeLabel = AppThemes.ToLabel(AppThemes.Classic);
+
+    /// <summary>テーマ コンボの選択肢（言語切替で再構築される）。</summary>
+    public ObservableCollection<string> ThemeLabels { get; } = new();
+
+    /// <summary>保存済みのテーマ識別子（起動時に UI 側が配色を適用する）。</summary>
+    public string ThemeKey => AppThemes.Normalize(_settings.Current.Theme);
+
+    /// <summary>テーマが切り替わったときにキーを通知する（UI 側が配色辞書を差し替える）。</summary>
+    public event Action<string>? ThemeChanged;
+
     /// <summary>ステータスバー表示用（組織・フォルダ）。</summary>
     public string StatusDetail => UiText.T("Main_StatusDetailFmt", SelectedOrg?.DisplayName ?? UiText.T("Main_NotSelected"), SelectedFolder ?? UiText.T("Main_DefaultFolder"));
 
@@ -264,6 +277,7 @@ public partial class MainViewModel : ObservableObject
         // 保存済みの言語をコンボへ反映（起動時の UiText 適用は App 側で実施済み）
         _languageLabel = LanguageLabelForCode(_settings.Current.Language);
         OnPropertyChanged(nameof(LanguageLabel));
+        BuildThemeLabels();
         _isAiPanelVisible = _settings.Current.AiPanelVisible;
         OnPropertyChanged(nameof(IsAiPanelVisible));
     }
@@ -412,6 +426,49 @@ public partial class MainViewModel : ObservableObject
         _settings.Save();
         StatusMessage = UiText.T("Msg_LanguageFmt", value);
     }
+
+    partial void OnThemeLabelChanged(string value)
+    {
+        // 選択肢の再構築中（言語切替）は選択値の null 化を無視する
+        if (_rebuildingThemeLabels)
+        {
+            return;
+        }
+
+        var key = AppThemes.FromLabel(value);
+        if (AppThemes.Normalize(_settings.Current.Theme) == key)
+        {
+            ThemeChanged?.Invoke(key);
+            return;
+        }
+
+        _settings.Current.Theme = key;
+        _settings.Save();
+        ThemeChanged?.Invoke(key);
+    }
+
+    /// <summary>テーマ コンボの選択肢を現在の UI 言語で構築する。</summary>
+    private void BuildThemeLabels()
+    {
+        _rebuildingThemeLabels = true;
+        try
+        {
+            ThemeLabels.Clear();
+            foreach (var key in AppThemes.All)
+            {
+                ThemeLabels.Add(AppThemes.ToLabel(key));
+            }
+
+            ThemeLabel = AppThemes.ToLabel(_settings.Current.Theme);
+        }
+        finally
+        {
+            _rebuildingThemeLabels = false;
+        }
+    }
+
+    /// <summary>テーマ コンボの選択肢を再構築している間のガード。</summary>
+    private bool _rebuildingThemeLabels;
 
     /// <summary>言語コンボの表示名 → 言語コード。</summary>
     private static string LanguageCodeForLabel(string label) => label switch
@@ -1302,5 +1359,8 @@ public partial class MainViewModel : ObservableObject
         ApexTabs.RefreshTitles();
         CommandTabs.RefreshTitles();
         Api.RefreshTree();
+
+        // テーマ名も言語に追従させる（値は保存済みのテーマのまま）
+        BuildThemeLabels();
     }
 }
