@@ -129,6 +129,14 @@ public class OrgSignInTests
             ? "@echo off\r\necho %* >> \"" + Path.Combine(sandbox, "calls.log") + "\"\r\nexit /b " + (fail ? "1" : "0") + "\r\n"
             : "#!/bin/sh\necho \"$@\" >> \"" + Path.Combine(sandbox, "calls.log") + "\"\nexit " + (fail ? "1" : "0") + "\n";
         File.WriteAllText(fakeSf, script);
+        if (!OperatingSystem.IsWindows())
+        {
+            File.SetUnixFileMode(
+                fakeSf,
+                UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute
+                | UnixFileMode.GroupRead | UnixFileMode.GroupExecute
+                | UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
+        }
 
         var runner = new SfCliRunner(fakeSf);
         var service = new OrgManageService(runner, new SalesforceRestClient(new OrgService(runner), log), log);
