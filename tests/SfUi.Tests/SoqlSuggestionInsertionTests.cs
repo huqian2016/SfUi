@@ -159,15 +159,16 @@ public class SoqlSuggestionInsertionTests
     }
 
     [Fact]
-    public void CaretAfterInsert_SkipsExistingWhitespaceAfterComma()
+    public void CaretAfterInsert_StaysBetweenCommaAndExistingSpace()
     {
         // "SELECT Na FROM Account" の Na を Name に置換し、カンマだけを付けた後
         const string updated = "SELECT Name, FROM Account";
         var item = new SoqlCompletionItem("Name");
 
-        var position = SoqlSuggestionInsertion.CaretAfterInsert(updated, segmentStart: 7, item, suffix: ",");
+        var position = SoqlSuggestionInsertion.CaretAfterInsert(updated, segmentStart: 7, item, prefix: "", suffix: ",");
 
-        Assert.Equal('F', updated[position]); // 既存の空白の手前ではなく、その後ろ
+        Assert.Equal(',', updated[position - 1]); // カンマの直後
+        Assert.Equal(' ', updated[position]);     // 既存の空白の手前（FROM の直前には出さない）
     }
 
     [Fact]
@@ -176,8 +177,57 @@ public class SoqlSuggestionInsertionTests
         const string updated = "SELECT Name, ";
         var item = new SoqlCompletionItem("Name");
 
-        var position = SoqlSuggestionInsertion.CaretAfterInsert(updated, segmentStart: 7, item, suffix: ", ");
+        var position = SoqlSuggestionInsertion.CaretAfterInsert(updated, segmentStart: 7, item, prefix: "", suffix: ", ");
 
         Assert.Equal(updated.Length, position);
+    }
+
+    [Fact]
+    public void PrefixFor_AddsSpaceOnlyDirectlyAfterComma()
+    {
+        const string tight = "SELECT Id, FROM Account";
+        var tightContext = SoqlCompletionParser.Parse(tight, 10);
+        Assert.Equal(" ", SoqlSuggestionInsertion.PrefixFor(tight, 10, tightContext));
+
+        const string spaced = "SELECT Id,  FROM Account";
+        var spacedContext = SoqlCompletionParser.Parse(spaced, 11);
+        Assert.Equal(string.Empty, SoqlSuggestionInsertion.PrefixFor(spaced, 11, spacedContext));
+
+        const string atEnd = "SELECT Id, ";
+        var endContext = SoqlCompletionParser.Parse(atEnd, atEnd.Length);
+        Assert.Equal(string.Empty, SoqlSuggestionInsertion.PrefixFor(atEnd, atEnd.Length, endContext));
+    }
+
+    [Fact]
+    public void PrefixFor_OutsideSelectClause_IsEmpty()
+    {
+        const string text = "SELECT Id FROM Account WHERE Id,";
+        var context = SoqlCompletionParser.Parse(text, text.Length);
+
+        Assert.Equal(SoqlClause.Where, context.Clause);
+        Assert.Equal(string.Empty, SoqlSuggestionInsertion.PrefixFor(text, text.Length, context));
+    }
+
+    [Fact]
+    public void RepeatedClicks_LeaveCaretRightAfterTheComma()
+    {
+        // "SELECT  FROM Account" の SELECT 直後に Id → Name の順でクリックする
+        var (first, caret1) = Click("SELECT  FROM Account", 7, "Id");
+        Assert.Equal("SELECT Id,| FROM Account", first.Insert(caret1, "|"));
+
+        var (second, caret2) = Click(first, caret1, "Name");
+        Assert.Equal("SELECT Id, Name,| FROM Account", second.Insert(caret2, "|"));
+    }
+
+    /// <summary>候補クリック 1 回分の挿入を再現する。</summary>
+    private static (string Text, int Caret) Click(string text, int caret, string itemText)
+    {
+        var context = SoqlCompletionParser.Parse(text, caret);
+        var item = new SoqlCompletionItem(itemText);
+        var start = caret - context.Prefix.Length;
+        var suffix = SoqlSuggestionInsertion.SeparatorFor(text, caret, context, item);
+        var prefix = SoqlSuggestionInsertion.PrefixFor(text, start, context);
+        var updated = text[..start] + prefix + item.Text + suffix + text[caret..];
+        return (updated, SoqlSuggestionInsertion.CaretAfterInsert(updated, start, item, prefix, suffix));
     }
 }

@@ -1,8 +1,114 @@
+using System.Text;
+
 namespace SfUi.Core;
 
-/// <summary>SOQL テキストの解析（Id 列の補完・対象オブジェクトの抽出）。</summary>
+/// <summary>SOQL テキストの解析・正規化（Id 列の補完・対象オブジェクトの抽出・余計なカンマの除去）。</summary>
 public static class SoqlQueryEditor
 {
+    /// <summary>カンマの直後に来てはいけないキーワード（句の先頭）。</summary>
+    private static readonly string[] ClauseKeywords =
+    {
+        "FROM", "WHERE", "WITH", "USING", "GROUP", "HAVING", "ORDER", "LIMIT", "OFFSET", "FOR", "UPDATE", "TYPEOF", "WHEN", "ELSE", "END",
+    };
+
+    /// <summary>
+    /// 項目の後ろに残った余計なカンマを除去する（<c>SELECT Id, Name, FROM Account</c> →
+    /// <c>SELECT Id, Name FROM Account</c>）。文字列リテラル内のカンマは対象外。
+    /// キーワードの直前のカンマだけを消すため、有効なクエリは変更しない。
+    /// </summary>
+    public static string RemoveStrayCommas(string? soql)
+    {
+        if (string.IsNullOrEmpty(soql) || !soql.Contains(','))
+        {
+            return soql ?? string.Empty;
+        }
+
+        var builder = new StringBuilder(soql.Length);
+        var inString = false;
+        for (var i = 0; i < soql.Length; i++)
+        {
+            var c = soql[i];
+            if (inString)
+            {
+                builder.Append(c);
+                if (c == '\\' && i + 1 < soql.Length)
+                {
+                    builder.Append(soql[i + 1]);
+                    i++;
+                }
+                else if (c == '\'')
+                {
+                    if (i + 1 < soql.Length && soql[i + 1] == '\'')
+                    {
+                        builder.Append(soql[i + 1]); // '' はエスケープされた引用符
+                        i++;
+                    }
+                    else
+                    {
+                        inString = false;
+                    }
+                }
+
+                continue;
+            }
+
+            if (c == '\'')
+            {
+                inString = true;
+                builder.Append(c);
+                continue;
+            }
+
+            // 「, FROM」のようにキーワードの直前にあるカンマは出力しない
+            if (c == ',' && FollowedByClauseKeyword(soql, i + 1, out var hadWhitespace))
+            {
+                // 「,FROM」のように空白が無いときは区切りとして空白を補う
+                if (!hadWhitespace)
+                {
+                    builder.Append(' ');
+                }
+
+                continue;
+            }
+
+            builder.Append(c);
+        }
+
+        return builder.ToString();
+    }
+
+    /// <summary>指定位置以降（空白を除いた先頭）が句のキーワードか。</summary>
+    private static bool FollowedByClauseKeyword(string text, int index, out bool hadWhitespace)
+    {
+        hadWhitespace = false;
+        while (index < text.Length && char.IsWhiteSpace(text[index]))
+        {
+            hadWhitespace = true;
+            index++;
+        }
+
+        foreach (var keyword in ClauseKeywords)
+        {
+            if (index + keyword.Length > text.Length)
+            {
+                continue;
+            }
+
+            if (string.Compare(text, index, keyword, 0, keyword.Length, StringComparison.OrdinalIgnoreCase) != 0)
+            {
+                continue;
+            }
+
+            var afterIndex = index + keyword.Length;
+            var after = afterIndex >= text.Length ? '\0' : text[afterIndex];
+            if (after == '\0' || (!char.IsLetterOrDigit(after) && after != '_'))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
     /// <summary>
     /// SELECT 句に Id が無いとき、実行用クエリの SELECT 直後に「Id,」を補う。
     /// 集計・関数（COUNT() や FIELDS() など括弧を含む選択リスト）では何もしない。

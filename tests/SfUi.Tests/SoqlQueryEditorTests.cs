@@ -101,4 +101,29 @@ public class SoqlQueryEditorTests
     [InlineData("SELECT Id FROM")]
     public void TryGetObjectName_ReturnsNullWhenUnknown(string soql) =>
         Assert.Null(SoqlQueryEditor.TryGetObjectName(soql));
+
+    // ---- 余計なカンマの除去 ----
+
+    [Theory]
+    [InlineData("SELECT Id, Name, FROM Account", "SELECT Id, Name FROM Account")]
+    [InlineData("SELECT Id, FROM Account", "SELECT Id FROM Account")]
+    [InlineData("SELECT Id,Name,FROM Account", "SELECT Id,Name FROM Account")]
+    [InlineData("SELECT Id, Name,\nFROM Account", "SELECT Id, Name\nFROM Account")]
+    [InlineData("SELECT Id, Name , FROM Account", "SELECT Id, Name  FROM Account")]
+    [InlineData("SELECT Id, Name, FROM Account WHERE Name = 'a,b'", "SELECT Id, Name FROM Account WHERE Name = 'a,b'")]
+    [InlineData("SELECT Id, (SELECT Id, FROM Contact), Name FROM Account", "SELECT Id, (SELECT Id FROM Contact), Name FROM Account")]
+    [InlineData("SELECT Id, Name FROM Account", "SELECT Id, Name FROM Account")]
+    [InlineData("SELECT Id, FROMX FROM Account", "SELECT Id, FROMX FROM Account")]
+    [InlineData("SELECT Id, Name,", "SELECT Id, Name,")]
+    [InlineData("SELECT Id FROM Account WHERE Name = 'x,FROM y'", "SELECT Id FROM Account WHERE Name = 'x,FROM y'")]
+    public void RemoveStrayCommas_RemovesOnlyCommasBeforeClauseKeywords(string soql, string expected) =>
+        Assert.Equal(expected, SoqlQueryEditor.RemoveStrayCommas(soql));
+
+    [Fact]
+    public void RemoveStrayCommas_HandlesNullAndEmpty()
+    {
+        Assert.Equal(string.Empty, SoqlQueryEditor.RemoveStrayCommas(null));
+        Assert.Equal(string.Empty, SoqlQueryEditor.RemoveStrayCommas(""));
+        Assert.Equal("SELECT Id FROM Account", SoqlQueryEditor.RemoveStrayCommas("SELECT Id FROM Account"));
+    }
 }

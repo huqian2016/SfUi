@@ -103,21 +103,31 @@ public static class SoqlSuggestionInsertion
     }
 
     /// <summary>
-    /// 挿入後のキャレット位置。カンマだけを付けたとき（後続に既存の空白があるとき）は、
-    /// その空白を飛び越えて置く（連続クリックで "Name, Id" のように空白を保つ）。
+    /// 挿入位置より前に付ける区切り。直前がカンマで空白が無いとき（<c>SELECT Id,|</c>）だけ
+    /// <c>" "</c> を返す（連続クリックで <c>Id, Name,</c> のように空白を保つ）。
     /// </summary>
-    public static int CaretAfterInsert(string? text, int segmentStart, SoqlCompletionItem item, string suffix)
+    public static string PrefixFor(string? text, int insertAt, SoqlCompletionContext context)
     {
         text ??= string.Empty;
-        var position = segmentStart + item.Text.Length + suffix.Length + item.CaretOffsetDelta;
-        if (suffix == "," && item.CaretOffsetDelta == 0)
+        insertAt = Math.Clamp(insertAt, 0, text.Length);
+
+        if (context.InsideString || context.Clause != SoqlClause.Select)
         {
-            while (position < text.Length && (text[position] == ' ' || text[position] == '\t'))
-            {
-                position++;
-            }
+            return string.Empty;
         }
 
+        // カーソルがカンマの直後（空白なし）のときだけ空白を補う
+        return insertAt > 0 && text[insertAt - 1] == ',' ? " " : string.Empty;
+    }
+
+    /// <summary>
+    /// 挿入後のキャレット位置。カンマだけを付けたときもカーソルはカンマの直後に置き、
+    /// 既存の空白（<c>Id,| FROM</c> の空白）を飛び越えない。
+    /// </summary>
+    public static int CaretAfterInsert(string? text, int segmentStart, SoqlCompletionItem item, string prefix, string suffix)
+    {
+        text ??= string.Empty;
+        var position = segmentStart + prefix.Length + item.Text.Length + suffix.Length + item.CaretOffsetDelta;
         return Math.Clamp(position, 0, text.Length);
     }
 }

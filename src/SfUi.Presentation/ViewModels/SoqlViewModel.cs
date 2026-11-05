@@ -345,7 +345,15 @@ public partial class SoqlViewModel : ObservableObject
             return;
         }
 
-        var soql = SoqlText.Trim();
+        // 項目の後ろに残った余計なカンマ（SELECT Id, Name, FROM …）は実行前に取り除く
+        var cleaned = SoqlQueryEditor.RemoveStrayCommas(SoqlText);
+        if (!string.Equals(cleaned, SoqlText, StringComparison.Ordinal))
+        {
+            SoqlText = cleaned;
+        }
+
+        var soql = cleaned.Trim();
+
         if (string.IsNullOrWhiteSpace(CurrentOrg))
         {
             StatusText = UiText.T("Msg_SelectOrg");

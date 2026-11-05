@@ -180,6 +180,32 @@ public class SoqlViewModelScriptTests : IDisposable
     }
 
     [Fact]
+    public async Task Execute_RemovesStrayCommaBeforeFrom()
+    {
+        var viewModel = CreateViewModel();
+        viewModel.SoqlText = "SELECT Id, Name, FROM Account";
+
+        await viewModel.ExecuteCommand.ExecuteAsync(null);
+
+        Assert.Equal("SELECT Id, Name FROM Account", viewModel.SoqlText);
+        Assert.Equal(2, viewModel.Rows.Count);
+        Assert.False(viewModel.IsRunning);
+    }
+
+    [Fact]
+    public async Task Execute_Script_RemovesStrayCommaInEveryStatement()
+    {
+        var viewModel = CreateViewModel();
+        viewModel.SoqlText = "SELECT Id, FROM Account; SELECT Id, Name, FROM Contact";
+
+        await viewModel.ExecuteCommand.ExecuteAsync(null);
+
+        Assert.Equal("SELECT Id FROM Account; SELECT Id, Name FROM Contact", viewModel.SoqlText);
+        Assert.Equal(2, viewModel.Results.Count);
+        Assert.All(viewModel.Results, pane => Assert.False(pane.HasError));
+    }
+
+    [Fact]
     public async Task Execute_Script_AddsSingleHistoryEntry()
     {
         var viewModel = CreateViewModel();
