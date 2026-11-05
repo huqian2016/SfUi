@@ -17,6 +17,12 @@ public static class AppTheme
     /// <summary>現在適用中のテーマ識別子。</summary>
     public static string Current { get; private set; } = AppThemes.Classic;
 
+    /// <summary>ダーク/ライトが切り替わったときに通知する（エディタの配色切り替え用）。</summary>
+    public static event Action<bool>? DarkModeChanged;
+
+    /// <summary>現在のテーマがダークか。</summary>
+    public static bool IsDark => AppThemes.IsDark(Current);
+
     /// <summary>テーマを適用する。<paramref name="window"/> は互換のために残している（現在は未使用）。</summary>
     public static void Apply(string? theme, Window? window = null)
     {
@@ -42,6 +48,8 @@ public static class AppTheme
                 Source = new Uri("Themes/Controls.Modern.xaml", UriKind.Relative),
             });
         }
+
+        DarkModeChanged?.Invoke(AppThemes.IsDark(key));
     }
 
     private static void RemoveMerged(ResourceDictionary target, string marker)

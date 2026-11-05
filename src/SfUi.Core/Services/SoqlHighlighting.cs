@@ -12,6 +12,12 @@ public static class SoqlHighlighting
     /// <summary>関数・日付リテラルの色。</summary>
     public const string FunctionColor = "#795E26";
 
+    /// <summary>ダーク テーマ用のキーワード色。</summary>
+    public const string DarkKeywordColor = "#569CD6";
+
+    /// <summary>ダーク テーマ用の関数色。</summary>
+    public const string DarkFunctionColor = "#DCDCAA";
+
     /// <summary>青で強調する予約語。</summary>
     public static readonly IReadOnlyList<string> Keywords = new[]
     {
@@ -47,6 +53,37 @@ public static class SoqlHighlighting
 
     /// <summary>エディターへ読み込む XSHD（XML）文字列。</summary>
     public static string Xshd { get; } = BuildXshd();
+
+    /// <summary>ダーク テーマ用の XSHD（XML）文字列。</summary>
+    public static string DarkXshd { get; } = BuildDarkXshd();
+
+    /// <summary>テーマに合わせて XSHD を選ぶ。</summary>
+    public static string For(bool dark) => dark ? DarkXshd : Xshd;
+
+    private static string BuildDarkXshd()
+    {
+        var keywords = string.Concat(Keywords.Select(word => $"      <Word>{word}</Word>\n"));
+        var functions = string.Concat(Functions.Select(word => $"      <Word>{word}</Word>\n"));
+        return $"""
+<?xml version="1.0"?>
+<SyntaxDefinition name="SOQL (Dark)" xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
+  <Color name="Comment" foreground="#6A9955" />
+  <Color name="String" foreground="#CE9178" />
+  <Color name="Keyword" foreground="{DarkKeywordColor}" />
+  <Color name="Function" foreground="{DarkFunctionColor}" />
+  <Color name="Number" foreground="#B5CEA8" />
+  <RuleSet>
+    <Span color="Comment" begin="--" />
+    <Span color="String" multiline="false" begin="'" end="'" />
+    <Keywords color="Keyword">
+{keywords}    </Keywords>
+    <Keywords color="Function">
+{functions}    </Keywords>
+    <Rule color="Number">\b\d+(\.\d+)?\b</Rule>
+  </RuleSet>
+</SyntaxDefinition>
+""";
+    }
 
     private static string BuildXshd()
     {

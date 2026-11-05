@@ -23,7 +23,12 @@ public partial class ApexView : UserControl
         AvaloniaXamlLoader.Load(this);
 
         var editor = this.FindControl<TextEditor>("ApexEditor")!;
-        editor.SyntaxHighlighting = HighlightingManager.Instance.GetDefinition("C#");
+        editor.SyntaxHighlighting = EditorHighlightingTheme.Resolve(
+            HighlightingManager.Instance.GetDefinition("C#"), AppTheme.IsDark);
+        void OnDarkModeChanged(bool dark) => editor.SyntaxHighlighting = EditorHighlightingTheme.Resolve(
+            HighlightingManager.Instance.GetDefinition("C#"), dark);
+        AppTheme.DarkModeChanged += OnDarkModeChanged;
+        DetachedFromVisualTree += (_, _) => AppTheme.DarkModeChanged -= OnDarkModeChanged;
 
         // エディタ → ViewModel（実行時に最新のコードを使うため常時同期）
         editor.TextChanged += (_, _) =>

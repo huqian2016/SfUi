@@ -47,14 +47,21 @@ public partial class SoqlView : UserControl
 
     private SoqlViewModel? ViewModel => DataContext as SoqlViewModel;
 
+    /// <summary>現在のテーマに合わせて SOQL エディタの構文色を設定する。</summary>
+    private void ApplyEditorTheme()
+        => SoqlEditor.SyntaxHighlighting = EditorHighlightingTheme.LoadFromXshd(
+            SoqlHighlighting.For(AppTheme.IsDark));
+
+    private void OnDarkModeChanged(bool dark) => ApplyEditorTheme();
+
     public SoqlView()
     {
         InitializeComponent();
 
         // SOQL 専用の構文ハイライト（キーワード = 青 / 関数 = 有色）
-        SoqlEditor.SyntaxHighlighting = HighlightingLoader.Load(
-            XmlReader.Create(new StringReader(SoqlHighlighting.Xshd)),
-            HighlightingManager.Instance);
+        ApplyEditorTheme();
+        AppTheme.DarkModeChanged += OnDarkModeChanged;
+        Unloaded += (_, _) => AppTheme.DarkModeChanged -= OnDarkModeChanged;
 
         // エディタ → ViewModel（すべての操作で最新のテキストを使うため常時同期）
         SoqlEditor.TextChanged += (_, _) =>

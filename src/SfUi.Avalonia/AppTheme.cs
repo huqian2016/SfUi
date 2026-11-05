@@ -17,6 +17,12 @@ public static class AppTheme
     /// <summary>現在適用中のテーマ識別子。</summary>
     public static string Current { get; private set; } = AppThemes.Classic;
 
+    /// <summary>ダーク/ライトが切り替わったときに通知する（エディタの配色切り替え用）。</summary>
+    public static event Action<bool>? DarkModeChanged;
+
+    /// <summary>現在のテーマがダークか。</summary>
+    public static bool IsDark => AppThemes.IsDark(Current);
+
     /// <summary>テーマを適用する。</summary>
     public static void Apply(string? theme)
     {
@@ -44,6 +50,8 @@ public static class AppTheme
 
         var uri = new Uri($"avares://SfUi.Avalonia/Themes/Tokens.{FileName(key)}.axaml");
         merged.Add(new ResourceInclude(uri) { Source = uri });
+
+        DarkModeChanged?.Invoke(AppThemes.IsDark(key));
     }
 
     private static string FileName(string key) => key switch

@@ -16,11 +16,20 @@ public partial class ApexView : UserControl
 
     private ApexViewModel? ViewModel => DataContext as ApexViewModel;
 
+    /// <summary>現在のテーマに合わせて Apex エディタの構文色を設定する。</summary>
+    private void ApplyEditorTheme()
+        => ApexEditor.SyntaxHighlighting = EditorHighlightingTheme.Resolve(
+            HighlightingManager.Instance.GetDefinition("C#"), AppTheme.IsDark);
+
+    private void OnDarkModeChanged(bool dark) => ApplyEditorTheme();
+
     public ApexView()
     {
         InitializeComponent();
 
-        ApexEditor.SyntaxHighlighting = HighlightingManager.Instance.GetDefinition("C#");
+        ApplyEditorTheme();
+        AppTheme.DarkModeChanged += OnDarkModeChanged;
+        Unloaded += (_, _) => AppTheme.DarkModeChanged -= OnDarkModeChanged;
 
         ApexEditor.TextChanged += (_, _) =>
         {

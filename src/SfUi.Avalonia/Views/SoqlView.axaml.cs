@@ -28,6 +28,11 @@ public partial class SoqlView : UserControl
 
     private SoqlViewModel? ViewModel => DataContext as SoqlViewModel;
 
+    /// <summary>現在のテーマに合わせて SOQL エディタの構文色を設定する。</summary>
+    private static void ApplyEditorTheme(TextEditor editor)
+        => editor.SyntaxHighlighting = EditorHighlightingTheme.LoadFromXshd(
+            SoqlHighlighting.For(AppTheme.IsDark));
+
     public SoqlView()
     {
         AvaloniaXamlLoader.Load(this);
@@ -35,9 +40,10 @@ public partial class SoqlView : UserControl
         var editor = this.FindControl<TextEditor>("SoqlEditor")!;
 
         // SOQL 専用の構文ハイライト（キーワード = 青 / 関数 = 有色）
-        editor.SyntaxHighlighting = HighlightingLoader.Load(
-            XmlReader.Create(new StringReader(SoqlHighlighting.Xshd)),
-            HighlightingManager.Instance);
+        ApplyEditorTheme(editor);
+        void OnDarkModeChanged(bool dark) => ApplyEditorTheme(this.FindControl<TextEditor>("SoqlEditor")!);
+        AppTheme.DarkModeChanged += OnDarkModeChanged;
+        DetachedFromVisualTree += (_, _) => AppTheme.DarkModeChanged -= OnDarkModeChanged;
 
         // エディタ → ViewModel（すべての操作で最新のテキストを使うため常時同期）
         editor.TextChanged += (_, _) =>

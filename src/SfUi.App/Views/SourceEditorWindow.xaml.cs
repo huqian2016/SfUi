@@ -338,7 +338,7 @@ public partial class SourceEditorWindow : Window
         var definition = HighlightingManager.Instance.GetDefinition(language);
         if (definition is not null)
         {
-            editor.SyntaxHighlighting = definition;
+            editor.SyntaxHighlighting = EditorHighlightingTheme.Resolve(definition, AppTheme.IsDark);
         }
     }
 }
