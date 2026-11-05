@@ -265,6 +265,30 @@
         <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
 
+    <Style TargetType="ListBox">
+        <Setter Property="Background" Value="{DynamicResource AppSurfaceBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource AppTextBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}" />
+    </Style>
+
+    <Style TargetType="ListView">
+        <Setter Property="Background" Value="{DynamicResource AppSurfaceBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource AppTextBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}" />
+    </Style>
+
+    <Style TargetType="ListBoxItem">
+        <Setter Property="Foreground" Value="{DynamicResource AppTextBrush}" />
+    </Style>
+
+    <Style TargetType="GroupBox">
+        <Setter Property="Foreground" Value="{DynamicResource AppTextBrush}" />
+    </Style>
+
+    <Style TargetType="Window">
+        <Setter Property="Background" Value="{DynamicResource AppWindowBackgroundBrush}" />
+    </Style>
+
     <!-- ===== グリッド ===== -->
     <Style TargetType="DataGrid">
         <Setter Property="Background" Value="{DynamicResource AppSurfaceBrush}" />
