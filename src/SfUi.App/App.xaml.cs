@@ -245,6 +245,13 @@ public partial class App : Application
         AppDomain.CurrentDomain.UnhandledException += (_, args) =>
             _log.Error("未処理例外 (AppDomain)", args.ExceptionObject as Exception);
 
+        // ダーク テーマのときはタイトル バー（非クライアント領域）も暗くする。
+        // ウィンドウは動的に開くため、Loaded を全ウィンドウ共通で拾ってから適用する。
+        EventManager.RegisterClassHandler(
+            typeof(Window),
+            FrameworkElement.LoadedEvent,
+            new RoutedEventHandler((sender, _) => DarkTitleBar.Apply((Window)sender, AppTheme.IsDark)));
+
         var window = Services.GetRequiredService<MainWindow>();
         MainWindow = window;
 

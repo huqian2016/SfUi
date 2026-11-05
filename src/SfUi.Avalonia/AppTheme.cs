@@ -52,6 +52,9 @@ public static class AppTheme
         merged.Add(new ResourceInclude(uri) { Source = uri });
 
         DarkModeChanged?.Invoke(AppThemes.IsDark(key));
+
+        // 既に開いているウィンドウのタイトル バーも合わせる
+        DarkTitleBar.ApplyToAllWindows();
     }
 
     private static string FileName(string key) => key switch

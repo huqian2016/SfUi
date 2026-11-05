@@ -50,6 +50,9 @@ public static class AppTheme
         }
 
         DarkModeChanged?.Invoke(AppThemes.IsDark(key));
+
+        // 既に開いているウィンドウのタイトル バーも合わせる
+        DarkTitleBar.ApplyToAllWindows();
     }
 
     private static void RemoveMerged(ResourceDictionary target, string marker)

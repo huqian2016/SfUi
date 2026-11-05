@@ -1,5 +1,6 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:themes="clr-namespace:SfUi.Avalonia"
              x:Class="SfUi.Avalonia.App"
              RequestedThemeVariant="Light">
     <Application.Resources>
@@ -16,6 +17,11 @@
         <FluentTheme />
         <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
         <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
+
+        <!-- すべてのウィンドウでタイトル バーをテーマに追従させる -->
+        <Style Selector="Window">
+            <Setter Property="themes:DarkTitleBarBehavior.Enabled" Value="True" />
+        </Style>
 
         <!-- タブ ヘッダーを本文と同じ文字サイズにする（Fluent の TabItemHeaderFontSize 既定値は大きめで、WPF 版と大きさが揃わない） -->
         <Style Selector="TabItem">
