@@ -105,4 +105,10 @@ public partial class MainWindow : Window
     {
         _ = new Views.AboutWindow().ShowDialog(this);
     }
+
+    /// <summary>設定タブの「マニュアル」ボタン: 現在の UI 言語のマニュアルをブラウザーで開く。</summary>
+    private void Button_OpenManual(object? sender, RoutedEventArgs e)
+    {
+        ManualLinks.TryOpen(ManualLinks.Topic.MainWindow);
+    }
 }

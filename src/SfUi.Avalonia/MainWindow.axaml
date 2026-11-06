@@ -246,20 +246,6 @@
                     <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconSparkle}" />
                 </ToggleButton>
 
-                <ComboBox Width="96" Margin="6,0,0,0" VerticalContentAlignment="Center"
-                          ItemsSource="{Binding LanguageLabels}"
-                          SelectedItem="{Binding LanguageLabel, Mode=TwoWay}"
-                          ToolTip.Tip="{loc:Tr Main_LanguageTip}"
-                          AutomationProperties.AutomationId="LanguageCombo"
-                          AutomationProperties.Name="{loc:Tr Main_LanguageTip}" />
-
-                <views:HelpButton Topic="MainWindow" Margin="8,0,0,0" />
-
-                <Button Classes="icon" Margin="8,0,0,0" Click="AboutButton_Click"
-                        ToolTip.Tip="{loc:Tr Main_AboutTip}"
-                        AutomationProperties.Name="{loc:Tr Main_About}">
-                    <Path Width="18" Height="18" Stretch="Uniform" Fill="{StaticResource IconFill}" Data="{StaticResource IconQuestion}" />
-                </Button>
                 </WrapPanel>
 
                 <!-- 組織関連の操作ができない理由（取得中 / 組織なし / 未選択） -->
@@ -439,7 +425,30 @@
                 <views:ApiConsoleView DataContext="{Binding Api}" />
             </TabItem>
             <TabItem Header="{loc:Tr Tab_Settings}">
-                <views:SettingsView DataContext="{Binding Settings}" />
+                <DockPanel>
+                    <!-- 全般（言語 / マニュアル / このアプリについて） -->
+                    <Border DockPanel.Dock="Top" Margin="12,12,12,0" HorizontalAlignment="Left"
+                            BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="8">
+                        <StackPanel>
+                            <TextBlock Text="{loc:Tr Settings_GeneralGroup}" FontWeight="SemiBold" Margin="0,0,0,6" />
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{loc:Tr Settings_Language}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                <ComboBox Width="150" ItemsSource="{Binding LanguageLabels}"
+                                          SelectedItem="{Binding LanguageLabel, Mode=TwoWay}"
+                                          ToolTip.Tip="{loc:Tr Main_LanguageTip}"
+                                          AutomationProperties.AutomationId="LanguageCombo"
+                                          AutomationProperties.Name="{loc:Tr Settings_Language}" />
+                                <Button Content="{loc:Tr Settings_Manual}" Margin="16,0,0,0" Click="Button_OpenManual"
+                                        ToolTip.Tip="{loc:Tr Help_OpenManual}"
+                                        AutomationProperties.AutomationId="SettingsManualButton" />
+                                <Button Content="{loc:Tr Main_About}" Margin="8,0,0,0" Click="AboutButton_Click"
+                                        ToolTip.Tip="{loc:Tr Main_AboutTip}"
+                                        AutomationProperties.AutomationId="SettingsAboutButton" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    <views:SettingsView DataContext="{Binding Settings}" />
+                </DockPanel>
             </TabItem>
         </TabControl>
     </DockPanel>

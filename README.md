@@ -6,7 +6,7 @@ with history/favorites, an **explorable REST tree** that fills request parameter
 an **Org Info** window for each org (with one-click **definition-document export** to Excel / CSV), side-by-side comparison of 2–4 orgs, **record backup / restore** with backup-to-backup comparison,
 and an **Org Management** window that keeps your orgs in order (default, alias, login, register, logout) and shows per-org limits and a workflow/flow migration inventory.
 
-> UI languages: **English (default) / 日本語 / 简体中文 / 한국어** — switch instantly from the top bar.
+> UI languages: **English (default) / 日本語 / 简体中文 / 한국어** — switch instantly from **Settings → General**.
 
 📖 **User manual**: [English](docs/manual/en.md) · [日本語](docs/manual/ja.md) · [简体中文](docs/manual/zh.md) · [한국어](docs/manual/ko.md) — setup, every window explained, screenshots and diagrams.
 
@@ -188,9 +188,9 @@ Built with C# / .NET 9, CommunityToolkit.Mvvm and AvalonEdit (WPF) / AvaloniaEdi
 | Deploy | Deploy / validate / quick / report / retrieve |
 | Command | Free-form `sf` arguments with stdout/stderr |
 | REST API | REST tree + raw REST console (limits, describes, queries, …) |
-| Settings | sf & tool paths, history limits, confirm policy, language, sample data |
+| Settings | sf & tool paths, **language**, **theme**, history limits, confirm policy, manual, sample data |
 
-The left **Quick Panel** shows favorites with number slots; the top bar hosts org/folder selection, **icon-only tool buttons with hover tooltips** (Org Info, Compare Orgs, Data I/O, Backup & Restore, Org Management, folder browse, terminal, Explorer, VS Code, browser, Quick Panel and AI toggles) and the language switch.
+The left **Quick Panel** shows favorites with number slots; the top bar hosts org/folder selection and **icon-only tool buttons with hover tooltips** (Org Info, Compare Orgs, Data I/O, Backup & Restore, Org Management, folder browse, terminal, Explorer, VS Code, browser, Quick Panel and AI toggles). Language, theme, the manual and *About* live in the **Settings** tab.
 
 The **Org Info** button (next to the org combo) opens a separate non-modal window for the selected org — multiple windows and multiple orgs at once. It contains 20+ tabs (org settings, users, permission sets, objects, OWD, Apex / flows / jobs, login history, …), cross-tab search with jump-to-row, per-tab refresh, lazy-loaded object fields, custom **My Settings** tabs, Setup links, and its own AI panel with *Attach current tab data*.
 
@@ -270,7 +270,7 @@ SOQL・匿名Apex・デバッグログ・デプロイ・自由コマンド・RES
 - **複数 SOQL のまとめ実行**: `;` で区切った複数の SOQL を上から順に実行し、**文ごとに独立した結果枠**（最大 20）を縦に並べます（あふれたらスクロールバー）。各結果枠には**絞り込みボックス**があり、その結果だけを Id・全セル横断で絞り込めます（表示行数 / 全行数）。`--` 行コメントと `/* … */` ブロックコメントは実行前に除去。1 文だけのときは従来どおり単一グリッドです。入力候補も**カーソル位置の文**の FROM を対象にします（2 文目以降で前の文のオブジェクトを拾いません）。**「結果をコピー」「出力」「CSV 出力」は文ごとに対応**（コピーとレポートは文ごとのタイトル付きの表、CSV は `<名前>-1.csv`, `-2.csv`, … を書き出し）し、結果枠のセル・行を選んで `Ctrl+C` でもコピーできます（ヘッダー行付き）
 - **SOQL タブの強化**: シンタックスハイライト・インライン候補エリア（項目 / リレーション / 関数をクリックで挿入。SELECT 句ではクリック時に「, 」も自動挿入され、続けて項目を選べます）・ライブ件数（並行して `SELECT COUNT()`）・実行結果を AI へ送っての質問（候補クエリ + 「SOQL で開く」付き）・**結果グリッドの Id 列固定**（Id を選択していないクエリでは自動補完。クリックで Lightning のレコード ページをブラウザーで開く）・**セルの直接編集と組織への反映**（システム項目 / リレーションは読み取り専用。未反映セル = 黄色・反映エラー = 赤で区分し、ツールバーの「組織へ反映 (n)」で編集分だけを更新。REST = composite・Tooling API = 1 件ずつ）
 - **匿名 Apex の補完と AI 連携**: スニペット / 静的メンバー / インライン SOQL / sObject 名・項目・リレーション / 変数・コレクション / 組織の Apex クラス / `System.Label.*` / カスタム メタデータ型の候補を表示。実行後にエラーは AI へ自動質問、成功時は「AI: continue code」で続きのコードを提案
-- **About ウィンドウ**: 上部バーの「?」ボタンからツール情報・バージョン・GitHub リポジトリ / 不具合登録（Issues）/ 作者への連絡先へのリンクを表示（4 言語対応）。
+- **About ウィンドウ**: **設定タブ → 全般 → 「SfUi について」** からツール情報・バージョン・GitHub リポジトリ / 不具合登録（Issues）/ 作者への連絡先へのリンクを表示（4 言語対応）。
 - **UI テーマの切替**: **設定タブ → 外観** から **クラシック / モダン ライト / Salesforce** を選択できます（既定は**モダン ライト**）。メイン画面とすべての子ウィンドウ（タブ・ツールバー・グリッド・コード エディタの構文色）に即時反映され、選択は `settings.json` に保存されて次回起動時に復元されます。クラシックは従来の配色と標準コントロールのままです。
 - 2026-11-05 時点で **v0.27.0**（テスト 1,505 件 / スモーク + UI 自動操作 E2E 検証済み（WPF・Avalonia 両方）。**匿名 Apex の DML 文ジェネレーター** — 匿名 Apex タブの「DML」ボタンから開くダイアログで、オブジェクト（標準 / カスタム / 管理パッケージを除く / すべて + 検索）と **Insert / Update / Delete** を選ぶだけで、そのまま実行できる Apex コードを生成してエディタへ挿入します。Insert / Update では項目を選んで値（テキスト・数値・真偽・日付 / 日時・選択リスト・複数選択リスト）を設定でき、参照項目は既存レコードから選ぶか直接入力、Update / Delete の対象レコード Id も既存レコードから選択できます（Insert 時に必須項目は自動でチェックされ、未入力のままでは生成できません。値を `=` で始めると Apex 式としてそのまま埋め込みます）。右側には**生成コードのプレビュー**を常時表示します。**匿名 Apex タブの名前変更 / 複製**（SOQL タブと同じ ✎ / ⧉。付けた名前は次回起動時に復元）、**SOQL 候補のカーソル位置と余計なカンマの自動削除**（候補クリック後のカーソルがカンマの直後＝空白の手前に置かれ、項目と `FROM` の間に残った余計なカンマは実行時に自動で取り除いてエディタへ書き戻し）、**内部ブラウザーでの組織登録タブ**（メイン画面の「組織登録」タブに Salesforce のログイン ページをアプリ内表示し、サインインすると組織とセッションを自動検出して **「この組織を登録」** を押すだけで `sf` に登録。Lightning のドメインは API ドメインへ自動変換し、検証コードを求められた場合も画面内で入力できます）を追加）
 - 2026-11-01 時点で **v0.26.1**（テスト 1,421 件 / スモーク + UI 自動操作 E2E 検証済み（WPF・Avalonia 両方）。**接続アプリ管理** — 上部バーの接続アプリ アイコン（「接続アプリ」）から独立ウィンドウで、組織の **Connected App（従来）** と **External Client App（ECA）** を一覧・検索・詳細表示し、**新規作成 / 編集 / 削除**（削除前の確認つき）と**反映前の検証（dry-run）**ができます。OAuth 設定（コールバック URL・スコープ・IP 緩和・リフレッシュ トークン ポリシー・管理者承認ユーザー）と表示名・説明・連絡先・情報 URL をフォームで編集でき、メタデータ XML を直接編集するタブも用意。Spring '26 以降 Salesforce が新規の Connected App 作成を制限しているため、**新規作成は ECA を既定**にし（作成が制限された場合は専用のヒントを表示）、既存 Connected App の参照・編集・削除は従来どおり可能です。取得は一時 SFDX プロジェクト経由の `sf project retrieve`、反映は `sf project deploy`（`--dry-run` 対応）、削除は破壊的変更（destructiveChanges）で行い、実組織での作成→編集→削除まで UI E2E 検証済み。詳細ペインの項目ラベル欠落と、一覧が空でないのに出ていた空ヒントを修正）
