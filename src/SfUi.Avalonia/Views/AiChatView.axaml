@@ -76,8 +76,16 @@
                      ScrollViewer.VerticalScrollBarVisibility="Auto" Padding="6,4"
                      Text="{Binding InputText, Mode=TwoWay}"
                      ToolTip.Tip="{loc:Tr Ai_InputTip}" />
-            <Button Grid.Column="1" Content="{loc:Tr Ai_Send}" Width="96" Margin="6,0,0,0" VerticalAlignment="Stretch"
-                    Command="{Binding SendCommand}" />
+            <Button Grid.Column="1" MinWidth="92" Margin="6,0,0,0" VerticalAlignment="Stretch" Padding="8,2"
+                    Command="{Binding SendCommand}"
+                    ToolTip.Tip="{loc:Tr Ai_SendShortcut}"
+                    AutomationProperties.Name="{loc:Tr Ai_Send}">
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="{loc:Tr Ai_Send}" HorizontalAlignment="Center" />
+                    <TextBlock Text="{loc:Tr Ai_SendShortcut}" HorizontalAlignment="Center" FontSize="10"
+                               Foreground="{DynamicResource AppMutedTextBrush}" />
+                </StackPanel>
+            </Button>
             <Button Grid.Column="2" Content="{loc:Tr Common_Cancel}" Width="72" Margin="6,0,0,0" VerticalAlignment="Stretch"
                     Command="{Binding CancelCommand}" />
         </Grid>

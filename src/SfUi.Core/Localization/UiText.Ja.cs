@@ -100,7 +100,8 @@ public static partial class UiText
         ["Main_EditorTabCopyFmt"] = "{0}（コピー）",
 
         // ---- AI チャット ----
-        ["Ai_Send"] = "送信 ({mod}+Enter)",
+        ["Ai_Send"] = "送信",
+        ["Ai_SendShortcut"] = "（{mod}+Enter）",
         ["Ai_Clear"] = "新しい会話",
         ["Ai_Cleared"] = "会話をクリアしました",
         ["Ai_InputTip"] = "SOQL / Apex / sf コマンドの生成依頼や、結果の分析を入力（{mod}+Enter で送信）",

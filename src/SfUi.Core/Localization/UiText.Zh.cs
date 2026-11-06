@@ -100,7 +100,8 @@ public static partial class UiText
         ["Main_EditorTabCopyFmt"] = "{0}（副本）",
 
         // ---- AI チャット ----
-        ["Ai_Send"] = "发送（{mod}+Enter）",
+        ["Ai_Send"] = "发送",
+        ["Ai_SendShortcut"] = "（{mod}+Enter）",
         ["Ai_Clear"] = "新对话",
         ["Ai_Cleared"] = "已清空对话",
         ["Ai_InputTip"] = "让 AI 生成 SOQL / Apex / sf 命令，或分析结果（{mod}+Enter 发送）",
