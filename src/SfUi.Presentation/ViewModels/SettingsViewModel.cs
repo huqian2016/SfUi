@@ -62,6 +62,9 @@ public partial class SettingsViewModel : ObservableObject
     /// <summary>データフォルダの表示用。</summary>
     public string DataRootText => UiText.T("Settings_DataRootFmt", _paths.DataRoot);
 
+    /// <summary>UI テーマの選択状態（外観グループ）。</summary>
+    public ThemeSelectionViewModel Theme { get; }
+
     public SettingsViewModel(
         AppSettingsStore settings,
         SfCliRunner sfRunner,
@@ -73,7 +76,8 @@ public partial class SettingsViewModel : ObservableObject
         IFilePickerService filePicker,
         IUiDispatcher ui,
         AppLog log,
-        IAppWindowService windows)
+        IAppWindowService windows,
+        ThemeSelectionViewModel theme)
     {
         _settings = settings;
         _sfRunner = sfRunner;
@@ -86,6 +90,7 @@ public partial class SettingsViewModel : ObservableObject
         _ui = ui;
         _log = log;
         _windows = windows;
+        Theme = theme;
         UiText.LanguageChanged += OnLanguageChanged;
         BuildPolicyLabels();
         Load();

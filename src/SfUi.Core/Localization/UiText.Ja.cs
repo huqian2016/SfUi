@@ -1329,6 +1329,7 @@ public static partial class UiText
         ["Welcome_OpenSettings"] = "設定を開く",
         ["Settings_ShowWelcome"] = "ようこそ画面を表示",
         ["Settings_Theme"] = "テーマ:",
+        ["Settings_AppearanceGroup"] = "外観",
         ["Settings_ThemeTip"] = "メイン画面の見た目を切り替えます（クラシック = 従来の配色とコントロール）。",
         ["Theme_Classic"] = "クラシック",
         ["Theme_Modern"] = "モダン ライト",

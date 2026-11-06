@@ -1330,6 +1330,7 @@ public static partial class UiText
         ["Welcome_OpenSettings"] = "打开设置",
         ["Settings_ShowWelcome"] = "显示欢迎页面",
         ["Settings_Theme"] = "主题:",
+        ["Settings_AppearanceGroup"] = "外观",
         ["Settings_ThemeTip"] = "切换主窗口的外观（经典 = 原有的配色和控件）。",
         ["Theme_Classic"] = "经典",
         ["Theme_Modern"] = "現代 浅色",

@@ -74,18 +74,8 @@ public partial class MainViewModel : ObservableObject
     /// <summary>言語コンボの選択肢。</summary>
     public IReadOnlyList<string> LanguageLabels { get; } = new[] { "English", "日本語", "简体中文", "한국어" };
 
-    /// <summary>テーマ コンボの選択値（現在の UI 言語の表示名）。</summary>
-    [ObservableProperty]
-    private string _themeLabel = AppThemes.ToLabel(AppThemes.Classic);
-
-    /// <summary>テーマ コンボの選択肢（言語切替で再構築される）。</summary>
-    public ObservableCollection<string> ThemeLabels { get; } = new();
-
-    /// <summary>保存済みのテーマ識別子（起動時に UI 側が配色を適用する）。</summary>
-    public string ThemeKey => AppThemes.Normalize(_settings.Current.Theme);
-
-    /// <summary>テーマが切り替わったときにキーを通知する（UI 側が配色辞書を差し替える）。</summary>
-    public event Action<string>? ThemeChanged;
+    /// <summary>UI テーマの選択状態（設定タブの「外観」で切り替え）。</summary>
+    public ThemeSelectionViewModel Theme { get; }
 
     /// <summary>ステータスバー表示用（組織・フォルダ）。</summary>
     public string StatusDetail => UiText.T("Main_StatusDetailFmt", SelectedOrg?.DisplayName ?? UiText.T("Main_NotSelected"), SelectedFolder ?? UiText.T("Main_DefaultFolder"));
@@ -198,6 +188,7 @@ public partial class MainViewModel : ObservableObject
         SObjectDescribeService describes,
         OrgMetadataService metadata,
         OrgSignInViewModel orgSignIn,
+        ThemeSelectionViewModel theme,
         IUiDispatcher ui)
     {
         _orgService = orgService;
@@ -216,6 +207,7 @@ public partial class MainViewModel : ObservableObject
         _describes = describes;
         _metadata = metadata;
         _ui = ui;
+        Theme = theme;
         OrgSignIn = orgSignIn;
         OrgSignIn.OrgRegistered += OnOrgSignedIn;
         _tabsSaveDebouncer = new UiDebouncer(1200, ui);
@@ -277,8 +269,6 @@ public partial class MainViewModel : ObservableObject
         // 保存済みの言語をコンボへ反映（起動時の UiText 適用は App 側で実施済み）
         _languageLabel = LanguageLabelForCode(_settings.Current.Language);
         OnPropertyChanged(nameof(LanguageLabel));
-        BuildThemeLabels();
-        MigrateLegacyTheme();
         _isAiPanelVisible = _settings.Current.AiPanelVisible;
         OnPropertyChanged(nameof(IsAiPanelVisible));
     }
@@ -426,66 +416,6 @@ public partial class MainViewModel : ObservableObject
         _settings.Current.Language = code;
         _settings.Save();
         StatusMessage = UiText.T("Msg_LanguageFmt", value);
-    }
-
-    partial void OnThemeLabelChanged(string value)
-    {
-        // 選択肢の再構築中（言語切替）は選択値の null 化を無視する
-        if (_rebuildingThemeLabels)
-        {
-            return;
-        }
-
-        var key = AppThemes.FromLabel(value);
-        if (AppThemes.Normalize(_settings.Current.Theme) == key)
-        {
-            ThemeChanged?.Invoke(key);
-            return;
-        }
-
-        _settings.Current.Theme = key;
-        _settings.Save();
-        ThemeChanged?.Invoke(key);
-    }
-
-    /// <summary>テーマ コンボの選択肢を現在の UI 言語で構築する。</summary>
-    private void BuildThemeLabels()
-    {
-        _rebuildingThemeLabels = true;
-        try
-        {
-            ThemeLabels.Clear();
-            foreach (var key in AppThemes.All)
-            {
-                ThemeLabels.Add(AppThemes.ToLabel(key));
-            }
-
-            ThemeLabel = AppThemes.ToLabel(_settings.Current.Theme);
-        }
-        finally
-        {
-            _rebuildingThemeLabels = false;
-        }
-    }
-
-    /// <summary>テーマ コンボの選択肢を再構築している間のガード。</summary>
-    private bool _rebuildingThemeLabels;
-
-    /// <summary>
-    /// 提供を終了したテーマ（旧 "dark" など）が settings.json に残っている場合、
-    /// フォールバック後の値へ書き換えておく（次回起動時に同じ処理を繰り返さない）。
-    /// </summary>
-    private void MigrateLegacyTheme()
-    {
-        var normalized = AppThemes.Normalize(_settings.Current.Theme);
-        if (string.Equals(normalized, _settings.Current.Theme, StringComparison.Ordinal))
-        {
-            return;
-        }
-
-        _settings.Current.Theme = normalized;
-        _settings.Save();
-        BuildThemeLabels();
     }
 
     /// <summary>言語コンボの表示名 → 言語コード。</summary>
@@ -1379,6 +1309,6 @@ public partial class MainViewModel : ObservableObject
         Api.RefreshTree();
 
         // テーマ名も言語に追従させる（値は保存済みのテーマのまま）
-        BuildThemeLabels();
+        Theme.RefreshLabels();
     }
 }

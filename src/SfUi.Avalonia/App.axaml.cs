@@ -63,6 +63,7 @@ public partial class App : Application
             services.AddSingleton<DeployViewModel>();
             services.AddTransient<AiChatViewModel>();
             services.AddSingleton<SettingsViewModel>();
+            services.AddSingleton<ThemeSelectionViewModel>();
             services.AddSingleton<QuickPanelViewModel>();
             services.AddTransient<CompareOrgsViewModel>();
             services.AddTransient<CompareRecordDetailViewModel>();
@@ -130,6 +131,8 @@ public partial class App : Application
             // UI 言語を適用（既定は英語）
             var languageSettings = Services.GetRequiredService<AppSettingsStore>();
             UiText.SetLanguage(languageSettings.Current.Language);
+            // 保存済みのテーマをウィンドウ生成前に適用する（既定 = モダン ライト）
+            AppTheme.Apply(languageSettings.Current.Theme);
             _log.Info($"UI 言語: {UiText.Language}");
 
             var window = Services.GetRequiredService<MainWindow>();

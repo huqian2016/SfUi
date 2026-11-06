@@ -1330,6 +1330,7 @@ public static partial class UiText
         ["Welcome_OpenSettings"] = "설정 열기",
         ["Settings_ShowWelcome"] = "환영 화면 표시",
         ["Settings_Theme"] = "테마:",
+        ["Settings_AppearanceGroup"] = "모양",
         ["Settings_ThemeTip"] = "메인 화면의 모양을 전환합니다(클래식 = 기존 색상과 컨트롤).",
         ["Theme_Classic"] = "클래식",
         ["Theme_Modern"] = "모던 라이트",

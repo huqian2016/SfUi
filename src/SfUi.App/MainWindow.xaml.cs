@@ -22,8 +22,8 @@ public partial class MainWindow : Window
         DataPathText.Text = UiText.T("Main_DataPathFmt", paths.DataRoot);
         VersionText.Text = $"v{typeof(MainWindow).Assembly.GetName().Version?.ToString(3) ?? "0.0.0"}";
 
-        AppTheme.Apply(viewModel.ThemeKey, this);
-        viewModel.ThemeChanged += key => AppTheme.Apply(key, this);
+        AppTheme.Apply(viewModel.Theme.Key, this);
+        viewModel.Theme.ThemeChanged += key => AppTheme.Apply(key, this);
 
         ApplyAdaptiveWindowSize();
 

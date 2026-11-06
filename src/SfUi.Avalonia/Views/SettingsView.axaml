@@ -22,6 +22,25 @@
 
                 <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="8">
                     <StackPanel>
+                        <TextBlock Text="{loc:Tr Settings_AppearanceGroup}" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="110" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{loc:Tr Settings_Theme}" VerticalAlignment="Center" />
+                            <ComboBox Grid.Column="1" Width="260" HorizontalAlignment="Left"
+                                      ItemsSource="{Binding Theme.Labels}"
+                                      SelectedItem="{Binding Theme.Label, Mode=TwoWay}"
+                                      ToolTip.Tip="{loc:Tr Settings_ThemeTip}"
+                                      AutomationProperties.AutomationId="ThemeCombo"
+                                      AutomationProperties.Name="{loc:Tr Settings_Theme}" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,10,0,0">
+                    <StackPanel>
                         <TextBlock Text="{loc:Tr Settings_SfGroup}" FontWeight="SemiBold" Margin="0,0,0,6" />
                         <Grid>
                             <Grid.ColumnDefinitions>

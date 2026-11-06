@@ -8,8 +8,8 @@
             <ResourceDictionary.MergedDictionaries>
                 <!-- Fluent UI System Icons（MIT）のアイコン ジオメトリ（WPF 版と同一） -->
                 <ResourceInclude Source="avares://SfUi.Avalonia/Resources/Icons.axaml" />
-                <!-- 配色トークン（起動時に AppTheme.Apply で保存済みのテーマへ差し替え） -->
-                <ResourceInclude Source="avares://SfUi.Avalonia/Themes/Tokens.Classic.axaml" />
+                <!-- 配色トークン（起動時に AppTheme.Apply で保存済みのテーマへ差し替え。既定 = モダン ライト） -->
+                <ResourceInclude Source="avares://SfUi.Avalonia/Themes/Tokens.Modern.axaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

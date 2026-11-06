@@ -253,13 +253,6 @@
                           AutomationProperties.AutomationId="LanguageCombo"
                           AutomationProperties.Name="{loc:Tr Main_LanguageTip}" />
 
-                <ComboBox Width="132" Margin="6,0,0,0" VerticalContentAlignment="Center"
-                          ItemsSource="{Binding ThemeLabels}"
-                          SelectedItem="{Binding ThemeLabel, Mode=TwoWay}"
-                          ToolTip.Tip="{loc:Tr Settings_ThemeTip}"
-                          AutomationProperties.AutomationId="ThemeCombo"
-                          AutomationProperties.Name="{loc:Tr Settings_Theme}" />
-
                 <views:HelpButton Topic="MainWindow" Margin="8,0,0,0" />
 
                 <Button Classes="icon" Margin="8,0,0,0" Click="AboutButton_Click"

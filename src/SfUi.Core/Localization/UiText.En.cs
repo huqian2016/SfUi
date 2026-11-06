@@ -1329,6 +1329,7 @@ public static partial class UiText
         ["Welcome_OpenSettings"] = "Open settings",
         ["Settings_ShowWelcome"] = "Show the welcome screen",
         ["Settings_Theme"] = "Theme:",
+        ["Settings_AppearanceGroup"] = "Appearance",
         ["Settings_ThemeTip"] = "Changes the look of the main window. Classic keeps the original colours and controls.",
         ["Theme_Classic"] = "Classic",
         ["Theme_Modern"] = "Modern light",

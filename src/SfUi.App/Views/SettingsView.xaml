@@ -20,7 +20,23 @@
                     <Button Content="{loc:Tr Settings_ShowWelcome}" Padding="10,2" Command="{Binding OpenWelcomeCommand}" />
                 </StackPanel>
 
-                <GroupBox Header="{loc:Tr Settings_SfGroup}" Padding="8">
+                <GroupBox Header="{loc:Tr Settings_AppearanceGroup}" Padding="8">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="110" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="{loc:Tr Settings_Theme}" VerticalAlignment="Center" />
+                        <ComboBox Grid.Column="1" Width="260" HorizontalAlignment="Left"
+                                  ItemsSource="{Binding Theme.Labels}"
+                                  SelectedItem="{Binding Theme.Label, Mode=TwoWay}"
+                                  ToolTip="{loc:Tr Settings_ThemeTip}"
+                                  AutomationProperties.AutomationId="ThemeCombo"
+                                  AutomationProperties.Name="{loc:Tr Settings_Theme}" />
+                    </Grid>
+                </GroupBox>
+
+                <GroupBox Header="{loc:Tr Settings_SfGroup}" Padding="8" Margin="0,10,0,0">
                     <StackPanel>
                         <Grid>
                             <Grid.ColumnDefinitions>
