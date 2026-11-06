@@ -12,20 +12,23 @@ public static class AppThemes
     /// <summary>モダン ライト（Fluent / Windows 11 風）。</summary>
     public const string Modern = "modern";
 
-    /// <summary>ダーク（開発者ツール風）。</summary>
+    /// <summary>
+    /// ダーク（開発者ツール風）。アイコンの視認性が悪いため<b>現在は選択肢から外しています</b>。
+    /// 配色辞書とタイトル バー / エディタ配色の実装は残しているため、
+    /// <see cref="All"/> と <see cref="Normalize"/> に戻せば復活できます。
+    /// </summary>
     public const string Dark = "dark";
 
     /// <summary>Salesforce（Lightning Design System）風。</summary>
     public const string Salesforce = "salesforce";
 
-    /// <summary>選択できるテーマ（表示順）。</summary>
-    public static readonly IReadOnlyList<string> All = new[] { Classic, Modern, Dark, Salesforce };
+    /// <summary>選択できるテーマ（表示順）。ダークは現在提供していません。</summary>
+    public static readonly IReadOnlyList<string> All = new[] { Classic, Modern, Salesforce };
 
-    /// <summary>未知の値は <see cref="Classic"/> に丸める。</summary>
+    /// <summary>未知の値（旧 "dark" を含む）は <see cref="Classic"/> に丸める。</summary>
     public static string Normalize(string? value) => value?.Trim().ToLowerInvariant() switch
     {
         Modern => Modern,
-        Dark => Dark,
         Salesforce => Salesforce,
         _ => Classic,
     };
@@ -34,7 +37,6 @@ public static class AppThemes
     public static string ToLabel(string? key) => Normalize(key) switch
     {
         Modern => UiText.T("Theme_Modern"),
-        Dark => UiText.T("Theme_Dark"),
         Salesforce => UiText.T("Theme_Salesforce"),
         _ => UiText.T("Theme_Classic"),
     };

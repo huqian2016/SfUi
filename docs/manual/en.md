@@ -153,7 +153,7 @@ History, settings, backups and logs are all stored in the local data folder. The
 | Org | The org used for operations (`--target-org`). "Reload orgs" refreshes the list |
 | SF folder | Working folder for deploy etc. Pick from history or use "Browse…" |
 | Language | Switch the UI language (instant) |
-| Theme | Colour scheme of the UI (Classic / Modern light / Dark / Salesforce). The choice is saved and restored on the next start |
+| Theme | Colour scheme of the UI (Classic / Modern light / Salesforce). The choice is saved and restored on the next start |
 | Buttons | Org Info / Compare / Data I/O / Backup & Restore / ETL / Source Editor / Org Management / Terminal / Explorer / VS Code / Browser / Quick / AI / About |
 
 The Terminal, Explorer, VS Code and Browser buttons support **right-click menus** (e.g. Terminal → Windows Terminal / PowerShell / Command Prompt / WSL; Browser → Org home / Setup / Login / Enter URL).

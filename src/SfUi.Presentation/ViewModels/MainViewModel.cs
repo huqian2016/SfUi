@@ -278,6 +278,7 @@ public partial class MainViewModel : ObservableObject
         _languageLabel = LanguageLabelForCode(_settings.Current.Language);
         OnPropertyChanged(nameof(LanguageLabel));
         BuildThemeLabels();
+        MigrateLegacyTheme();
         _isAiPanelVisible = _settings.Current.AiPanelVisible;
         OnPropertyChanged(nameof(IsAiPanelVisible));
     }
@@ -469,6 +470,23 @@ public partial class MainViewModel : ObservableObject
 
     /// <summary>テーマ コンボの選択肢を再構築している間のガード。</summary>
     private bool _rebuildingThemeLabels;
+
+    /// <summary>
+    /// 提供を終了したテーマ（旧 "dark" など）が settings.json に残っている場合、
+    /// フォールバック後の値へ書き換えておく（次回起動時に同じ処理を繰り返さない）。
+    /// </summary>
+    private void MigrateLegacyTheme()
+    {
+        var normalized = AppThemes.Normalize(_settings.Current.Theme);
+        if (string.Equals(normalized, _settings.Current.Theme, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _settings.Current.Theme = normalized;
+        _settings.Save();
+        BuildThemeLabels();
+    }
 
     /// <summary>言語コンボの表示名 → 言語コード。</summary>
     private static string LanguageCodeForLabel(string label) => label switch

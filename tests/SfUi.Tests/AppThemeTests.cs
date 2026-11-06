@@ -12,21 +12,22 @@ public sealed class AppThemeTests
     [InlineData("", AppThemes.Classic)]
     [InlineData("Classic", AppThemes.Classic)]
     [InlineData(" modern ", AppThemes.Modern)]
-    [InlineData("DARK", AppThemes.Dark)]
     [InlineData("salesforce", AppThemes.Salesforce)]
     [InlineData("unknown", AppThemes.Classic)]
+    [InlineData("dark", AppThemes.Classic)] // 提供終了したテーマの設定はクラシックへ戻す
     public void Normalize_FallsBackToClassic(string? value, string expected) =>
         Assert.Equal(expected, AppThemes.Normalize(value));
 
     [Fact]
-    public void All_ContainsEveryThemeOnce()
+    public void All_ContainsEverySelectableThemeOnce()
     {
-        Assert.Equal(4, AppThemes.All.Count);
+        Assert.Equal(3, AppThemes.All.Count);
         Assert.Equal(AppThemes.All.Count, AppThemes.All.Distinct().Count());
         Assert.Contains(AppThemes.Classic, AppThemes.All);
         Assert.Contains(AppThemes.Modern, AppThemes.All);
-        Assert.Contains(AppThemes.Dark, AppThemes.All);
         Assert.Contains(AppThemes.Salesforce, AppThemes.All);
+        // ダークはアイコンの視認性のため提供しない
+        Assert.DoesNotContain(AppThemes.Dark, AppThemes.All);
     }
 
     [Fact]
@@ -59,16 +60,19 @@ public sealed class AppThemeTests
     [Theory]
     [InlineData(AppThemes.Classic, false)]
     [InlineData(AppThemes.Modern, true)]
-    [InlineData(AppThemes.Dark, true)]
     [InlineData(AppThemes.Salesforce, true)]
+    [InlineData(AppThemes.Dark, false)] // 提供終了（クラシック扱い）
     public void HasModernChrome_IsFalseOnlyForClassic(string theme, bool expected) =>
         Assert.Equal(expected, AppThemes.HasModernChrome(theme));
 
     [Fact]
-    public void IsDark_IsTrueOnlyForDarkTheme()
+    public void IsDark_IsNeverTrueForSelectableThemes()
     {
-        Assert.True(AppThemes.IsDark(AppThemes.Dark));
-        Assert.False(AppThemes.IsDark(AppThemes.Modern));
+        foreach (var theme in AppThemes.All)
+        {
+            Assert.False(AppThemes.IsDark(theme));
+        }
+
         Assert.False(AppThemes.IsDark(null));
     }
 }
