@@ -17,7 +17,7 @@
     <PackageReference Include="System.Text.Encoding.CodePages" Version="9.0.20" />
     <PackageReference Include="ExcelDataReader" Version="3.9.0" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.1" />
-    <PackageReference Include="Npgsql" Version="8.0.9" />
+    <PackageReference Include="Npgsql" Version="10.0.3" />
     <PackageReference Include="System.Data.Odbc" Version="9.0.20" />
   </ItemGroup>
 </Project>
